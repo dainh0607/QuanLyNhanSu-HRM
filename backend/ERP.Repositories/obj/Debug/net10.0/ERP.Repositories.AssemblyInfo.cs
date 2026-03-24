@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ERP.Repositories")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+af25a092eb0feaeb97c25a84b4bce709943b3918")]
 [assembly: System.Reflection.AssemblyProductAttribute("ERP.Repositories")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ERP.Repositories")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

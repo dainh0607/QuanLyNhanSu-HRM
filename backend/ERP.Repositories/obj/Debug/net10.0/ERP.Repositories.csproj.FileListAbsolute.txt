@@ -1,0 +1,16 @@
+e:\NexaHR_2026\QuanLyNhanSu-HRM\backend\ERP.Repositories\bin\Debug\net10.0\ERP.Repositories.deps.json
+e:\NexaHR_2026\QuanLyNhanSu-HRM\backend\ERP.Repositories\bin\Debug\net10.0\ERP.Repositories.dll
+e:\NexaHR_2026\QuanLyNhanSu-HRM\backend\ERP.Repositories\bin\Debug\net10.0\ERP.Repositories.pdb
+e:\NexaHR_2026\QuanLyNhanSu-HRM\backend\ERP.Repositories\bin\Debug\net10.0\ERP.Entities.dll
+e:\NexaHR_2026\QuanLyNhanSu-HRM\backend\ERP.Repositories\bin\Debug\net10.0\ERP.Entities.pdb
+e:\NexaHR_2026\QuanLyNhanSu-HRM\backend\ERP.Repositories\obj\Debug\net10.0\ERP.Repositories.csproj.AssemblyReference.cache
+e:\NexaHR_2026\QuanLyNhanSu-HRM\backend\ERP.Repositories\obj\Debug\net10.0\ERP.Repositories.GeneratedMSBuildEditorConfig.editorconfig
+e:\NexaHR_2026\QuanLyNhanSu-HRM\backend\ERP.Repositories\obj\Debug\net10.0\ERP.Repositories.AssemblyInfoInputs.cache
+e:\NexaHR_2026\QuanLyNhanSu-HRM\backend\ERP.Repositories\obj\Debug\net10.0\ERP.Repositories.AssemblyInfo.cs
+e:\NexaHR_2026\QuanLyNhanSu-HRM\backend\ERP.Repositories\obj\Debug\net10.0\ERP.Repositories.csproj.CoreCompileInputs.cache
+e:\NexaHR_2026\QuanLyNhanSu-HRM\backend\ERP.Repositories\obj\Debug\net10.0\ERP.Repositories.sourcelink.json
+e:\NexaHR_2026\QuanLyNhanSu-HRM\backend\ERP.Repositories\obj\Debug\net10.0\ERP.Repo.AF70A2D7.Up2Date
+e:\NexaHR_2026\QuanLyNhanSu-HRM\backend\ERP.Repositories\obj\Debug\net10.0\ERP.Repositories.dll
+e:\NexaHR_2026\QuanLyNhanSu-HRM\backend\ERP.Repositories\obj\Debug\net10.0\refint\ERP.Repositories.dll
+e:\NexaHR_2026\QuanLyNhanSu-HRM\backend\ERP.Repositories\obj\Debug\net10.0\ERP.Repositories.pdb
+e:\NexaHR_2026\QuanLyNhanSu-HRM\backend\ERP.Repositories\obj\Debug\net10.0\ref\ERP.Repositories.dll
