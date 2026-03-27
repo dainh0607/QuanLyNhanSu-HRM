@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -7,6 +8,7 @@ namespace ERP.Entities.Models
     [Table("RequestPurchaseRequests")]
     public class RequestPurchaseRequests
     {
+        [Key]
         [Column("request_id")]
         public int request_id { get; set; }
 
@@ -42,5 +44,7 @@ namespace ERP.Entities.Models
         [Column("attachment")]
         [StringLength(500)]
         public string attachment { get; set; }
+
+        public virtual ICollection<RequestPurchaseRequestDetails> Details { get; set; } = new HashSet<RequestPurchaseRequestDetails>();
     }
 }

@@ -9,7 +9,7 @@ namespace ERP.Entities.Configurations
         public void Configure(EntityTypeBuilder<UserRoles> builder)
         {
             builder.ToTable("UserRoles");
-            // Fluent API configurations go here
+            builder.HasKey(e => new { e.user_id, e.role_id });
         }
     }
 }

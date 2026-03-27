@@ -16,6 +16,9 @@ namespace ERP.Entities.Models
         [Column("period_id")]
         public int period_id { get; set; }
 
+        [ForeignKey("period_id")]
+        public virtual PayrollPeriods Period { get; set; }
+
         [Column("base_salary")]
         public decimal base_salary { get; set; }
 

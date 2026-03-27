@@ -9,7 +9,11 @@ namespace ERP.Entities.Configurations
         public void Configure(EntityTypeBuilder<RequestPurchaseDetails> builder)
         {
             builder.ToTable("RequestPurchaseDetails");
-            // Fluent API configurations go here
+
+            builder.HasOne(d => d.RequestPurchase)
+                .WithMany(p => p.Details)
+                .HasForeignKey(d => d.purchase_id)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

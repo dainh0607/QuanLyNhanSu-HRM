@@ -14,5 +14,7 @@ namespace ERP.Entities.Models
         [Column("code")]
         [StringLength(50)]
         public string code { get; set; }
+
+        public virtual ICollection<Employees> Employees { get; set; } = new HashSet<Employees>();
     }
 }

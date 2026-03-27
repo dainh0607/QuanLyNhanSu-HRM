@@ -9,7 +9,9 @@ namespace ERP.Entities.Configurations
         public void Configure(EntityTypeBuilder<Genders> builder)
         {
             builder.ToTable("Genders");
-            // Fluent API configurations go here
+            
+            builder.HasIndex(g => g.code)
+                .IsUnique();
         }
     }
 }

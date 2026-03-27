@@ -11,3 +11,5 @@ e:\NexaHR_2026\QuanLyNhanSu-HRM\backend\ERP.Entities\obj\Debug\net10.0\ERP.Entit
 e:\NexaHR_2026\QuanLyNhanSu-HRM\backend\ERP.Entities\obj\Debug\net10.0\refint\ERP.Entities.dll
 e:\NexaHR_2026\QuanLyNhanSu-HRM\backend\ERP.Entities\obj\Debug\net10.0\ERP.Entities.pdb
 e:\NexaHR_2026\QuanLyNhanSu-HRM\backend\ERP.Entities\obj\Debug\net10.0\ref\ERP.Entities.dll
+E:\NexaHR_2026\QuanLyNhanSu-HRM\backend\ERP.Entities\bin\Debug\net10.0\ERP.Entities.runtimeconfig.json
+E:\NexaHR_2026\QuanLyNhanSu-HRM\backend\ERP.Entities\obj\Debug\net10.0\ERP.Entities.genruntimeconfig.cache

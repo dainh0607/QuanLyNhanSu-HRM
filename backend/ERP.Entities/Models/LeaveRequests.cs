@@ -22,6 +22,9 @@ namespace ERP.Entities.Models
         [Column("duration_type_id")]
         public int? duration_type_id { get; set; }
 
+        [ForeignKey("duration_type_id")]
+        public virtual LeaveDurationTypes LeaveDurationType { get; set; }
+
         [Column("number_of_hours")]
         public decimal? number_of_hours { get; set; }
 

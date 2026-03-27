@@ -29,6 +29,9 @@ namespace ERP.Entities.Models
         [Column("approved_by")]
         public int? approved_by { get; set; }
 
+        [ForeignKey("approved_by")]
+        public virtual Employees ApprovedBy { get; set; }
+
         [Column("approved_at")]
         public DateTime? approved_at { get; set; }
 

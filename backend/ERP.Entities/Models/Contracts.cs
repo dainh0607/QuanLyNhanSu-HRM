@@ -21,7 +21,7 @@ namespace ERP.Entities.Models
         public int? contract_type_id { get; set; }
 
         [ForeignKey("contract_type_id")]
-        public virtual ContractTypes ContractType { get; set; }
+        public virtual ContractTypes? ContractType { get; set; }
 
         [Column("sign_date")]
         public DateTime? sign_date { get; set; }

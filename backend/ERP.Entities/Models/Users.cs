@@ -23,5 +23,9 @@ namespace ERP.Entities.Models
 
         [Column("is_active")]
         public bool is_active { get; set; }
+
+        [Column("firebase_uid")]
+        [StringLength(128)]
+        public string firebase_uid { get; set; }
     }
 }

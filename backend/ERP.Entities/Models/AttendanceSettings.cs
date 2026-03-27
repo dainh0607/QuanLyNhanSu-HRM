@@ -7,6 +7,7 @@ namespace ERP.Entities.Models
     [Table("AttendanceSettings")]
     public class AttendanceSettings
     {
+        [Key]
         [Column("employee_id")]
         public int employee_id { get; set; }
 

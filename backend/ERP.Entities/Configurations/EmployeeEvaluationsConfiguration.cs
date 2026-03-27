@@ -9,7 +9,7 @@ namespace ERP.Entities.Configurations
         public void Configure(EntityTypeBuilder<EmployeeEvaluations> builder)
         {
             builder.ToTable("EmployeeEvaluations");
-            // Fluent API configurations go here
+            builder.HasKey(e => new { e.employee_id, e.evaluation_id });
         }
     }
 }

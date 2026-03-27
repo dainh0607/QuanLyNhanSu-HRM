@@ -17,5 +17,9 @@ namespace ERP.Entities.Models
 
         [Column("parent_id")]
         public int? parent_id { get; set; }
+
+        public virtual ICollection<Employees> Employees { get; set; } = new HashSet<Employees>();
+
+        public virtual ICollection<Employees> SecondaryEmployees { get; set; } = new HashSet<Employees>();
     }
 }

@@ -9,7 +9,11 @@ namespace ERP.Entities.Configurations
         public void Configure(EntityTypeBuilder<AttendanceLogs> builder)
         {
             builder.ToTable("AttendanceLogs");
-            // Fluent API configurations go here
+
+            builder.HasOne(al => al.Machine)
+                .WithMany(tm => tm.AttendanceLogs)
+                .HasForeignKey(al => al.machine_id)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

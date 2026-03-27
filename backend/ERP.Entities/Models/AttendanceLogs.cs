@@ -19,6 +19,9 @@ namespace ERP.Entities.Models
         [Column("machine_id")]
         public int? machine_id { get; set; }
 
+        [ForeignKey("machine_id")]
+        public virtual TimeMachines Machine { get; set; }
+
         [Column("type")]
         [StringLength(10)]
         public string type { get; set; }

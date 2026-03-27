@@ -7,6 +7,7 @@ namespace ERP.Entities.Models
     [Table("RequestShiftChange")]
     public class RequestShiftChange
     {
+        [Key]
         [Column("request_id")]
         public int request_id { get; set; }
 

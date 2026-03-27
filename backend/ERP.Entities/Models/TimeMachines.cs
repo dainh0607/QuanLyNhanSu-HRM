@@ -14,5 +14,7 @@ namespace ERP.Entities.Models
         [Column("machine_code")]
         [StringLength(50)]
         public string machine_code { get; set; }
+
+        public virtual ICollection<AttendanceLogs> AttendanceLogs { get; set; } = new HashSet<AttendanceLogs>();
     }
 }

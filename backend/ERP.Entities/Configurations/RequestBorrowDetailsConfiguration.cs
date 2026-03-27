@@ -9,7 +9,11 @@ namespace ERP.Entities.Configurations
         public void Configure(EntityTypeBuilder<RequestBorrowDetails> builder)
         {
             builder.ToTable("RequestBorrowDetails");
-            // Fluent API configurations go here
+
+            builder.HasOne(d => d.RequestBorrow)
+                .WithMany(b => b.Details)
+                .HasForeignKey(d => d.borrow_id)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

@@ -18,5 +18,9 @@ namespace ERP.Entities.Models
         [Column("address")]
         [StringLength(255)]
         public string address { get; set; }
+
+        public virtual ICollection<Employees> Employees { get; set; } = new HashSet<Employees>();
+
+        public virtual ICollection<Employees> SecondaryEmployees { get; set; } = new HashSet<Employees>();
     }
 }

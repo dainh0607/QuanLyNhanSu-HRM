@@ -7,6 +7,7 @@ namespace ERP.Entities.Models
     [Table("RequestReimbursements")]
     public class RequestReimbursements
     {
+        [Key]
         [Column("request_id")]
         public int request_id { get; set; }
 

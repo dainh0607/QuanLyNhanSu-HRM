@@ -10,6 +10,9 @@ namespace ERP.Entities.Models
         [Column("salary_id")]
         public int salary_id { get; set; }
 
+        [ForeignKey("salary_id")]
+        public virtual Salaries Salary { get; set; }
+
         [Column("income_name")]
         [StringLength(100)]
         public string income_name { get; set; }

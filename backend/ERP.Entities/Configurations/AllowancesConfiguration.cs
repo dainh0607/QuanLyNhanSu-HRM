@@ -9,7 +9,11 @@ namespace ERP.Entities.Configurations
         public void Configure(EntityTypeBuilder<Allowances> builder)
         {
             builder.ToTable("Allowances");
-            // Fluent API configurations go here
+
+            builder.HasOne(a => a.Salary)
+                .WithMany(s => s.Allowances)
+                .HasForeignKey(a => a.salary_id)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

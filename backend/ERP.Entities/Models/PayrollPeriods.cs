@@ -20,5 +20,7 @@ namespace ERP.Entities.Models
         [Column("status")]
         [StringLength(20)]
         public string status { get; set; }
+
+        public virtual ICollection<Payrolls> Payrolls { get; set; } = new HashSet<Payrolls>();
     }
 }

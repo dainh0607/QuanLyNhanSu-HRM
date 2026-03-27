@@ -9,7 +9,9 @@ namespace ERP.Entities.Configurations
         public void Configure(EntityTypeBuilder<MaritalStatuses> builder)
         {
             builder.ToTable("MaritalStatuses");
-            // Fluent API configurations go here
+            
+            builder.HasIndex(m => m.code)
+                .IsUnique();
         }
     }
 }

@@ -10,6 +10,9 @@ namespace ERP.Entities.Models
         [Column("purchase_request_id")]
         public int purchase_request_id { get; set; }
 
+        [ForeignKey("purchase_request_id")]
+        public virtual RequestPurchaseRequests RequestPurchaseRequest { get; set; }
+
         [Column("content")]
         public string content { get; set; }
 

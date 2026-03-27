@@ -10,6 +10,9 @@ namespace ERP.Entities.Models
         [Column("borrow_id")]
         public int borrow_id { get; set; }
 
+        [ForeignKey("borrow_id")]
+        public virtual RequestBorrows RequestBorrow { get; set; }
+
         [Column("item_name")]
         [StringLength(200)]
         public string item_name { get; set; }

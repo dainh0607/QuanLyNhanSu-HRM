@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ERP.Entities.Models
 {
     [Table("Roles")]
-    public class Roles : BaseEntity
+    public class Roles : AuditableEntity
     {
         [Column("name")]
         [StringLength(100)]
@@ -14,5 +14,8 @@ namespace ERP.Entities.Models
         [Column("description")]
         [StringLength(255)]
         public string description { get; set; }
+
+        [Column("is_active")]
+        public bool is_active { get; set; }
     }
 }

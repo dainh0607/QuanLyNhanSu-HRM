@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "e:\\NexaHR_2026\\QuanLyNhanSu-HRM\\backend\\ERP.Repositories\\ERP.Repositories.csproj": {}
+    "E:\\NexaHR_2026\\QuanLyNhanSu-HRM\\backend\\ERP.Repositories\\ERP.Repositories.csproj": {}
   },
   "projects": {
-    "e:\\NexaHR_2026\\QuanLyNhanSu-HRM\\backend\\ERP.Entities\\ERP.Entities.csproj": {
+    "E:\\NexaHR_2026\\QuanLyNhanSu-HRM\\backend\\ERP.Entities\\ERP.Entities.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "e:\\NexaHR_2026\\QuanLyNhanSu-HRM\\backend\\ERP.Entities\\ERP.Entities.csproj",
+        "projectUniqueName": "E:\\NexaHR_2026\\QuanLyNhanSu-HRM\\backend\\ERP.Entities\\ERP.Entities.csproj",
         "projectName": "ERP.Entities",
-        "projectPath": "e:\\NexaHR_2026\\QuanLyNhanSu-HRM\\backend\\ERP.Entities\\ERP.Entities.csproj",
+        "projectPath": "E:\\NexaHR_2026\\QuanLyNhanSu-HRM\\backend\\ERP.Entities\\ERP.Entities.csproj",
         "packagesPath": "C:\\Users\\Gluttony\\.nuget\\packages\\",
-        "outputPath": "e:\\NexaHR_2026\\QuanLyNhanSu-HRM\\backend\\ERP.Entities\\obj\\",
+        "outputPath": "E:\\NexaHR_2026\\QuanLyNhanSu-HRM\\backend\\ERP.Entities\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -55,9 +55,23 @@
               "target": "Package",
               "version": "[10.0.5, )"
             },
+            "Microsoft.EntityFrameworkCore.Design": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[10.0.5, )"
+            },
             "Microsoft.EntityFrameworkCore.SqlServer": {
               "target": "Package",
               "version": "[10.0.5, )"
+            },
+            "Microsoft.Extensions.Configuration": {
+              "target": "Package",
+              "version": "[10.0.0, )"
+            },
+            "Microsoft.Extensions.Configuration.Json": {
+              "target": "Package",
+              "version": "[10.0.0, )"
             }
           },
           "imports": [
@@ -354,14 +368,14 @@
         }
       }
     },
-    "e:\\NexaHR_2026\\QuanLyNhanSu-HRM\\backend\\ERP.Repositories\\ERP.Repositories.csproj": {
+    "E:\\NexaHR_2026\\QuanLyNhanSu-HRM\\backend\\ERP.Repositories\\ERP.Repositories.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "e:\\NexaHR_2026\\QuanLyNhanSu-HRM\\backend\\ERP.Repositories\\ERP.Repositories.csproj",
+        "projectUniqueName": "E:\\NexaHR_2026\\QuanLyNhanSu-HRM\\backend\\ERP.Repositories\\ERP.Repositories.csproj",
         "projectName": "ERP.Repositories",
-        "projectPath": "e:\\NexaHR_2026\\QuanLyNhanSu-HRM\\backend\\ERP.Repositories\\ERP.Repositories.csproj",
+        "projectPath": "E:\\NexaHR_2026\\QuanLyNhanSu-HRM\\backend\\ERP.Repositories\\ERP.Repositories.csproj",
         "packagesPath": "C:\\Users\\Gluttony\\.nuget\\packages\\",
-        "outputPath": "e:\\NexaHR_2026\\QuanLyNhanSu-HRM\\backend\\ERP.Repositories\\obj\\",
+        "outputPath": "E:\\NexaHR_2026\\QuanLyNhanSu-HRM\\backend\\ERP.Repositories\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -383,8 +397,8 @@
           "net10.0": {
             "targetAlias": "net10.0",
             "projectReferences": {
-              "e:\\NexaHR_2026\\QuanLyNhanSu-HRM\\backend\\ERP.Entities\\ERP.Entities.csproj": {
-                "projectPath": "e:\\NexaHR_2026\\QuanLyNhanSu-HRM\\backend\\ERP.Entities\\ERP.Entities.csproj"
+              "E:\\NexaHR_2026\\QuanLyNhanSu-HRM\\backend\\ERP.Entities\\ERP.Entities.csproj": {
+                "projectPath": "E:\\NexaHR_2026\\QuanLyNhanSu-HRM\\backend\\ERP.Entities\\ERP.Entities.csproj"
               }
             }
           }

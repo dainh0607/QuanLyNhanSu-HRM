@@ -1,0 +1,92 @@
+### Auth API Tests
+
+@baseUrl = http://localhost:5000
+@contentType = application/json
+
+### Sign Up - Create new account
+POST {{baseUrl}}/api/auth/sign-up
+Content-Type: {{contentType}}
+
+{
+  "email": "test.employee@company.com",
+  "password": "TestPassword123",
+  "confirmPassword": "TestPassword123",
+  "fullName": "Test Nhân Viên",
+  "employeeCode": "EMP001",
+  "phoneNumber": "0912345678"
+}
+
+###
+
+### Login - Authenticate user
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "test.employee@company.com",
+  "password": "TestPassword123"
+}
+
+###
+
+### Get Current User Info
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{idToken}}
+
+###
+
+### Verify Token
+POST {{baseUrl}}/api/auth/verify-token
+Content-Type: {{contentType}}
+
+"{{idToken}}"
+
+###
+
+### Sign Up - Invalid password match
+POST {{baseUrl}}/api/auth/sign-up
+Content-Type: {{contentType}}
+
+{
+  "email": "invalid@company.com",
+  "password": "TestPassword123",
+  "confirmPassword": "DifferentPassword",
+  "fullName": "Invalid User",
+  "employeeCode": "EMP002",
+  "phoneNumber": "0912345679"
+}
+
+###
+
+### Sign Up - Missing required fields
+POST {{baseUrl}}/api/auth/sign-up
+Content-Type: {{contentType}}
+
+{
+  "email": "incomplete@company.com",
+  "password": "TestPassword123"
+}
+
+###
+
+### Login - Wrong password
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "test.employee@company.com",
+  "password": "WrongPassword"
+}
+
+###
+
+### Login - Non-existent user
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "nonexistent@company.com",
+  "password": "AnyPassword123"
+}
+
+###

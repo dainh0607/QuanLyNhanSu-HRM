@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -23,5 +24,8 @@ namespace ERP.Entities.Models
 
         [Column("base_salary")]
         public decimal? base_salary { get; set; }
+
+        public virtual ICollection<Allowances> Allowances { get; set; } = new HashSet<Allowances>();
+        public virtual ICollection<OtherIncomes> OtherIncomes { get; set; } = new HashSet<OtherIncomes>();
     }
 }

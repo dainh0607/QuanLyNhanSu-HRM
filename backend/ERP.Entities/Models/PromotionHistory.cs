@@ -20,13 +20,13 @@ namespace ERP.Entities.Models
         public int? decision_type_id { get; set; }
 
         [ForeignKey("decision_type_id")]
-        public virtual DecisionTypes DecisionType { get; set; }
+        public virtual DecisionTypes? DecisionType { get; set; }
 
         [Column("contract_type_id")]
         public int? contract_type_id { get; set; }
 
         [ForeignKey("contract_type_id")]
-        public virtual ContractTypes ContractType { get; set; }
+        public virtual ContractTypes? ContractType { get; set; }
 
         [Column("decision_number")]
         [StringLength(50)]
@@ -48,19 +48,19 @@ namespace ERP.Entities.Models
         public int? branch_id { get; set; }
 
         [ForeignKey("branch_id")]
-        public virtual Branches Branch { get; set; }
+        public virtual Branches? Branch { get; set; }
 
         [Column("department_id")]
         public int? department_id { get; set; }
 
         [ForeignKey("department_id")]
-        public virtual Departments Department { get; set; }
+        public virtual Departments? Department { get; set; }
 
         [Column("job_title_id")]
         public int? job_title_id { get; set; }
 
         [ForeignKey("job_title_id")]
-        public virtual JobTitles JobTitle { get; set; }
+        public virtual JobTitles? JobTitle { get; set; }
 
         [Column("payment_method")]
         [StringLength(50)]

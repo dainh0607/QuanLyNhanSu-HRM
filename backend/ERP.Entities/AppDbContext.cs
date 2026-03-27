@@ -114,6 +114,21 @@ namespace ERP.Entities
             
             // Apply all configurations from this assembly
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+
+            // Seed Roles
+            var seedDate = new DateTime(2026, 3, 27, 0, 0, 0, DateTimeKind.Utc);
+            modelBuilder.Entity<Roles>().HasData(
+                new Roles { Id = 1, name = "Admin", description = "System Administrator", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new Roles { Id = 2, name = "Manager", description = "Department Manager", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new Roles { Id = 3, name = "User", description = "Regular Employee", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate }
+            );
+
+            // Disable cascade delete globally to avoid SQL Server multiple cascade path errors
+            foreach (var relationship in modelBuilder.Model.GetEntityTypes()
+                .SelectMany(e => e.GetForeignKeys()))
+            {
+                relationship.DeleteBehavior = DeleteBehavior.Restrict;
+            }
         }
     }
 }
