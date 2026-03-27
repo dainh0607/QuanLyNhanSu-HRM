@@ -1,0 +1,110 @@
+# ----------------------------------------------------------------------
+# Node / Frontend (React, Vite, v.v.)
+# ----------------------------------------------------------------------
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Thư mục chứa gói thư viện (Packages)
+node_modules/
+jspm_packages/
+
+# Tùy chọn cho npm v2
+# node_modules được thiết kế để bỏ qua trong file gitignore
+
+# Build output
+dist/
+build/
+out-tsc/
+.next
+.nuxt
+.vuepress/dist
+.serverless/
+.clinic/
+
+# Test coverage
+coverage/
+.nyc_output
+
+# Môi trường (Environment variables)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Dependency directories
+/.pnp
+.pnp.js
+
+# Cấu hình framework
+.eslintcache
+.stylelintcache
+.prettiercache
+
+# ----------------------------------------------------------------------
+# .NET / Backend (C#, ASP.NET Core)
+# ----------------------------------------------------------------------
+## Thư mục kết quả biên dịch
+[Oo]bj/
+[Bb]in/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa]RM/
+[Aa]RM64/
+bld/
+[Bb]inaries/
+[Tt]argets/
+[Uu]ser[Rr]esults/
+
+## Thư mục Visual Studio
+.vs/
+.vscode/
+
+## Các file tùy chỉnh của người dùng (User-specific files)
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+## File tạm của trình biên dịch (.NET, MSBuild)
+*.cache
+*.temp
+*.tmp
+*.log
+
+## Thông tin khóa cục bộ và bảo mật
+appsettings.Development.json
+appsettings.*.json
+*.pfx
+
+## Thư mục gói NuGet cục bộ
+packages/
+*.nupkg
+
+# ----------------------------------------------------------------------
+# Hệ điều hành MacOS / Windows (OS generated files)
+# ----------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

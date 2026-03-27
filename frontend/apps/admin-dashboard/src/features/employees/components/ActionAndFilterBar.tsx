@@ -1,0 +1,125 @@
+import React, { useState, useRef, useEffect } from 'react';
+
+interface ActionAndFilterBarProps {
+  onToggleFilter: () => void;
+  onToggleColumnConfig: () => void;
+}
+
+const ActionAndFilterBar: React.FC<ActionAndFilterBarProps> = ({
+  onToggleFilter,
+  onToggleColumnConfig,
+}) => {
+  const [selectedStatus, setSelectedStatus] = useState('Đang hoạt động');
+  const [isStatusOpen, setIsStatusOpen] = useState(false);
+  const statusRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (statusRef.current && !statusRef.current.contains(event.target as Node)) {
+        setIsStatusOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const statuses = [
+    'Đang hoạt động',
+    'Không hoạt động',
+    'Nghỉ việc',
+    'Chưa làm việc',
+    'Tất cả',
+  ];
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-4 mb-4 shrink-0">
+      <div className="flex items-center space-x-3 flex-1 min-w-[300px]">
+        <button
+          onClick={onToggleFilter}
+          className="flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 shrink-0 group transition-colors"
+        >
+          <svg className="w-4 h-4 text-gray-500 group-hover:text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+          </svg>
+          <span className="ml-1.5 px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[10px] font-bold">2</span>
+        </button>
+        <button className="flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 text-gray-500 hover:text-emerald-600 transition-colors shrink-0 ml-1">
+          <span className="material-symbols-outlined text-[20px]">sort</span>
+        </button>
+        
+        <div className="relative flex-1 max-w-md">
+          <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </span>
+          <input 
+            type="text" 
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm placeholder-gray-400 focus:ring-emerald-500 focus:border-emerald-500" 
+            placeholder="Tìm kiếm theo Họ tên, Mã NV, SĐT, Email..." 
+          />
+        </div>
+
+        <div className="relative" ref={statusRef}>
+          <button
+            onClick={() => setIsStatusOpen(!isStatusOpen)}
+            className="flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 text-sm font-medium transition-colors"
+          >
+            <span className="material-symbols-outlined text-[18px] mr-2 text-gray-500">filter_alt</span>
+            <span>{selectedStatus}</span>
+            <svg className="w-4 h-4 ml-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          
+          {isStatusOpen && (
+            <div className="absolute left-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl dropdown-shadow py-2 z-50 overflow-hidden">
+              {statuses.map((status, index) => (
+                <button
+                  key={status}
+                  onClick={() => {
+                    setSelectedStatus(status);
+                    setIsStatusOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 ${
+                    index === statuses.length - 1 ? 'border-t border-gray-50' : ''
+                  }`}
+                >
+                  {status}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <button className="p-2 border border-gray-300 rounded-lg bg-white text-gray-500 hover:text-emerald-600 transition-colors flex items-center justify-center" title="Sơ đồ tổ chức">
+          <span className="material-symbols-outlined text-[20px]">account_tree</span>
+        </button>
+        <div className="relative group">
+          <button className="p-2 border border-gray-300 rounded-lg bg-white text-gray-500 hover:text-emerald-600 transition-colors flex items-center justify-center" title="Hồ sơ sơ đồ">
+            <span className="material-symbols-outlined text-[20px]">assignment_ind</span>
+          </button>
+          
+          <div className="hidden group-hover:block absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-xl shadow-lg py-2 z-50 overflow-hidden">
+            <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors" href="#">Hợp đồng</a>
+            <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors" href="#">Bảo hiểm</a>
+            <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors" href="#">Tài sản</a>
+          </div>
+        </div>
+
+        {/* Hamburger Toggle Button */}
+        <button
+          onClick={onToggleColumnConfig}
+          className="p-2 border border-gray-300 rounded-lg bg-white text-gray-500 hover:text-emerald-600 transition-colors flex items-center justify-center"
+          title="Tùy chỉnh cột"
+        >
+          <span className="material-symbols-outlined text-[20px]">menu</span>
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default ActionAndFilterBar;
