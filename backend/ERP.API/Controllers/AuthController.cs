@@ -109,5 +109,24 @@ namespace ERP.API.Controllers
                 return StatusCode(500, new { Message = "Error syncing users", Error = ex.Message });
             }
         }
+
+        [HttpPost("invite-staff")]
+        [Authorize] // Temporary Authorize, ideally [Authorize(Roles = "Manager,Admin")]
+        public async Task<IActionResult> InviteStaff([FromBody] PreRegisterStaffDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var result = await _authService.PreRegisterStaffAsync(dto);
+            
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+
+            return Ok(result);
+        }
     }
 }

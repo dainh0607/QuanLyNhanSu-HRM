@@ -3,90 +3,107 @@
 @baseUrl = http://localhost:5122
 @contentType = application/json
 
-### Sign Up - Create new account
+############################################################
+### KỊCH BẢN 1: ĐĂNG KÝ QUẢN LÝ (ROLE MẶC ĐỊNH)
+############################################################
+
+# 1. Đăng ký tài khoản mới (Sẽ tự động là Manager)
+# @name managerSignUp
 POST {{baseUrl}}/api/auth/sign-up
 Content-Type: {{contentType}}
 
 {
-  "email": "test.employee@company.com",
-  "password": "TestPassword123",
-  "confirmPassword": "TestPassword123",
-  "fullName": "Test Nhân Viên",
-  "employeeCode": "EMP001",
-  "phoneNumber": "+84912345678"
+  "email": "manager.test@company.com",
+  "password": "ManagerPassword123",
+  "confirmPassword": "ManagerPassword123",
+  "fullName": "Nguyễn Quản Lý",
+  "employeeCode": "MGR_001",
+  "phoneNumber": "+84900000001"
 }
 
 ###
 
-### Login - Authenticate user
-# @name login
+# 2. Đăng nhập với tài khoản Quản lý để lấy Token
+# @name managerLogin
 POST {{baseUrl}}/api/auth/login
 Content-Type: {{contentType}}
 
 {
-  "email": "test.employee@company.com",
-  "password": "TestPassword123"
+  "email": "manager.test@company.com",
+  "password": "ManagerPassword123"
 }
 
 ###
 
-### Get Current User Info
+# 3. Kiểm tra thông tin Quản lý (Phải có Roles: ["Manager"])
 GET {{baseUrl}}/api/auth/me
-Authorization: Bearer {{login.response.body.idToken}}
+Authorization: Bearer {{managerLogin.response.body.idToken}}
+
 ###
+
+############################################################
+### KỊCH BẢN 2: QUẢN LÝ MỜI NHÂN VIÊN
+############################################################
+
+# 4. Quản lý gọi API "invite-staff" để cấp quyền cho Email nhân viên
+POST {{baseUrl}}/api/auth/invite-staff
+Authorization: Bearer {{managerLogin.response.body.idToken}}
+Content-Type: {{contentType}}
+
+{
+  "email": "staff.invited@company.com",
+  "fullName": "Trần Nhân Viên",
+  "employeeCode": "STAFF_INV_001"
+}
+
+###
+
+############################################################
+### KỊCH BẢN 3: NHÂN VIÊN ĐƯỢC MỜI THỰC HIỆN ĐĂNG KÝ
+############################################################
+
+# 5. Nhân viên sử dụng Email đã được mời để đăng ký
+# @name staffSignUp
+POST {{baseUrl}}/api/auth/sign-up
+Content-Type: {{contentType}}
+
+{
+  "email": "staff.invited@company.com",
+  "password": "StaffPassword123",
+  "confirmPassword": "StaffPassword123",
+  "fullName": "Trần Nhân Viên (Đã Ký)",
+  "employeeCode": "STAFF_INV_001",
+  "phoneNumber": "+84900000002"
+}
+
+###
+
+# 6. Nhân viên đăng nhập
+# @name staffLogin
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "staff.invited@company.com",
+  "password": "StaffPassword123"
+}
+
+###
+
+# 7. Kiểm tra thông tin Nhân viên (Phải có Roles: ["User"])
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{staffLogin.response.body.idToken}}
+
+###
+
+############################################################
+### CÁC TEST CASE KHÁC (CŨ)
+############################################################
 
 ### Verify Token
 POST {{baseUrl}}/api/auth/verify-token
 Content-Type: {{contentType}}
 
-"{{login.response.body.idToken}}"
-
-###
-
-### Sign Up - Invalid password match
-POST {{baseUrl}}/api/auth/sign-up
-Content-Type: {{contentType}}
-
-{
-  "email": "invalid@company.com",
-  "password": "TestPassword123",
-  "confirmPassword": "DifferentPassword",
-  "fullName": "Invalid User",
-  "employeeCode": "EMP002",
-  "phoneNumber": "+84912345679"
-}
-
-###
-
-### Sign Up - Missing required fields
-POST {{baseUrl}}/api/auth/sign-up
-Content-Type: {{contentType}}
-
-{
-  "email": "incomplete@company.com",
-  "password": "TestPassword123"
-}
-
-###
-
-### Login - Wrong password
-POST {{baseUrl}}/api/auth/login
-Content-Type: {{contentType}}
-
-{
-  "email": "test.employee@company.com",
-  "password": "WrongPassword"
-}
-
-###
-
-### Login - Non-existent user
-POST {{baseUrl}}/api/auth/login
-Content-Type: {{contentType}}
-
-{
-  "email": "nonexistent@company.com",
-  "password": "AnyPassword123"
-}
+"{{managerLogin.response.body.idToken}}"
 
 ###

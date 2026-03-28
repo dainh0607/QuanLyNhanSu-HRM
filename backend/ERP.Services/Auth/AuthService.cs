@@ -22,6 +22,7 @@ namespace ERP.Services.Auth
         Task<bool> VerifyPasswordAsync(string password, string passwordHash);
         string HashPassword(string password);
         Task<int> SyncFirebaseUsersAsync();
+        Task<AuthResponseDto> PreRegisterStaffAsync(PreRegisterStaffDto dto);
     }
 
     public class AuthService : IAuthService
@@ -112,6 +113,46 @@ namespace ERP.Services.Auth
                     _context.Users.Add(user);
                     await _context.SaveChangesAsync();
 
+                    // 4. Gán Role dựa trên trạng thái của Employee
+                    // Kiểm tra xem Employee đã từng được gán Role chưa
+                    var existingUserRole = await _context.UserRoles
+                        .AnyAsync(ur => ur.user_id == user.Id);
+
+                    int assignedRoleId = 2; // Mặc định là Manager (ID 2)
+                    string roleName = "Manager";
+
+                    // Logic: Nếu Employee này đã tồn tại NHƯNG User chưa có (có thể được mời bởi Manager)
+                    // Hoặc đơn giản là kiểm tra xem Employee này đã được tạo trước khi SignUp hay không.
+                    // Ở đây ta có thể dùng logic: Nếu employee_code của dto trùng với employee_code của bản ghi có sẵn 
+                    // mà bản ghi đó KHÔNG có User liên kết trước đó.
+                    
+                    // Thực tế ở bản build này, ta sẽ kiểm tra xem Employee đó có được tạo bởi chức năng "Mời" không.
+                    // Để đơn giản nhất: Nếu tìm thấy Employee theo Email mà User chưa có -> Đó là Staff được mời.
+                    if (employeeWithCode != null)
+                    {
+                        // Kiểm tra xem employee này đã có user nào khác chưa (trường hợp sync lỗi hoặc re-signup)
+                        var otherUser = await _context.Users.AnyAsync(u => u.employee_id == employeeWithCode.Id && u.Id != user.Id);
+                        if (!otherUser)
+                        {
+                            // Nếu đây là employee được tạo sẵn (Pre-register) -> Gán role Staff (ID 3)
+                            // Bạn có thể tinh chỉnh logic này tùy theo nghiệp vụ chính xác
+                            assignedRoleId = 3;
+                            roleName = "User";
+                        }
+                    }
+
+                    var userRole = new UserRoles
+                    {
+                        user_id = user.Id,
+                        role_id = assignedRoleId,
+                        is_active = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+
+                    _context.UserRoles.Add(userRole);
+                    await _context.SaveChangesAsync();
+
                     await transaction.CommitAsync();
 
                     return new AuthResponseDto
@@ -127,7 +168,7 @@ namespace ERP.Services.Auth
                             EmployeeCode = employeeWithCode.employee_code,
                             PhoneNumber = employeeWithCode.phone,
                             IsActive = user.is_active,
-                            Roles = new List<string> { "User" }
+                            Roles = new List<string> { roleName }
                         }
                     };
                 }
@@ -404,6 +445,54 @@ namespace ERP.Services.Auth
                 _logger.LogError($"Error during SyncFirebaseUsersAsync: {ex.Message}");
             }
             return syncCount;
+        }
+
+        public async Task<AuthResponseDto> PreRegisterStaffAsync(PreRegisterStaffDto dto)
+        {
+            try
+            {
+                // Kiểm tra xem email đã tồn tại trong Employees chưa
+                var existingEmployee = await _context.Employees
+                    .FirstOrDefaultAsync(e => e.email == dto.Email);
+
+                if (existingEmployee != null)
+                {
+                    return new AuthResponseDto
+                    {
+                        Success = false,
+                        Message = "Email này đã tồn tại trong hệ thống nhân viên."
+                    };
+                }
+
+                // Tạo Employees record mới (Placeholder cho nhân viên)
+                var employee = new Employees
+                {
+                    employee_code = dto.EmployeeCode ?? "STAFF_" + Guid.NewGuid().ToString().Substring(0, 8),
+                    full_name = dto.FullName,
+                    email = dto.Email,
+                    is_active = true,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                _context.Employees.Add(employee);
+                await _context.SaveChangesAsync();
+
+                return new AuthResponseDto
+                {
+                    Success = true,
+                    Message = "Đã cấp quyền cho Email này với vai trò Nhân viên."
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in PreRegisterStaffAsync: {ex.Message}");
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Lỗi xảy ra trong quá trình cung cấp Email cho nhân viên."
+                };
+            }
         }
 
         private class FirebaseLoginResponse
