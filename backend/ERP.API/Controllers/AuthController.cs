@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using FirebaseAdmin.Auth;
 using System.Security.Claims;
 using ERP.DTOs.Auth;
 using ERP.Services.Auth;
@@ -68,38 +67,32 @@ namespace ERP.API.Controllers
                 return Unauthorized();
             }
 
-            try
+            var user = await _authService.GetUserByUidAsync(uid);
+            if (user == null)
             {
-                var userRecord = await FirebaseAuth.DefaultInstance.GetUserAsync(uid);
-                return Ok(new
-                {
-                    Uid = userRecord.Uid,
-                    Email = userRecord.Email,
-                    DisplayName = userRecord.DisplayName,
-                    PhotoUrl = userRecord.PhotoUrl
-                });
+                return NotFound(new { Message = "User not found in system" });
             }
-            catch (FirebaseAuthException ex)
-            {
-                return BadRequest(ex.Message);
-            }
+
+            return Ok(user);
         }
 
         [HttpPost("verify-token")]
         [AllowAnonymous]
         public async Task<IActionResult> VerifyToken([FromBody] string idToken)
         {
-            try
+            if (string.IsNullOrEmpty(idToken))
             {
-                var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(idToken);
-                var uid = decodedToken.Uid;
-                
-                return Ok(new { Uid = uid, Message = "Token is valid" });
+                return BadRequest("Token is required");
             }
-            catch (FirebaseAuthException ex)
+
+            var uid = await _authService.VerifyTokenAsync(idToken);
+            
+            if (uid == null)
             {
-                return Unauthorized(new { Message = "Invalid token", Error = ex.Message });
+                return Unauthorized(new { Message = "Invalid token" });
             }
+
+            return Ok(new { Uid = uid, Message = "Token is valid" });
         }
     }
 }

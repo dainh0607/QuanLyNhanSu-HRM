@@ -23,13 +23,13 @@ if (File.Exists(serviceAccountPath))
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.Authority = $"https://securetoken.google.com/{builder.Configuration["Firebase:ProjectId"]}";
+        options.Authority = $"https://securetoken.google.com/{builder.Configuration["Firebase:projectId"]}";
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
-            ValidIssuer = $"https://securetoken.google.com/{builder.Configuration["Firebase:ProjectId"]}",
+            ValidIssuer = $"https://securetoken.google.com/{builder.Configuration["Firebase:projectId"]}",
             ValidateAudience = true,
-            ValidAudience = builder.Configuration["Firebase:ProjectId"],
+            ValidAudience = builder.Configuration["Firebase:projectId"],
             ValidateLifetime = true
         };
     });

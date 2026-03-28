@@ -1,6 +1,6 @@
 ### Auth API Tests
 
-@baseUrl = http://localhost:5000
+@baseUrl = http://localhost:5122
 @contentType = application/json
 
 ### Sign Up - Create new account
@@ -13,12 +13,13 @@ Content-Type: {{contentType}}
   "confirmPassword": "TestPassword123",
   "fullName": "Test Nhân Viên",
   "employeeCode": "EMP001",
-  "phoneNumber": "0912345678"
+  "phoneNumber": "+84912345678"
 }
 
 ###
 
 ### Login - Authenticate user
+# @name login
 POST {{baseUrl}}/api/auth/login
 Content-Type: {{contentType}}
 
@@ -31,15 +32,14 @@ Content-Type: {{contentType}}
 
 ### Get Current User Info
 GET {{baseUrl}}/api/auth/me
-Authorization: Bearer {{idToken}}
-
+Authorization: Bearer {{login.response.body.idToken}}
 ###
 
 ### Verify Token
 POST {{baseUrl}}/api/auth/verify-token
 Content-Type: {{contentType}}
 
-"{{idToken}}"
+"{{login.response.body.idToken}}"
 
 ###
 
@@ -53,7 +53,7 @@ Content-Type: {{contentType}}
   "confirmPassword": "DifferentPassword",
   "fullName": "Invalid User",
   "employeeCode": "EMP002",
-  "phoneNumber": "0912345679"
+  "phoneNumber": "+84912345679"
 }
 
 ###

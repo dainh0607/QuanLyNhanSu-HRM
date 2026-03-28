@@ -17,6 +17,8 @@ namespace ERP.Services.Auth
     {
         Task<AuthResponseDto> SignUpAsync(SignUpDto dto);
         Task<AuthResponseDto> LoginAsync(LoginDto dto);
+        Task<UserInfoDto?> GetUserByUidAsync(string uid);
+        Task<string?> VerifyTokenAsync(string idToken);
         Task<bool> VerifyPasswordAsync(string password, string passwordHash);
         string HashPassword(string password);
     }
@@ -242,6 +244,61 @@ namespace ERP.Services.Auth
                     Success = false,
                     Message = "Lỗi xảy ra trong quá trình đăng nhập"
                 };
+            }
+        }
+
+        public async Task<UserInfoDto?> GetUserByUidAsync(string uid)
+        {
+            try
+            {
+                // 1. Lấy thông tin từ Firebase
+                var userRecord = await FirebaseAuth.DefaultInstance.GetUserAsync(uid);
+                
+                // 2. Lấy thông tin từ Database local
+                var localUser = await _context.Users
+                    .Include(u => u.Employee)
+                    .FirstOrDefaultAsync(u => u.firebase_uid == uid);
+
+                if (localUser == null) return null;
+
+                // 3. Lấy roles
+                var roles = await _context.UserRoles
+                    .Where(ur => ur.user_id == localUser.Id)
+                    .Include(ur => ur.Role)
+                    .Select(ur => ur.Role.name)
+                    .ToListAsync();
+
+                return new UserInfoDto
+                {
+                    UserId = localUser.Id,
+                    EmployeeId = localUser.Employee?.Id ?? 0,
+                    Email = userRecord.Email,
+                    FullName = userRecord.DisplayName ?? localUser.Employee?.full_name,
+                    EmployeeCode = localUser.Employee?.employee_code,
+                    PhoneNumber = userRecord.PhoneNumber ?? localUser.Employee?.phone,
+                    PhotoUrl = userRecord.PhotoUrl,
+                    IsActive = localUser.is_active,
+                    Roles = roles
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in GetUserByUidAsync: {ex.Message}");
+                return null;
+            }
+        }
+
+        public async Task<string?> VerifyTokenAsync(string idToken)
+        {
+            try
+            {
+                var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(idToken);
+                return decodedToken.Uid;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error verifying Firebase token: {ex.Message}");
+                return null;
             }
         }
 

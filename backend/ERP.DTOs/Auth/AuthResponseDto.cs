@@ -18,6 +18,7 @@ namespace ERP.DTOs.Auth
         public string FullName { get; set; }
         public string EmployeeCode { get; set; }
         public string PhoneNumber { get; set; }
+        public string PhotoUrl { get; set; }
         public bool IsActive { get; set; }
         public List<string> Roles { get; set; }
     }
