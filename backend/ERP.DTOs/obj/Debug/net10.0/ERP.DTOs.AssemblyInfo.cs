@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ERP.DTOs")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fd0300a19b345d3773528159065289f02f64709c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+344994cca4d769b4e9659d59403c4e0745296fa4")]
 [assembly: System.Reflection.AssemblyProductAttribute("ERP.DTOs")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ERP.DTOs")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

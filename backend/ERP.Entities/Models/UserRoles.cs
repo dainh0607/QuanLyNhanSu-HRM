@@ -18,5 +18,14 @@ namespace ERP.Entities.Models
 
         [ForeignKey("role_id")]
         public virtual Roles Role { get; set; }
+
+        [Column("is_active")]
+        public bool is_active { get; set; }
+
+        [Column("created_at")]
+        public DateTime CreatedAt { get; set; }
+
+        [Column("updated_at")]
+        public DateTime? UpdatedAt { get; set; }
     }
 }
