@@ -11,6 +11,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
+using EmployeeEntity = ERP.Entities.Models.Employees;
+
 namespace ERP.Services.Auth
 {
     public interface IAuthService
@@ -83,7 +85,7 @@ namespace ERP.Services.Auth
 
                     if (employeeWithCode == null)
                     {
-                        employeeWithCode = new Employees
+                        employeeWithCode = new EmployeeEntity
                         {
                             employee_code = dto.EmployeeCode,
                             full_name = dto.FullName,
@@ -163,8 +165,8 @@ namespace ERP.Services.Auth
                         {
                             UserId = user.Id,
                             EmployeeId = employeeWithCode.Id,
-                            Email = employeeWithCode.email,
-                            FullName = employeeWithCode.full_name,
+                            Email = employeeWithCode.email ?? dto.Email,
+                            FullName = employeeWithCode.full_name ?? dto.FullName,
                             EmployeeCode = employeeWithCode.employee_code,
                             PhoneNumber = employeeWithCode.phone,
                             IsActive = user.is_active,
@@ -268,11 +270,11 @@ namespace ERP.Services.Auth
                     User = new UserInfoDto
                     {
                         UserId = localUser.Id,
-                        EmployeeId = localUser.Employee.Id,
-                        Email = localUser.Employee.email,
-                        FullName = localUser.Employee.full_name,
-                        EmployeeCode = localUser.Employee.employee_code,
-                        PhoneNumber = localUser.Employee.phone,
+                        EmployeeId = localUser.Employee?.Id ?? 0,
+                        Email = localUser.Employee?.email ?? localUser.username,
+                        FullName = localUser.Employee?.full_name ?? localUser.username,
+                        EmployeeCode = localUser.Employee?.employee_code,
+                        PhoneNumber = localUser.Employee?.phone,
                         IsActive = localUser.is_active,
                         Roles = userRoles
                     }
@@ -384,7 +386,7 @@ namespace ERP.Services.Auth
                             {
                                 // 1. Create Employee
                                 var employeeCode = fbUser.Email?.Split('@')[0].ToUpper() ?? "EMP_" + Guid.NewGuid().ToString().Substring(0, 8);
-                                var newEmployee = new Employees
+                                var newEmployee = new EmployeeEntity
                                 {
                                     employee_code = employeeCode,
                                     full_name = fbUser.DisplayName ?? fbUser.Email,
@@ -465,7 +467,7 @@ namespace ERP.Services.Auth
                 }
 
                 // Tạo Employees record mới (Placeholder cho nhân viên)
-                var employee = new Employees
+                var employee = new EmployeeEntity
                 {
                     employee_code = dto.EmployeeCode ?? "STAFF_" + Guid.NewGuid().ToString().Substring(0, 8),
                     full_name = dto.FullName,

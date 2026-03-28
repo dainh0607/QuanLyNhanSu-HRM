@@ -123,6 +123,35 @@ namespace ERP.Entities
                 new Roles { Id = 3, name = "User", description = "Regular Employee", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate }
             );
 
+            // Seed Genders
+            modelBuilder.Entity<Genders>().HasData(
+                new Genders { Id = 1, code = "M", name = "Nam" },
+                new Genders { Id = 2, code = "F", name = "Nữ" },
+                new Genders { Id = 3, code = "O", name = "Khác" }
+            );
+
+            // Seed MaritalStatuses
+            modelBuilder.Entity<MaritalStatuses>().HasData(
+                new MaritalStatuses { Id = 1, code = "S", name = "Độc thân" },
+                new MaritalStatuses { Id = 2, code = "M", name = "Đã kết hôn" },
+                new MaritalStatuses { Id = 3, code = "D", name = "Ly hôn" },
+                new MaritalStatuses { Id = 4, code = "W", name = "Góa" }
+            );
+
+            // Seed AddressTypes
+            modelBuilder.Entity<AddressTypes>().HasData(
+                new AddressTypes { Id = 1, name = "Thường trú" },
+                new AddressTypes { Id = 2, name = "Tạm trú" }
+            );
+
+            // Seed LeaveTypes
+            modelBuilder.Entity<LeaveTypes>().HasData(
+                new LeaveTypes { Id = 1, name = "Nghỉ phép năm", is_paid = true },
+                new LeaveTypes { Id = 2, name = "Nghỉ ốm", is_paid = true },
+                new LeaveTypes { Id = 3, name = "Nghỉ không lương", is_paid = false },
+                new LeaveTypes { Id = 4, name = "Nghỉ thai sản", is_paid = true }
+            );
+
             // Disable cascade delete globally to avoid SQL Server multiple cascade path errors
             foreach (var relationship in modelBuilder.Model.GetEntityTypes()
                 .SelectMany(e => e.GetForeignKeys()))
