@@ -26,9 +26,11 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin, onRegist
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [fullName, setFullName] = useState('');
+  const [employeeCode, setEmployeeCode] = useState(''); // New field
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState(''); // New field
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,12 +43,24 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin, onRegist
       return;
     }
 
+    if (password !== confirmPassword) {
+      setError('Mật khẩu xác nhận không khớp.');
+      return;
+    }
+
     setError(null);
     setSuccess(null);
     setLoading(true);
 
     try {
-      const response = await authService.register({ fullName, email, phone, password });
+      const response = await authService.register({ 
+        fullName, 
+        employeeCode, 
+        email, 
+        phoneNumber: phone, 
+        password,
+        confirmPassword 
+      });
       if (response.success) {
         setSuccess(response.message || 'Đăng ký thành công!');
         // Optional: Auto-redirect after delay
@@ -116,6 +130,23 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin, onRegist
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             autoComplete="name"
+            required
+          />
+        </div>
+
+        <label className="form-label" htmlFor="reg-empcode">
+          Mã nhân viên
+        </label>
+        <div className="input-wrapper">
+          <span className="input-icon material-symbols-outlined">badge</span>
+          <input
+            id="reg-empcode"
+            type="text"
+            className="input-field"
+            placeholder="EMP001"
+            value={employeeCode}
+            onChange={(e) => setEmployeeCode(e.target.value)}
+            required
           />
         </div>
 
@@ -164,6 +195,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin, onRegist
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="new-password"
+            required
           />
           <button
             type="button"
@@ -175,6 +207,23 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin, onRegist
               {showPassword ? 'visibility' : 'visibility_off'}
             </span>
           </button>
+        </div>
+
+        <label className="form-label" htmlFor="reg-confirm-password">
+          Xác nhận mật khẩu
+        </label>
+        <div className="input-wrapper">
+          <span className="input-icon material-symbols-outlined">lock_reset</span>
+          <input
+            id="reg-confirm-password"
+            type={showPassword ? 'text' : 'password'}
+            className="input-field input-field-password"
+            placeholder="••••••••"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            autoComplete="new-password"
+            required
+          />
         </div>
 
         <div

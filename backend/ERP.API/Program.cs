@@ -41,6 +41,15 @@ builder.Services.AddHttpClient();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
 // Register Services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -49,6 +58,30 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
+// Automatic Database Migration and Firebase User Sync for Development
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<AppDbContext>();
+        var authService = services.GetRequiredService<IAuthService>();
+        var logger = services.GetRequiredService<ILogger<Program>>();
+
+        if (app.Environment.IsDevelopment())
+        {
+            logger.LogInformation("Development mode: Ensuring database is migrated and synced...");
+            context.Database.Migrate();
+            await authService.SyncFirebaseUsersAsync();
+            logger.LogInformation("Database initialization and sync complete.");
+        }
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while migrating or syncing the database.");
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -57,6 +90,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
 app.UseAuthorization();

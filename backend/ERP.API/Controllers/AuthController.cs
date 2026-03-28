@@ -94,5 +94,20 @@ namespace ERP.API.Controllers
 
             return Ok(new { Uid = uid, Message = "Token is valid" });
         }
+
+        [HttpPost("sync")]
+        [AllowAnonymous] // Changed to AllowAnonymous for easier dev sync, but could be restricted
+        public async Task<IActionResult> SyncUsers()
+        {
+            try
+            {
+                var count = await _authService.SyncFirebaseUsersAsync();
+                return Ok(new { Message = $"Successfully synced {count} users from Firebase.", Count = count });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "Error syncing users", Error = ex.Message });
+            }
+        }
     }
 }

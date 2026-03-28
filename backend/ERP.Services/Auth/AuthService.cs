@@ -21,6 +21,7 @@ namespace ERP.Services.Auth
         Task<string?> VerifyTokenAsync(string idToken);
         Task<bool> VerifyPasswordAsync(string password, string passwordHash);
         string HashPassword(string password);
+        Task<int> SyncFirebaseUsersAsync();
     }
 
     public class AuthService : IAuthService
@@ -312,6 +313,97 @@ namespace ERP.Services.Auth
         {
             // Không sử dụng hashing local cho Firebase Auth
             return "firebase";
+        }
+
+        public async Task<int> SyncFirebaseUsersAsync()
+        {
+            int syncCount = 0;
+            try
+            {
+                _logger.LogInformation("Starting Firebase to Local DB synchronization...");
+                
+                var pagedEnumerable = FirebaseAuth.DefaultInstance.ListUsersAsync(null);
+                var enumerator = pagedEnumerable.GetAsyncEnumerator();
+
+                while (await enumerator.MoveNextAsync())
+                {
+                    var fbUser = enumerator.Current;
+                    
+                    // Check if user already exists in local DB
+                    var localUser = await _context.Users
+                        .FirstOrDefaultAsync(u => u.firebase_uid == fbUser.Uid || u.username == fbUser.Email);
+
+                    if (localUser == null)
+                    {
+                        _logger.LogInformation($"Syncing new user: {fbUser.Email} ({fbUser.Uid})");
+
+                        using (var transaction = await _context.Database.BeginTransactionAsync())
+                        {
+                            try
+                            {
+                                // 1. Create Employee
+                                var employeeCode = fbUser.Email?.Split('@')[0].ToUpper() ?? "EMP_" + Guid.NewGuid().ToString().Substring(0, 8);
+                                var newEmployee = new Employees
+                                {
+                                    employee_code = employeeCode,
+                                    full_name = fbUser.DisplayName ?? fbUser.Email,
+                                    email = fbUser.Email,
+                                    phone = fbUser.PhoneNumber,
+                                    is_active = true,
+                                    CreatedAt = DateTime.UtcNow,
+                                    UpdatedAt = DateTime.UtcNow
+                                };
+
+                                _context.Employees.Add(newEmployee);
+                                await _context.SaveChangesAsync();
+
+                                // 2. Create User
+                                var newUser = new Users
+                                {
+                                    employee_id = newEmployee.Id,
+                                    username = fbUser.Email,
+                                    password_hash = "firebase",
+                                    firebase_uid = fbUser.Uid,
+                                    is_active = true,
+                                    CreatedAt = DateTime.UtcNow,
+                                    UpdatedAt = DateTime.UtcNow
+                                };
+
+                                _context.Users.Add(newUser);
+                                await _context.SaveChangesAsync();
+
+                                // 3. Assign Default Role (User - ID 3)
+                                var userRole = new UserRoles
+                                {
+                                    user_id = newUser.Id,
+                                    role_id = 3, // Assuming 3 is the 'User' role as per AppDbContext seed
+                                    is_active = true,
+                                    CreatedAt = DateTime.UtcNow,
+                                    UpdatedAt = DateTime.UtcNow
+                                };
+
+                                _context.UserRoles.Add(userRole);
+                                await _context.SaveChangesAsync();
+
+                                await transaction.CommitAsync();
+                                syncCount++;
+                            }
+                            catch (Exception ex)
+                            {
+                                await transaction.RollbackAsync();
+                                _logger.LogError($"Failed to sync user {fbUser.Email}: {ex.Message}");
+                            }
+                        }
+                    }
+                }
+                
+                _logger.LogInformation($"Sync completed. {syncCount} users synchronized.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error during SyncFirebaseUsersAsync: {ex.Message}");
+            }
+            return syncCount;
         }
 
         private class FirebaseLoginResponse
