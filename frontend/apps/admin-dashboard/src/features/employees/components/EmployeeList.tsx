@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import DataTable from './DataTable';
 import Pagination from './Pagination';
 import PageToolbar from './PageToolbar';
 import ActionAndFilterBar from './ActionAndFilterBar';
 import FilterSidebar from './FilterSidebar';
 import ColumnConfigSidebar from './ColumnConfigSidebar';
-import { mockEmployees } from '../data/mockData';
-import type { Employee } from '../types';
+import { mockEmployees, DEFAULT_COLUMNS } from '../data/mockData';
+import type { Employee, ColumnConfig } from '../types';
 
 const EmployeeList: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -14,12 +14,19 @@ const EmployeeList: React.FC = () => {
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
   const [isColumnConfigOpen, setIsColumnConfigOpen] = useState<boolean>(false);
   const [isPaginationEnabled, setIsPaginationEnabled] = useState<boolean>(true);
+  
+  // Filter state — nguồn sự thật cho các bộ lọc đang áp dụng
+  const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({});
+
+  // Column config state — nguồn sự thật duy nhất cho cấu hình cột
+  const [columns, setColumns] = useState<ColumnConfig[]>(DEFAULT_COLUMNS);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState<number>(1);
   const recordsPerPage = 15;
 
   useEffect(() => {
+    // Simulate API call — khi kết nối backend, thay bằng fetch/axios
     const timer = setTimeout(() => {
       setEmployees(mockEmployees);
       setIsLoading(false);
@@ -29,8 +36,23 @@ const EmployeeList: React.FC = () => {
 
   const currentRecords = employees.slice(
     (currentPage - 1) * recordsPerPage,
-    currentPage * recordsPerPage
+    currentPage * recordsPerPage,
   );
+
+  const handleColumnsChange = (updatedColumns: ColumnConfig[]) => {
+    setColumns(updatedColumns);
+    // TODO: Khi tích hợp API, gọi API lưu cấu hình cột tại đây
+  };
+
+  const handleApplyFilters = (filters: Record<string, string[]>) => {
+    setActiveFilters(filters);
+    setIsFilterOpen(false);
+    // TODO: Khi tích hợp API, thực hiện fetch dữ liệu mới với các bộ lọc này
+    console.log('Applying filters:', filters);
+  };
+
+  // Tính tổng số lượng bộ lọc đang áp dụng
+  const activeFilterCount = Object.values(activeFilters).reduce((sum, current) => sum + current.length, 0);
 
   return (
     <main
@@ -42,12 +64,18 @@ const EmployeeList: React.FC = () => {
       <PageToolbar />
 
       <div className="flex flex-1 gap-6 min-h-0 overflow-hidden relative">
-        <FilterSidebar isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} />
+        <FilterSidebar 
+          isOpen={isFilterOpen} 
+          onClose={() => setIsFilterOpen(false)} 
+          onApply={handleApplyFilters}
+          initialFilters={activeFilters}
+        />
 
         <div className="flex-1 flex flex-col min-w-0">
           <ActionAndFilterBar 
             onToggleFilter={() => setIsFilterOpen(!isFilterOpen)} 
             onToggleColumnConfig={() => setIsColumnConfigOpen(true)}
+            activeFilterCount={activeFilterCount}
           />
 
           <div
@@ -59,7 +87,10 @@ const EmployeeList: React.FC = () => {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
               </div>
             ) : (
-              <DataTable employees={isPaginationEnabled ? currentRecords : employees} />
+              <DataTable
+                employees={isPaginationEnabled ? currentRecords : employees}
+                columns={columns}
+              />
             )}
             {isPaginationEnabled && !isLoading && (
               <Pagination
@@ -78,6 +109,8 @@ const EmployeeList: React.FC = () => {
          onClose={() => setIsColumnConfigOpen(false)}
          isPaginationEnabled={isPaginationEnabled}
          onTogglePagination={setIsPaginationEnabled}
+         columns={columns}
+         onColumnsChange={handleColumnsChange}
       />
     </main>
   );

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const filterOptions = {
   'vùng': ['Miền Bắc', 'Miền Trung', 'Miền Nam'],
@@ -12,12 +12,37 @@ interface FilterGroupProps {
   icon: string;
 }
 
-const FilterSidebar: React.FC<{
+interface FilterSidebarProps {
   isOpen: boolean;
   onClose: () => void;
-}> = ({ isOpen, onClose }) => {
-  const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({});
-  const [checkedParents, setCheckedParents] = useState<Record<string, boolean>>({});
+  onApply: (filters: Record<string, string[]>) => void;
+  initialFilters: Record<string, string[]>;
+}
+
+const FilterSidebar: React.FC<FilterSidebarProps> = ({ 
+  isOpen, 
+  onClose,
+  onApply,
+  initialFilters
+}) => {
+  const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>(initialFilters);
+  const [checkedParents, setCheckedParents] = useState<Record<string, boolean>>(() => {
+    const initialChecked: Record<string, boolean> = {};
+    Object.keys(initialFilters).forEach(key => {
+      if (initialFilters[key].length > 0) initialChecked[key] = true;
+    });
+    return initialChecked;
+  });
+
+  // Sync state if initialFilters change from parent (e.g. reset)
+  useEffect(() => {
+    setActiveFilters(initialFilters);
+    const initialChecked: Record<string, boolean> = {};
+    Object.keys(initialFilters).forEach(key => {
+      if (initialFilters[key].length > 0) initialChecked[key] = true;
+    });
+    setCheckedParents(initialChecked);
+  }, [initialFilters]);
 
   const handleParentCheck = (id: string, checked: boolean) => {
     setCheckedParents((prev) => ({ ...prev, [id]: checked }));
@@ -66,12 +91,12 @@ const FilterSidebar: React.FC<{
           <div className="flex items-center space-x-3">
             <input
               type="checkbox"
-              className="rounded text-emerald-600 focus:ring-emerald-500 border-gray-300 h-4 w-4"
+              className="rounded text-[#192841] focus:ring-[#192841] border-gray-300 h-4 w-4"
               checked={isChecked}
               onChange={(e) => handleParentCheck(id, e.target.checked)}
             />
             <div className="flex items-center space-x-2 text-xs font-semibold text-gray-700 uppercase tracking-wider">
-              <span className="material-symbols-outlined text-emerald-500 text-[18px]">{icon}</span>
+              <span className="material-symbols-outlined text-[#192841] text-[18px]">{icon}</span>
               <span>{label}</span>
             </div>
           </div>
@@ -81,7 +106,7 @@ const FilterSidebar: React.FC<{
             {items.map((val, idx) => (
               <div key={idx} className="flex items-center space-x-2">
                 <select
-                  className="flex-1 text-sm border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500 py-1.5 pl-3 pr-8"
+                  className="flex-1 text-sm border-gray-300 rounded-md focus:ring-[#192841] focus:border-[#192841] py-1.5 pl-3 pr-8"
                   value={val}
                   onChange={(e) => updateFilterValue(id, idx, e.target.value)}
                 >
@@ -132,7 +157,10 @@ const FilterSidebar: React.FC<{
         {renderFilterGroup({ id: 'chi-nhánh', label: 'Chi nhánh', icon: 'corporate_fare' })}
         {renderFilterGroup({ id: 'phòng-ban', label: 'Phòng ban', icon: 'groups' })}
 
-        <button className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg shadow-sm transition-all text-sm mt-6">
+        <button 
+          onClick={() => onApply(activeFilters)}
+          className="w-full py-2.5 bg-[#192841] hover:bg-[#111c2f] text-white font-semibold rounded-lg shadow-sm transition-all text-sm mt-6"
+        >
           Áp dụng
         </button>
       </div>
