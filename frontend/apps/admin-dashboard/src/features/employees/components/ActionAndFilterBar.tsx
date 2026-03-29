@@ -3,11 +3,13 @@ import React, { useState, useRef, useEffect } from 'react';
 interface ActionAndFilterBarProps {
   onToggleFilter: () => void;
   onToggleColumnConfig: () => void;
+  activeFilterCount: number;
 }
 
 const ActionAndFilterBar: React.FC<ActionAndFilterBarProps> = ({
   onToggleFilter,
   onToggleColumnConfig,
+  activeFilterCount,
 }) => {
   const [selectedStatus, setSelectedStatus] = useState('Đang hoạt động');
   const [isStatusOpen, setIsStatusOpen] = useState(false);
@@ -38,12 +40,14 @@ const ActionAndFilterBar: React.FC<ActionAndFilterBarProps> = ({
           onClick={onToggleFilter}
           className="flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 shrink-0 group transition-colors"
         >
-          <svg className="w-4 h-4 text-gray-500 group-hover:text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-          </svg>
-          <span className="ml-1.5 px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[10px] font-bold">2</span>
+          <span className="material-symbols-outlined text-[20px] text-gray-400 group-hover:text-[#152238]">tune</span>
+          {activeFilterCount > 0 && (
+            <span className="ml-1.5 px-1.5 py-0.5 bg-[#134BBA]/10 text-[#134BBA] rounded text-[10px] font-bold">
+              {activeFilterCount}
+            </span>
+          )}
         </button>
-        <button className="flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 text-gray-500 hover:text-emerald-600 transition-colors shrink-0 ml-1">
+        <button className="flex items-center px-3 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 text-gray-500 hover:text-[#152238] transition-colors shrink-0 ml-1">
           <span className="material-symbols-outlined text-[20px]">sort</span>
         </button>
         
@@ -55,7 +59,7 @@ const ActionAndFilterBar: React.FC<ActionAndFilterBarProps> = ({
           </span>
           <input 
             type="text" 
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm placeholder-gray-400 focus:ring-emerald-500 focus:border-emerald-500" 
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm placeholder-gray-400 focus:ring-[#134BBA] focus:border-[#134BBA]" 
             placeholder="Tìm kiếm theo Họ tên, Mã NV, SĐT, Email..." 
           />
         </div>
@@ -81,7 +85,7 @@ const ActionAndFilterBar: React.FC<ActionAndFilterBarProps> = ({
                     setSelectedStatus(status);
                     setIsStatusOpen(false);
                   }}
-                  className={`w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 ${
+                  className={`w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[#134BBA]/5 hover:text-[#134BBA] ${
                     index === statuses.length - 1 ? 'border-t border-gray-50' : ''
                   }`}
                 >
@@ -94,25 +98,31 @@ const ActionAndFilterBar: React.FC<ActionAndFilterBarProps> = ({
       </div>
 
       <div className="flex items-center space-x-2">
-        <button className="p-2 border border-gray-300 rounded-lg bg-white text-gray-500 hover:text-emerald-600 transition-colors flex items-center justify-center" title="Sơ đồ tổ chức">
+        {/* Organization Chart Icon Button */}
+        <button className="p-2 border border-gray-300 rounded-lg bg-white text-gray-400 text-gray-400 hover:text-[#152238] hover:border-gray-400 transition-all shadow-sm hover:shadow active:scale-95 flex items-center justify-center shrink-0" title="Sơ đồ tổ chức">
           <span className="material-symbols-outlined text-[20px]">account_tree</span>
         </button>
+
+        {/* Single Button: Hồ sơ sơ đồ with Hover Dropdown */}
         <div className="relative group">
-          <button className="p-2 border border-gray-300 rounded-lg bg-white text-gray-500 hover:text-emerald-600 transition-colors flex items-center justify-center" title="Hồ sơ sơ đồ">
+          <button className="p-2 border border-gray-300 rounded-lg bg-white text-gray-400 hover:text-[#152238] hover:border-gray-400 transition-all shadow-sm hover:shadow active:scale-95 flex items-center justify-center shrink-0" title="Hồ sơ sơ đồ">
             <span className="material-symbols-outlined text-[20px]">assignment_ind</span>
           </button>
           
-          <div className="hidden group-hover:block absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-xl shadow-lg py-2 z-50 overflow-hidden">
-            <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors" href="#">Hợp đồng</a>
-            <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors" href="#">Bảo hiểm</a>
-            <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors" href="#">Tài sản</a>
+          {/* Dropdown Card - pt-1.5 bridges gap to fix flicker */}
+          <div className="absolute right-0 top-full pt-1.5 z-50 hidden group-hover:block animate-[fadeSlideDown_0.2s_ease-out]">
+            <div className="w-40 bg-white border border-gray-200 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] py-2 overflow-hidden">
+              <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#152238] transition-colors" href="#">Hợp đồng</a>
+              <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#152238] transition-colors" href="#">Bảo hiểm</a>
+              <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#152238] transition-colors" href="#">Tài sản</a>
+            </div>
           </div>
         </div>
 
-        {/* Hamburger Toggle Button */}
+        {/* Column Config Icon Button */}
         <button
           onClick={onToggleColumnConfig}
-          className="p-2 border border-gray-300 rounded-lg bg-white text-gray-500 hover:text-emerald-600 transition-colors flex items-center justify-center"
+          className="p-2 border border-gray-300 rounded-lg bg-white text-gray-400 text-gray-400 hover:text-[#152238] hover:border-gray-400 transition-all shadow-sm hover:shadow active:scale-95 flex items-center justify-center shrink-0"
           title="Tùy chỉnh cột"
         >
           <span className="material-symbols-outlined text-[20px]">menu</span>
