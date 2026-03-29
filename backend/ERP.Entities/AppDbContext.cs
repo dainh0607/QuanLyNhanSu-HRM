@@ -152,6 +152,21 @@ namespace ERP.Entities
                 new LeaveTypes { Id = 4, name = "Nghỉ thai sản", is_paid = true }
             );
 
+            // Seed Branches
+            modelBuilder.Entity<Branches>().HasData(
+                new Branches { Id = 1, name = "Trụ sở chính", code = "HO", address = "Hà Nội" }
+            );
+
+            // Seed Departments
+            modelBuilder.Entity<Departments>().HasData(
+                new Departments { Id = 1, name = "Phòng Hành chính Nhân sự", code = "HR" }
+            );
+
+            // Seed JobTitles
+            modelBuilder.Entity<JobTitles>().HasData(
+                new JobTitles { Id = 1, name = "Nhân viên", code = "STAFF" }
+            );
+
             // Disable cascade delete globally to avoid SQL Server multiple cascade path errors
             foreach (var relationship in modelBuilder.Model.GetEntityTypes()
                 .SelectMany(e => e.GetForeignKeys()))

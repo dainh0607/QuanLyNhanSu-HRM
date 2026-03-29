@@ -16,9 +16,10 @@ Content-Type: {{contentType}}
   "password": "ManagerPassword123"
 }
 
+###
+
 @authToken = {{managerLogin.response.body.idToken}}
 
-###
 
 ############################################################
 ### 2. Thêm mới nhân viên

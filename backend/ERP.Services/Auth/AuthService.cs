@@ -81,7 +81,9 @@ namespace ERP.Services.Auth
 
                     // 2. Tạo nhân viên trong database local nếu chưa có
                     var employeeWithCode = await _context.Employees
-                        .FirstOrDefaultAsync(e => e.employee_code == dto.EmployeeCode);
+                        .FirstOrDefaultAsync(e => e.employee_code == dto.EmployeeCode || e.email == dto.Email);
+
+                    bool isPreRegistered = employeeWithCode != null;
 
                     if (employeeWithCode == null)
                     {
@@ -116,31 +118,24 @@ namespace ERP.Services.Auth
                     await _context.SaveChangesAsync();
 
                     // 4. Gán Role dựa trên trạng thái của Employee
-                    // Kiểm tra xem Employee đã từng được gán Role chưa
-                    var existingUserRole = await _context.UserRoles
-                        .AnyAsync(ur => ur.user_id == user.Id);
+                    int assignedRoleId = 3; // Mặc định là User (ID 3)
+                    string roleName = "User";
 
-                    int assignedRoleId = 2; // Mặc định là Manager (ID 2)
-                    string roleName = "Manager";
+                    // Logic: 
+                    // 1. Email chứa "admin" -> Admin
+                    // 2. Email chứa "manager" -> Manager
+                    // 3. Nếu KHÔNG phải được mời (isPreRegistered = false) -> Manager (Người đầu tiên hoặc tự đăng ký)
+                    // 4. Nếu được mời (isPreRegistered = true) -> User
 
-                    // Logic: Nếu Employee này đã tồn tại NHƯNG User chưa có (có thể được mời bởi Manager)
-                    // Hoặc đơn giản là kiểm tra xem Employee này đã được tạo trước khi SignUp hay không.
-                    // Ở đây ta có thể dùng logic: Nếu employee_code của dto trùng với employee_code của bản ghi có sẵn 
-                    // mà bản ghi đó KHÔNG có User liên kết trước đó.
-                    
-                    // Thực tế ở bản build này, ta sẽ kiểm tra xem Employee đó có được tạo bởi chức năng "Mời" không.
-                    // Để đơn giản nhất: Nếu tìm thấy Employee theo Email mà User chưa có -> Đó là Staff được mời.
-                    if (employeeWithCode != null)
+                    if (dto.Email.ToLower().Contains("admin"))
                     {
-                        // Kiểm tra xem employee này đã có user nào khác chưa (trường hợp sync lỗi hoặc re-signup)
-                        var otherUser = await _context.Users.AnyAsync(u => u.employee_id == employeeWithCode.Id && u.Id != user.Id);
-                        if (!otherUser)
-                        {
-                            // Nếu đây là employee được tạo sẵn (Pre-register) -> Gán role Staff (ID 3)
-                            // Bạn có thể tinh chỉnh logic này tùy theo nghiệp vụ chính xác
-                            assignedRoleId = 3;
-                            roleName = "User";
-                        }
+                        assignedRoleId = 1;
+                        roleName = "Admin";
+                    }
+                    else if (dto.Email.ToLower().Contains("manager") || !isPreRegistered)
+                    {
+                        assignedRoleId = 2;
+                        roleName = "Manager";
                     }
 
                     var userRole = new UserRoles
@@ -376,9 +371,13 @@ namespace ERP.Services.Auth
                     var localUser = await _context.Users
                         .FirstOrDefaultAsync(u => u.firebase_uid == fbUser.Uid || u.username == fbUser.Email);
 
+                    int targetRoleId = 3; // Default User (ID 3)
+                    if (fbUser.Email?.ToLower().Contains("admin") == true) targetRoleId = 1;
+                    else if (fbUser.Email?.ToLower().Contains("manager") == true) targetRoleId = 2;
+
                     if (localUser == null)
                     {
-                        _logger.LogInformation($"Syncing new user: {fbUser.Email} ({fbUser.Uid})");
+                        _logger.LogInformation($"Syncing new user: {fbUser.Email} ({fbUser.Uid}) - Role ID: {targetRoleId}");
 
                         using (var transaction = await _context.Database.BeginTransactionAsync())
                         {
@@ -415,11 +414,11 @@ namespace ERP.Services.Auth
                                 _context.Users.Add(newUser);
                                 await _context.SaveChangesAsync();
 
-                                // 3. Assign Default Role (User - ID 3)
+                                // 3. Assign Role
                                 var userRole = new UserRoles
                                 {
                                     user_id = newUser.Id,
-                                    role_id = 3, // Assuming 3 is the 'User' role as per AppDbContext seed
+                                    role_id = targetRoleId,
                                     is_active = true,
                                     CreatedAt = DateTime.UtcNow,
                                     UpdatedAt = DateTime.UtcNow
@@ -438,9 +437,36 @@ namespace ERP.Services.Auth
                             }
                         }
                     }
+                    else
+                    {
+                        // Update existing user roles if they don't match the expected role for their email (Dev convenience)
+                        var currentRoles = await _context.UserRoles
+                            .Where(ur => ur.user_id == localUser.Id && ur.is_active)
+                            .Select(ur => ur.role_id)
+                            .ToListAsync();
+
+                        if (!currentRoles.Contains(targetRoleId))
+                        {
+                            _logger.LogInformation($"Updating roles for existing user: {fbUser.Email} to include Role ID {targetRoleId}");
+                            
+                            // For simplicity in dev sync, we can just add the missing role or replace
+                            // Here we'll add it if missing
+                            var newUserRole = new UserRoles
+                            {
+                                user_id = localUser.Id,
+                                role_id = targetRoleId,
+                                is_active = true,
+                                CreatedAt = DateTime.UtcNow,
+                                UpdatedAt = DateTime.UtcNow
+                            };
+                            _context.UserRoles.Add(newUserRole);
+                            await _context.SaveChangesAsync();
+                            syncCount++;
+                        }
+                    }
                 }
                 
-                _logger.LogInformation($"Sync completed. {syncCount} users synchronized.");
+                _logger.LogInformation($"Sync completed. {syncCount} users processed/updated.");
             }
             catch (Exception ex)
             {
