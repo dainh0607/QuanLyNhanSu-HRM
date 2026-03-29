@@ -1,0 +1,47 @@
+@baseUrl = http://localhost:5122/api
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtYW5hZ2VyLnRlc3RfY29tcGFueS5jb20iLCJqdGkiOiI0YjQ5YjQ5Yi00OTRiLTQ5NGItNDk0Yi00OTRiNDk0YjQ5NGIiLCJlbWFpbCI6Im1hbmFnZXIudGVzdEBjb21wYW55LmNvbSIsIm5hbWUiOiJNYW5hZ2VyIFRlc3QiLCJyb2xlcyI6WyJBZG1pbiIsIk1hbmFnZXIiXSwiaXNzIjoiZXhwYW5kZWQtYXV0aC1zZXJ2aWNlIiwiYXVkIjoiZXhwYW5kZWQtYXV0aC1zZXJ2aWNlIiwiZXhwIjoxNzQ0NDY2NzY5LCJpYXQiOjE3NDQ0NjMxNjl9.1455555555555555555555555555555555555555
+
+### Get all branches
+GET {{baseUrl}}/branches
+Authorization: Bearer {{token}}
+
+### Get a branch by ID
+GET {{baseUrl}}/branches/1
+Authorization: Bearer {{token}}
+
+### Create a new branch
+POST {{baseUrl}}/branches
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Chi nhánh Hà Nội",
+  "code": "HN01",
+  "address": "123 Cầu Giấy, Hà Nội"
+}
+
+### Update a branch
+PUT {{baseUrl}}/branches/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Chi nhánh Hà Nội (Cập nhật)",
+  "address": "456 Trần Duy Hưng, Hà Nội"
+}
+
+### Delete a branch
+DELETE {{baseUrl}}/branches/1
+Authorization: Bearer {{token}}
+
+### Get all departments
+GET {{baseUrl}}/departments
+Authorization: Bearer {{token}}
+
+### Get all job titles
+GET {{baseUrl}}/jobtitles
+Authorization: Bearer {{token}}
+
+### Get all regions
+GET {{baseUrl}}/regions
+Authorization: Bearer {{token}}

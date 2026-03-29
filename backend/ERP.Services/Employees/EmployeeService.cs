@@ -57,6 +57,143 @@ namespace ERP.Services.Employees
             return employee != null ? MapToDto(employee) : null;
         }
 
+        public async Task<EmployeeFullProfileDto?> GetFullProfileAsync(int id)
+        {
+            var employee = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(id);
+            if (employee == null) return null;
+
+            var profile = new EmployeeFullProfileDto
+            {
+                BasicInfo = MapToDto(employee)
+            };
+
+            // Addresses
+            var addressJoins = await _unitOfWork.Repository<EmployeeAddresses>().FindAsync(x => x.employee_id == id);
+            foreach (var join in addressJoins)
+            {
+                var addr = await _unitOfWork.Repository<Addresses>().GetByIdAsync(join.address_id);
+                var addrType = await _unitOfWork.Repository<AddressTypes>().GetByIdAsync(join.address_type_id);
+                if (addr != null)
+                {
+                    profile.Addresses.Add(new EmployeeAddressDto
+                    {
+                        AddressId = join.address_id,
+                        Address = new AddressDto
+                        {
+                            Id = addr.Id,
+                            AddressLine = addr.address_line,
+                            Ward = addr.ward,
+                            District = addr.district,
+                            City = addr.city,
+                            Country = addr.country,
+                            PostalCode = addr.postal_code
+                        },
+                        AddressTypeId = join.address_type_id,
+                        AddressTypeName = addrType?.name,
+                        IsCurrent = join.is_current,
+                        StartDate = join.start_date,
+                        EndDate = join.end_date
+                    });
+                }
+            }
+
+            // Bank Accounts
+            var bankAccounts = await _unitOfWork.Repository<BankAccounts>().FindAsync(x => x.employee_id == id);
+            profile.BankAccounts = bankAccounts.Select(b => new BankAccountDto
+            {
+                Id = b.Id,
+                AccountHolder = b.account_holder,
+                AccountNumber = b.account_number,
+                BankName = b.bank_name,
+                Branch = b.branch
+            }).ToList();
+
+            // Emergency Contacts
+            var emergencyContacts = await _unitOfWork.Repository<EmergencyContacts>().FindAsync(x => x.employee_id == id);
+            profile.EmergencyContacts = emergencyContacts.Select(c => new EmergencyContactDto
+            {
+                Id = c.Id,
+                Name = c.name,
+                Relationship = c.relationship,
+                MobilePhone = c.mobile_phone,
+                HomePhone = c.home_phone,
+                Address = c.address
+            }).ToList();
+
+            // Health Record
+            var healthRecord = (await _unitOfWork.Repository<HealthRecords>().FindAsync(x => x.employee_id == id)).FirstOrDefault();
+            if (healthRecord != null)
+            {
+                profile.HealthRecord = new HealthRecordDto
+                {
+                    Id = healthRecord.Id,
+                    Height = healthRecord.height,
+                    Weight = healthRecord.weight,
+                    BloodType = healthRecord.blood_type,
+                    CongenitalDisease = healthRecord.congenital_disease,
+                    ChronicDisease = healthRecord.chronic_disease,
+                    HealthStatus = healthRecord.health_status,
+                    CheckDate = healthRecord.check_date
+                };
+            }
+
+            // Dependents
+            var dependents = await _unitOfWork.Repository<Dependents>().FindAsync(x => x.employee_id == id);
+            profile.Dependents = dependents.Select(d => new DependentDto
+            {
+                Id = d.Id,
+                FullName = d.full_name,
+                BirthDate = d.birth_date,
+                IdentityNumber = d.identity_number,
+                Relationship = d.relationship,
+                PermanentAddress = d.permanent_address,
+                TemporaryAddress = d.temporary_address,
+                DependentDuration = d.dependent_duration,
+                Reason = d.reason
+            }).ToList();
+
+            // Education
+            var education = await _unitOfWork.Repository<Education>().FindAsync(x => x.employee_id == id);
+            profile.Education = education.Select(e => new EducationDto
+            {
+                Id = e.Id,
+                Level = e.level,
+                Major = e.major,
+                Institution = e.institution,
+                IssueDate = e.issue_date,
+                Note = e.note
+            }).ToList();
+
+            // Certificates
+            var certJoins = await _unitOfWork.Repository<EmployeeCertificates>().FindAsync(x => x.employee_id == id);
+            foreach (var join in certJoins)
+            {
+                var cert = await _unitOfWork.Repository<Certificates>().GetByIdAsync(join.certificate_id);
+                profile.Certificates.Add(new EmployeeCertificateDto
+                {
+                    CertificateId = join.certificate_id,
+                    CertificateName = cert?.certificate_name ?? "",
+                    IssueDate = join.issue_date,
+                    Attachment = join.attachment
+                });
+            }
+
+            // Skills
+            var skillJoins = await _unitOfWork.Repository<EmployeeSkills>().FindAsync(x => x.employee_id == id);
+            foreach (var join in skillJoins)
+            {
+                var skill = await _unitOfWork.Repository<Skills>().GetByIdAsync(join.skill_id);
+                profile.Skills.Add(new EmployeeSkillDto
+                {
+                    SkillId = join.skill_id,
+                    SkillName = skill?.skill_name ?? "",
+                    Level = join.level
+                });
+            }
+
+            return profile;
+        }
+
         public async Task<EmployeeDto?> GetByCodeAsync(string code)
         {
             var employees = await _unitOfWork.Repository<EmployeeEntity>().FindAsync(e => e.employee_code == code);
