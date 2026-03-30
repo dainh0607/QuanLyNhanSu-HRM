@@ -1,18 +1,36 @@
 export interface Employee {
-  id: string;
-  name: string;
-  avatarInitials: string;
-  role: string;
-  phone: string;
-  branch: string;
-  department: string;
-  title: string;
+  id: number;
+  employeeCode: string;
+  fullName: string;
+  birthDate?: string;
   email: string;
+  phone: string;
+  identityNumber?: string;
+  startDate?: string;
+  isActive: boolean;
+  isResigned: boolean;
+  departmentId?: number;
+  departmentName: string;
+  jobTitleId?: number;
+  jobTitleName: string;
+  branchId?: number;
+  branchName: string;
+  managerId?: number;
+  managerName?: string;
+  workEmail?: string;
+  avatar?: string;
+  // New fields requested by user
+  accessGroup?: string;      // Nhóm truy cập
+  regionName?: string;       // Vùng
+  displayOrder?: number;      // Thứ tự hiển thị
+  gender?: string;           // Giới tính
+  timekeepingCode?: string;  // Mã chấm công
+  workType?: string;         // Hình thức làm việc
+  lastActive?: string;       // Hoạt động (Ngày truy cập cuối)
+  
+  // Legacy or additional fields from UI
+  avatarInitials?: string;
   isPremium?: boolean;
-  // Các field mới cho cột bổ sung
-  accessGroup?: string;
-  region?: string;
-  displayOrder?: number;
 }
 
 /** Key mapping giữa ColumnConfig.key và field trong Employee */

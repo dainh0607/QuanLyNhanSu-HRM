@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import { EmployeeList } from './features/employees';
+import { EmployeeDetail } from './features/employee-detail';
+import type { Employee } from './features/employees/types';
 import { authService } from './services/authService';
 import type { User } from './services/authService';
 import './index.css';
@@ -200,6 +202,10 @@ function App() {
   const [user, setUser] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState<'login' | 'register'>('login');
   const [isInitializing, setIsInitializing] = useState<boolean>(true);
+  
+  // Navigation state
+  const [currentView, setCurrentView] = useState<'list' | 'detail'>('list');
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -227,6 +233,12 @@ function App() {
     setIsAuthenticated(false);
     setUser(null);
     setCurrentPage('login');
+    setCurrentView('list');
+  };
+
+  const handleSelectEmployee = (emp: Employee) => {
+    setSelectedEmployee(emp);
+    setCurrentView('detail');
   };
 
   // Màn hình loading khi khởi tạo ứng dụng (kiểm tra session)
@@ -243,8 +255,22 @@ function App() {
 
   return (
     <div id="app-root-container">
-      {/* {isAuthenticated ? (
-
+      {isAuthenticated ? (
+        <div className="min-h-screen bg-[#f8fafc]">
+          {/* Ẩn Header nếu đang ở trang Detail */}
+          {currentView === 'list' && <Header user={user} onLogout={handleLogout} />}
+          
+          {currentView === 'list' ? (
+            <EmployeeList onSelectEmployee={handleSelectEmployee} />
+          ) : (
+            selectedEmployee && (
+              <EmployeeDetail 
+                employee={selectedEmployee} 
+                onBack={() => setCurrentView('list')} 
+              />
+            )
+          )}
+        </div>
       ) : (
         currentPage === 'login' ? (
           <LoginPage 
@@ -257,11 +283,7 @@ function App() {
             onRegisterSuccess={() => setCurrentPage('login')}
           />
         )
-      )} */}
-        <div className="min-h-screen bg-[#f8fafc]">
-          <Header user={user} onLogout={handleLogout} />
-          <EmployeeList />
-        </div>
+      )}
     </div>
   );
 }

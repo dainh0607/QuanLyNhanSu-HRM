@@ -4,16 +4,37 @@ interface ActionAndFilterBarProps {
   onToggleFilter: () => void;
   onToggleColumnConfig: () => void;
   activeFilterCount: number;
+  onSearch: (term: string) => void;
+  onStatusChange: (status: string) => void;
 }
 
 const ActionAndFilterBar: React.FC<ActionAndFilterBarProps> = ({
   onToggleFilter,
   onToggleColumnConfig,
   activeFilterCount,
+  onSearch,
+  onStatusChange,
 }) => {
   const [selectedStatus, setSelectedStatus] = useState('Đang hoạt động');
+  const [searchTerm, setSearchTerm] = useState('');
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const statusRef = useRef<HTMLDivElement>(null);
+
+  const isFirstRender = useRef(true);
+  
+  // Debounce search
+  useEffect(() => {
+    // Skip calling onSearch on the very first mount if searchTerm is empty
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      if (!searchTerm) return;
+    }
+
+    const timer = setTimeout(() => {
+      onSearch(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm, onSearch]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -59,6 +80,8 @@ const ActionAndFilterBar: React.FC<ActionAndFilterBarProps> = ({
           </span>
           <input 
             type="text" 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm placeholder-gray-400 focus:ring-[#134BBA] focus:border-[#134BBA]" 
             placeholder="Tìm kiếm theo Họ tên, Mã NV, SĐT, Email..." 
           />
@@ -83,6 +106,7 @@ const ActionAndFilterBar: React.FC<ActionAndFilterBarProps> = ({
                   key={status}
                   onClick={() => {
                     setSelectedStatus(status);
+                    onStatusChange(status);
                     setIsStatusOpen(false);
                   }}
                   className={`w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[#134BBA]/5 hover:text-[#134BBA] ${
@@ -110,11 +134,11 @@ const ActionAndFilterBar: React.FC<ActionAndFilterBarProps> = ({
           </button>
           
           {/* Dropdown Card - pt-1.5 bridges gap to fix flicker */}
-          <div className="absolute right-0 top-full pt-1.5 z-50 hidden group-hover:block animate-[fadeSlideDown_0.2s_ease-out]">
+          <div className="absolute right-0 top-full pt-1.5 z-50 hidden group-hover:block animate-[fadeSlideDown_0.2s_ease-out] z-[9999]">
             <div className="w-40 bg-white border border-gray-200 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] py-2 overflow-hidden">
-              <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#152238] transition-colors" href="#">Hợp đồng</a>
-              <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#152238] transition-colors" href="#">Bảo hiểm</a>
-              <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#152238] transition-colors" href="#">Tài sản</a>
+              <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#192841]/5 hover:text-[#192841] transition-colors" href="#">Hợp đồng</a>
+              <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#192841]/5 hover:text-[#192841] transition-colors" href="#">Bảo hiểm</a>
+              <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#192841]/5 hover:text-[#192841] transition-colors" href="#">Tài sản</a>
             </div>
           </div>
         </div>

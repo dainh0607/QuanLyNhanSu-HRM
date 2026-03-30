@@ -1,58 +1,98 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DataTable from './DataTable';
 import Pagination from './Pagination';
 import PageToolbar from './PageToolbar';
 import ActionAndFilterBar from './ActionAndFilterBar';
 import FilterSidebar from './FilterSidebar';
 import ColumnConfigSidebar from './ColumnConfigSidebar';
-import { mockEmployees, DEFAULT_COLUMNS } from '../data/mockData';
+import { DEFAULT_COLUMNS } from '../data/mockData';
 import type { Employee, ColumnConfig } from '../types';
+import { employeeService } from '../../../services/employeeService';
+import AddEmployeeModal from './AddEmployeeModal';
 
-const EmployeeList: React.FC = () => {
+interface EmployeeListProps {
+  onSelectEmployee: (emp: Employee) => void;
+}
+
+const EmployeeList: React.FC<EmployeeListProps> = ({ onSelectEmployee }) => {
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [totalRecords, setTotalRecords] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
   const [isColumnConfigOpen, setIsColumnConfigOpen] = useState<boolean>(false);
   const [isPaginationEnabled, setIsPaginationEnabled] = useState<boolean>(true);
+  const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   
-  // Filter state — nguồn sự thật cho các bộ lọc đang áp dụng
+  // Filter & Search state
   const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({});
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('Đang hoạt động');
 
-  // Column config state — nguồn sự thật duy nhất cho cấu hình cột
+  // Column config state
   const [columns, setColumns] = useState<ColumnConfig[]>(DEFAULT_COLUMNS);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState<number>(1);
   const recordsPerPage = 15;
 
-  useEffect(() => {
-    // Simulate API call — khi kết nối backend, thay bằng fetch/axios
-    const timer = setTimeout(() => {
-      setEmployees(mockEmployees);
+  const fetchEmployees = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      // If we need to map selectedStatus to API params, do it here
+      // For now, let's just use searchTerm derived from input and activeFilters
+      const response = await employeeService.getEmployees(
+        currentPage,
+        recordsPerPage,
+        searchTerm,
+        statusFilter !== 'Tất cả' ? statusFilter : undefined
+      );
+      setEmployees(response.items);
+      setTotalRecords(response.totalCount);
+    } catch (error) {
+      console.error('Failed to fetch employees:', error);
+    } finally {
       setIsLoading(false);
-    }, 800);
-    return () => clearTimeout(timer);
-  }, []);
+    }
+  }, [currentPage, recordsPerPage, searchTerm, statusFilter]);
 
-  const currentRecords = employees.slice(
-    (currentPage - 1) * recordsPerPage,
-    currentPage * recordsPerPage,
-  );
+  useEffect(() => {
+    fetchEmployees();
+  }, [fetchEmployees]);
 
   const handleColumnsChange = (updatedColumns: ColumnConfig[]) => {
     setColumns(updatedColumns);
-    // TODO: Khi tích hợp API, gọi API lưu cấu hình cột tại đây
   };
 
-  const handleApplyFilters = (filters: Record<string, string[]>) => {
+  const handleApplyFilters = useCallback((filters: Record<string, string[]>) => {
     setActiveFilters(filters);
     setIsFilterOpen(false);
-    // TODO: Khi tích hợp API, thực hiện fetch dữ liệu mới với các bộ lọc này
-    console.log('Applying filters:', filters);
-  };
+    // Reset to page 1 when filter changes
+    setCurrentPage(1);
+  }, []);
+
+  const handleSearch = useCallback((term: string) => {
+    setSearchTerm(term);
+    setCurrentPage(1);
+  }, []);
+
+  const handleStatusChange = useCallback((status: string) => {
+    setStatusFilter(status);
+    setCurrentPage(1);
+  }, []);
 
   // Tính tổng số lượng bộ lọc đang áp dụng
   const activeFilterCount = Object.values(activeFilters).reduce((sum, current) => sum + current.length, 0);
+
+  const handleDeleteEmployee = useCallback(async (id: number) => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa nhân viên này?')) {
+      try {
+        await employeeService.deleteEmployee(id);
+        fetchEmployees(); // Refresh list
+      } catch (error) {
+        alert('Xóa thất bại. Vui lòng thử lại.');
+      }
+    }
+  }, [fetchEmployees]);
 
   return (
     <main
@@ -61,7 +101,7 @@ const EmployeeList: React.FC = () => {
       }`}
       id="main-content-container"
     >
-      <PageToolbar />
+      <PageToolbar onAddEmployee={() => setIsAddModalOpen(true)} />
 
       <div className="flex flex-1 gap-6 min-h-0 overflow-hidden relative">
         <FilterSidebar 
@@ -76,6 +116,8 @@ const EmployeeList: React.FC = () => {
             onToggleFilter={() => setIsFilterOpen(!isFilterOpen)} 
             onToggleColumnConfig={() => setIsColumnConfigOpen(true)}
             activeFilterCount={activeFilterCount}
+            onSearch={handleSearch}
+            onStatusChange={handleStatusChange}
           />
 
           <div
@@ -84,17 +126,19 @@ const EmployeeList: React.FC = () => {
           >
             {isLoading ? (
               <div className="flex-1 flex justify-center items-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#134BBA]"></div>
               </div>
             ) : (
               <DataTable
-                employees={isPaginationEnabled ? currentRecords : employees}
+                employees={employees}
                 columns={columns}
+                onSelectEmployee={onSelectEmployee}
+                onDeleteEmployee={handleDeleteEmployee}
               />
             )}
             {isPaginationEnabled && !isLoading && (
               <Pagination
-                 totalRecords={employees.length}
+                 totalRecords={totalRecords}
                  currentPage={currentPage}
                  recordsPerPage={recordsPerPage}
                  onPageChange={setCurrentPage}
@@ -112,6 +156,11 @@ const EmployeeList: React.FC = () => {
          columns={columns}
          onColumnsChange={handleColumnsChange}
       />
+       <AddEmployeeModal 
+          isOpen={isAddModalOpen} 
+          onClose={() => setIsAddModalOpen(false)} 
+          onSuccess={fetchEmployees}
+       />
     </main>
   );
 };
