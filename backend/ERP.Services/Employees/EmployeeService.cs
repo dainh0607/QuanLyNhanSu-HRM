@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using ERP.DTOs;
 using ERP.DTOs.Employees;
+using ERP.DTOs.Employees.Profile;
 using ERP.Entities.Models;
 using ERP.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;

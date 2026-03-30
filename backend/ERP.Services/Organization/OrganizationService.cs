@@ -55,7 +55,7 @@ namespace ERP.Services.Organization
         {
             var b = await _unitOfWork.Repository<Branches>().GetByIdAsync(id);
             if (b == null) return false;
-            _unitOfWork.Repository<Branches>().Delete(b);
+            _unitOfWork.Repository<Branches>().Remove(b);
             return await _unitOfWork.SaveChangesAsync() > 0;
         }
         #endregion
@@ -95,7 +95,7 @@ namespace ERP.Services.Organization
         {
             var d = await _unitOfWork.Repository<Departments>().GetByIdAsync(id);
             if (d == null) return false;
-            _unitOfWork.Repository<Departments>().Delete(d);
+            _unitOfWork.Repository<Departments>().Remove(d);
             return await _unitOfWork.SaveChangesAsync() > 0;
         }
         #endregion
@@ -134,7 +134,7 @@ namespace ERP.Services.Organization
         {
             var j = await _unitOfWork.Repository<JobTitles>().GetByIdAsync(id);
             if (j == null) return false;
-            _unitOfWork.Repository<JobTitles>().Delete(j);
+            _unitOfWork.Repository<JobTitles>().Remove(j);
             return await _unitOfWork.SaveChangesAsync() > 0;
         }
         #endregion
@@ -173,7 +173,7 @@ namespace ERP.Services.Organization
         {
             var r = await _unitOfWork.Repository<Regions>().GetByIdAsync(id);
             if (r == null) return false;
-            _unitOfWork.Repository<Regions>().Delete(r);
+            _unitOfWork.Repository<Regions>().Remove(r);
             return await _unitOfWork.SaveChangesAsync() > 0;
         }
         #endregion
