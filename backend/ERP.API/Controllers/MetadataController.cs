@@ -30,7 +30,7 @@ namespace ERP.API.Controllers
         public async Task<IActionResult> GetBranches()
         {
             var data = await _unitOfWork.Repository<Branches>().GetAllAsync();
-            return Ok(data.Select(b => new { b.Id, b.name, b.code, b.region_id }));
+            return Ok(data.Select(b => new { b.Id, b.name, b.code }));
         }
 
         [HttpGet("departments")]
