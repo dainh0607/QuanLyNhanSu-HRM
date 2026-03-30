@@ -35,6 +35,14 @@
       overflow-y: auto; 
   }
   .pagination-off #column-sidebar [data-purpose='pin-button'] { display: none; }
+  
+  /* Global Select Fix for Double Chevron */
+  select.appearance-none {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: none !important;
+  }
 }
 
 html, body { height: 100%; overflow: hidden; }
