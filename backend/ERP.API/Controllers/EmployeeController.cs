@@ -25,6 +25,14 @@ namespace ERP.API.Controllers
             return Ok(result);
         }
 
+        [HttpGet("{id}/full-profile")]
+        public async Task<IActionResult> GetFullProfile(int id)
+        {
+            var result = await _employeeService.GetFullProfileAsync(id);
+            if (result == null) return NotFound();
+            return Ok(result);
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {

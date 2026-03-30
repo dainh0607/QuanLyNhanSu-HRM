@@ -1,0 +1,201 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using ERP.DTOs.Employees.Profile;
+using ERP.Entities.Models;
+using ERP.Repositories.Interfaces;
+
+namespace ERP.Services.Employees
+{
+    public class EmployeeProfileService : IEmployeeProfileService
+    {
+        private readonly IUnitOfWork _unitOfWork;
+
+        public EmployeeProfileService(IUnitOfWork unitOfWork)
+        {
+            _unitOfWork = unitOfWork;
+        }
+
+        public async Task<bool> UpdateBankAccountsAsync(int employeeId, List<BankAccountDto> dtos)
+        {
+            var existing = await _unitOfWork.Repository<BankAccounts>().FindAsync(x => x.employee_id == employeeId);
+            _unitOfWork.Repository<BankAccounts>().RemoveRange(existing);
+
+            var newEntities = dtos.Select(d => new BankAccounts
+            {
+                employee_id = employeeId,
+                account_holder = d.AccountHolder,
+                account_number = d.AccountNumber,
+                bank_name = d.BankName,
+                branch = d.Branch
+            });
+
+            await _unitOfWork.Repository<BankAccounts>().AddRangeAsync(newEntities);
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> UpdateEmergencyContactsAsync(int employeeId, List<EmergencyContactDto> dtos)
+        {
+            var existing = await _unitOfWork.Repository<EmergencyContacts>().FindAsync(x => x.employee_id == employeeId);
+            _unitOfWork.Repository<EmergencyContacts>().RemoveRange(existing);
+
+            var newEntities = dtos.Select(d => new EmergencyContacts
+            {
+                employee_id = employeeId,
+                name = d.Name,
+                relationship = d.Relationship,
+                mobile_phone = d.MobilePhone,
+                home_phone = d.HomePhone,
+                address = d.Address
+            });
+
+            await _unitOfWork.Repository<EmergencyContacts>().AddRangeAsync(newEntities);
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> UpdateHealthRecordAsync(int employeeId, HealthRecordDto dto)
+        {
+            var existing = (await _unitOfWork.Repository<HealthRecords>().FindAsync(x => x.employee_id == employeeId)).FirstOrDefault();
+            
+            if (existing != null)
+            {
+                existing.height = dto.Height;
+                existing.weight = dto.Weight;
+                existing.blood_type = dto.BloodType;
+                existing.congenital_disease = dto.CongenitalDisease;
+                existing.chronic_disease = dto.ChronicDisease;
+                existing.health_status = dto.HealthStatus;
+                existing.check_date = dto.CheckDate;
+                _unitOfWork.Repository<HealthRecords>().Update(existing);
+            }
+            else
+            {
+                var newEntity = new HealthRecords
+                {
+                    employee_id = employeeId,
+                    height = dto.Height,
+                    weight = dto.Weight,
+                    blood_type = dto.BloodType,
+                    congenital_disease = dto.CongenitalDisease,
+                    chronic_disease = dto.ChronicDisease,
+                    health_status = dto.HealthStatus,
+                    check_date = dto.CheckDate
+                };
+                await _unitOfWork.Repository<HealthRecords>().AddAsync(newEntity);
+            }
+
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> UpdateAddressesAsync(int employeeId, List<EmployeeAddressDto> dtos)
+        {
+            // This is trickier because of the Addresses table vs EmployeeAddresses join table
+            var existingJoins = await _unitOfWork.Repository<EmployeeAddresses>().FindAsync(x => x.employee_id == employeeId);
+            _unitOfWork.Repository<EmployeeAddresses>().RemoveRange(existingJoins);
+
+            foreach (var dto in dtos)
+            {
+                // Create or find address
+                var addr = new Addresses
+                {
+                    address_line = dto.Address.AddressLine,
+                    ward = dto.Address.Ward,
+                    district = dto.Address.District,
+                    city = dto.Address.City,
+                    country = dto.Address.Country,
+                    postal_code = dto.Address.PostalCode
+                };
+                await _unitOfWork.Repository<Addresses>().AddAsync(addr);
+                await _unitOfWork.SaveChangesAsync(); // Need ID for join
+
+                var join = new EmployeeAddresses
+                {
+                    employee_id = employeeId,
+                    address_id = addr.Id,
+                    address_type_id = dto.AddressTypeId,
+                    is_current = dto.IsCurrent,
+                    start_date = dto.StartDate,
+                    end_date = dto.EndDate
+                };
+                await _unitOfWork.Repository<EmployeeAddresses>().AddAsync(join);
+            }
+
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> UpdateEducationAsync(int employeeId, List<EducationDto> dtos)
+        {
+            var existing = await _unitOfWork.Repository<Education>().FindAsync(x => x.employee_id == employeeId);
+            _unitOfWork.Repository<Education>().RemoveRange(existing);
+
+            var newEntities = dtos.Select(d => new Education
+            {
+                employee_id = employeeId,
+                level = d.Level,
+                major = d.Major,
+                institution = d.Institution,
+                issue_date = d.IssueDate,
+                note = d.Note
+            });
+
+            await _unitOfWork.Repository<Education>().AddRangeAsync(newEntities);
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> UpdateSkillsAsync(int employeeId, List<EmployeeSkillDto> dtos)
+        {
+            var existing = await _unitOfWork.Repository<EmployeeSkills>().FindAsync(x => x.employee_id == employeeId);
+            _unitOfWork.Repository<EmployeeSkills>().RemoveRange(existing);
+
+            var newEntities = dtos.Select(d => new EmployeeSkills
+            {
+                employee_id = employeeId,
+                skill_id = d.SkillId,
+                level = d.Level
+            });
+
+            await _unitOfWork.Repository<EmployeeSkills>().AddRangeAsync(newEntities);
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> UpdateCertificatesAsync(int employeeId, List<EmployeeCertificateDto> dtos)
+        {
+            var existing = await _unitOfWork.Repository<EmployeeCertificates>().FindAsync(x => x.employee_id == employeeId);
+            _unitOfWork.Repository<EmployeeCertificates>().RemoveRange(existing);
+
+            var newEntities = dtos.Select(d => new EmployeeCertificates
+            {
+                employee_id = employeeId,
+                certificate_id = d.CertificateId,
+                issue_date = d.IssueDate,
+                attachment = d.Attachment
+            });
+
+            await _unitOfWork.Repository<EmployeeCertificates>().AddRangeAsync(newEntities);
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> UpdateDependentsAsync(int employeeId, List<DependentDto> dtos)
+        {
+            var existing = await _unitOfWork.Repository<Dependents>().FindAsync(x => x.employee_id == employeeId);
+            _unitOfWork.Repository<Dependents>().RemoveRange(existing);
+
+            var newEntities = dtos.Select(d => new Dependents
+            {
+                employee_id = employeeId,
+                full_name = d.FullName,
+                birth_date = d.BirthDate,
+                identity_number = d.IdentityNumber,
+                relationship = d.Relationship,
+                permanent_address = d.PermanentAddress,
+                temporary_address = d.TemporaryAddress,
+                dependent_duration = d.DependentDuration,
+                reason = d.Reason
+            });
+
+            await _unitOfWork.Repository<Dependents>().AddRangeAsync(newEntities);
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+    }
+}

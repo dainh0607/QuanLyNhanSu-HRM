@@ -11,6 +11,8 @@ using Microsoft.AspNetCore.Authentication;
 using ERP.Repositories.Interfaces;
 using ERP.Repositories.Implementations;
 using ERP.Services.Employees;
+using ERP.Services.Organization;
+using ERP.Services.Lookup;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,6 +63,9 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IClaimsTransformation, FirebaseClaimsTransformation>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
+builder.Services.AddScoped<IEmployeeProfileService, EmployeeProfileService>();
+builder.Services.AddScoped<IOrganizationService, OrganizationService>();
+builder.Services.AddScoped<ILookupService, LookupService>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));

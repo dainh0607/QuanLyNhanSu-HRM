@@ -1,0 +1,65 @@
+@baseUrl = http://localhost:5122/api
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtYW5hZ2VyLnRlc3RfY29tcGFueS5jb20iLCJqdGkiOiI0YjQ5YjQ5Yi00OTRiLTQ5NGItNDk0Yi00OTRiNDk0YjQ5NGIiLCJlbWFpbCI6Im1hbmFnZXIudGVzdEBjb21wYW55LmNvbSIsIm5hbWUiOiJNYW5hZ2VyIFRlc3QiLCJyb2xlcyI6WyJBZG1pbiIsIk1hbmFnZXIiXSwiaXNzIjoiZXhwYW5kZWQtYXV0aC1zZXJ2aWNlIiwiYXVkIjoiZXhwYW5kZWQtYXV0aC1zZXJ2aWNlIiwiZXhwIjoxNzQ0NDY2NzY5LCJpYXQiOjE3NDQ0NjMxNjl9.1455555555555555555555555555555555555555
+
+### Get full employee profile
+GET {{baseUrl}}/employees/1/full-profile
+Authorization: Bearer {{token}}
+
+### Update bank accounts
+PUT {{baseUrl}}/employees/1/bank-accounts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+[
+  {
+    "accountHolder": "NGUYEN VAN A",
+    "accountNumber": "123456789",
+    "bankName": "Vietcombank",
+    "branch": "Chi nhánh Ba Đình"
+  }
+]
+
+### Update health record
+PUT {{baseUrl}}/employees/1/health-record
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "height": 175.5,
+  "weight": 70.2,
+  "bloodType": "O",
+  "congenitalDisease": "None",
+  "chronicDisease": "None",
+  "healthStatus": "Good",
+  "checkDate": "2024-03-29"
+}
+
+### Update emergency contacts
+PUT {{baseUrl}}/employees/1/emergency-contacts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+[
+  {
+    "name": "Trần Thị B",
+    "relationship": "Vợ",
+    "mobilePhone": "0987654321",
+    "homePhone": "0243123456",
+    "address": "456 Lạc Long Quân, Hà Nội"
+  }
+]
+
+### Update education
+PUT {{baseUrl}}/employees/1/education
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+[
+  {
+    "level": "Đại học",
+    "major": "Công nghệ thông tin",
+    "institution": "Đại học Bách Khoa Hà Nội",
+    "issueDate": "2020-06-15",
+    "note": "Bằng khá"
+  }
+]

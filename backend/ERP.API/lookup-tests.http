@@ -1,0 +1,10 @@
+@baseUrl = http://localhost:5122/api
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtYW5hZ2VyLnRlc3RfY29tcGFueS5jb20iLCJqdGkiOiI0YjQ5YjQ5Yi00OTRiLTQ5NGItNDk0Yi00OTRiNDk0YjQ5NGIiLCJlbWFpbCI6Im1hbmFnZXIudGVzdEBjb21wYW55LmNvbSIsIm5hbWUiOiJNYW5hZ2VyIFRlc3QiLCJyb2xlcyI6WyJBZG1pbiIsIk1hbmFnZXIiXSwiaXNzIjoiZXhwYW5kZWQtYXV0aC1zZXJ2aWNlIiwiYXVkIjoiZXhwYW5kZWQtYXV0aC1zZXJ2aWNlIiwiZXhwIjoxNzQ0NDY2NzY5LCJpYXQiOjE3NDQ0NjMxNjl9.1455555555555555555555555555555555555555
+
+### Get genders
+GET {{baseUrl}}/lookups/genders
+Authorization: Bearer {{token}}
+
+### Get marital statuses
+GET {{baseUrl}}/lookups/marital-statuses
+Authorization: Bearer {{token}}
