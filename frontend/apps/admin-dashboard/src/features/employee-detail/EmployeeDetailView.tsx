@@ -27,6 +27,11 @@ interface DetailFieldProps {
   className?: string;
 }
 
+interface SummaryInfoItemProps {
+  icon: string;
+  value: string;
+}
+
 const EMPTY_VALUE = '-';
 
 const tabs = [
@@ -140,6 +145,19 @@ const DetailField: React.FC<DetailFieldProps> = ({ label, value, mono = false, c
   );
 };
 
+const SummaryInfoItem: React.FC<SummaryInfoItemProps> = ({ icon, value }) => {
+  const isEmpty = value === EMPTY_VALUE;
+
+  return (
+    <div className="flex min-w-0 items-center gap-3">
+      <span className="material-symbols-outlined text-[20px] text-emerald-500">{icon}</span>
+      <span className={`truncate text-[15px] leading-6 ${isEmpty ? 'text-slate-400' : 'text-slate-700'}`}>
+        {value}
+      </span>
+    </div>
+  );
+};
+
 const DetailBlock: React.FC<DetailBlockProps> = ({
   title,
   description,
@@ -165,6 +183,11 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
   const [profile, setProfile] = useState<EmployeeFullProfile | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState<boolean>(false);
+  const [passwordForm, setPasswordForm] = useState({
+    password: '',
+    confirmPassword: '',
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -215,17 +238,6 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
     addresses.find((address) => address.isCurrent && address.addressId !== permanentAddress?.addressId) ??
     addresses.find((address) => address.addressId !== permanentAddress?.addressId);
   const contactAddress = mergedAddress ?? permanentAddress;
-
-  const statusLabel = employee.isResigned
-    ? 'Nghỉ việc'
-    : employee.isActive
-      ? 'Đang làm việc'
-      : 'Không hoạt động';
-  const statusTone = employee.isResigned
-    ? 'bg-rose-50 text-rose-700 border-rose-200'
-    : employee.isActive
-      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-      : 'bg-amber-50 text-amber-700 border-amber-200';
 
   const socialSkype = displayValue(
     getRecordValue(basicInfoRecord, ['skype', 'skypeAccount', 'socialSkype']),
@@ -289,6 +301,45 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
   );
   const taxCodeValue = displayValue(getRecordValue(basicInfoRecord, ['taxCode', 'taxNumber']));
   const noteValue = displayValue(getRecordValue(basicInfoRecord, ['note', 'remarks', 'description']));
+  const roleValue = displayValue(basicInfo?.accessGroup, employee.accessGroup);
+  const jobTitleValue = displayValue(basicInfo?.jobTitleName, employee.jobTitleName);
+  const departmentValue = displayValue(basicInfo?.departmentName, employee.departmentName);
+  const workTypeValue = displayValue(basicInfo?.workType, employee.workType);
+  const directManagerValue = displayValue(basicInfo?.managerName, employee.managerName);
+  const addressValue = formatAddress(contactAddress);
+  const passwordMismatch =
+    passwordForm.confirmPassword.length > 0 && passwordForm.password !== passwordForm.confirmPassword;
+
+  const handleOpenPasswordModal = () => {
+    setPasswordForm({
+      password: '',
+      confirmPassword: '',
+    });
+    setIsPasswordModalOpen(true);
+  };
+
+  const handleClosePasswordModal = () => {
+    setIsPasswordModalOpen(false);
+    setPasswordForm({
+      password: '',
+      confirmPassword: '',
+    });
+  };
+
+  const handlePasswordFieldChange = (field: 'password' | 'confirmPassword', value: string) => {
+    setPasswordForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleConfirmPassword = () => {
+    if (!passwordForm.password || !passwordForm.confirmPassword || passwordMismatch) {
+      return;
+    }
+
+    handleClosePasswordModal();
+  };
 
   const renderPersonalTab = () => (
     <div className="space-y-8">
@@ -549,40 +600,65 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
 
         <hr className="mt-3 border-slate-200" />
 
-        <section className="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-            <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-[linear-gradient(135deg,rgba(251,191,36,0.18),rgba(59,130,246,0.16))]">
-              {employee.avatar ? (
-                <img src={employee.avatar} alt={employee.fullName} className="h-full w-full object-cover" />
-              ) : (
-                <span className="text-lg font-black uppercase text-[#1d4ed8]">
-                  {(employee.fullName || 'NV')
-                    .split(' ')
-                    .slice(0, 2)
-                    .map((part) => part.charAt(0))
-                    .join('')}
+        <section className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_252px]">
+          <div className="rounded-[28px] border border-slate-200 bg-white px-7 py-6 shadow-sm">
+            <div className="flex flex-col gap-6 md:flex-row md:items-start">
+              <div className="relative mx-auto md:mx-0">
+                <div className="flex h-[118px] w-[118px] items-center justify-center overflow-hidden rounded-[34px] bg-[linear-gradient(180deg,#a8b7dd_0%,#aebde0_100%)]">
+                  {employee.avatar ? (
+                    <img src={employee.avatar} alt={employee.fullName} className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="text-[48px] font-light uppercase tracking-tight text-white">
+                      {(employee.fullName || 'NV')
+                        .split(' ')
+                        .slice(-2)
+                        .map((part) => part.charAt(0))
+                        .join('')}
+                    </span>
+                  )}
+                </div>
+
+                <span className="absolute bottom-0 right-0 flex h-9 w-9 translate-x-1/4 translate-y-1/4 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm">
+                  <span className="material-symbols-outlined text-[18px]">edit_square</span>
                 </span>
-              )}
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <h2 className="text-[32px] font-bold leading-tight text-slate-950">
+                  {displayValue(basicInfo?.fullName, employee.fullName)}
+                </h2>
+
+                <p className={`mt-1 text-lg ${roleValue === EMPTY_VALUE ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {roleValue}
+                </p>
+                <p className={`mt-1 text-sm font-medium ${jobTitleValue === EMPTY_VALUE ? 'text-slate-300' : 'text-slate-400'}`}>
+                  Chức vụ: {jobTitleValue}
+                </p>
+
+                <div className="mt-8 grid grid-cols-1 gap-x-10 gap-y-4 sm:grid-cols-2">
+                  <SummaryInfoItem icon="call" value={contactPhone} />
+                  <SummaryInfoItem icon="location_on" value={addressValue} />
+                  <SummaryInfoItem icon="mail" value={contactEmail} />
+                  <SummaryInfoItem icon="groups" value={departmentValue} />
+                </div>
+              </div>
             </div>
+          </div>
 
-            <div className="min-w-0 flex-1">
-              <h2 className="truncate text-xl font-bold text-slate-900">
-                {displayValue(basicInfo?.fullName, employee.fullName)}
-              </h2>
+          <div className="rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
+            <div className="space-y-6">
+              <div>
+                <p className="text-[13px] font-medium text-slate-500">Hình thức làm việc</p>
+                <p className={`mt-2 text-[18px] font-semibold leading-7 ${workTypeValue === EMPTY_VALUE ? 'text-slate-400' : 'text-slate-950'}`}>
+                  {workTypeValue}
+                </p>
+              </div>
 
-              <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
-                  {contactPhone}
-                </span>
-                <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
-                  {displayValue(employee.accessGroup)}
-                </span>
-                <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
-                  {contactEmail}
-                </span>
-                <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold ${statusTone}`}>
-                  {statusLabel}
-                </span>
+              <div>
+                <p className="text-[13px] font-medium text-slate-500">Người quản lý trực tiếp</p>
+                <p className={`mt-2 text-[18px] font-semibold leading-7 ${directManagerValue === EMPTY_VALUE ? 'text-slate-400' : 'text-slate-950'}`}>
+                  {directManagerValue}
+                </p>
               </div>
             </div>
           </div>
@@ -610,10 +686,17 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
           <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-500">THÔNG TIN CÁ NHÂN</p>
             <div className="flex items-center gap-2">
-              <button className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50">
+              <button
+                type="button"
+                onClick={handleOpenPasswordModal}
+                className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+              >
                 Đổi mật khẩu
               </button>
-              <button className="inline-flex items-center rounded-md bg-[#1f2937] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#111827]">
+              <button
+                type="button"
+                className="inline-flex items-center rounded-md bg-[#1f2937] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#111827]"
+              >
                 <span className="material-symbols-outlined mr-1.5 text-[14px]">edit</span>
                 Sửa
               </button>
@@ -624,6 +707,93 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
             {activeTab === 'Cá nhân' ? renderPersonalTab() : renderSecondaryTab()}
           </div>
         </section>
+
+        {isPasswordModalOpen && (
+          <div
+            className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-950/40 px-4 backdrop-blur-sm"
+            onClick={handleClosePasswordModal}
+          >
+            <div
+              className="w-full max-w-[460px] rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,0.18)]"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
+                    BẢO MẬT TÀI KHOẢN
+                  </p>
+                  <h3 className="mt-2 text-xl font-bold text-slate-900">Đổi mật khẩu</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    Nhập mật khẩu mới và xác nhận lại để hoàn tất cập nhật.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleClosePasswordModal}
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                >
+                  <span className="material-symbols-outlined text-[20px]">close</span>
+                </button>
+              </div>
+
+              <div className="mt-6 space-y-4">
+                <div>
+                  <label className="text-sm font-semibold text-slate-700">Nhập mật khẩu</label>
+                  <input
+                    type="password"
+                    value={passwordForm.password}
+                    onChange={(event) => handlePasswordFieldChange('password', event.target.value)}
+                    placeholder="Nhập mật khẩu mới"
+                    className="mt-2 h-12 w-full rounded-xl border border-slate-200 px-4 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-semibold text-slate-700">Xác nhận mật khẩu</label>
+                  <input
+                    type="password"
+                    value={passwordForm.confirmPassword}
+                    onChange={(event) =>
+                      handlePasswordFieldChange('confirmPassword', event.target.value)
+                    }
+                    placeholder="Nhập lại mật khẩu mới"
+                    className={`mt-2 h-12 w-full rounded-xl border px-4 text-sm text-slate-900 outline-none transition focus:ring-4 ${
+                      passwordMismatch
+                        ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100'
+                        : 'border-slate-200 focus:border-emerald-400 focus:ring-emerald-100'
+                    }`}
+                  />
+                  {passwordMismatch && (
+                    <p className="mt-2 text-sm font-medium text-rose-600">
+                      Mật khẩu xác nhận chưa khớp.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-6 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={handleClosePasswordModal}
+                  className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmPassword}
+                  disabled={
+                    !passwordForm.password || !passwordForm.confirmPassword || passwordMismatch
+                  }
+                  className="inline-flex h-11 items-center justify-center rounded-xl bg-[#192841] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#101b2c] disabled:cursor-not-allowed disabled:bg-slate-300"
+                >
+                  Xác nhận
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

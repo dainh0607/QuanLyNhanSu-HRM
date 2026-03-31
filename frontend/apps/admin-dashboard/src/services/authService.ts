@@ -21,11 +21,32 @@ export interface AuthResponse {
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5122/api";
 
+let authToken: string | null = null;
+let currentUser: User | null = null;
+
+const normalizeUser = (user?: User | null): User | null => {
+  if (!user) return null;
+
+  return {
+    ...user,
+    role: user.roles?.includes("Admin") ? "admin" : "user",
+  };
+};
+
+const setAuthSession = (user?: User | null, token?: string | null) => {
+  currentUser = normalizeUser(user);
+  authToken = token ?? null;
+};
+
+const clearAuthSession = () => {
+  currentUser = null;
+  authToken = null;
+};
+
 const getAuthHeaders = () => {
-  const token = localStorage.getItem("auth_token");
   return {
     "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
   };
 };
 
@@ -55,20 +76,12 @@ export const authService = {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        if (data.idToken) {
-          localStorage.setItem("auth_token", data.idToken);
-        }
-        
-        // Map roles to 'role' for UI compatibility
-        const user = data.user;
-        if (user && user.roles && user.roles.length > 0) {
-          user.role = user.roles.includes("Admin") ? "admin" : "user";
-        }
+        const user = normalizeUser(data.user);
+        setAuthSession(user, data.idToken ?? null);
 
-        localStorage.setItem("user_data", JSON.stringify(user));
         return {
           success: true,
-          user: user,
+          user: user ?? undefined,
           idToken: data.idToken,
         };
       } else {
@@ -125,19 +138,12 @@ export const authService = {
 
       if (response.ok) {
         const data = await response.json();
-        // Backend returns UserInfoDto directly for /me endpoint
-        
-        // Map roles to 'role' for UI compatibility
-        if (data && data.roles && data.roles.length > 0) {
-          data.role = data.roles.includes("Admin") ? "admin" : "user";
-        }
-
-        localStorage.setItem("user_data", JSON.stringify(data));
-        return data;
+        const user = normalizeUser(data);
+        currentUser = user;
+        return user;
       }
 
-      localStorage.removeItem("user_data");
-      localStorage.removeItem("auth_token");
+      clearAuthSession();
       return null;
     } catch (error) {
       console.error("Check Auth Error:", error);
@@ -146,14 +152,14 @@ export const authService = {
   },
 
   getCurrentUser: (): User | null => {
-    const data = localStorage.getItem("user_data");
-    return data ? JSON.parse(data) : null;
+    return currentUser;
+  },
+
+  getAccessToken: (): string | null => {
+    return authToken;
   },
 
   logout: async () => {
-    // Current backend doesn't have an explicit logout endpoint in AuthController
-    // but we clear the tokens anyway
-    localStorage.removeItem("user_data");
-    localStorage.removeItem("auth_token");
+    clearAuthSession();
   },
 };

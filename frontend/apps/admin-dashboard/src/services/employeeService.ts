@@ -1,9 +1,10 @@
 import type { Employee } from "../features/employees/types";
+import { authService } from "./authService";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5122/api";
 
 const getAuthHeaders = () => {
-  const token = localStorage.getItem("auth_token");
+  const token = authService.getAccessToken();
   return {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),

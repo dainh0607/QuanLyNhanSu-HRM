@@ -77,7 +77,7 @@ export const mockEmployees: Employee[] = [
 
 /**
  * Cấu hình cột mặc định.
- * Khi tích hợp API, có thể load config từ server hoặc localStorage.
+ * Khi tích hợp API, có thể load config từ server hoặc nguồn dữ liệu runtime phù hợp.
  */
 export const DEFAULT_COLUMNS: ColumnConfig[] = [
     { id: 'col-name',         label: 'Tên nhân viên',   key: 'fullName',     show: true,  pinned: true,  pinOrder: 1 },
