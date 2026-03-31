@@ -3,10 +3,12 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
 namespace ERP.Entities.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class Initial_Infrastructure : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -59,21 +61,6 @@ namespace ERP.Entities.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AdvanceTypes", x => x.id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Allowances",
-                columns: table => new
-                {
-                    id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    salary_id = table.Column<int>(type: "int", nullable: false),
-                    allowance_name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Allowances", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
@@ -243,6 +230,7 @@ namespace ERP.Entities.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Genders", x => x.id);
+                    table.UniqueConstraint("AK_Genders_code", x => x.code);
                 });
 
             migrationBuilder.CreateTable(
@@ -300,6 +288,7 @@ namespace ERP.Entities.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_MaritalStatuses", x => x.id);
+                    table.UniqueConstraint("AK_MaritalStatuses_code", x => x.code);
                 });
 
             migrationBuilder.CreateTable(
@@ -319,21 +308,6 @@ namespace ERP.Entities.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_MealTypes", x => x.id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "OtherIncomes",
-                columns: table => new
-                {
-                    id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    salary_id = table.Column<int>(type: "int", nullable: false),
-                    income_name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_OtherIncomes", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
@@ -403,56 +377,6 @@ namespace ERP.Entities.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "RequestBorrowDetails",
-                columns: table => new
-                {
-                    id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    borrow_id = table.Column<int>(type: "int", nullable: false),
-                    item_name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    quantity = table.Column<int>(type: "int", nullable: false),
-                    note = table.Column<string>(type: "nvarchar(max)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_RequestBorrowDetails", x => x.id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "RequestPurchaseDetails",
-                columns: table => new
-                {
-                    id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    purchase_id = table.Column<int>(type: "int", nullable: false),
-                    item_name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    quantity = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    unit_price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    total_amount = table.Column<decimal>(type: "decimal(18,2)", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_RequestPurchaseDetails", x => x.id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "RequestPurchaseRequestDetails",
-                columns: table => new
-                {
-                    id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    purchase_request_id = table.Column<int>(type: "int", nullable: false),
-                    content = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    quantity = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    unit_price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    total_amount = table.Column<decimal>(type: "decimal(18,2)", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_RequestPurchaseRequestDetails", x => x.id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "RequestReimbursementDetails",
                 columns: table => new
                 {
@@ -514,7 +438,10 @@ namespace ERP.Entities.Migrations
                     id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    description = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false)
+                    description = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    is_active = table.Column<bool>(type: "bit", nullable: false),
+                    created_at = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -645,29 +572,32 @@ namespace ERP.Entities.Migrations
                     id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     employee_code = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    full_name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    full_name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     birth_date = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    gender = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
+                    gender = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: true),
                     display_order = table.Column<int>(type: "int", nullable: true),
-                    email = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    phone = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    home_phone = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    facebook = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    identity_number = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    passport = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    ethnicity = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    religion = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    tax_code = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    marital_status = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    email = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    phone = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
+                    home_phone = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
+                    facebook = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    identity_number = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
+                    identity_issue_date = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    identity_issue_place = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    passport = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
+                    ethnicity = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    religion = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    nationality = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    tax_code = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
+                    marital_status = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
                     union_member = table.Column<bool>(type: "bit", nullable: false),
-                    note = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    note = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     start_date = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    work_type = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    work_type = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     seniority_months = table.Column<int>(type: "int", nullable: true),
                     late_early_allowed = table.Column<int>(type: "int", nullable: true),
-                    late_early_note = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    late_early_note = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     is_resigned = table.Column<bool>(type: "bit", nullable: false),
-                    resignation_reason = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    resignation_reason = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     region_id = table.Column<int>(type: "int", nullable: true),
                     branch_id = table.Column<int>(type: "int", nullable: true),
                     secondary_branch_id = table.Column<int>(type: "int", nullable: true),
@@ -677,12 +607,12 @@ namespace ERP.Entities.Migrations
                     manager_id = table.Column<int>(type: "int", nullable: true),
                     is_active = table.Column<bool>(type: "bit", nullable: false),
                     is_department_head = table.Column<bool>(type: "bit", nullable: false),
-                    gender_code = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
-                    marital_status_code = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
+                    gender_code = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: true),
+                    marital_status_code = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: true),
                     contract_sign_date = table.Column<DateTime>(type: "datetime2", nullable: true),
                     contract_expiry_date = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    work_email = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    avatar = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    work_email = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    avatar = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     probation_start_date = table.Column<DateTime>(type: "datetime2", nullable: true),
                     probation_end_date = table.Column<DateTime>(type: "datetime2", nullable: true),
                     official_start_date = table.Column<DateTime>(type: "datetime2", nullable: true),
@@ -699,16 +629,46 @@ namespace ERP.Entities.Migrations
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
+                        name: "FK_Employees_Branches_secondary_branch_id",
+                        column: x => x.secondary_branch_id,
+                        principalTable: "Branches",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
                         name: "FK_Employees_Departments_department_id",
                         column: x => x.department_id,
                         principalTable: "Departments",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
+                        name: "FK_Employees_Departments_secondary_department_id",
+                        column: x => x.secondary_department_id,
+                        principalTable: "Departments",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Employees_Employees_manager_id",
+                        column: x => x.manager_id,
+                        principalTable: "Employees",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Employees_Genders_gender_code",
+                        column: x => x.gender_code,
+                        principalTable: "Genders",
+                        principalColumn: "code",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
                         name: "FK_Employees_JobTitles_job_title_id",
                         column: x => x.job_title_id,
                         principalTable: "JobTitles",
                         principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Employees_MaritalStatuses_marital_status_code",
+                        column: x => x.marital_status_code,
+                        principalTable: "MaritalStatuses",
+                        principalColumn: "code",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Employees_Regions_region_id",
@@ -821,6 +781,12 @@ namespace ERP.Entities.Migrations
                         name: "FK_AttendanceLogs_Employees_employee_id",
                         column: x => x.employee_id,
                         principalTable: "Employees",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_AttendanceLogs_TimeMachines_machine_id",
+                        column: x => x.machine_id,
+                        principalTable: "TimeMachines",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -1348,6 +1314,12 @@ namespace ERP.Entities.Migrations
                         principalTable: "Employees",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Payrolls_PayrollPeriods_period_id",
+                        column: x => x.period_id,
+                        principalTable: "PayrollPeriods",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -1436,6 +1408,12 @@ namespace ERP.Entities.Migrations
                 {
                     table.PrimaryKey("PK_Requests", x => x.id);
                     table.ForeignKey(
+                        name: "FK_Requests_Employees_approved_by",
+                        column: x => x.approved_by,
+                        principalTable: "Employees",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
                         name: "FK_Requests_Employees_employee_id",
                         column: x => x.employee_id,
                         principalTable: "Employees",
@@ -1479,8 +1457,8 @@ namespace ERP.Entities.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     employee_id = table.Column<int>(type: "int", nullable: false),
                     username = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    password_hash = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: false),
                     is_active = table.Column<bool>(type: "bit", nullable: false),
+                    firebase_uid = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
                     created_at = table.Column<DateTime>(type: "datetime2", nullable: false),
                     updated_at = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
@@ -1682,6 +1660,12 @@ namespace ERP.Entities.Migrations
                         name: "FK_LeaveRequests_Employees_employee_id",
                         column: x => x.employee_id,
                         principalTable: "Employees",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_LeaveRequests_LeaveDurationTypes_duration_type_id",
+                        column: x => x.duration_type_id,
+                        principalTable: "LeaveDurationTypes",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
@@ -2243,6 +2227,48 @@ namespace ERP.Entities.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Allowances",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    salary_id = table.Column<int>(type: "int", nullable: false),
+                    allowance_name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Allowances", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_Allowances_Salaries_salary_id",
+                        column: x => x.salary_id,
+                        principalTable: "Salaries",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "OtherIncomes",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    salary_id = table.Column<int>(type: "int", nullable: false),
+                    income_name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_OtherIncomes", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_OtherIncomes_Salaries_salary_id",
+                        column: x => x.salary_id,
+                        principalTable: "Salaries",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "UpdateHistory",
                 columns: table => new
                 {
@@ -2272,7 +2298,10 @@ namespace ERP.Entities.Migrations
                 columns: table => new
                 {
                     user_id = table.Column<int>(type: "int", nullable: false),
-                    role_id = table.Column<int>(type: "int", nullable: false)
+                    role_id = table.Column<int>(type: "int", nullable: false),
+                    is_active = table.Column<bool>(type: "bit", nullable: false),
+                    created_at = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -2333,6 +2362,74 @@ namespace ERP.Entities.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "RequestBorrowDetails",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    borrow_id = table.Column<int>(type: "int", nullable: false),
+                    item_name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    quantity = table.Column<int>(type: "int", nullable: false),
+                    note = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RequestBorrowDetails", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_RequestBorrowDetails_RequestBorrows_borrow_id",
+                        column: x => x.borrow_id,
+                        principalTable: "RequestBorrows",
+                        principalColumn: "request_id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "RequestPurchaseRequestDetails",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    purchase_request_id = table.Column<int>(type: "int", nullable: false),
+                    content = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    quantity = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    unit_price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    total_amount = table.Column<decimal>(type: "decimal(18,2)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RequestPurchaseRequestDetails", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_RequestPurchaseRequestDetails_RequestPurchaseRequests_purchase_request_id",
+                        column: x => x.purchase_request_id,
+                        principalTable: "RequestPurchaseRequests",
+                        principalColumn: "request_id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "RequestPurchaseDetails",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    purchase_id = table.Column<int>(type: "int", nullable: false),
+                    item_name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    quantity = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    unit_price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    total_amount = table.Column<decimal>(type: "decimal(18,2)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RequestPurchaseDetails", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_RequestPurchaseDetails_RequestPurchases_purchase_id",
+                        column: x => x.purchase_id,
+                        principalTable: "RequestPurchases",
+                        principalColumn: "request_id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "AttendanceModifications",
                 columns: table => new
                 {
@@ -2356,6 +2453,209 @@ namespace ERP.Entities.Migrations
                         onDelete: ReferentialAction.Restrict);
                 });
 
+            migrationBuilder.InsertData(
+                table: "AddressTypes",
+                columns: new[] { "id", "name" },
+                values: new object[,]
+                {
+                    { 1, "Thường trú" },
+                    { 2, "Tạm trú" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "Branches",
+                columns: new[] { "id", "address", "code", "name" },
+                values: new object[] { 1, "Hà Nội", "HO", "Trụ sở chính" });
+
+            migrationBuilder.InsertData(
+                table: "ContractTypes",
+                columns: new[] { "id", "name" },
+                values: new object[,]
+                {
+                    { 1, "Thử việc" },
+                    { 2, "Hợp đồng 1 năm" },
+                    { 3, "Hợp đồng 3 năm" },
+                    { 4, "Hợp đồng không thời hạn" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "DecisionTypes",
+                columns: new[] { "id", "name" },
+                values: new object[,]
+                {
+                    { 1, "Quyết định Tuyển dụng" },
+                    { 2, "Quyết định Bổ nhiệm" },
+                    { 3, "Quyết định Tăng lương" },
+                    { 4, "Quyết định Khen thưởng" },
+                    { 5, "Quyết định Kỷ luật" },
+                    { 6, "Quyết định Nghỉ việc" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "Departments",
+                columns: new[] { "id", "code", "name", "parent_id" },
+                values: new object[,]
+                {
+                    { 1, "HR", "Phòng Hành chính Nhân sự", null },
+                    { 2, "IT", "Phòng Công nghệ", null },
+                    { 3, "SALES", "Phòng Kinh doanh", null },
+                    { 4, "ACC", "Phòng Kế toán", null }
+                });
+
+            migrationBuilder.InsertData(
+                table: "DisciplineTypes",
+                columns: new[] { "id", "created_at", "updated_at", "code", "description", "display_order", "is_active", "name" },
+                values: new object[,]
+                {
+                    { 1, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), "KL01", "Khiển trách bằng văn bản", null, true, "Khiển trách" },
+                    { 2, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), "KL02", "Cảnh cáo trước toàn công ty", null, true, "Cảnh cáo" },
+                    { 3, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), "KL03", "Giảm bậc lương hiện tại", null, true, "Hạ bậc lương" },
+                    { 4, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), "KL04", "Miễn nhiệm chức vụ hiện tại", null, true, "Cách chức" },
+                    { 5, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), "KL05", "Chấm dứt hợp đồng lao động", null, true, "Sa thải" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "Genders",
+                columns: new[] { "id", "code", "name" },
+                values: new object[,]
+                {
+                    { 1, "M", "Nam" },
+                    { 2, "F", "Nữ" },
+                    { 3, "O", "Khác" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "JobTitles",
+                columns: new[] { "id", "code", "name" },
+                values: new object[,]
+                {
+                    { 1, "STAFF", "Nhân viên" },
+                    { 2, "TEAMLEAD", "Trưởng nhóm" },
+                    { 3, "HEAD", "Trưởng phòng" },
+                    { 4, "DIRECTOR", "Giám đốc" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "LeaveDurationTypes",
+                columns: new[] { "id", "code", "hours", "name" },
+                values: new object[,]
+                {
+                    { 1, "FULL", 8m, "Cả ngày" },
+                    { 2, "MORNING", 4m, "Sáng" },
+                    { 3, "AFTERNOON", 4m, "Chiều" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "LeaveTypes",
+                columns: new[] { "id", "is_paid", "name" },
+                values: new object[,]
+                {
+                    { 1, true, "Nghỉ phép năm" },
+                    { 2, true, "Nghỉ ốm" },
+                    { 3, false, "Nghỉ không lương" },
+                    { 4, true, "Nghỉ thai sản" },
+                    { 5, true, "Nghỉ hiếu hỉ" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "MaritalStatuses",
+                columns: new[] { "id", "code", "name" },
+                values: new object[,]
+                {
+                    { 1, "S", "Độc thân" },
+                    { 2, "M", "Đã kết hôn" },
+                    { 3, "D", "Ly hôn" },
+                    { 4, "W", "Góa" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "Regions",
+                columns: new[] { "id", "code", "name" },
+                values: new object[,]
+                {
+                    { 1, "NORTH", "Miền Bắc" },
+                    { 2, "CENTRAL", "Miền Trung" },
+                    { 3, "SOUTH", "Miền Nam" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "RequestTypes",
+                columns: new[] { "id", "created_at", "updated_at", "category", "code", "is_active", "name", "workflow_id" },
+                values: new object[,]
+                {
+                    { 1, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), "LEAVE", "REQ_LEAVE", true, "Yêu cầu Nghỉ phép", null },
+                    { 2, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), "ATTENDANCE", "REQ_OT", true, "Yêu cầu Làm thêm", null },
+                    { 3, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), "ATTENDANCE", "REQ_SHIFT", true, "Yêu cầu Đổi ca", null },
+                    { 4, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), "WORK", "REQ_TRIP", true, "Yêu cầu Công tác", null },
+                    { 5, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), "PAYROLL", "REQ_ADVANCE", true, "Yêu cầu Tạm ứng lương", null }
+                });
+
+            migrationBuilder.InsertData(
+                table: "RewardTypes",
+                columns: new[] { "id", "created_at", "updated_at", "code", "description", "display_order", "is_active", "name" },
+                values: new object[,]
+                {
+                    { 1, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), "KT01", "Thưởng bằng tiền mặt", null, true, "Tiền mặt" },
+                    { 2, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), "KT02", "Thanh thưởng bằng giấy khen", null, true, "Bằng khen" },
+                    { 3, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), "KT03", "Thưởng bằng quà tặng/hiện vật", null, true, "Hiện vật" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "Roles",
+                columns: new[] { "id", "created_at", "updated_at", "description", "is_active", "name" },
+                values: new object[,]
+                {
+                    { 1, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), "System Administrator", true, "Admin" },
+                    { 2, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), "Department Manager", true, "Manager" },
+                    { 3, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), "Regular Employee", true, "User" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "ShiftTypes",
+                columns: new[] { "id", "description", "name" },
+                values: new object[,]
+                {
+                    { 1, "Làm việc giờ hành chính (08:00 - 17:00)", "Ca hành chính" },
+                    { 2, "Ca làm việc buổi sáng", "Ca sáng (06:00 - 14:00)" },
+                    { 3, "Ca làm việc buổi chiều", "Ca chiều (14:00 - 22:00)" },
+                    { 4, "Ca làm việc ban đêm", "Ca đêm (22:00 - 06:00)" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "Skills",
+                columns: new[] { "id", "description", "skill_name" },
+                values: new object[,]
+                {
+                    { 1, "Ngôn ngữ quốc tế", "Tiếng Anh" },
+                    { 2, "Kỹ năng văn phòng", "Microsoft Office" },
+                    { 3, "Kỹ năng dữ liệu", "SQL / Database" },
+                    { 4, "Project Management", "Quản lý dự án" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "TaxBrackets",
+                columns: new[] { "id", "effective_date", "expiry_date", "from_income", "tax_rate", "to_income" },
+                values: new object[,]
+                {
+                    { 1, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), null, 0m, 5m, 5000000m },
+                    { 2, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), null, 5000001m, 10m, 10000000m },
+                    { 3, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), null, 10000001m, 15m, 18000000m },
+                    { 4, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), null, 18000001m, 20m, 32000000m },
+                    { 5, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), null, 32000001m, 25m, 52000000m },
+                    { 6, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), null, 52000001m, 30m, 80000000m },
+                    { 7, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), null, 80000001m, 35m, null }
+                });
+
+            migrationBuilder.InsertData(
+                table: "TaxTypes",
+                columns: new[] { "id", "code", "is_active", "name" },
+                values: new object[] { 1, "PIT", true, "Thuế thu nhập cá nhân" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Allowances_salary_id",
+                table: "Allowances",
+                column: "salary_id");
+
             migrationBuilder.CreateIndex(
                 name: "IX_AssetAllocations_asset_id",
                 table: "AssetAllocations",
@@ -2370,6 +2670,11 @@ namespace ERP.Entities.Migrations
                 name: "IX_AttendanceLogs_employee_id",
                 table: "AttendanceLogs",
                 column: "employee_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AttendanceLogs_machine_id",
+                table: "AttendanceLogs",
+                column: "machine_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AttendanceModifications_attendance_record_id",
@@ -2477,9 +2782,24 @@ namespace ERP.Entities.Migrations
                 column: "department_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Employees_gender_code",
+                table: "Employees",
+                column: "gender_code");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Employees_job_title_id",
                 table: "Employees",
                 column: "job_title_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Employees_manager_id",
+                table: "Employees",
+                column: "manager_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Employees_marital_status_code",
+                table: "Employees",
+                column: "marital_status_code");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Employees_region_id",
@@ -2487,9 +2807,25 @@ namespace ERP.Entities.Migrations
                 column: "region_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Employees_secondary_branch_id",
+                table: "Employees",
+                column: "secondary_branch_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Employees_secondary_department_id",
+                table: "Employees",
+                column: "secondary_department_id");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_EmployeeSkills_skill_id",
                 table: "EmployeeSkills",
                 column: "skill_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Genders_code",
+                table: "Genders",
+                column: "code",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_HealthRecords_employee_id",
@@ -2500,6 +2836,11 @@ namespace ERP.Entities.Migrations
                 name: "IX_Insurances_employee_id",
                 table: "Insurances",
                 column: "employee_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_LeaveRequests_duration_type_id",
+                table: "LeaveRequests",
+                column: "duration_type_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_LeaveRequests_employee_id",
@@ -2520,6 +2861,12 @@ namespace ERP.Entities.Migrations
                 name: "IX_LocationHistory_employee_id",
                 table: "LocationHistory",
                 column: "employee_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MaritalStatuses_code",
+                table: "MaritalStatuses",
+                column: "code",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_MonthlyAttendanceSummary_employee_id",
@@ -2547,6 +2894,11 @@ namespace ERP.Entities.Migrations
                 column: "shift_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_OtherIncomes_salary_id",
+                table: "OtherIncomes",
+                column: "salary_id");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_PayrollDeductions_deduction_id",
                 table: "PayrollDeductions",
                 column: "deduction_id");
@@ -2565,6 +2917,11 @@ namespace ERP.Entities.Migrations
                 name: "IX_Payrolls_employee_id",
                 table: "Payrolls",
                 column: "employee_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Payrolls_period_id",
+                table: "Payrolls",
+                column: "period_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_PromotionHistory_branch_id",
@@ -2602,6 +2959,11 @@ namespace ERP.Entities.Migrations
                 column: "request_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_RequestBorrowDetails_borrow_id",
+                table: "RequestBorrowDetails",
+                column: "borrow_id");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_RequestDisciplines_discipline_type_id",
                 table: "RequestDisciplines",
                 column: "discipline_type_id");
@@ -2632,6 +2994,16 @@ namespace ERP.Entities.Migrations
                 column: "overtime_type_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_RequestPurchaseDetails_purchase_id",
+                table: "RequestPurchaseDetails",
+                column: "purchase_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RequestPurchaseRequestDetails_purchase_request_id",
+                table: "RequestPurchaseRequestDetails",
+                column: "purchase_request_id");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_RequestPurchaseRequests_request_type_id",
                 table: "RequestPurchaseRequests",
                 column: "request_type_id");
@@ -2645,6 +3017,11 @@ namespace ERP.Entities.Migrations
                 name: "IX_RequestRewards_reward_type_id",
                 table: "RequestRewards",
                 column: "reward_type_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Requests_approved_by",
+                table: "Requests",
+                column: "approved_by");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Requests_employee_id",
@@ -2792,25 +3169,16 @@ namespace ERP.Entities.Migrations
                 name: "EmployeeSkills");
 
             migrationBuilder.DropTable(
-                name: "Genders");
-
-            migrationBuilder.DropTable(
                 name: "HealthRecords");
 
             migrationBuilder.DropTable(
                 name: "Insurances");
 
             migrationBuilder.DropTable(
-                name: "LeaveDurationTypes");
-
-            migrationBuilder.DropTable(
                 name: "LeaveRequests");
 
             migrationBuilder.DropTable(
                 name: "LocationHistory");
-
-            migrationBuilder.DropTable(
-                name: "MaritalStatuses");
 
             migrationBuilder.DropTable(
                 name: "MonthlyAttendanceSummary");
@@ -2828,9 +3196,6 @@ namespace ERP.Entities.Migrations
                 name: "PayrollDetails");
 
             migrationBuilder.DropTable(
-                name: "PayrollPeriods");
-
-            migrationBuilder.DropTable(
                 name: "PromotionHistory");
 
             migrationBuilder.DropTable(
@@ -2838,9 +3203,6 @@ namespace ERP.Entities.Migrations
 
             migrationBuilder.DropTable(
                 name: "RequestBorrowDetails");
-
-            migrationBuilder.DropTable(
-                name: "RequestBorrows");
 
             migrationBuilder.DropTable(
                 name: "RequestDeviceChanges");
@@ -2868,12 +3230,6 @@ namespace ERP.Entities.Migrations
 
             migrationBuilder.DropTable(
                 name: "RequestPurchaseRequestDetails");
-
-            migrationBuilder.DropTable(
-                name: "RequestPurchaseRequests");
-
-            migrationBuilder.DropTable(
-                name: "RequestPurchases");
 
             migrationBuilder.DropTable(
                 name: "RequestReimbursementDetails");
@@ -2909,9 +3265,6 @@ namespace ERP.Entities.Migrations
                 name: "RolePermissions");
 
             migrationBuilder.DropTable(
-                name: "Salaries");
-
-            migrationBuilder.DropTable(
                 name: "SalaryGradeConfig");
 
             migrationBuilder.DropTable(
@@ -2919,9 +3272,6 @@ namespace ERP.Entities.Migrations
 
             migrationBuilder.DropTable(
                 name: "TaxTypes");
-
-            migrationBuilder.DropTable(
-                name: "TimeMachines");
 
             migrationBuilder.DropTable(
                 name: "UpdateHistory");
@@ -2934,6 +3284,9 @@ namespace ERP.Entities.Migrations
 
             migrationBuilder.DropTable(
                 name: "Assets");
+
+            migrationBuilder.DropTable(
+                name: "TimeMachines");
 
             migrationBuilder.DropTable(
                 name: "AttendanceRecords");
@@ -2957,7 +3310,13 @@ namespace ERP.Entities.Migrations
                 name: "Skills");
 
             migrationBuilder.DropTable(
+                name: "LeaveDurationTypes");
+
+            migrationBuilder.DropTable(
                 name: "LeaveTypes");
+
+            migrationBuilder.DropTable(
+                name: "Salaries");
 
             migrationBuilder.DropTable(
                 name: "Deductions");
@@ -2972,6 +3331,9 @@ namespace ERP.Entities.Migrations
                 name: "DecisionTypes");
 
             migrationBuilder.DropTable(
+                name: "RequestBorrows");
+
+            migrationBuilder.DropTable(
                 name: "DisciplineTypes");
 
             migrationBuilder.DropTable(
@@ -2981,6 +3343,12 @@ namespace ERP.Entities.Migrations
                 name: "OvertimeTypes");
 
             migrationBuilder.DropTable(
+                name: "RequestPurchases");
+
+            migrationBuilder.DropTable(
+                name: "RequestPurchaseRequests");
+
+            migrationBuilder.DropTable(
                 name: "RewardTypes");
 
             migrationBuilder.DropTable(
@@ -2988,9 +3356,6 @@ namespace ERP.Entities.Migrations
 
             migrationBuilder.DropTable(
                 name: "VehicleTypes");
-
-            migrationBuilder.DropTable(
-                name: "Requests");
 
             migrationBuilder.DropTable(
                 name: "Permissions");
@@ -3008,13 +3373,22 @@ namespace ERP.Entities.Migrations
                 name: "ShiftAssignments");
 
             migrationBuilder.DropTable(
-                name: "RequestTypes");
+                name: "PayrollPeriods");
+
+            migrationBuilder.DropTable(
+                name: "Requests");
+
+            migrationBuilder.DropTable(
+                name: "Shifts");
 
             migrationBuilder.DropTable(
                 name: "Employees");
 
             migrationBuilder.DropTable(
-                name: "Shifts");
+                name: "RequestTypes");
+
+            migrationBuilder.DropTable(
+                name: "ShiftTypes");
 
             migrationBuilder.DropTable(
                 name: "Branches");
@@ -3023,13 +3397,16 @@ namespace ERP.Entities.Migrations
                 name: "Departments");
 
             migrationBuilder.DropTable(
+                name: "Genders");
+
+            migrationBuilder.DropTable(
                 name: "JobTitles");
 
             migrationBuilder.DropTable(
-                name: "Regions");
+                name: "MaritalStatuses");
 
             migrationBuilder.DropTable(
-                name: "ShiftTypes");
+                name: "Regions");
         }
     }
 }

@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ERP.Entities.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260328134942_FinalizePhase1CoreSetup")]
-    partial class FinalizePhase1CoreSetup
+    [Migration("20260331142741_Initial_Infrastructure")]
+    partial class Initial_Infrastructure
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -566,6 +566,15 @@ namespace ERP.Entities.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Branches", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            address = "Hà Nội",
+                            code = "HO",
+                            name = "Trụ sở chính"
+                        });
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.Certificates", b =>
@@ -617,6 +626,28 @@ namespace ERP.Entities.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("ContractTypes", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            name = "Thử việc"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            name = "Hợp đồng 1 năm"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            name = "Hợp đồng 3 năm"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            name = "Hợp đồng không thời hạn"
+                        });
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.Contracts", b =>
@@ -744,6 +775,38 @@ namespace ERP.Entities.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("DecisionTypes", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            name = "Quyết định Tuyển dụng"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            name = "Quyết định Bổ nhiệm"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            name = "Quyết định Tăng lương"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            name = "Quyết định Khen thưởng"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            name = "Quyết định Kỷ luật"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            name = "Quyết định Nghỉ việc"
+                        });
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.Deductions", b =>
@@ -822,6 +885,32 @@ namespace ERP.Entities.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Departments", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            code = "HR",
+                            name = "Phòng Hành chính Nhân sự"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            code = "IT",
+                            name = "Phòng Công nghệ"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            code = "SALES",
+                            name = "Phòng Kinh doanh"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            code = "ACC",
+                            name = "Phòng Kế toán"
+                        });
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.Dependents", b =>
@@ -1034,6 +1123,58 @@ namespace ERP.Entities.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("DisciplineTypes", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            code = "KL01",
+                            description = "Khiển trách bằng văn bản",
+                            is_active = true,
+                            name = "Khiển trách"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            code = "KL02",
+                            description = "Cảnh cáo trước toàn công ty",
+                            is_active = true,
+                            name = "Cảnh cáo"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            code = "KL03",
+                            description = "Giảm bậc lương hiện tại",
+                            is_active = true,
+                            name = "Hạ bậc lương"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            code = "KL04",
+                            description = "Miễn nhiệm chức vụ hiện tại",
+                            is_active = true,
+                            name = "Cách chức"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            code = "KL05",
+                            description = "Chấm dứt hợp đồng lao động",
+                            is_active = true,
+                            name = "Sa thải"
+                        });
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.Education", b =>
@@ -1399,6 +1540,15 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("home_phone");
 
+                    b.Property<DateTime?>("identity_issue_date")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("identity_issue_date");
+
+                    b.Property<string>("identity_issue_place")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("identity_issue_place");
+
                     b.Property<string>("identity_number")
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)")
@@ -1442,6 +1592,11 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)")
                         .HasColumnName("marital_status_code");
+
+                    b.Property<string>("nationality")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("nationality");
 
                     b.Property<string>("note")
                         .HasColumnType("nvarchar(max)")
@@ -1809,6 +1964,32 @@ namespace ERP.Entities.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("JobTitles", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            code = "STAFF",
+                            name = "Nhân viên"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            code = "TEAMLEAD",
+                            name = "Trưởng nhóm"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            code = "HEAD",
+                            name = "Trưởng phòng"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            code = "DIRECTOR",
+                            name = "Giám đốc"
+                        });
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.LeaveDurationTypes", b =>
@@ -1839,6 +2020,29 @@ namespace ERP.Entities.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("LeaveDurationTypes", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            code = "FULL",
+                            hours = 8m,
+                            name = "Cả ngày"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            code = "MORNING",
+                            hours = 4m,
+                            name = "Sáng"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            code = "AFTERNOON",
+                            hours = 4m,
+                            name = "Chiều"
+                        });
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.LeaveRequests", b =>
@@ -1988,6 +2192,12 @@ namespace ERP.Entities.Migrations
                             Id = 4,
                             is_paid = true,
                             name = "Nghỉ thai sản"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            is_paid = true,
+                            name = "Nghỉ hiếu hỉ"
                         });
                 });
 
@@ -2691,6 +2901,26 @@ namespace ERP.Entities.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Regions", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            code = "NORTH",
+                            name = "Miền Bắc"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            code = "CENTRAL",
+                            name = "Miền Trung"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            code = "SOUTH",
+                            name = "Miền Nam"
+                        });
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.RequestApprovals", b =>
@@ -3582,6 +3812,58 @@ namespace ERP.Entities.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("RequestTypes", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            category = "LEAVE",
+                            code = "REQ_LEAVE",
+                            is_active = true,
+                            name = "Yêu cầu Nghỉ phép"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            category = "ATTENDANCE",
+                            code = "REQ_OT",
+                            is_active = true,
+                            name = "Yêu cầu Làm thêm"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            category = "ATTENDANCE",
+                            code = "REQ_SHIFT",
+                            is_active = true,
+                            name = "Yêu cầu Đổi ca"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            category = "WORK",
+                            code = "REQ_TRIP",
+                            is_active = true,
+                            name = "Yêu cầu Công tác"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            category = "PAYROLL",
+                            code = "REQ_ADVANCE",
+                            is_active = true,
+                            name = "Yêu cầu Tạm ứng lương"
+                        });
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.RequestVehicleUses", b =>
@@ -3782,6 +4064,38 @@ namespace ERP.Entities.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("RewardTypes", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            code = "KT01",
+                            description = "Thưởng bằng tiền mặt",
+                            is_active = true,
+                            name = "Tiền mặt"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            code = "KT02",
+                            description = "Thanh thưởng bằng giấy khen",
+                            is_active = true,
+                            name = "Bằng khen"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            code = "KT03",
+                            description = "Thưởng bằng quà tặng/hiện vật",
+                            is_active = true,
+                            name = "Hiện vật"
+                        });
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.RolePermissions", b =>
@@ -4025,6 +4339,32 @@ namespace ERP.Entities.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("ShiftTypes", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            description = "Làm việc giờ hành chính (08:00 - 17:00)",
+                            name = "Ca hành chính"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            description = "Ca làm việc buổi sáng",
+                            name = "Ca sáng (06:00 - 14:00)"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            description = "Ca làm việc buổi chiều",
+                            name = "Ca chiều (14:00 - 22:00)"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            description = "Ca làm việc ban đêm",
+                            name = "Ca đêm (22:00 - 06:00)"
+                        });
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.Shifts", b =>
@@ -4105,6 +4445,32 @@ namespace ERP.Entities.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Skills", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            description = "Ngôn ngữ quốc tế",
+                            skill_name = "Tiếng Anh"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            description = "Kỹ năng văn phòng",
+                            skill_name = "Microsoft Office"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            description = "Kỹ năng dữ liệu",
+                            skill_name = "SQL / Database"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            description = "Project Management",
+                            skill_name = "Quản lý dự án"
+                        });
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.TaxBrackets", b =>
@@ -4139,6 +4505,63 @@ namespace ERP.Entities.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("TaxBrackets", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            effective_date = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            from_income = 0m,
+                            tax_rate = 5m,
+                            to_income = 5000000m
+                        },
+                        new
+                        {
+                            Id = 2,
+                            effective_date = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            from_income = 5000001m,
+                            tax_rate = 10m,
+                            to_income = 10000000m
+                        },
+                        new
+                        {
+                            Id = 3,
+                            effective_date = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            from_income = 10000001m,
+                            tax_rate = 15m,
+                            to_income = 18000000m
+                        },
+                        new
+                        {
+                            Id = 4,
+                            effective_date = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            from_income = 18000001m,
+                            tax_rate = 20m,
+                            to_income = 32000000m
+                        },
+                        new
+                        {
+                            Id = 5,
+                            effective_date = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            from_income = 32000001m,
+                            tax_rate = 25m,
+                            to_income = 52000000m
+                        },
+                        new
+                        {
+                            Id = 6,
+                            effective_date = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            from_income = 52000001m,
+                            tax_rate = 30m,
+                            to_income = 80000000m
+                        },
+                        new
+                        {
+                            Id = 7,
+                            effective_date = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            from_income = 80000001m,
+                            tax_rate = 35m
+                        });
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.TaxTypes", b =>
@@ -4169,6 +4592,15 @@ namespace ERP.Entities.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("TaxTypes", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            code = "PIT",
+                            is_active = true,
+                            name = "Thuế thu nhập cá nhân"
+                        });
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.TimeMachines", b =>
@@ -4306,12 +4738,6 @@ namespace ERP.Entities.Migrations
                     b.Property<bool>("is_active")
                         .HasColumnType("bit")
                         .HasColumnName("is_active");
-
-                    b.Property<string>("password_hash")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
-                        .HasColumnName("password_hash");
 
                     b.Property<string>("username")
                         .IsRequired()

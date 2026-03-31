@@ -1537,6 +1537,15 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("home_phone");
 
+                    b.Property<DateTime?>("identity_issue_date")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("identity_issue_date");
+
+                    b.Property<string>("identity_issue_place")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("identity_issue_place");
+
                     b.Property<string>("identity_number")
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)")
@@ -1580,6 +1589,11 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)")
                         .HasColumnName("marital_status_code");
+
+                    b.Property<string>("nationality")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("nationality");
 
                     b.Property<string>("note")
                         .HasColumnType("nvarchar(max)")

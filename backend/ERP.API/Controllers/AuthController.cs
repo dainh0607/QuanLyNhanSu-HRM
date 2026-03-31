@@ -1,9 +1,10 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using ERP.DTOs.Auth;
 using ERP.Services.Auth;
-using FirebaseAdmin.Auth;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace ERP.API.Controllers
 {
@@ -12,11 +13,19 @@ namespace ERP.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
+        private readonly IUserService _userService;
+        private readonly IFirebaseService _firebaseService;
         private readonly ILogger<AuthController> _logger;
 
-        public AuthController(IAuthService authService, ILogger<AuthController> logger)
+        public AuthController(
+            IAuthService authService, 
+            IUserService userService, 
+            IFirebaseService firebaseService,
+            ILogger<AuthController> logger)
         {
             _authService = authService;
+            _userService = userService;
+            _firebaseService = firebaseService;
             _logger = logger;
         }
 
@@ -25,16 +34,11 @@ namespace ERP.API.Controllers
         public async Task<IActionResult> SignUp([FromBody] SignUpDto dto)
         {
             if (!ModelState.IsValid)
-            {
                 return BadRequest(ModelState);
-            }
 
             var result = await _authService.SignUpAsync(dto);
-            
             if (!result.Success)
-            {
                 return BadRequest(result);
-            }
 
             return Ok(result);
         }
@@ -44,16 +48,11 @@ namespace ERP.API.Controllers
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
             if (!ModelState.IsValid)
-            {
                 return BadRequest(ModelState);
-            }
 
             var result = await _authService.LoginAsync(dto);
-            
             if (!result.Success)
-            {
                 return Unauthorized(result);
-            }
 
             return Ok(result);
         }
@@ -64,15 +63,11 @@ namespace ERP.API.Controllers
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
-            {
                 return Unauthorized();
-            }
 
-            var user = await _authService.GetUserByIdAsync(userId);
+            var user = await _userService.GetByIdAsync(userId);
             if (user == null)
-            {
                 return NotFound(new { Message = "User not found in system" });
-            }
 
             return Ok(user);
         }
@@ -82,81 +77,13 @@ namespace ERP.API.Controllers
         public async Task<IActionResult> VerifyToken([FromBody] string idToken)
         {
             if (string.IsNullOrEmpty(idToken))
-            {
                 return BadRequest("Token is required");
-            }
 
-            var uid = await _authService.VerifyTokenAsync(idToken);
-            
+            var uid = await _firebaseService.VerifyIdTokenAsync(idToken);
             if (uid == null)
-            {
                 return Unauthorized(new { Message = "Invalid token" });
-            }
 
             return Ok(new { Uid = uid, Message = "Token is valid" });
-        }
-
-        [HttpPost("sync")]
-        [AllowAnonymous] // Changed to AllowAnonymous for easier dev sync, but could be restricted
-        public async Task<IActionResult> SyncUsers()
-        {
-            try
-            {
-                var count = await _authService.SyncFirebaseUsersAsync();
-                return Ok(new { Message = $"Successfully synced {count} users from Firebase.", Count = count });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Message = "Error syncing users", Error = ex.Message });
-            }
-        }
-
-        [HttpPost("invite-staff")]
-        [Authorize] // Temporary Authorize, ideally [Authorize(Roles = "Manager,Admin")]
-        public async Task<IActionResult> InviteStaff([FromBody] PreRegisterStaffDto dto)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            var result = await _authService.PreRegisterStaffAsync(dto);
-            
-            if (!result.Success)
-            {
-                return BadRequest(result);
-            }
-
-            return Ok(result);
-        }
-
-        /// <summary>
-        /// DANGEROUS: Wipes all users from the Firebase project. 
-        /// Use only for resetting development environment.
-        /// </summary>
-        [HttpDelete("nuke-all-users")]
-        [AllowAnonymous] // Use with caution!
-        public async Task<IActionResult> DeleteAllFirebaseUsers()
-        {
-            try
-            {
-                var auth = FirebaseAdmin.Auth.FirebaseAuth.DefaultInstance;
-                var users = auth.ListUsersAsync(null);
-                int count = 0;
-
-                await foreach (var user in users)
-                {
-                    await auth.DeleteUserAsync(user.Uid);
-                    count++;
-                }
-
-                return Ok(new { Message = $"Successfully wiped {count} users from Firebase.", Count = count });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error wiping Firebase users");
-                return StatusCode(500, new { Message = "Error wiping users", Error = ex.Message });
-            }
         }
     }
 }
