@@ -169,7 +169,7 @@ const BasicInfoExportModal: React.FC<BasicInfoExportModalProps> = ({
                     type="checkbox"
                     checked={isAllSelected}
                     onChange={(event) => handleToggleSelectAll(event.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-[#192841] focus:ring-[#192841]"
+                    className="h-4 w-4 rounded border-gray-300 text-emerald-600 accent-emerald-600 focus:ring-emerald-500"
                   />
                   Chọn tất cả
                 </label>
@@ -236,7 +236,7 @@ const BasicInfoExportModal: React.FC<BasicInfoExportModalProps> = ({
                             type="checkbox"
                             checked={checked}
                             onChange={(event) => handleToggleColumn(column.id, event.target.checked)}
-                            className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#192841] focus:ring-[#192841]"
+                            className="mt-0.5 h-4 w-4 rounded border-gray-300 text-emerald-600 accent-emerald-600 focus:ring-emerald-500"
                           />
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-semibold text-gray-800">{column.label}</p>

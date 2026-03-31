@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import type { ColumnConfig } from '../types';
 
 interface ColumnConfigSidebarProps {
@@ -27,20 +26,13 @@ const ColumnConfigSidebar: React.FC<ColumnConfigSidebarProps> = ({
   columns,
   onColumnsChange,
 }) => {
-  // Local draft state — chỉ commit khi nhấn "Áp dụng"
-  const [draft, setDraft] = useState<ColumnConfig[]>(() => sortColumns(columns));
-
-  // Sync draft khi sidebar mở lại với columns mới từ parent
-  const [prevColumns, setPrevColumns] = useState(columns);
-  if (columns !== prevColumns) {
-    setPrevColumns(columns);
-    setDraft(sortColumns(columns));
-  }
+  // Apply changes immediately when the user toggles visibility or pin state.
+  const sortedColumns = sortColumns(columns);
 
   const handleToggleShow = (id: string, checked: boolean) => {
-    setDraft((prev) =>
+    onColumnsChange(
       sortColumns(
-        prev.map((col) =>
+        columns.map((col) =>
           col.id === id
             ? {
                 ...col,
@@ -56,24 +48,22 @@ const ColumnConfigSidebar: React.FC<ColumnConfigSidebarProps> = ({
   };
 
   const handleTogglePin = (id: string) => {
-    setDraft((prev) => {
-      const target = prev.find((c) => c.id === id);
-      if (!target) return prev;
+    const target = columns.find((c) => c.id === id);
+    if (!target) return;
 
-      if (target.pinned) {
-        // Bỏ ghim
-        return sortColumns(prev.map((c) => (c.id === id ? { ...c, pinned: false, pinOrder: undefined } : c)));
-      }
+    if (target.pinned) {
+      // Bỏ ghim
+      onColumnsChange(
+        sortColumns(columns.map((c) => (c.id === id ? { ...c, pinned: false, pinOrder: undefined } : c))),
+      );
+      return;
+    }
 
-      // Ghim mới: gán pinOrder = max hiện tại + 1
-      const maxOrder = Math.max(0, ...prev.filter((c) => c.pinned).map((c) => c.pinOrder ?? 0));
-      return sortColumns(prev.map((c) => (c.id === id ? { ...c, pinned: true, pinOrder: maxOrder + 1 } : c)));
-    });
-  };
-
-  const handleApply = () => {
-    onColumnsChange(draft);
-    onClose();
+    // Ghim mới: gán pinOrder = max hiện tại + 1
+    const maxOrder = Math.max(0, ...columns.filter((c) => c.pinned).map((c) => c.pinOrder ?? 0));
+    onColumnsChange(
+      sortColumns(columns.map((c) => (c.id === id ? { ...c, pinned: true, pinOrder: maxOrder + 1 } : c))),
+    );
   };
 
   return (
@@ -112,7 +102,7 @@ const ColumnConfigSidebar: React.FC<ColumnConfigSidebarProps> = ({
         </div>
 
         <div className="space-y-3">
-          {draft.map((col) => (
+          {sortedColumns.map((col) => (
             <div
               key={col.id}
               className={`flex items-center justify-between p-3 rounded-xl group transition-colors ${
@@ -167,15 +157,6 @@ const ColumnConfigSidebar: React.FC<ColumnConfigSidebarProps> = ({
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="p-6 border-t border-gray-200 shrink-0">
-        <button
-          onClick={handleApply}
-          className="w-full py-3 bg-[#192841] hover:bg-[#253a5c] text-white font-bold rounded-xl shadow-lg shadow-[#192841]/20 transition-all font-inter"
-        >
-          Áp dụng
-        </button>
-      </div>
     </div>
   );
 };
