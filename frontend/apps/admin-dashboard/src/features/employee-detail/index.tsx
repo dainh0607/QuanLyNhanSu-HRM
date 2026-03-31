@@ -65,7 +65,7 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
             <div className="flex flex-wrap gap-2">
               <div className="flex items-center px-3 py-1.5 bg-gray-50 rounded-lg text-xs font-medium text-gray-600 border border-gray-100">
                 <span className="material-symbols-outlined text-[16px] mr-1.5 text-gray-400">call</span>
-                {employee.phone || 'Chưa cập nhật'}
+                {employee.phone || '-'}
               </div>
               <div className="flex items-center px-3 py-1.5 bg-gray-50 rounded-lg text-xs font-medium text-gray-600 border border-gray-100">
                 <span className="material-symbols-outlined text-[16px] mr-1.5 text-gray-400">location_on</span>
