@@ -17,10 +17,6 @@ namespace ERP.Entities.Models
         [StringLength(50)]
         public string username { get; set; }
 
-        [Column("password_hash")]
-        [StringLength(256)]
-        public string password_hash { get; set; }
-
         [Column("is_active")]
         public bool is_active { get; set; }
 

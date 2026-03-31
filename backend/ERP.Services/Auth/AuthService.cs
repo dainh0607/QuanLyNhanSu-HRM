@@ -24,11 +24,10 @@ namespace ERP.Services.Auth
         Task<AuthResponseDto> LoginAsync(LoginDto dto);
         Task<UserInfoDto?> GetUserByUidAsync(string uid);
         Task<string?> VerifyTokenAsync(string idToken);
-        Task<bool> VerifyPasswordAsync(string password, string passwordHash);
-        string HashPassword(string password);
         Task<int> SyncFirebaseUsersAsync();
         Task<AuthResponseDto> PreRegisterStaffAsync(PreRegisterStaffDto dto);
         string GenerateInternalToken(UserInfoDto user);
+        Task<string> CreateFirebaseUserAsync(string email, string password, string displayName, int employeeId);
     }
 
     public class AuthService : IAuthService
@@ -111,7 +110,6 @@ namespace ERP.Services.Auth
                     {
                         employee_id = employeeWithCode.Id,
                         username = dto.Email,
-                        password_hash = "firebase", // Không lưu password hash local vì dùng Firebase
                         firebase_uid = firebaseUser.Uid,
                         is_active = true,
                         CreatedAt = DateTime.UtcNow,
@@ -358,18 +356,6 @@ namespace ERP.Services.Auth
             }
         }
 
-        public async Task<bool> VerifyPasswordAsync(string password, string passwordHash)
-        {
-            // Không sử dụng xác minh local cho Firebase Auth
-            return false;
-        }
-
-        public string HashPassword(string password)
-        {
-            // Không sử dụng hashing local cho Firebase Auth
-            return "firebase";
-        }
-
         public async Task<int> SyncFirebaseUsersAsync()
         {
             int syncCount = 0;
@@ -421,7 +407,6 @@ namespace ERP.Services.Auth
                                 {
                                     employee_id = newEmployee.Id,
                                     username = fbUser.Email,
-                                    password_hash = "firebase",
                                     firebase_uid = fbUser.Uid,
                                     is_active = true,
                                     CreatedAt = DateTime.UtcNow,
@@ -538,6 +523,46 @@ namespace ERP.Services.Auth
                     Message = "Lỗi xảy ra trong quá trình cung cấp Email cho nhân viên."
                 };
             }
+        }
+
+        public async Task<string> CreateFirebaseUserAsync(string email, string password, string displayName, int employeeId)
+        {
+            var userArgs = new UserRecordArgs()
+            {
+                Email = email,
+                Password = password,
+                DisplayName = displayName,
+                Disabled = false,
+            };
+
+            var firebaseUser = await FirebaseAuth.DefaultInstance.CreateUserAsync(userArgs);
+
+            var user = new Users
+            {
+                employee_id = employeeId,
+                username = email,
+                firebase_uid = firebaseUser.Uid,
+                is_active = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            // Assign default User role
+            var userRole = new UserRoles
+            {
+                user_id = user.Id,
+                role_id = 3, // User
+                is_active = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            _context.UserRoles.Add(userRole);
+            await _context.SaveChangesAsync();
+
+            return firebaseUser.Uid;
         }
 
         public string GenerateInternalToken(UserInfoDto user)

@@ -5,10 +5,10 @@ using System.Threading.Tasks;
 using ERP.DTOs;
 using ERP.DTOs.Employees;
 using ERP.DTOs.Employees.Profile;
+using ERP.Services.Auth;
 using ERP.Entities.Models;
 using ERP.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using ERP.Services.Helpers;
 using System.Text;
 using EmployeeEntity = ERP.Entities.Models.Employees;
 
@@ -17,60 +17,129 @@ namespace ERP.Services.Employees
     public class EmployeeService : IEmployeeService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IPasswordHasher _passwordHasher;
+        private readonly IAuthService _authService;
 
-        public EmployeeService(IUnitOfWork unitOfWork, IPasswordHasher passwordHasher)
+        public EmployeeService(IUnitOfWork unitOfWork, IAuthService authService)
         {
             _unitOfWork = unitOfWork;
-            _passwordHasher = passwordHasher;
+            _authService = authService;
         }
 
-        public async Task<PaginatedListDto<EmployeeDto>> GetPagedListAsync(int pageNumber, int pageSize, string? searchTerm, int? departmentId, string? status = "active")
+        public async Task<PaginatedListDto<EmployeeDto>> GetPagedListAsync(EmployeeFilterDto filter)
         {
             var employees = await _unitOfWork.Repository<EmployeeEntity>().GetAllAsync();
             var query = employees.AsQueryable();
 
-            // Filtering
-            if (!string.IsNullOrEmpty(searchTerm))
+            // 1. Search Term (Universal search)
+            if (!string.IsNullOrEmpty(filter.SearchTerm))
             {
-                query = query.Where(e => (e.full_name != null && e.full_name.Contains(searchTerm)) || 
-                                         (e.email != null && e.email.Contains(searchTerm)) ||
-                                         e.employee_code.Contains(searchTerm));
+                query = query.Where(e => (e.full_name != null && e.full_name.Contains(filter.SearchTerm)) || 
+                                         (e.email != null && e.email.Contains(filter.SearchTerm)) ||
+                                         e.employee_code.Contains(filter.SearchTerm));
             }
 
-            if (departmentId.HasValue)
-            {
-                query = query.Where(e => e.department_id == departmentId.Value);
-            }
+            // 2. Specific Field Filtering
+            if (!string.IsNullOrEmpty(filter.EmployeeCode))
+                query = query.Where(e => e.employee_code.Contains(filter.EmployeeCode));
 
-            // Employee Status Filtering
-            if (status == "active")
-            {
+            if (!string.IsNullOrEmpty(filter.FullName))
+                query = query.Where(e => e.full_name != null && e.full_name.Contains(filter.FullName));
+
+            if (!string.IsNullOrEmpty(filter.Email))
+                query = query.Where(e => e.email != null && e.email.Contains(filter.Email));
+
+            if (!string.IsNullOrEmpty(filter.Phone))
+                query = query.Where(e => e.phone != null && e.phone.Contains(filter.Phone));
+
+            if (!string.IsNullOrEmpty(filter.IdentityNumber))
+                query = query.Where(e => e.identity_number != null && e.identity_number.Contains(filter.IdentityNumber));
+
+            if (!string.IsNullOrEmpty(filter.TaxCode))
+                query = query.Where(e => e.tax_code != null && e.tax_code.Contains(filter.TaxCode));
+
+            // 3. Lookup Filtering
+            if (!string.IsNullOrEmpty(filter.GenderCode))
+                query = query.Where(e => e.gender_code == filter.GenderCode);
+
+            if (!string.IsNullOrEmpty(filter.MaritalStatusCode))
+                query = query.Where(e => e.marital_status_code == filter.MaritalStatusCode);
+
+            if (filter.DepartmentId.HasValue)
+                query = query.Where(e => e.department_id == filter.DepartmentId);
+
+            if (filter.BranchId.HasValue)
+                query = query.Where(e => e.branch_id == filter.BranchId);
+
+            if (filter.JobTitleId.HasValue)
+                query = query.Where(e => e.job_title_id == filter.JobTitleId);
+
+            if (filter.ManagerId.HasValue)
+                query = query.Where(e => e.manager_id == filter.ManagerId);
+
+            if (filter.RegionId.HasValue)
+                query = query.Where(e => e.region_id == filter.RegionId);
+
+            // 4. Status Filtering
+            if (filter.Status == "active")
                 query = query.Where(e => e.is_active && !e.is_resigned);
-            }
-            else if (status == "resigned")
-            {
+            else if (filter.Status == "resigned")
                 query = query.Where(e => e.is_resigned);
-            }
-            // If status is "all" or other, we don't filter by status (but maybe still only is_active=true if we want to exclude deleted ones)
-            else if (status == "all")
+            // else if "all", no status filter
+
+            // 5. Date Ranges
+            if (filter.StartDateFrom.HasValue)
+                query = query.Where(e => e.start_date >= filter.StartDateFrom.Value);
+
+            if (filter.StartDateTo.HasValue)
+                query = query.Where(e => e.start_date <= filter.StartDateTo.Value);
+
+            // 6. Flags
+            if (filter.IsDepartmentHead.HasValue)
+                query = query.Where(e => e.is_department_head == filter.IsDepartmentHead.Value);
+
+            if (!string.IsNullOrEmpty(filter.WorkType))
+                query = query.Where(e => e.work_type == filter.WorkType);
+
+            // 7. Sorting
+            if (!string.IsNullOrEmpty(filter.SortBy))
             {
-                // No additional filtering on resignation status
+                switch (filter.SortBy.ToLower())
+                {
+                    case "fullname":
+                    case "name":
+                        // Sắp xếp theo tên (chữ cái đầu)
+                        query = filter.IsDescending ? query.OrderByDescending(e => e.full_name) : query.OrderBy(e => e.full_name);
+                        break;
+                    case "code":
+                    case "employeecode":
+                        query = filter.IsDescending ? query.OrderByDescending(e => e.employee_code) : query.OrderBy(e => e.employee_code);
+                        break;
+                    case "startdate":
+                        query = filter.IsDescending ? query.OrderByDescending(e => e.start_date) : query.OrderBy(e => e.start_date);
+                        break;
+                    case "department":
+                        query = filter.IsDescending ? query.OrderByDescending(e => e.department_id) : query.OrderBy(e => e.department_id);
+                        break;
+                    default:
+                        query = query.OrderBy(e => e.employee_code);
+                        break;
+                }
             }
             else
             {
-                // Default fallback: only active
-                query = query.Where(e => e.is_active && !e.is_resigned);
+                // Mặc định sắp xếp theo mã nhân viên
+                query = query.OrderBy(e => e.employee_code);
             }
 
+            // 8. Pagination
             var count = query.Count();
             var items = query
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
+                .Skip((filter.PageNumber - 1) * filter.PageSize)
+                .Take(filter.PageSize)
                 .Select(e => MapToDto(e))
                 .ToList();
 
-            return new PaginatedListDto<EmployeeDto>(items, count, pageNumber, pageSize);
+            return new PaginatedListDto<EmployeeDto>(items, count, filter.PageNumber, filter.PageSize);
         }
 
         public async Task<EmployeeDto?> GetByIdAsync(int id)
@@ -267,20 +336,12 @@ namespace ERP.Services.Employees
             await _unitOfWork.Repository<EmployeeEntity>().AddAsync(employee);
             await _unitOfWork.SaveChangesAsync();
 
-            // 3. Create User account with hashed password
-            var user = new Users
-            {
-                employee_id = employee.Id,
-                username = dto.Email ?? dto.EmployeeCode,
-                password_hash = _passwordHasher.HashPassword(dto.Password),
-                firebase_uid = "", // Set empty or handle accordingly if Firebase is still used
-                is_active = true,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
-
-            await _unitOfWork.Repository<Users>().AddAsync(user);
-            await _unitOfWork.SaveChangesAsync();
+            // 3. Create Firebase User via AuthService (which also creates local User and Role)
+            await _authService.CreateFirebaseUserAsync(
+                dto.Email ?? dto.EmployeeCode, 
+                dto.Password, 
+                dto.FullName, 
+                employee.Id);
 
             return MapToDto(employee);
         }

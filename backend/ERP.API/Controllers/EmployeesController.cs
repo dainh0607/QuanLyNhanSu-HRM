@@ -19,9 +19,9 @@ namespace ERP.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetPagedList([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? searchTerm = null, [FromQuery] int? departmentId = null, [FromQuery] string? status = "active")
+        public async Task<IActionResult> GetPagedList([FromQuery] EmployeeFilterDto filter)
         {
-            var result = await _employeeService.GetPagedListAsync(pageNumber, pageSize, searchTerm, departmentId, status);
+            var result = await _employeeService.GetPagedListAsync(filter);
             return Ok(result);
         }
 

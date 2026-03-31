@@ -13,7 +13,7 @@ using ERP.Repositories.Implementations;
 using ERP.Services.Employees;
 using ERP.Services.Organization;
 using ERP.Services.Lookup;
-using ERP.Services.Helpers;
+using ERP.Services.Lookup;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -69,7 +69,7 @@ builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IEmployeeProfileService, EmployeeProfileService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 builder.Services.AddScoped<ILookupService, LookupService>();
-builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
+builder.Services.AddScoped<ILookupService, LookupService>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));

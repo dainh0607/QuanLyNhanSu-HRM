@@ -9,7 +9,7 @@ namespace ERP.Services.Employees
 {
     public interface IEmployeeService
     {
-        Task<PaginatedListDto<EmployeeDto>> GetPagedListAsync(int pageNumber, int pageSize, string? searchTerm, int? departmentId, string? status = "active");
+        Task<PaginatedListDto<EmployeeDto>> GetPagedListAsync(EmployeeFilterDto filter);
         Task<EmployeeDto?> GetByIdAsync(int id);
         Task<EmployeeFullProfileDto?> GetFullProfileAsync(int id);
         Task<EmployeeDto?> GetByCodeAsync(string code);
