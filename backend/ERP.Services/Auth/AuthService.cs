@@ -71,48 +71,64 @@ namespace ERP.Services.Auth
                     };
                     var firebaseUser = await _firebaseService.CreateUserAsync(userArgs);
 
-                    // 3. Create/Update Local Employee
-                    if (existingEmployee == null)
+                    try
                     {
-                        existingEmployee = new Employees
+                        // 3. Create/Update Local Employee
+                        if (existingEmployee == null)
                         {
-                            employee_code = dto.EmployeeCode,
-                            full_name = dto.FullName,
-                            email = dto.Email,
-                            phone = dto.PhoneNumber,
-                            is_active = true,
-                            CreatedAt = DateTime.UtcNow,
-                            UpdatedAt = DateTime.UtcNow
+                            existingEmployee = new ERP.Entities.Models.Employees
+                            {
+                                employee_code = dto.EmployeeCode,
+                                full_name = dto.FullName,
+                                email = dto.Email,
+                                phone = dto.PhoneNumber,
+                                is_active = true,
+                                CreatedAt = DateTime.UtcNow,
+                                UpdatedAt = DateTime.UtcNow
+                            };
+                            _context.Employees.Add(existingEmployee);
+                            await _context.SaveChangesAsync();
+                        }
+
+                        // 4. Create Local User
+                        var user = await _userService.CreateLocalUserAsync(existingEmployee.Id, dto.Email, firebaseUser.Uid);
+
+                        // 5. Assign Roles
+                        int assignedRoleId = 3; // Default User
+                        string masterEmail = _configuration["AdminSettings:MasterEmail"];
+
+                        if (!string.IsNullOrEmpty(masterEmail) && 
+                            string.Equals(dto.Email, masterEmail, StringComparison.OrdinalIgnoreCase))
+                        {
+                            assignedRoleId = 1; // Admin
+                        }
+                        
+                        await _userService.AssignRoleAsync(user.Id, assignedRoleId);
+                        await transaction.CommitAsync();
+
+                        return new AuthResponseDto
+                        {
+                            Success = true,
+                            Message = "Đăng ký thành công",
+                            User = await _userService.GetByIdAsync(user.Id)
                         };
-                        _context.Employees.Add(existingEmployee);
-                        await _context.SaveChangesAsync();
                     }
-
-                    // 4. Create Local User
-                    var user = await _userService.CreateLocalUserAsync(existingEmployee.Id, dto.Email, firebaseUser.Uid);
-
-                    // 5. Assign Roles
-                    int assignedRoleId = 3; // Default User
-                    string roleName = "User";
-
-                    if (dto.Email.ToLower().Contains("admin"))
+                    catch (Exception)
                     {
-                        assignedRoleId = 1; roleName = "Admin";
+                        // Rollback Firebase user if local local processing fails
+                        try
+                        {
+                            if (firebaseUser != null && !string.IsNullOrEmpty(firebaseUser.Uid))
+                            {
+                                await _firebaseService.DeleteUserAsync(firebaseUser.Uid);
+                            }
+                        }
+                        catch (Exception fbEx)
+                        {
+                            _logger.LogError($"Failed to rollback Firebase user {firebaseUser?.Uid}: {fbEx.Message}");
+                        }
+                        throw; // Rethrow to outer catch
                     }
-                    else if (dto.Email.ToLower().Contains("manager"))
-                    {
-                        assignedRoleId = 2; roleName = "Manager";
-                    }
-                    
-                    await _userService.AssignRoleAsync(user.Id, assignedRoleId);
-                    await transaction.CommitAsync();
-
-                    return new AuthResponseDto
-                    {
-                        Success = true,
-                        Message = "Đăng ký thành công",
-                        User = await _userService.GetByIdAsync(user.Id)
-                    };
                 }
                 catch (Exception ex)
                 {
@@ -164,7 +180,7 @@ namespace ERP.Services.Auth
                 if (existingEmployee != null)
                     return new AuthResponseDto { Success = false, Message = "Email đã tồn tại" };
 
-                var employee = new Employees
+                var employee = new ERP.Entities.Models.Employees
                 {
                     employee_code = dto.EmployeeCode ?? "STAFF_" + Guid.NewGuid().ToString().Substring(0, 8),
                     full_name = dto.FullName,

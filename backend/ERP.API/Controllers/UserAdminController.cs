@@ -67,6 +67,7 @@ namespace ERP.API.Controllers
         /// DANGEROUS: Wipes all users from the Firebase project. 
         /// </summary>
         [HttpDelete("nuke-firebase")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteAllFirebaseUsers()
         {
             try

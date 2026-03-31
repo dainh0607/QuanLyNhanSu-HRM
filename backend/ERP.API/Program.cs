@@ -92,14 +92,14 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<AppDbContext>();
-        var authService = services.GetRequiredService<IAuthService>();
+        var userService = services.GetRequiredService<IUserService>();
         var logger = services.GetRequiredService<ILogger<Program>>();
 
         if (app.Environment.IsDevelopment())
         {
             logger.LogInformation("Development mode: Ensuring database is migrated and synced...");
             context.Database.Migrate();
-            await authService.SyncFirebaseUsersAsync();
+            await userService.SyncWithFirebaseAsync();
             logger.LogInformation("Database initialization and sync complete.");
         }
     }

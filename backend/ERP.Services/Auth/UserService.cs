@@ -8,6 +8,8 @@ using ERP.Entities.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
+using Microsoft.Extensions.Configuration;
+
 namespace ERP.Services.Auth
 {
     public class UserService : IUserService
@@ -15,12 +17,14 @@ namespace ERP.Services.Auth
         private readonly AppDbContext _context;
         private readonly ILogger<UserService> _logger;
         private readonly IFirebaseService _firebaseService;
+        private readonly IConfiguration _configuration;
 
-        public UserService(AppDbContext context, ILogger<UserService> logger, IFirebaseService firebaseService)
+        public UserService(AppDbContext context, ILogger<UserService> logger, IFirebaseService firebaseService, IConfiguration configuration)
         {
             _context = context;
             _logger = logger;
             _firebaseService = firebaseService;
+            _configuration = configuration;
         }
 
         public async Task<UserInfoDto?> GetByIdAsync(int id)
@@ -88,8 +92,12 @@ namespace ERP.Services.Auth
                     var localUser = await GetLocalUserByEmailOrUidAsync(fbUser.Email, fbUser.Uid);
 
                     int targetRoleId = 3; // Default User
-                    if (fbUser.Email?.ToLower().Contains("admin") == true) targetRoleId = 1;
-                    else if (fbUser.Email?.ToLower().Contains("manager") == true) targetRoleId = 2;
+                    string masterEmail = _configuration["AdminSettings:MasterEmail"];
+                    if (!string.IsNullOrEmpty(masterEmail) && 
+                        string.Equals(fbUser.Email, masterEmail, StringComparison.OrdinalIgnoreCase))
+                    {
+                        targetRoleId = 1; // Admin
+                    }
 
                     if (localUser == null)
                     {
@@ -98,7 +106,7 @@ namespace ERP.Services.Auth
                             try
                             {
                                 var employeeCode = fbUser.Email?.Split('@')[0].ToUpper() ?? "EMP_" + Guid.NewGuid().ToString().Substring(0, 8);
-                                var newEmployee = new Employees
+                                var newEmployee = new ERP.Entities.Models.Employees
                                 {
                                     employee_code = employeeCode,
                                     full_name = fbUser.DisplayName ?? fbUser.Email,
