@@ -26,7 +26,7 @@ Content-Type: {{contentType}}
 ############################################################
 
 # @name createEmployee
-POST {{baseUrl}}/api/employee
+POST {{baseUrl}}/api/employees
 Authorization: Bearer {{authToken}}
 Content-Type: {{contentType}}
 
@@ -48,7 +48,7 @@ Content-Type: {{contentType}}
 ### 3. Liệt kê danh sách nhân viên (Phân trang & Tìm kiếm)
 ############################################################
 
-GET {{baseUrl}}/api/employee?pageNumber=1&pageSize=10&searchTerm=Nguyễn
+GET {{baseUrl}}/api/employees?pageNumber=1&pageSize=10&searchTerm=Nguyễn
 Authorization: Bearer {{authToken}}
 
 ###
@@ -59,7 +59,7 @@ Authorization: Bearer {{authToken}}
 
 @employeeId = {{createEmployee.response.body.id}}
 
-GET {{baseUrl}}/api/employee/{{employeeId}}
+GET {{baseUrl}}/api/employees/{{employeeId}}
 Authorization: Bearer {{authToken}}
 
 ###
@@ -68,7 +68,7 @@ Authorization: Bearer {{authToken}}
 ### 5. Cập nhật thông tin nhân viên
 ############################################################
 
-PUT {{baseUrl}}/api/employee/{{employeeId}}
+PUT {{baseUrl}}/api/employees/{{employeeId}}
 Authorization: Bearer {{authToken}}
 Content-Type: {{contentType}}
 
@@ -86,7 +86,7 @@ Content-Type: {{contentType}}
 ### 6. Xóa nhân viên (Soft Delete)
 ############################################################
 
-DELETE {{baseUrl}}/api/employee/{{employeeId}}
+DELETE {{baseUrl}}/api/employees/{{employeeId}}
 Authorization: Bearer {{authToken}}
 
 ###
@@ -95,7 +95,7 @@ Authorization: Bearer {{authToken}}
 ### 7. Kiểm tra lại sau khi xóa (Phải trả về is_active = false)
 ############################################################
 
-GET {{baseUrl}}/api/employee/{{employeeId}}
+GET {{baseUrl}}/api/employees/{{employeeId}}
 Authorization: Bearer {{authToken}}
 
 ###

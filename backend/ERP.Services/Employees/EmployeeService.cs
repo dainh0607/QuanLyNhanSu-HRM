@@ -80,10 +80,27 @@ namespace ERP.Services.Employees
                 query = query.Where(e => e.region_id == filter.RegionId);
 
             // 4. Status Filtering
+            var today = DateTime.Today;
             if (filter.Status == "active")
-                query = query.Where(e => e.is_active && !e.is_resigned);
+            {
+                // Đang hoạt động: is_active = true, is_resigned = false, và đã đến ngày làm việc
+                query = query.Where(e => e.is_active && !e.is_resigned && (e.start_date == null || e.start_date <= today));
+            }
             else if (filter.Status == "resigned")
+            {
+                // Nghỉ việc: is_resigned = true
                 query = query.Where(e => e.is_resigned);
+            }
+            else if (filter.Status == "inactive")
+            {
+                // Không hoạt động: is_active = false, is_resigned = false
+                query = query.Where(e => !e.is_active && !e.is_resigned);
+            }
+            else if (filter.Status == "notstarted")
+            {
+                // Chưa làm việc: start_date > today
+                query = query.Where(e => e.start_date > today && !e.is_resigned);
+            }
             // else if "all", no status filter
 
             // 5. Date Ranges

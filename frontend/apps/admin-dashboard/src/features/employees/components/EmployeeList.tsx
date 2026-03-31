@@ -38,13 +38,22 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onSelectEmployee }) => {
   const fetchEmployees = useCallback(async () => {
     setIsLoading(true);
     try {
-      // If we need to map selectedStatus to API params, do it here
-      // For now, let's just use searchTerm derived from input and activeFilters
+      // Map Vietnamese status names to English keys for backend
+      let mappedStatus: string | undefined = undefined;
+      switch (statusFilter) {
+        case "Đang hoạt động": mappedStatus = "active"; break;
+        case "Không hoạt động": mappedStatus = "inactive"; break;
+        case "Nghỉ việc": mappedStatus = "resigned"; break;
+        case "Chưa làm việc": mappedStatus = "notstarted"; break;
+        case "Tất cả": mappedStatus = undefined; break;
+        default: mappedStatus = undefined;
+      }
+
       const response = await employeeService.getEmployees(
         currentPage,
         recordsPerPage,
         searchTerm,
-        statusFilter !== 'Tất cả' ? statusFilter : undefined
+        mappedStatus
       );
       setEmployees(response.items);
       setTotalRecords(response.totalCount);

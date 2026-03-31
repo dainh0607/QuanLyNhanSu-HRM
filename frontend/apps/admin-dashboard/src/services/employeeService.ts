@@ -30,7 +30,7 @@ export const employeeService = {
     status?: string
   ): Promise<PaginatedResponse<Employee>> => {
     try {
-      const url = new URL(`${API_URL}/employee`);
+      const url = new URL(`${API_URL}/employees`);
       url.searchParams.append("pageNumber", pageNumber.toString());
       url.searchParams.append("pageSize", pageSize.toString());
       if (searchTerm) {
@@ -62,7 +62,7 @@ export const employeeService = {
    */
   getEmployeeById: async (id: number): Promise<Employee> => {
     try {
-      const response = await fetch(`${API_URL}/employee/${id}`, {
+      const response = await fetch(`${API_URL}/employees/${id}`, {
         method: "GET",
         headers: getAuthHeaders(),
       });
@@ -83,7 +83,7 @@ export const employeeService = {
    */
   deleteEmployee: async (id: number): Promise<void> => {
     try {
-      const response = await fetch(`${API_URL}/employee/${id}`, {
+      const response = await fetch(`${API_URL}/employees/${id}`, {
         method: "DELETE",
         headers: getAuthHeaders(),
       });
@@ -102,12 +102,12 @@ export const employeeService = {
    */
   getNextEmployeeCode: async (): Promise<string> => {
     try {
-      const response = await fetch(`${API_URL}/employee/next-code`, {
+      const response = await fetch(`${API_URL}/employees/next-code`, {
         method: "GET",
         headers: getAuthHeaders(),
       });
       const data = await response.json();
-      return data.code;
+      return data.employeeCode;
     } catch (error) {
       console.error("Get Next Employee Code Error:", error);
       return "0000";
@@ -136,7 +136,7 @@ export const employeeService = {
    */
   createEmployee: async (dto: any): Promise<any> => {
     try {
-      const response = await fetch(`${API_URL}/employee`, {
+      const response = await fetch(`${API_URL}/employees`, {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify(dto),
