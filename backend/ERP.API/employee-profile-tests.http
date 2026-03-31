@@ -1,12 +1,12 @@
 @baseUrl = http://localhost:5122/api
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtYW5hZ2VyLnRlc3RfY29tcGFueS5jb20iLCJqdGkiOiI0YjQ5YjQ5Yi00OTRiLTQ5NGItNDk0Yi00OTRiNDk0YjQ5NGIiLCJlbWFpbCI6Im1hbmFnZXIudGVzdEBjb21wYW55LmNvbSIsIm5hbWUiOiJNYW5hZ2VyIFRlc3QiLCJyb2xlcyI6WyJBZG1pbiIsIk1hbmFnZXIiXSwiaXNzIjoiZXhwYW5kZWQtYXV0aC1zZXJ2aWNlIiwiYXVkIjoiZXhwYW5kZWQtYXV0aC1zZXJ2aWNlIiwiZXhwIjoxNzQ0NDY2NzY5LCJpYXQiOjE3NDQ0NjMxNjl9.1455555555555555555555555555555555555555
+@token = eyJhbGciOiJSUzI1NiIsImtpZCI6IjM3MzAwNzY5YTA3ZTA1MTE2ZjdlNTEzOGZhOTA5MzY4NWVlYmMyNDAiLCJ0eXAiOiJKV1QifQ.eyJuYW1lIjoiTmd1eeG7hW4gUXXhuqNuIEzDvSIsImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9ocm0tcHJvamVjdC1lZjQyYSIsImF1ZCI6ImhybS1wcm9qZWN0LWVmNDJhIiwiYXV0aF90aW1lIjoxNzc0ODU4MDU2LCJ1c2VyX2lkIjoiT1h1MU5Dd1NXMFFocDA1ZGVsc0tEY2laU2ZoMSIsInN1YiI6Ik9YdTFOQ3dTVzBRaHAwNWRlbHNLRGNpWlNmaDEiLCJpYXQiOjE3NzQ4NTgwNTYsImV4cCI6MTc3NDg2MTY1NiwiZW1haWwiOiJtYW5hZ2VyLnRlc3RAY29tcGFueS5jb20iLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsInBob25lX251bWJlciI6Iis4NDkwMDAwMDAwMSIsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsibWFuYWdlci50ZXN0QGNvbXBhbnkuY29tIl0sInBob25lIjpbIis4NDkwMDAwMDAwMSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.kOfa63vmKVzbq9_YqO5xmMAx3vpeaR18hesctzAffo1Ns-txzCuxjR5UIxD8KbtCx5eN1HL9JbGO7sQsNgsptMkmS25mECKDJ0yB-YJztg__FNSymYpFpPtaNhS52HJhcxG8MJHfZGzrWFkx3Sy9DDSz3nxWyza4Ae7LPJnvYchY-qJ75IO1Ap4CPvo1V4S4uOJCJUXRtmSmTqoDWLgaIScyaCf_CaHJ1FURYYmZ_sFwBKSpm-qnafLXqIOSWJHiD192UXEzSW9OsLstS2egYORnqhRDE_2aKuTFBfSF7yegxevjpcMPl_R76Ic3pOsrRppf3m9FSlBqeEYeLHOcdQ
 
 ### Get full employee profile
-GET {{baseUrl}}/employees/1/full-profile
+GET {{baseUrl}}/employees/3/full-profile
 Authorization: Bearer {{token}}
 
 ### Update bank accounts
-PUT {{baseUrl}}/employees/1/bank-accounts
+PUT {{baseUrl}}/employees/3/bank-accounts
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
@@ -20,7 +20,7 @@ Content-Type: application/json
 ]
 
 ### Update health record
-PUT {{baseUrl}}/employees/1/health-record
+PUT {{baseUrl}}/employees/3/health-record
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
@@ -35,7 +35,7 @@ Content-Type: application/json
 }
 
 ### Update emergency contacts
-PUT {{baseUrl}}/employees/1/emergency-contacts
+PUT {{baseUrl}}/employees/3/emergency-contacts
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
@@ -50,7 +50,7 @@ Content-Type: application/json
 ]
 
 ### Update education
-PUT {{baseUrl}}/employees/1/education
+PUT {{baseUrl}}/employees/3/education
 Authorization: Bearer {{token}}
 Content-Type: application/json
 

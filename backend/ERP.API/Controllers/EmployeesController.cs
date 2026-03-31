@@ -7,21 +7,21 @@ using System.Threading.Tasks;
 namespace ERP.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/employees")]
     [Authorize]
-    public class EmployeeController : ControllerBase
+    public class EmployeesController : ControllerBase
     {
         private readonly IEmployeeService _employeeService;
 
-        public EmployeeController(IEmployeeService employeeService)
+        public EmployeesController(IEmployeeService employeeService)
         {
             _employeeService = employeeService;
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetPagedList([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? searchTerm = null, [FromQuery] int? departmentId = null)
+        public async Task<IActionResult> GetPagedList([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? searchTerm = null, [FromQuery] int? departmentId = null, [FromQuery] string? status = "active")
         {
-            var result = await _employeeService.GetPagedListAsync(pageNumber, pageSize, searchTerm, departmentId);
+            var result = await _employeeService.GetPagedListAsync(pageNumber, pageSize, searchTerm, departmentId, status);
             return Ok(result);
         }
 
@@ -49,17 +49,43 @@ namespace ERP.API.Controllers
             return Ok(result);
         }
 
+        [HttpGet("next-code")]
+        public async Task<IActionResult> GetNextCode([FromQuery] string prefix = "NV")
+        {
+            var result = await _employeeService.GenerateNextEmployeeCodeAsync(prefix);
+            return Ok(new { EmployeeCode = result });
+        }
+
+        [HttpGet("returning/{id}")]
+        public async Task<IActionResult> GetReturningCode(int id, [FromQuery] string prefix = "NV")
+        {
+            var result = await _employeeService.GetCodeForReturningEmployeeAsync(id, prefix);
+            return Ok(new { EmployeeCode = result });
+        }
+
+        [HttpGet("export")]
+        [Authorize(Roles = "Manager,Admin")]
+        public async Task<IActionResult> Export()
+        {
+            var result = await _employeeService.ExportEmployeesToCsvAsync();
+            return File(result, "text/csv", $"Employees_{System.DateTime.Now:yyyyMMdd}.csv");
+        }
+
         [HttpPost]
         [Authorize(Roles = "Manager,Admin")]
         public async Task<IActionResult> Create([FromBody] EmployeeCreateDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var existing = await _employeeService.GetByCodeAsync(dto.EmployeeCode);
-            if (existing != null) return BadRequest(new { Message = "Mã nhân viên đã tồn tại" });
-
-            var result = await _employeeService.CreateAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+            try
+            {
+                var result = await _employeeService.CreateAsync(dto);
+                return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
         }
 
         [HttpPut("{id}")]

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using ERP.DTOs.Auth;
 using ERP.Services.Auth;
+using FirebaseAdmin.Auth;
 
 namespace ERP.API.Controllers
 {
@@ -127,6 +128,35 @@ namespace ERP.API.Controllers
             }
 
             return Ok(result);
+        }
+
+        /// <summary>
+        /// DANGEROUS: Wipes all users from the Firebase project. 
+        /// Use only for resetting development environment.
+        /// </summary>
+        [HttpDelete("nuke-all-users")]
+        [AllowAnonymous] // Use with caution!
+        public async Task<IActionResult> DeleteAllFirebaseUsers()
+        {
+            try
+            {
+                var auth = FirebaseAdmin.Auth.FirebaseAuth.DefaultInstance;
+                var users = auth.ListUsersAsync(null);
+                int count = 0;
+
+                await foreach (var user in users)
+                {
+                    await auth.DeleteUserAsync(user.Uid);
+                    count++;
+                }
+
+                return Ok(new { Message = $"Successfully wiped {count} users from Firebase.", Count = count });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error wiping Firebase users");
+                return StatusCode(500, new { Message = "Error wiping users", Error = ex.Message });
+            }
         }
     }
 }

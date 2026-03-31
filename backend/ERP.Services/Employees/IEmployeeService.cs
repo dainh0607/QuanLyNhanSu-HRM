@@ -9,12 +9,15 @@ namespace ERP.Services.Employees
 {
     public interface IEmployeeService
     {
-        Task<PaginatedListDto<EmployeeDto>> GetPagedListAsync(int pageNumber, int pageSize, string? searchTerm, int? departmentId);
+        Task<PaginatedListDto<EmployeeDto>> GetPagedListAsync(int pageNumber, int pageSize, string? searchTerm, int? departmentId, string? status = "active");
         Task<EmployeeDto?> GetByIdAsync(int id);
         Task<EmployeeFullProfileDto?> GetFullProfileAsync(int id);
         Task<EmployeeDto?> GetByCodeAsync(string code);
         Task<EmployeeDto> CreateAsync(EmployeeCreateDto dto);
         Task<bool> UpdateAsync(int id, EmployeeUpdateDto dto);
         Task<bool> DeleteAsync(int id);
+        Task<string> GenerateNextEmployeeCodeAsync(string prefix = "NV");
+        Task<string> GetCodeForReturningEmployeeAsync(int employeeId, string prefix = "NV");
+        Task<byte[]> ExportEmployeesToCsvAsync();
     }
 }

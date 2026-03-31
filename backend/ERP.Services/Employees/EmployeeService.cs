@@ -8,6 +8,8 @@ using ERP.DTOs.Employees.Profile;
 using ERP.Entities.Models;
 using ERP.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using ERP.Services.Helpers;
+using System.Text;
 using EmployeeEntity = ERP.Entities.Models.Employees;
 
 namespace ERP.Services.Employees
@@ -15,13 +17,15 @@ namespace ERP.Services.Employees
     public class EmployeeService : IEmployeeService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IPasswordHasher _passwordHasher;
 
-        public EmployeeService(IUnitOfWork unitOfWork)
+        public EmployeeService(IUnitOfWork unitOfWork, IPasswordHasher passwordHasher)
         {
             _unitOfWork = unitOfWork;
+            _passwordHasher = passwordHasher;
         }
 
-        public async Task<PaginatedListDto<EmployeeDto>> GetPagedListAsync(int pageNumber, int pageSize, string? searchTerm, int? departmentId)
+        public async Task<PaginatedListDto<EmployeeDto>> GetPagedListAsync(int pageNumber, int pageSize, string? searchTerm, int? departmentId, string? status = "active")
         {
             var employees = await _unitOfWork.Repository<EmployeeEntity>().GetAllAsync();
             var query = employees.AsQueryable();
@@ -39,8 +43,25 @@ namespace ERP.Services.Employees
                 query = query.Where(e => e.department_id == departmentId.Value);
             }
 
-            // Always only active employees (or as required)
-            query = query.Where(e => e.is_active);
+            // Employee Status Filtering
+            if (status == "active")
+            {
+                query = query.Where(e => e.is_active && !e.is_resigned);
+            }
+            else if (status == "resigned")
+            {
+                query = query.Where(e => e.is_resigned);
+            }
+            // If status is "all" or other, we don't filter by status (but maybe still only is_active=true if we want to exclude deleted ones)
+            else if (status == "all")
+            {
+                // No additional filtering on resignation status
+            }
+            else
+            {
+                // Default fallback: only active
+                query = query.Where(e => e.is_active && !e.is_resigned);
+            }
 
             var count = query.Count();
             var items = query
@@ -204,6 +225,23 @@ namespace ERP.Services.Employees
 
         public async Task<EmployeeDto> CreateAsync(EmployeeCreateDto dto)
         {
+            // 1. Check for duplicates
+            var existingByCode = await _unitOfWork.Repository<EmployeeEntity>().FindAsync(e => e.employee_code == dto.EmployeeCode);
+            if (existingByCode.Any())
+            {
+                throw new Exception($"Mã nhân viên '{dto.EmployeeCode}' đã tồn tại.");
+            }
+
+            if (!string.IsNullOrEmpty(dto.Email))
+            {
+                var existingByEmail = await _unitOfWork.Repository<EmployeeEntity>().FindAsync(e => e.email == dto.Email);
+                if (existingByEmail.Any())
+                {
+                    throw new Exception($"Email '{dto.Email}' đã tồn tại.");
+                }
+            }
+
+            // 2. Create Employee
             var employee = new EmployeeEntity
             {
                 employee_code = dto.EmployeeCode,
@@ -219,12 +257,29 @@ namespace ERP.Services.Employees
                 manager_id = dto.ManagerId,
                 start_date = dto.StartDate,
                 identity_number = dto.IdentityNumber,
+                work_email = dto.WorkEmail,
+                avatar = dto.Avatar,
                 is_active = true,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
 
             await _unitOfWork.Repository<EmployeeEntity>().AddAsync(employee);
+            await _unitOfWork.SaveChangesAsync();
+
+            // 3. Create User account with hashed password
+            var user = new Users
+            {
+                employee_id = employee.Id,
+                username = dto.Email ?? dto.EmployeeCode,
+                password_hash = _passwordHasher.HashPassword(dto.Password),
+                firebase_uid = "", // Set empty or handle accordingly if Firebase is still used
+                is_active = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            await _unitOfWork.Repository<Users>().AddAsync(user);
             await _unitOfWork.SaveChangesAsync();
 
             return MapToDto(employee);
@@ -267,6 +322,88 @@ namespace ERP.Services.Employees
 
             _unitOfWork.Repository<EmployeeEntity>().Update(employee);
             return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+
+        public async Task<string> GenerateNextEmployeeCodeAsync(string prefix = "NV")
+        {
+            var employees = await _unitOfWork.Repository<EmployeeEntity>().GetAllAsync();
+            
+            // Collect all numeric parts from ACTIVE employees using this prefix
+            var takenNumbers = employees
+                .Where(e => e.is_active && e.employee_code.StartsWith(prefix))
+                .Select(e => {
+                    var numericPart = e.employee_code.Substring(prefix.Length);
+                    return int.TryParse(numericPart, out int result) ? result : 0;
+                })
+                .Where(n => n > 0)
+                .OrderBy(n => n)
+                .Distinct()
+                .ToList();
+
+            // Find the first gap (smallest missing positive)
+            int candidate = 1;
+            foreach (var num in takenNumbers)
+            {
+                if (num == candidate)
+                {
+                    candidate++;
+                }
+                else if (num > candidate)
+                {
+                    break; // Found a gap
+                }
+            }
+
+            return $"{prefix}{candidate:D4}"; // Format as PrefixXXXX (e.g., NV0001)
+        }
+
+        public async Task<string> GetCodeForReturningEmployeeAsync(int employeeId, string prefix = "NV")
+        {
+            var employee = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(employeeId);
+            if (employee == null)
+            {
+                return await GenerateNextEmployeeCodeAsync(prefix);
+            }
+
+            var oldCode = employee.employee_code;
+            
+            // Check if this specific old code is already assigned to another ACTIVE employee
+            var otherActiveEmployees = await _unitOfWork.Repository<EmployeeEntity>().FindAsync(e => 
+                e.is_active && 
+                e.employee_code == oldCode && 
+                e.Id != employeeId);
+
+            if (otherActiveEmployees.Any())
+            {
+                // Old code is taken, find the next available gap or new max
+                return await GenerateNextEmployeeCodeAsync(prefix);
+            }
+
+            // Old code is still available (only associated with resigned records)
+            return oldCode;
+        }
+
+        public async Task<byte[]> ExportEmployeesToCsvAsync()
+        {
+            var employees = await _unitOfWork.Repository<EmployeeEntity>().GetAllAsync();
+            var activeEmployees = employees.Where(e => e.is_active).ToList();
+
+            var sb = new StringBuilder();
+            sb.AppendLine("ID,Mã NV,Họ Tên,Email,Số điện thoại,Phòng ban,Ngày bắt đầu,Trạng thái");
+
+            foreach (var emp in activeEmployees)
+            {
+                var departmentName = "";
+                if (emp.department_id.HasValue)
+                {
+                    var dept = await _unitOfWork.Repository<Departments>().GetByIdAsync(emp.department_id.Value);
+                    departmentName = dept?.name ?? "";
+                }
+
+                sb.AppendLine($"{emp.Id},{emp.employee_code},{emp.full_name},{emp.email},{emp.phone},{departmentName},{emp.start_date:yyyy-MM-dd},{(emp.is_active ? "Đang làm việc" : "Nghỉ việc")}");
+            }
+
+            return Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
         }
 
         private EmployeeDto MapToDto(EmployeeEntity e)

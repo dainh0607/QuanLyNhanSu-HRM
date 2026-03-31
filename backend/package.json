@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "dotnet": "^1.1.4",
-    "firebase-admin": "^13.7.0"
-  }
-}

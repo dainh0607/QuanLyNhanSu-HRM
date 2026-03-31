@@ -31,14 +31,15 @@ Authorization: Bearer {{authToken}}
 Content-Type: {{contentType}}
 
 {
-  "employeeCode": "EMP_TEST_01",
-  "fullName": "Nguyễn Văn Test",
-  "email": "nvtest@company.com",
+  "employeeCode": "EMP_TEST_02",
+  "fullName": "Nguyễn Văn Test Lan 2",
+  "email": "nvtest2@company.com",
   "phone": "0987654321",
   "departmentId": 1,
   "jobTitleId": 1,
   "branchId": 1,
-  "startDate": "2026-03-28T00:00:00Z"
+  "startDate": "2026-03-28T00:00:00Z",
+  "password": "123456789"
 }
 
 ###

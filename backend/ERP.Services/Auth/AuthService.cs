@@ -10,6 +10,9 @@ using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 using EmployeeEntity = ERP.Entities.Models.Employees;
 
@@ -25,6 +28,7 @@ namespace ERP.Services.Auth
         string HashPassword(string password);
         Task<int> SyncFirebaseUsersAsync();
         Task<AuthResponseDto> PreRegisterStaffAsync(PreRegisterStaffDto dto);
+        string GenerateInternalToken(UserInfoDto user);
     }
 
     public class AuthService : IAuthService
@@ -255,13 +259,26 @@ namespace ERP.Services.Auth
                     .Select(ur => ur.Role.name)
                     .ToListAsync();
 
+                // 3. Generate Internal JWT
+                var internalToken = GenerateInternalToken(new UserInfoDto
+                {
+                    UserId = localUser.Id,
+                    EmployeeId = localUser.Employee?.Id ?? 0,
+                    Email = localUser.Employee?.email ?? localUser.username,
+                    FullName = localUser.Employee?.full_name ?? localUser.username,
+                    EmployeeCode = localUser.Employee?.employee_code,
+                    PhoneNumber = localUser.Employee?.phone,
+                    IsActive = localUser.is_active,
+                    Roles = userRoles
+                });
+
                 return new AuthResponseDto
                 {
                     Success = true,
                     Message = "Đăng nhập thành công",
-                    IdToken = firebaseResponse.idToken,
+                    IdToken = internalToken, // Use our internal token
                     RefreshToken = firebaseResponse.refreshToken,
-                    ExpiresIn = int.Parse(firebaseResponse.expiresIn),
+                    ExpiresIn = int.Parse(_configuration["JwtSettings:ExpiryInMinutes"] ?? "1440") * 60,
                     User = new UserInfoDto
                     {
                         UserId = localUser.Id,
@@ -521,6 +538,37 @@ namespace ERP.Services.Auth
                     Message = "Lỗi xảy ra trong quá trình cung cấp Email cho nhân viên."
                 };
             }
+        }
+
+        public string GenerateInternalToken(UserInfoDto user)
+        {
+            var claims = new List<Claim>
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
+                new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim("EmployeeId", user.EmployeeId.ToString()),
+                new Claim("EmployeeCode", user.EmployeeCode ?? "")
+            };
+
+            foreach (var role in user.Roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:Secret"]));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var expires = DateTime.UtcNow.AddMinutes(double.Parse(_configuration["JwtSettings:ExpiryInMinutes"] ?? "1440"));
+
+            var token = new JwtSecurityToken(
+                _configuration["JwtSettings:Issuer"],
+                _configuration["JwtSettings:Audience"],
+                claims,
+                expires: expires,
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
         private class FirebaseLoginResponse

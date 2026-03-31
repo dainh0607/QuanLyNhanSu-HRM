@@ -1,6 +1,6 @@
-using System;
 using Microsoft.EntityFrameworkCore;
 using ERP.Entities.Models;
+using ERP.Entities.Seeding;
 
 namespace ERP.Entities
 {
@@ -115,57 +115,8 @@ namespace ERP.Entities
             // Apply all configurations from this assembly
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
 
-            // Seed Roles
-            var seedDate = new DateTime(2026, 3, 27, 0, 0, 0, DateTimeKind.Utc);
-            modelBuilder.Entity<Roles>().HasData(
-                new Roles { Id = 1, name = "Admin", description = "System Administrator", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
-                new Roles { Id = 2, name = "Manager", description = "Department Manager", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
-                new Roles { Id = 3, name = "User", description = "Regular Employee", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate }
-            );
-
-            // Seed Genders
-            modelBuilder.Entity<Genders>().HasData(
-                new Genders { Id = 1, code = "M", name = "Nam" },
-                new Genders { Id = 2, code = "F", name = "Nữ" },
-                new Genders { Id = 3, code = "O", name = "Khác" }
-            );
-
-            // Seed MaritalStatuses
-            modelBuilder.Entity<MaritalStatuses>().HasData(
-                new MaritalStatuses { Id = 1, code = "S", name = "Độc thân" },
-                new MaritalStatuses { Id = 2, code = "M", name = "Đã kết hôn" },
-                new MaritalStatuses { Id = 3, code = "D", name = "Ly hôn" },
-                new MaritalStatuses { Id = 4, code = "W", name = "Góa" }
-            );
-
-            // Seed AddressTypes
-            modelBuilder.Entity<AddressTypes>().HasData(
-                new AddressTypes { Id = 1, name = "Thường trú" },
-                new AddressTypes { Id = 2, name = "Tạm trú" }
-            );
-
-            // Seed LeaveTypes
-            modelBuilder.Entity<LeaveTypes>().HasData(
-                new LeaveTypes { Id = 1, name = "Nghỉ phép năm", is_paid = true },
-                new LeaveTypes { Id = 2, name = "Nghỉ ốm", is_paid = true },
-                new LeaveTypes { Id = 3, name = "Nghỉ không lương", is_paid = false },
-                new LeaveTypes { Id = 4, name = "Nghỉ thai sản", is_paid = true }
-            );
-
-            // Seed Branches
-            modelBuilder.Entity<Branches>().HasData(
-                new Branches { Id = 1, name = "Trụ sở chính", code = "HO", address = "Hà Nội" }
-            );
-
-            // Seed Departments
-            modelBuilder.Entity<Departments>().HasData(
-                new Departments { Id = 1, name = "Phòng Hành chính Nhân sự", code = "HR" }
-            );
-
-            // Seed JobTitles
-            modelBuilder.Entity<JobTitles>().HasData(
-                new JobTitles { Id = 1, name = "Nhân viên", code = "STAFF" }
-            );
+            // Seed Master Data via Extension Method
+            modelBuilder.SeedMasterData();
 
             // Disable cascade delete globally to avoid SQL Server multiple cascade path errors
             foreach (var relationship in modelBuilder.Model.GetEntityTypes()
