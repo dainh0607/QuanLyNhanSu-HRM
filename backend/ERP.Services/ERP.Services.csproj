@@ -6,9 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ERP.DTOs\ERP.DTOs.csproj" />
-    <ProjectReference Include="..\ERP.Entities\ERP.Entities.csproj" />
-    <ProjectReference Include="..\ERP.Repositories\ERP.Repositories.csproj" />
+    <ProjectReference Include="..\ERP.DTOs\ERP.DTOs.csproj" SkipGetTargetFrameworkProperties="true" />
+    <ProjectReference Include="..\ERP.Entities\ERP.Entities.csproj" SkipGetTargetFrameworkProperties="true" />
+    <ProjectReference Include="..\ERP.Repositories\ERP.Repositories.csproj" SkipGetTargetFrameworkProperties="true" />
   </ItemGroup>
 
   <ItemGroup>

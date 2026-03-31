@@ -17,9 +17,13 @@ using ERP.Services.Contracts;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
+using System.Security.Claims;
+using ERP.DTOs.Auth;
 using ERP.API.Workers;
 
 var builder = WebApplication.CreateBuilder(args);
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? new[] { "http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:4173", "http://127.0.0.1:4173" };
 
 // Firebase SDK Initialization
 var serviceAccountPath = Path.Combine(builder.Environment.ContentRootPath, "firebase-config.json");
@@ -43,7 +47,47 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidAudience = builder.Configuration["JwtSettings:Audience"],
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:Secret"] ?? "default_secret_key_at_least_32_characters_long"))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:Secret"] ?? "default_secret_key_at_least_32_characters_long")),
+            ClockSkew = TimeSpan.Zero
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                if (string.IsNullOrWhiteSpace(context.Token) &&
+                    context.Request.Cookies.TryGetValue(AuthSecurityConstants.AccessTokenCookieName, out var accessToken))
+                {
+                    context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = async context =>
+            {
+                var principal = context.Principal;
+                var tokenType = principal?.FindFirst(AuthSecurityConstants.TokenTypeClaimType)?.Value;
+                var sessionId = principal?.FindFirst(AuthSecurityConstants.SessionIdClaimType)?.Value;
+                var userIdValue = principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                if (!string.Equals(tokenType, AuthSecurityConstants.AccessTokenType, StringComparison.Ordinal) ||
+                    string.IsNullOrWhiteSpace(sessionId) ||
+                    !int.TryParse(userIdValue, out var userId))
+                {
+                    context.Fail("Access token khong hop le.");
+                    return;
+                }
+
+                using var scope = context.HttpContext.RequestServices.CreateScope();
+                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+                var authSession = await dbContext.AuthSessions.AsNoTracking()
+                    .FirstOrDefaultAsync(session => session.session_id == sessionId && session.user_id == userId);
+
+                if (authSession == null || !authSession.is_active || authSession.revoked_at.HasValue || authSession.expires_at <= DateTime.UtcNow)
+                {
+                    context.Fail("Session da het han hoac bi thu hoi.");
+                }
+            }
         };
     });
 
@@ -62,10 +106,15 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
+});
+builder.Services.AddSingleton(new AuthCsrfOptions
+{
+    AllowedOrigins = allowedOrigins
 });
 
 // Register Services
@@ -102,6 +151,8 @@ using (var scope = app.Services.CreateScope())
             await userService.SyncWithFirebaseAsync();
             logger.LogInformation("Database initialization and sync complete.");
         }
+
+        await AuthSessionSchemaInitializer.EnsureCreatedAsync(context);
     }
     catch (Exception ex)
     {
@@ -120,6 +171,7 @@ app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
+app.UseMiddleware<CsrfProtectionMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();

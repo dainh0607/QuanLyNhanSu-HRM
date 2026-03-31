@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { employeeService } from '../../../services/employeeService';
+import { employeeService, type EmployeeCreatePayload } from '../../../services/employeeService';
 import { useToast } from '../../../components/common/Toast';
 
 interface AddEmployeeModalProps {
@@ -7,6 +7,106 @@ interface AddEmployeeModalProps {
   onClose: () => void;
   onSuccess?: () => void;
 }
+
+interface AddEmployeeFormData {
+  employeeCode: string;
+  fullName: string;
+  email: string;
+  countryCode: string;
+  phone: string;
+  accessGroup: string;
+  password: string;
+  regionId: string;
+  branchId: string;
+  departmentId: string;
+  jobTitleId: string;
+}
+
+interface MetadataOption {
+  id: number;
+  name: string;
+  code?: string;
+  regionId: number | null;
+  parentId: number | null;
+}
+
+interface ModalMetadata {
+  regions: MetadataOption[];
+  branches: MetadataOption[];
+  departments: MetadataOption[];
+  jobTitles: MetadataOption[];
+  accessGroups: MetadataOption[];
+}
+
+const INITIAL_FORM_DATA: AddEmployeeFormData = {
+  employeeCode: '',
+  fullName: '',
+  email: '',
+  countryCode: '+84',
+  phone: '',
+  accessGroup: 'Nhân viên',
+  password: '',
+  regionId: '',
+  branchId: '',
+  departmentId: '',
+  jobTitleId: '',
+};
+
+const parseOptionalId = (value: unknown): number | null => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string' && value.trim()) {
+    const parsedValue = Number.parseInt(value, 10);
+    return Number.isNaN(parsedValue) ? null : parsedValue;
+  }
+
+  return null;
+};
+
+const normalizeMetadataOptions = (items: unknown[]): MetadataOption[] =>
+  items
+    .map((item) => {
+      const record = typeof item === 'object' && item !== null ? (item as Record<string, unknown>) : {};
+      const id = parseOptionalId(record['id'] ?? record['Id']);
+      const name = record['name'] ?? record['Name'];
+      const code = record['code'] ?? record['Code'];
+
+      return {
+        id: id ?? -1,
+        name: typeof name === 'string' ? name : '',
+        code: typeof code === 'string' ? code : undefined,
+        regionId: parseOptionalId(record['regionId'] ?? record['region_id'] ?? record['RegionId']),
+        parentId: parseOptionalId(record['parentId'] ?? record['parent_id'] ?? record['ParentId']),
+      };
+    })
+    .filter((item) => item.id > 0 && item.name.length > 0);
+
+const getOptionalNumber = (value: string): number | null => {
+  if (!value) {
+    return null;
+  }
+
+  const parsedValue = Number.parseInt(value, 10);
+  return Number.isNaN(parsedValue) ? null : parsedValue;
+};
+
+const normalizeBackendErrorKey = (key: string) =>
+  key ? `${key.charAt(0).toLowerCase()}${key.slice(1)}` : key;
+
+const getBackendErrorMessage = (value: unknown): string | null => {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    const firstMessage = value.find((item): item is string => typeof item === 'string');
+    return firstMessage ?? null;
+  }
+
+  return null;
+};
 
 const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { showToast, ToastComponent } = useToast();
@@ -16,7 +116,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
   const [submitting, setSubmitting] = useState(false);
 
   // Form State
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<AddEmployeeFormData>({
     employeeCode: '',
     fullName: '',
     email: '',
@@ -34,7 +134,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Metadata State
-  const [metadata, setMetadata] = useState({
+  const [metadata, setMetadata] = useState<ModalMetadata>({
     regions: [] as any[],
     branches: [] as any[],
     departments: [] as any[],
@@ -50,8 +150,11 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
 
   const fetchInitialData = async () => {
     setLoading(true);
+    setErrors({});
+    setIsExpanded(false);
+    setShowPassword(false);
     try {
-      const [code, regions, branches, departments, jobTitles, accessGroups] = await Promise.all([
+      const [code, regionItems, branchItems, departmentItems, jobTitleItems, accessGroupItems] = await Promise.all([
         employeeService.getNextEmployeeCode(),
         employeeService.getMetadata('regions'),
         employeeService.getMetadata('branches'),
@@ -60,7 +163,21 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
         employeeService.getMetadata('access-groups'),
       ]);
 
-      setFormData(prev => ({ ...prev, employeeCode: code }));
+      const regions = normalizeMetadataOptions(regionItems);
+      const branches = normalizeMetadataOptions(branchItems);
+      const departments = normalizeMetadataOptions(departmentItems);
+      const jobTitles = normalizeMetadataOptions(jobTitleItems);
+      const accessGroups = normalizeMetadataOptions(accessGroupItems);
+      const defaultAccessGroup =
+        accessGroups.find((group) => group.name === INITIAL_FORM_DATA.accessGroup)?.name ??
+        accessGroups[0]?.name ??
+        INITIAL_FORM_DATA.accessGroup;
+
+      setFormData({
+        ...INITIAL_FORM_DATA,
+        employeeCode: code,
+        accessGroup: defaultAccessGroup,
+      });
       setMetadata({ regions, branches, departments, jobTitles, accessGroups });
     } catch (error) {
       console.error('Fetch initial data error:', error);
@@ -71,6 +188,10 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
+
+    if (!formData.employeeCode.trim()) {
+      newErrors.employeeCode = 'Mã nhân viên là bắt buộc';
+    }
     
     // Họ tên
     if (!formData.fullName.trim()) {
@@ -108,15 +229,25 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors(prev => {
-        const next = { ...prev };
-        delete next[field];
-        return next;
-      });
-    }
+  const handleInputChange = (field: keyof AddEmployeeFormData, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+      ...(field === 'regionId' && prev.regionId !== value ? { branchId: '' } : {}),
+    }));
+
+    setErrors((prev) => {
+      if (!prev[field] && !(field === 'regionId' && prev.branchId)) {
+        return prev;
+      }
+
+      const next = { ...prev };
+      delete next[field];
+      if (field === 'regionId') {
+        delete next.branchId;
+      }
+      return next;
+    });
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,17 +260,15 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
 
     setSubmitting(true);
     try {
-      const payload = {
-        employeeCode: formData.employeeCode,
-        fullName: formData.fullName,
-        email: formData.email || null,
+      const payload: EmployeeCreatePayload = {
+        employeeCode: formData.employeeCode.trim(),
+        fullName: formData.fullName.trim(),
+        password: formData.password,
+        email: formData.email.trim() || null,
         phone: formData.phone ? `${formData.countryCode}${formData.phone}` : null,
-        accessGroup: formData.accessGroup,
-        // password: formData.password, // Frontend placeholder for now as DTO doesn't have it
-        regionId: formData.regionId ? parseInt(formData.regionId) : null,
-        branchId: formData.branchId ? parseInt(formData.branchId) : null,
-        departmentId: formData.departmentId ? parseInt(formData.departmentId) : null,
-        jobTitleId: formData.jobTitleId ? parseInt(formData.jobTitleId) : null,
+        branchId: getOptionalNumber(formData.branchId),
+        departmentId: getOptionalNumber(formData.departmentId),
+        jobTitleId: getOptionalNumber(formData.jobTitleId),
       };
 
       await employeeService.createEmployee(payload);
@@ -153,11 +282,14 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
       console.error('Submit error:', error);
       showToast(error.Message || 'Có lỗi xảy ra khi tạo nhân viên', 'error');
       
-      if (error.errors) {
+      if (error?.errors && typeof error.errors === 'object') {
         // Map backend validation errors if any
         const backendErrors: Record<string, string> = {};
-        Object.keys(error.errors).forEach(key => {
-          backendErrors[key.toLowerCase()] = error.errors[key][0];
+        Object.entries(error.errors as Record<string, unknown>).forEach(([key, value]) => {
+          const firstMessage = getBackendErrorMessage(value);
+          if (firstMessage) {
+            backendErrors[normalizeBackendErrorKey(key)] = firstMessage;
+          }
         });
         setErrors(prev => ({ ...prev, ...backendErrors }));
       }
@@ -173,8 +305,9 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
   };
 
   // Filtering dependent data
-  const filteredBranches = formData.regionId 
-    ? metadata.branches.filter(b => b.region_id === parseInt(formData.regionId))
+  const shouldFilterBranchesByRegion = metadata.branches.some((branch) => branch.regionId !== null);
+  const filteredBranches = shouldFilterBranchesByRegion && formData.regionId
+    ? metadata.branches.filter((branch) => branch.regionId === getOptionalNumber(formData.regionId))
     : metadata.branches;
 
   return (
@@ -299,7 +432,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
                   >
                     <option value="Chọn nhóm">Chọn nhóm truy cập</option>
                     {metadata.accessGroups.map(g => (
-                      <option key={g.Id} value={g.name}>{g.name}</option>
+                      <option key={g.id} value={g.name}>{g.name}</option>
                     ))}
                   </select>
                   <span className="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-focus-within:rotate-180 transition-transform text-[20px]">expand_more</span>
@@ -359,7 +492,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
                     >
                       <option value="">{loading ? 'Đang tải...' : 'Chọn vùng'}</option>
                       {metadata.regions.map(r => (
-                        <option key={r.Id} value={r.Id}>{r.name}</option>
+                        <option key={r.id} value={r.id}>{r.name}</option>
                       ))}
                     </select>
                     <span className="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-focus-within:rotate-180 transition-transform text-[20px]">expand_more</span>
@@ -376,11 +509,11 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
                       value={formData.branchId}
                       onChange={(e) => handleInputChange('branchId', e.target.value)}
                       className="w-full h-11 px-4 border border-gray-200 rounded-xl text-sm appearance-none bg-white focus:outline-none focus:border-[#192841] focus:ring-4 focus:ring-[#192841]/5 transition-all pr-10 disabled:bg-gray-50/50 cursor-pointer disabled:cursor-not-allowed"
-                      disabled={!formData.regionId && !loading}
+                      disabled={loading || (shouldFilterBranchesByRegion && !formData.regionId)}
                     >
                       <option value="">{loading ? 'Đang tải...' : 'Chọn chi nhánh'}</option>
                       {filteredBranches.map(b => (
-                        <option key={b.Id} value={b.Id}>{b.name}</option>
+                        <option key={b.id} value={b.id}>{b.name}</option>
                       ))}
                     </select>
                     <span className="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-focus-within:rotate-180 transition-transform text-[20px]">expand_more</span>
@@ -400,7 +533,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
                     >
                       <option value="">{loading ? 'Đang tải...' : 'Chọn phòng ban'}</option>
                       {metadata.departments.map(d => (
-                        <option key={d.Id} value={d.Id}>{d.name}</option>
+                        <option key={d.id} value={d.id}>{d.name}</option>
                       ))}
                     </select>
                     <span className="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-focus-within:rotate-180 transition-transform text-[20px]">expand_more</span>
@@ -420,7 +553,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
                     >
                       <option value="">{loading ? 'Đang tải...' : 'Chọn chức danh'}</option>
                       {metadata.jobTitles.map(j => (
-                        <option key={j.Id} value={j.Id}>{j.name}</option>
+                        <option key={j.id} value={j.id}>{j.name}</option>
                       ))}
                     </select>
                     <span className="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-focus-within:rotate-180 transition-transform text-[20px]">expand_more</span>

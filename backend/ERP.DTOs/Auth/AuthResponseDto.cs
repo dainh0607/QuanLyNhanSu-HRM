@@ -6,6 +6,7 @@ namespace ERP.DTOs.Auth
         public string Message { get; set; }
         public string IdToken { get; set; }
         public string RefreshToken { get; set; }
+        public string CsrfToken { get; set; }
         public int ExpiresIn { get; set; }
         public UserInfoDto User { get; set; }
     }

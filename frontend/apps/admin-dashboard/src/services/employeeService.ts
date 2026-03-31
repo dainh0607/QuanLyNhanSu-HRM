@@ -1,13 +1,37 @@
-import type { Employee } from "../features/employees/types";
+﻿import type { Employee } from "../features/employees/types";
+import { authFetch } from "./authService";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5122/api";
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem("auth_token");
-  return {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
+const parseJsonSafely = async <T>(response: Response): Promise<T | null> => {
+  try {
+    return (await response.json()) as T;
+  } catch {
+    return null;
+  }
+};
+
+const requestJson = async <T>(
+  input: string,
+  init: RequestInit,
+  fallbackMessage: string
+): Promise<T> => {
+  const response = await authFetch(input, init);
+
+  if (!response.ok) {
+    const errorData = await parseJsonSafely<unknown>(response);
+    if (errorData) {
+      throw errorData;
+    }
+
+    throw new Error(`${fallbackMessage}: ${response.statusText}`);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  return (await response.json()) as T;
 };
 
 export interface PaginatedResponse<T> {
@@ -102,59 +126,63 @@ export interface EmployeeFullProfile {
   education: EmployeeEducationProfile[];
 }
 
+export interface EmployeeCreatePayload {
+  employeeCode: string;
+  fullName: string;
+  password: string;
+  email?: string | null;
+  phone?: string | null;
+  departmentId?: number | null;
+  jobTitleId?: number | null;
+  branchId?: number | null;
+  birthDate?: string | null;
+  genderCode?: string | null;
+  maritalStatusCode?: string | null;
+  managerId?: number | null;
+  startDate?: string | null;
+  identityNumber?: string | null;
+  workEmail?: string | null;
+  avatar?: string | null;
+}
+
 export const employeeService = {
-  /**
-   * Lấy danh sách nhân viên có phân trang và tìm kiếm
-   */
   getEmployees: async (
     pageNumber: number = 1,
     pageSize: number = 15,
     searchTerm: string = "",
     status?: string
   ): Promise<PaginatedResponse<Employee>> => {
+    const url = new URL(`${API_URL}/employees`);
+    url.searchParams.append("pageNumber", pageNumber.toString());
+    url.searchParams.append("pageSize", pageSize.toString());
+
+    if (searchTerm) {
+      url.searchParams.append("searchTerm", searchTerm);
+    }
+
+    if (status) {
+      url.searchParams.append("status", status);
+    }
+
     try {
-      const url = new URL(`${API_URL}/employees`);
-      url.searchParams.append("pageNumber", pageNumber.toString());
-      url.searchParams.append("pageSize", pageSize.toString());
-      if (searchTerm) {
-        url.searchParams.append("searchTerm", searchTerm);
-      }
-      if (status) {
-        url.searchParams.append("status", status);
-      }
-
-      const response = await fetch(url.toString(), {
-        method: "GET",
-        headers: getAuthHeaders(),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error fetching employees: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      return data;
+      return await requestJson<PaginatedResponse<Employee>>(
+        url.toString(),
+        { method: "GET" },
+        "Error fetching employees"
+      );
     } catch (error) {
       console.error("Fetch Employees Error:", error);
       throw error;
     }
   },
 
-  /**
-   * Lấy chi tiết nhân viên theo ID
-   */
   getEmployeeById: async (id: number): Promise<Employee> => {
     try {
-      const response = await fetch(`${API_URL}/employees/${id}`, {
-        method: "GET",
-        headers: getAuthHeaders(),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error fetching employee details: ${response.statusText}`);
-      }
-
-      return await response.json();
+      return await requestJson<Employee>(
+        `${API_URL}/employees/${id}`,
+        { method: "GET" },
+        "Error fetching employee details"
+      );
     } catch (error) {
       console.error(`Fetch Employee ${id} Error:`, error);
       throw error;
@@ -163,95 +191,73 @@ export const employeeService = {
 
   getEmployeeFullProfile: async (id: number): Promise<EmployeeFullProfile> => {
     try {
-      const response = await fetch(`${API_URL}/employees/${id}/full-profile`, {
-        method: "GET",
-        headers: getAuthHeaders(),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error fetching employee full profile: ${response.statusText}`);
-      }
-
-      return await response.json();
+      return await requestJson<EmployeeFullProfile>(
+        `${API_URL}/employees/${id}/full-profile`,
+        { method: "GET" },
+        "Error fetching employee full profile"
+      );
     } catch (error) {
       console.error(`Fetch Employee Full Profile ${id} Error:`, error);
       throw error;
     }
   },
 
-  /**
-   * Xóa nhân viên (Soft delete)
-   */
   deleteEmployee: async (id: number): Promise<void> => {
     try {
-      const response = await fetch(`${API_URL}/employees/${id}`, {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error deleting employee: ${response.statusText}`);
-      }
+      await requestJson<void>(
+        `${API_URL}/employees/${id}`,
+        { method: "DELETE" },
+        "Error deleting employee"
+      );
     } catch (error) {
       console.error(`Delete Employee ${id} Error:`, error);
       throw error;
     }
   },
 
-  /**
-   * Lấy mã nhân viên tiếp theo
-   */
   getNextEmployeeCode: async (): Promise<string> => {
     try {
-      const response = await fetch(`${API_URL}/employees/next-code`, {
-        method: "GET",
-        headers: getAuthHeaders(),
-      });
-      const data = await response.json();
-      return data.employeeCode;
+      const data = await requestJson<{ employeeCode?: string }>(
+        `${API_URL}/employees/next-code`,
+        { method: "GET" },
+        "Error fetching next employee code"
+      );
+
+      return data.employeeCode || "0000";
     } catch (error) {
       console.error("Get Next Employee Code Error:", error);
       return "0000";
     }
   },
 
-  /**
-   * Lấy dữ liệu danh mục (Metadata)
-   */
   getMetadata: async (type: string): Promise<any[]> => {
     try {
-      const response = await fetch(`${API_URL}/metadata/${type}`, {
-        method: "GET",
-        headers: getAuthHeaders(),
-      });
-      if (!response.ok) return [];
-      return await response.json();
+      const response = await authFetch(`${API_URL}/metadata/${type}`, { method: "GET" });
+      if (!response.ok) {
+        return [];
+      }
+
+      return (await response.json()) as any[];
     } catch (error) {
       console.error(`Fetch Metadata ${type} Error:`, error);
       return [];
     }
   },
 
-  /**
-   * Tạo mới nhân viên
-   */
-  createEmployee: async (dto: any): Promise<any> => {
+  createEmployee: async (dto: EmployeeCreatePayload): Promise<unknown> => {
     try {
-      const response = await fetch(`${API_URL}/employees`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(dto),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw errorData;
-      }
-
-      return await response.json();
+      return await requestJson<unknown>(
+        `${API_URL}/employees`,
+        {
+          method: "POST",
+          body: JSON.stringify(dto),
+        },
+        "Error creating employee"
+      );
     } catch (error) {
       console.error("Create Employee Error:", error);
       throw error;
     }
   },
 };
+
