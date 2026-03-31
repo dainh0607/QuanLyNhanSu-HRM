@@ -15,6 +15,8 @@ using ERP.Services.Organization;
 using ERP.Services.Lookup;
 using ERP.Services.Lookup;
 using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Unicode;
 using ERP.API.Workers;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -51,7 +53,11 @@ builder.Services.AddAuthorization();
 builder.Services.AddHttpClient();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Encoder = JavaScriptEncoder.Create(UnicodeRanges.All);
+    });
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>

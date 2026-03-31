@@ -163,7 +163,7 @@ export const employeeService = {
 
   getEmployeeFullProfile: async (id: number): Promise<EmployeeFullProfile> => {
     try {
-      const response = await fetch(`${API_URL}/employee/${id}/full-profile`, {
+      const response = await fetch(`${API_URL}/employees/${id}/full-profile`, {
         method: "GET",
         headers: getAuthHeaders(),
       });
