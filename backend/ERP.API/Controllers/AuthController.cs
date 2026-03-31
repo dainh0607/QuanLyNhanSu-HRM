@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.JsonWebTokens;
 using System.Security.Claims;
 using ERP.DTOs.Auth;
 using ERP.Services.Auth;
@@ -13,11 +14,15 @@ namespace ERP.API.Controllers
     {
         private readonly IAuthService _authService;
         private readonly ILogger<AuthController> _logger;
+        private readonly IConfiguration _configuration;
+        private readonly IWebHostEnvironment _environment;
 
-        public AuthController(IAuthService authService, ILogger<AuthController> logger)
+        public AuthController(IAuthService authService, ILogger<AuthController> logger, IConfiguration configuration, IWebHostEnvironment environment)
         {
             _authService = authService;
             _logger = logger;
+            _configuration = configuration;
+            _environment = environment;
         }
 
         [HttpPost("sign-up")]
@@ -48,33 +53,81 @@ namespace ERP.API.Controllers
                 return BadRequest(ModelState);
             }
 
-            var result = await _authService.LoginAsync(dto);
+            var result = await _authService.LoginAsync(dto, BuildSessionContext());
             
             if (!result.Success)
             {
                 return Unauthorized(result);
             }
 
-            return Ok(result);
+            Response.Headers.CacheControl = "no-store";
+            WriteSessionCookies(result);
+            return Ok(CreateClientAuthResponse(result));
         }
 
         [HttpGet("me")]
         [Authorize]
         public async Task<IActionResult> GetCurrentUser()
         {
-            var uid = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(uid))
+            var userIdValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+
+            if (!int.TryParse(userIdValue, out var userId))
             {
                 return Unauthorized();
             }
 
-            var user = await _authService.GetUserByUidAsync(uid);
+            var user = await _authService.GetUserByIdAsync(userId);
             if (user == null)
             {
                 return NotFound(new { Message = "User not found in system" });
             }
 
             return Ok(user);
+        }
+
+        [HttpPost("refresh")]
+        [AllowAnonymous]
+        public async Task<IActionResult> RefreshSession()
+        {
+            if (!Request.Cookies.TryGetValue(AuthSecurityConstants.RefreshTokenCookieName, out var refreshToken) ||
+                string.IsNullOrWhiteSpace(refreshToken))
+            {
+                return Unauthorized(new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Phien dang nhap da het han"
+                });
+            }
+
+            var result = await _authService.RefreshSessionAsync(refreshToken, BuildSessionContext());
+            if (!result.Success)
+            {
+                ClearSessionCookies();
+                return Unauthorized(CreateClientAuthResponse(result));
+            }
+
+            Response.Headers.CacheControl = "no-store";
+            WriteSessionCookies(result);
+            return Ok(CreateClientAuthResponse(result));
+        }
+
+        [HttpPost("logout")]
+        [AllowAnonymous]
+        public async Task<IActionResult> Logout()
+        {
+            if (Request.Cookies.TryGetValue(AuthSecurityConstants.RefreshTokenCookieName, out var refreshToken) &&
+                !string.IsNullOrWhiteSpace(refreshToken))
+            {
+                await _authService.RevokeSessionAsync(refreshToken);
+            }
+
+            ClearSessionCookies();
+            return Ok(new AuthResponseDto
+            {
+                Success = true,
+                Message = "Dang xuat thanh cong"
+            });
         }
 
         [HttpPost("verify-token")]
@@ -97,9 +150,14 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("sync")]
-        [AllowAnonymous] // Changed to AllowAnonymous for easier dev sync, but could be restricted
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> SyncUsers()
         {
+            if (!_environment.IsDevelopment())
+            {
+                return NotFound();
+            }
+
             try
             {
                 var count = await _authService.SyncFirebaseUsersAsync();
@@ -135,9 +193,14 @@ namespace ERP.API.Controllers
         /// Use only for resetting development environment.
         /// </summary>
         [HttpDelete("nuke-all-users")]
-        [AllowAnonymous] // Use with caution!
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteAllFirebaseUsers()
         {
+            if (!_environment.IsDevelopment())
+            {
+                return NotFound();
+            }
+
             try
             {
                 var auth = FirebaseAdmin.Auth.FirebaseAuth.DefaultInstance;
@@ -157,6 +220,128 @@ namespace ERP.API.Controllers
                 _logger.LogError(ex, "Error wiping Firebase users");
                 return StatusCode(500, new { Message = "Error wiping users", Error = ex.Message });
             }
+        }
+
+        private void WriteSessionCookies(AuthResponseDto result)
+        {
+            if (string.IsNullOrWhiteSpace(result.IdToken) ||
+                string.IsNullOrWhiteSpace(result.RefreshToken) ||
+                string.IsNullOrWhiteSpace(result.CsrfToken))
+            {
+                return;
+            }
+
+            Response.Cookies.Append(
+                AuthSecurityConstants.AccessTokenCookieName,
+                result.IdToken,
+                CreateAuthCookieOptions(DateTimeOffset.UtcNow.AddSeconds(result.ExpiresIn > 0 ? result.ExpiresIn : 900), "/"));
+
+            Response.Cookies.Append(
+                AuthSecurityConstants.RefreshTokenCookieName,
+                result.RefreshToken,
+                CreateAuthCookieOptions(DateTimeOffset.UtcNow.AddDays(GetRefreshTokenExpiryInDays()), "/api/auth"));
+
+            Response.Cookies.Append(
+                AuthSecurityConstants.CsrfCookieName,
+                result.CsrfToken,
+                CreateCsrfCookieOptions(DateTimeOffset.UtcNow.AddDays(GetRefreshTokenExpiryInDays())));
+        }
+
+        private void ClearSessionCookies()
+        {
+            var accessDeleteOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = IsSecureRequest(),
+                SameSite = SameSiteMode.Strict,
+                Path = "/",
+                IsEssential = true
+            };
+
+            var refreshDeleteOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = IsSecureRequest(),
+                SameSite = SameSiteMode.Strict,
+                Path = "/api/auth",
+                IsEssential = true
+            };
+
+            var csrfDeleteOptions = new CookieOptions
+            {
+                HttpOnly = false,
+                Secure = IsSecureRequest(),
+                SameSite = SameSiteMode.Strict,
+                Path = "/",
+                IsEssential = true
+            };
+
+            Response.Cookies.Delete(AuthSecurityConstants.AccessTokenCookieName, accessDeleteOptions);
+            Response.Cookies.Delete(AuthSecurityConstants.RefreshTokenCookieName, refreshDeleteOptions);
+            Response.Cookies.Delete(AuthSecurityConstants.CsrfCookieName, csrfDeleteOptions);
+        }
+
+        private CookieOptions CreateAuthCookieOptions(DateTimeOffset expiresAt, string path)
+        {
+            return new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = IsSecureRequest(),
+                SameSite = SameSiteMode.Strict,
+                Path = path,
+                Expires = expiresAt,
+                IsEssential = true
+            };
+        }
+
+        private CookieOptions CreateCsrfCookieOptions(DateTimeOffset expiresAt)
+        {
+            return new CookieOptions
+            {
+                HttpOnly = false,
+                Secure = IsSecureRequest(),
+                SameSite = SameSiteMode.Strict,
+                Path = "/",
+                Expires = expiresAt,
+                IsEssential = true
+            };
+        }
+
+        private AuthResponseDto CreateClientAuthResponse(AuthResponseDto result)
+        {
+            return new AuthResponseDto
+            {
+                Success = result.Success,
+                Message = result.Message,
+                ExpiresIn = result.ExpiresIn,
+                User = result.User
+            };
+        }
+
+        private double GetRefreshTokenExpiryInDays()
+        {
+            return double.TryParse(_configuration["JwtSettings:RefreshExpiryInDays"], out var days)
+                ? days
+                : 7;
+        }
+
+        private AuthSessionContextDto BuildSessionContext()
+        {
+            return new AuthSessionContextDto
+            {
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = Request.Headers.UserAgent.ToString()
+            };
+        }
+
+        private bool IsSecureRequest()
+        {
+            if (Request.IsHttps)
+            {
+                return true;
+            }
+
+            return string.Equals(Request.Headers["X-Forwarded-Proto"], "https", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

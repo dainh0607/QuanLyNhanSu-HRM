@@ -1,3 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 /* Tailwind CSS is now loaded via CDN in index.html to avoid workspace NPM issues. */
 @layer utilities {
   .scrollbar-hide::-webkit-scrollbar { display: none; }
@@ -45,7 +48,23 @@
   }
 }
 
-html, body { height: 100%; overflow: hidden; }
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
 
 /* Toggle Switch Style */
 .switch {
@@ -76,9 +95,6 @@ html, body { height: 100%; overflow: hidden; }
 }
 input:checked + .slider { background-color: #10b981; }
 input:checked + .slider:before { transform: translateX(16px); }
-
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 /* Profile Dropdown Animation */
 @keyframes fadeSlideDown {

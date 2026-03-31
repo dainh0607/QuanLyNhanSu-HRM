@@ -77,7 +77,7 @@ const Header = ({ user, onLogout }: { user: User | null; onLogout: () => void })
   ];
 
   return (
-    <header className="h-16 bg-[#FFFFFF] border-b border-[#E5E7EB] flex items-center justify-between px-6 sticky top-0 z-50">
+    <header className="h-16 bg-[#FFFFFF] border-b border-[#E5E7EB] flex items-center justify-between px-6 sticky top-0 z-[200]">
       <div className="flex items-center gap-8">
         {/* Logo Section */}
         <div className="flex items-center gap-2.5 group cursor-pointer">
@@ -124,7 +124,7 @@ const Header = ({ user, onLogout }: { user: User | null; onLogout: () => void })
         </div>
 
         {/* Profile Section with Dropdown */}
-        <div className="relative" ref={profileRef}>
+        <div className={`relative ${isProfileOpen ? 'z-[210]' : ''}`} ref={profileRef}>
           {/* Trigger: Avatar + Chevron */}
           <button
             id="profile-trigger"
@@ -143,7 +143,7 @@ const Header = ({ user, onLogout }: { user: User | null; onLogout: () => void })
           {isProfileOpen && (
             <div
               id="profile-dropdown"
-              className="absolute right-0 top-[calc(100%+8px)] w-72 bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-gray-100 overflow-hidden z-[9999] animate-[fadeSlideDown_0.2s_ease-out]"
+              className="absolute right-0 top-[calc(100%+8px)] w-72 bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-gray-100 overflow-hidden z-[220] animate-[fadeSlideDown_0.2s_ease-out]"
             >
               {/* Header: User Info */}
               <div className="flex items-center gap-3 px-5 py-4">

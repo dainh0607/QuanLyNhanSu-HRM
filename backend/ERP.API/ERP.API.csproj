@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UseAppHost>false</UseAppHost>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,13 +19,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ERP.Entities\ERP.Entities.csproj" />
-    <ProjectReference Include="..\ERP.Services\ERP.Services.csproj" />
-    <ProjectReference Include="..\ERP.DTOs\ERP.DTOs.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
+    <ProjectReference Include="..\ERP.Entities\ERP.Entities.csproj" SkipGetTargetFrameworkProperties="true" />
+    <ProjectReference Include="..\ERP.Services\ERP.Services.csproj" SkipGetTargetFrameworkProperties="true" />
+    <ProjectReference Include="..\ERP.DTOs\ERP.DTOs.csproj" SkipGetTargetFrameworkProperties="true" />
   </ItemGroup>
 
 </Project>

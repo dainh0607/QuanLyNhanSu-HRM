@@ -16,6 +16,7 @@ namespace ERP.Entities
         public DbSet<Allowances> Allowances { get; set; }
         public DbSet<AssetAllocations> AssetAllocations { get; set; }
         public DbSet<Assets> Assets { get; set; }
+        public DbSet<AuthSessions> AuthSessions { get; set; }
         public DbSet<AttendanceLogs> AttendanceLogs { get; set; }
         public DbSet<AttendanceModifications> AttendanceModifications { get; set; }
         public DbSet<AttendanceRecords> AttendanceRecords { get; set; }
@@ -114,6 +115,18 @@ namespace ERP.Entities
             
             // Apply all configurations from this assembly
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+
+            modelBuilder.Entity<AuthSessions>(entity =>
+            {
+                entity.HasIndex(e => e.session_id).IsUnique();
+                entity.HasIndex(e => e.refresh_token_hash).IsUnique();
+                entity.HasIndex(e => new { e.user_id, e.is_active });
+
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.user_id)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
 
             // Seed Master Data via Extension Method
             modelBuilder.SeedMasterData();

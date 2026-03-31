@@ -55,7 +55,7 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
           {/* Thông tin chính */}
           <div className="flex-1 min-w-0 pt-1">
             <div className="flex items-center gap-2 mb-3">
-              <h2 className="text-2xl font-bold text-gray-900 truncate">{employee.fullName}</h2>
+              <h3 className="text-2xl font-bold text-gray-900 truncate">{employee.fullName}</h3>
               {employee.accessGroup === 'Quản lý' && (
                  <span className="text-lg" title="Quản trị">👑</span>
               )}
@@ -64,15 +64,15 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
             {/* Badges (Thẻ thông tin nhỏ) */}
             <div className="flex flex-wrap gap-2">
               <div className="flex items-center px-3 py-1.5 bg-gray-50 rounded-lg text-xs font-medium text-gray-600 border border-gray-100">
-                <span className="material-symbols-outlined text-[16px] mr-1.5 text-gray-400">call</span>
+                <span className="material-symbols-outlined text-[13px] mr-1.5 text-gray-400">call</span>
                 {employee.phone || '-'}
               </div>
               <div className="flex items-center px-3 py-1.5 bg-gray-50 rounded-lg text-xs font-medium text-gray-600 border border-gray-100">
-                <span className="material-symbols-outlined text-[16px] mr-1.5 text-gray-400">location_on</span>
+                <span className="material-symbols-outlined text-[13px] mr-1.5 text-gray-400">location_on</span>
                 {employee.regionName || 'Việt Nam'}
               </div>
               <div className="flex items-center px-3 py-1.5 bg-[#E6FFFA] rounded-lg text-xs font-bold text-[#00A3BF] border border-[#B2F5EA]/50">
-                <span className="material-symbols-outlined text-[16px] mr-1.5">link</span>
+                <span className="material-symbols-outlined text-[13px] mr-1.5">link</span>
                 hoso/{employee.fullName?.toLowerCase().replace(/\s+/g, '-')}
               </div>
             </div>
