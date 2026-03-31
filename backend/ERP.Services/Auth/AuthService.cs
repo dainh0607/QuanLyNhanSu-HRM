@@ -28,6 +28,7 @@ namespace ERP.Services.Auth
         Task<AuthResponseDto> PreRegisterStaffAsync(PreRegisterStaffDto dto);
         string GenerateInternalToken(UserInfoDto user);
         Task<string> CreateFirebaseUserAsync(string email, string password, string displayName, int employeeId);
+        Task<UserInfoDto?> GetUserByIdAsync(int id);
     }
 
     public class AuthService : IAuthService
@@ -338,6 +339,43 @@ namespace ERP.Services.Auth
             catch (Exception ex)
             {
                 _logger.LogError($"Error in GetUserByUidAsync: {ex.Message}");
+                return null;
+            }
+        }
+
+        public async Task<UserInfoDto?> GetUserByIdAsync(int id)
+        {
+            try
+            {
+                // 1. Lấy thông tin từ Database local theo ID nội bộ
+                var localUser = await _context.Users
+                    .Include(u => u.Employee)
+                    .FirstOrDefaultAsync(u => u.Id == id);
+
+                if (localUser == null) return null;
+
+                // 2. Lấy roles
+                var roles = await _context.UserRoles
+                    .Where(ur => ur.user_id == localUser.Id)
+                    .Include(ur => ur.Role)
+                    .Select(ur => ur.Role.name)
+                    .ToListAsync();
+
+                return new UserInfoDto
+                {
+                    UserId = localUser.Id,
+                    EmployeeId = localUser.employee_id,
+                    Email = localUser.username,
+                    FullName = localUser.Employee?.full_name ?? localUser.username,
+                    EmployeeCode = localUser.Employee?.employee_code,
+                    PhoneNumber = localUser.Employee?.phone,
+                    IsActive = localUser.is_active,
+                    Roles = roles
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in GetUserByIdAsync: {ex.Message}");
                 return null;
             }
         }

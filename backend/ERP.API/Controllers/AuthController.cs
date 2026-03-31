@@ -62,13 +62,13 @@ namespace ERP.API.Controllers
         [Authorize]
         public async Task<IActionResult> GetCurrentUser()
         {
-            var uid = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(uid))
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
             {
                 return Unauthorized();
             }
 
-            var user = await _authService.GetUserByUidAsync(uid);
+            var user = await _authService.GetUserByIdAsync(userId);
             if (user == null)
             {
                 return NotFound(new { Message = "User not found in system" });
