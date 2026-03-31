@@ -1,10 +1,11 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.JsonWebTokens;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using ERP.DTOs.Auth;
 using ERP.Services.Auth;
-using FirebaseAdmin.Auth;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace ERP.API.Controllers
 {
@@ -13,6 +14,8 @@ namespace ERP.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
+        private readonly IUserService _userService;
+        private readonly IFirebaseService _firebaseService;
         private readonly ILogger<AuthController> _logger;
         private readonly IConfiguration _configuration;
         private readonly IWebHostEnvironment _environment;
@@ -20,6 +23,8 @@ namespace ERP.API.Controllers
         public AuthController(IAuthService authService, ILogger<AuthController> logger, IConfiguration configuration, IWebHostEnvironment environment)
         {
             _authService = authService;
+            _userService = userService;
+            _firebaseService = firebaseService;
             _logger = logger;
             _configuration = configuration;
             _environment = environment;
@@ -30,16 +35,11 @@ namespace ERP.API.Controllers
         public async Task<IActionResult> SignUp([FromBody] SignUpDto dto)
         {
             if (!ModelState.IsValid)
-            {
                 return BadRequest(ModelState);
-            }
 
             var result = await _authService.SignUpAsync(dto);
-            
             if (!result.Success)
-            {
                 return BadRequest(result);
-            }
 
             return Ok(result);
         }
@@ -49,16 +49,11 @@ namespace ERP.API.Controllers
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
             if (!ModelState.IsValid)
-            {
                 return BadRequest(ModelState);
-            }
 
             var result = await _authService.LoginAsync(dto, BuildSessionContext());
-            
             if (!result.Success)
-            {
                 return Unauthorized(result);
-            }
 
             Response.Headers.CacheControl = "no-store";
             WriteSessionCookies(result);
@@ -75,13 +70,10 @@ namespace ERP.API.Controllers
             if (!int.TryParse(userIdValue, out var userId))
             {
                 return Unauthorized();
-            }
 
             var user = await _authService.GetUserByIdAsync(userId);
             if (user == null)
-            {
                 return NotFound(new { Message = "User not found in system" });
-            }
 
             return Ok(user);
         }
@@ -135,16 +127,11 @@ namespace ERP.API.Controllers
         public async Task<IActionResult> VerifyToken([FromBody] string idToken)
         {
             if (string.IsNullOrEmpty(idToken))
-            {
                 return BadRequest("Token is required");
-            }
 
-            var uid = await _authService.VerifyTokenAsync(idToken);
-            
+            var uid = await _firebaseService.VerifyIdTokenAsync(idToken);
             if (uid == null)
-            {
                 return Unauthorized(new { Message = "Invalid token" });
-            }
 
             return Ok(new { Uid = uid, Message = "Token is valid" });
         }

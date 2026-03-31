@@ -1,3 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading.Tasks;
 using ERP.DTOs.Auth;
 using ERP.Entities;
 using ERP.Entities.Models;
@@ -11,8 +19,6 @@ using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
-
-using EmployeeEntity = ERP.Entities.Models.Employees;
 
 namespace ERP.Services.Auth
 {
@@ -36,7 +42,8 @@ namespace ERP.Services.Auth
         private readonly AppDbContext _context;
         private readonly ILogger<AuthService> _logger;
         private readonly IConfiguration _configuration;
-        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IFirebaseService _firebaseService;
+        private readonly IUserService _userService;
 
         public AuthService(
             AppDbContext context,
@@ -47,7 +54,8 @@ namespace ERP.Services.Auth
             _context = context;
             _logger = logger;
             _configuration = configuration;
-            _httpClientFactory = httpClientFactory;
+            _firebaseService = firebaseService;
+            _userService = userService;
         }
 
         public async Task<AuthResponseDto> SignUpAsync(SignUpDto dto)
@@ -82,6 +90,7 @@ namespace ERP.Services.Auth
                     PhoneNumber = dto.PhoneNumber,
                     Disabled = false
                 };
+                    var firebaseUser = await _firebaseService.CreateUserAsync(userArgs);
 
                 var firebaseUser = await FirebaseAuth.DefaultInstance.CreateUserAsync(userArgs);
 
@@ -715,9 +724,7 @@ namespace ERP.Services.Auth
             var claims = CreateBaseClaims(user, sessionId);
 
             foreach (var role in user.Roles ?? new List<string>())
-            {
                 claims.Add(new Claim(ClaimTypes.Role, role));
-            }
 
             var credentials = new SigningCredentials(GetJwtSigningKey(), SecurityAlgorithms.HmacSha256);
             var token = new JwtSecurityToken(

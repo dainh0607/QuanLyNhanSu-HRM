@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using ERP.DTOs.Employees.Profile;
 using ERP.Entities.Models;
 using ERP.Repositories.Interfaces;
+using EmployeeEntity = ERP.Entities.Models.Employees;
 
 namespace ERP.Services.Employees
 {
@@ -195,6 +196,78 @@ namespace ERP.Services.Employees
             });
 
             await _unitOfWork.Repository<Dependents>().AddRangeAsync(newEntities);
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> UpdateIdentityInfoAsync(int employeeId, IdentityInfoDto dto)
+        {
+            var emp = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(employeeId);
+            if (emp == null) return false;
+
+            emp.identity_number = dto.IdentityNumber;
+            emp.identity_issue_date = dto.IdentityIssueDate;
+            emp.identity_issue_place = dto.IdentityIssuePlace;
+            emp.passport = dto.Passport;
+            emp.nationality = dto.Nationality;
+            emp.ethnicity = dto.Ethnicity;
+            emp.religion = dto.Religion;
+
+            _unitOfWork.Repository<EmployeeEntity>().Update(emp);
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> UpdateContactInfoAsync(int employeeId, ContactInfoDto dto)
+        {
+            var emp = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(employeeId);
+            if (emp == null) return false;
+
+            emp.phone = dto.Phone;
+            emp.home_phone = dto.HomePhone;
+            emp.email = dto.Email;
+            emp.work_email = dto.WorkEmail;
+            emp.facebook = dto.Facebook;
+
+            _unitOfWork.Repository<EmployeeEntity>().Update(emp);
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> UpdateBasicInfoAsync(int employeeId, BasicInfoDto dto)
+        {
+            var emp = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(employeeId);
+            if (emp == null) return false;
+
+            emp.full_name = dto.FullName;
+            emp.birth_date = dto.BirthDate;
+            emp.gender_code = dto.GenderCode;
+            emp.marital_status_code = dto.MaritalStatusCode;
+            emp.department_id = dto.DepartmentId;
+            emp.job_title_id = dto.JobTitleId;
+            emp.branch_id = dto.BranchId;
+            emp.manager_id = dto.ManagerId;
+            emp.start_date = dto.StartDate;
+            emp.avatar = dto.Avatar;
+
+            _unitOfWork.Repository<EmployeeEntity>().Update(emp);
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+    
+        public async Task<bool> UpdateWorkHistoryAsync(int employeeId, List<WorkHistoryDto> dtos)
+        {
+            var existing = await _unitOfWork.Repository<WorkHistory>().FindAsync(x => x.employee_id == employeeId);
+            _unitOfWork.Repository<WorkHistory>().RemoveRange(existing);
+    
+            var newEntities = dtos.Select(d => new WorkHistory
+            {
+                employee_id = employeeId,
+                company_name = d.CompanyName,
+                job_title = d.JobTitle,
+                work_duration = d.WorkDuration,
+                start_date = d.StartDate,
+                end_date = d.EndDate,
+                is_current = d.IsCurrent
+            });
+    
+            await _unitOfWork.Repository<WorkHistory>().AddRangeAsync(newEntities);
             return await _unitOfWork.SaveChangesAsync() > 0;
         }
     }

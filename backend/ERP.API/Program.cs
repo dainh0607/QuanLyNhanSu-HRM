@@ -13,6 +13,7 @@ using ERP.Repositories.Implementations;
 using ERP.Services.Employees;
 using ERP.Services.Organization;
 using ERP.Services.Lookup;
+using ERP.Services.Contracts;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
@@ -118,12 +119,15 @@ builder.Services.AddSingleton(new AuthCsrfOptions
 
 // Register Services
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IFirebaseService, FirebaseService>();
+builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IClaimsTransformation, FirebaseClaimsTransformation>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IEmployeeProfileService, EmployeeProfileService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 builder.Services.AddScoped<ILookupService, LookupService>();
+builder.Services.AddScoped<IContractService, ContractService>();
 builder.Services.AddHostedService<EmployeeStatusWorker>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>

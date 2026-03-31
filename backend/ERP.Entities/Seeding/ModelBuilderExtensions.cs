@@ -84,10 +84,11 @@ namespace ERP.Entities.Seeding
 
             // 11. ContractTypes (Loại hợp đồng)
             modelBuilder.Entity<ContractTypes>().HasData(
-                new ContractTypes { Id = 1, name = "Thử việc" },
-                new ContractTypes { Id = 2, name = "Hợp đồng 1 năm" },
-                new ContractTypes { Id = 3, name = "Hợp đồng 3 năm" },
-                new ContractTypes { Id = 4, name = "Hợp đồng không thời hạn" }
+                new ContractTypes { Id = 1, name = "Hợp đồng thử việc" },
+                new ContractTypes { Id = 2, name = "Hợp đồng lao động xác định thời hạn (12 tháng)" },
+                new ContractTypes { Id = 3, name = "Hợp đồng lao động xác định thời hạn (36 tháng)" },
+                new ContractTypes { Id = 4, name = "Hợp đồng lao động không xác định thời hạn" },
+                new ContractTypes { Id = 5, name = "Hợp đồng khoán việc / Cộng tác viên" }
             );
 
             // 12. ShiftTypes (Ca làm việc)

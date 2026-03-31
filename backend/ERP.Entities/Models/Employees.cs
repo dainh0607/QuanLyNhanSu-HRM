@@ -45,6 +45,13 @@ namespace ERP.Entities.Models
         [StringLength(20)]
         public string? identity_number { get; set; }
 
+        [Column("identity_issue_date")]
+        public DateTime? identity_issue_date { get; set; }
+
+        [Column("identity_issue_place")]
+        [StringLength(100)]
+        public string? identity_issue_place { get; set; }
+
         [Column("passport")]
         [StringLength(20)]
         public string? passport { get; set; }
@@ -56,6 +63,10 @@ namespace ERP.Entities.Models
         [Column("religion")]
         [StringLength(50)]
         public string? religion { get; set; }
+
+        [Column("nationality")]
+        [StringLength(50)]
+        public string? nationality { get; set; }
 
         [Column("tax_code")]
         [StringLength(20)]
