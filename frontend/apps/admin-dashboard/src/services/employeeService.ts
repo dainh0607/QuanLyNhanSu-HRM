@@ -34,6 +34,49 @@ const requestJson = async <T>(
   return (await response.json()) as T;
 };
 
+const requestBlob = async (
+  input: string,
+  init: RequestInit,
+  fallbackMessage: string
+): Promise<{ blob: Blob; headers: Headers }> => {
+  const response = await authFetch(input, init);
+
+  if (!response.ok) {
+    const errorData = await parseJsonSafely<unknown>(response);
+    if (errorData) {
+      throw errorData;
+    }
+
+    throw new Error(`${fallbackMessage}: ${response.statusText}`);
+  }
+
+  return {
+    blob: await response.blob(),
+    headers: response.headers,
+  };
+};
+
+const parseDownloadFilename = (
+  contentDisposition: string | null,
+  fallbackFilename: string
+): string => {
+  if (!contentDisposition) {
+    return fallbackFilename;
+  }
+
+  const utf8FilenameMatch = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8FilenameMatch?.[1]) {
+    try {
+      return decodeURIComponent(utf8FilenameMatch[1]);
+    } catch {
+      return utf8FilenameMatch[1];
+    }
+  }
+
+  const asciiFilenameMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+  return asciiFilenameMatch?.[1] || fallbackFilename;
+};
+
 export interface PaginatedResponse<T> {
   items: T[];
   totalCount: number;
@@ -198,6 +241,38 @@ export interface AddressTypeMetadata {
   name: string;
 }
 
+export interface AccessGroupMetadata {
+  id: number;
+  name: string;
+}
+
+export interface RegionMetadata {
+  id: number;
+  name: string;
+  code?: string;
+}
+
+export interface BranchMetadata {
+  id: number;
+  name: string;
+  code?: string;
+  address?: string;
+  regionId?: number | null;
+}
+
+export interface DepartmentMetadata {
+  id: number;
+  name: string;
+  code?: string;
+  parentId?: number | null;
+}
+
+export interface JobTitleMetadata {
+  id: number;
+  name: string;
+  code?: string;
+}
+
 export interface AddressOptionMetadata {
   name: string;
 }
@@ -328,6 +403,8 @@ const EMPLOYEE_PROFILE_ENDPOINTS = {
   healthRecord: `${API_URL}/employees/:employeeId/details/health-record`,
 } as const;
 
+const EMPLOYEE_FULL_PROFILE_ENDPOINT = `${API_URL}/employees/:employeeId/full-profile`;
+
 const EMPLOYEE_METADATA_ENDPOINTS = {
   addressTypes: "address-types",
   addressCountries: "address-countries",
@@ -383,18 +460,53 @@ export interface EmployeeEditHealthPayload {
   checkDate: string;
 }
 
+export interface EmployeeExportFileResult {
+  blob: Blob;
+  filename: string;
+}
+
+interface EmployeeBasicInfoUpdateRequest {
+  fullName: string;
+  birthDate: string | null;
+  genderCode: string | null;
+  maritalStatusCode: string | null;
+  departmentId: number | null;
+  jobTitleId: number | null;
+  branchId: number | null;
+  managerId: number | null;
+  startDate: string | null;
+  avatar: string | null;
+}
+
+interface EmployeeContactInfoUpdateRequest {
+  phone: string | null;
+  homePhone: string | null;
+  email: string | null;
+  workEmail: string | null;
+  facebook: string | null;
+}
+
+interface EmployeeEmergencyContactUpdateItemRequest {
+  id: number;
+  name: string;
+  relationship: string;
+  mobilePhone: string;
+  homePhone: string;
+  address: string;
+}
+
 const EMPLOYEE_EDIT_ENDPOINTS = {
   basicInfo: {
     get: "",
-    put: "",
+    put: EMPLOYEE_PROFILE_ENDPOINTS.basicInfo,
   },
   contact: {
     get: "",
-    put: "",
+    put: EMPLOYEE_PROFILE_ENDPOINTS.contact,
   },
   emergencyContact: {
     get: "",
-    put: "",
+    put: EMPLOYEE_PROFILE_ENDPOINTS.emergencyContact,
   },
   permanentAddress: {
     get: "",
@@ -430,6 +542,11 @@ const toEditableString = (value: unknown): string => {
   return "";
 };
 
+const toNullableEditableString = (value: unknown): string | null => {
+  const normalizedValue = toEditableString(value);
+  return normalizedValue || null;
+};
+
 const toDateInputValue = (value: unknown): string => {
   if (typeof value !== "string" || !value.trim()) {
     return "";
@@ -447,6 +564,11 @@ const toDateInputValue = (value: unknown): string => {
   }
 
   return parsedDate.toISOString().slice(0, 10);
+};
+
+const toNullableDateInputValue = (value: unknown): string | null => {
+  const normalizedValue = toDateInputValue(value);
+  return normalizedValue || null;
 };
 
 const stripNonDigits = (value: unknown): string =>
@@ -509,10 +631,23 @@ const createMissingEndpointError = (action: "GET" | "PUT", tabLabel: string) =>
 
 const fetchEmployeeFullProfileFallback = async (id: number): Promise<EmployeeFullProfile> =>
   requestJson<EmployeeFullProfile>(
-    `${API_URL}/employees/${id}/full-profile`,
+    resolveEmployeeEditEndpoint(EMPLOYEE_FULL_PROFILE_ENDPOINT, id),
     { method: "GET" },
     "Error fetching employee full profile"
   );
+
+const requestOptionList = async <T>(endpoint: string, fallbackMessage: string): Promise<T[]> => {
+  try {
+    return await requestJson<T[]>(
+      endpoint,
+      { method: "GET" },
+      fallbackMessage
+    );
+  } catch (error) {
+    console.error(fallbackMessage, error);
+    return [];
+  }
+};
 
 const mapBasicInfoForEdit = (profile: EmployeeFullProfile): EmployeeEditBasicInfoPayload => {
   const basicInfoRecord = profile.basicInfo as unknown as Record<string, unknown>;
@@ -738,6 +873,48 @@ export const employeeService = {
     }
   },
 
+  exportEmployeesBasicInfoFile: async (options?: {
+    columnIds?: string[];
+    searchTerm?: string;
+    status?: string;
+  }): Promise<EmployeeExportFileResult> => {
+    const url = new URL(`${API_URL}/employees/export`);
+
+    options?.columnIds?.forEach((columnId) => {
+      const normalizedColumnId = columnId.trim();
+      if (normalizedColumnId) {
+        url.searchParams.append("columns", normalizedColumnId);
+      }
+    });
+
+    if (options?.searchTerm?.trim()) {
+      url.searchParams.append("searchTerm", options.searchTerm.trim());
+    }
+
+    if (options?.status?.trim()) {
+      url.searchParams.append("status", options.status.trim());
+    }
+
+    const today = new Date();
+    const fallbackFilename = `Employees_${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}.csv`;
+
+    try {
+      const { blob, headers } = await requestBlob(
+        url.toString(),
+        { method: "GET" },
+        "Error exporting employee basic info"
+      );
+
+      return {
+        blob,
+        filename: parseDownloadFilename(headers.get("content-disposition"), fallbackFilename),
+      };
+    } catch (error) {
+      console.error("Export Employee Basic Info Error:", error);
+      throw error;
+    }
+  },
+
   getEmployeeById: async (id: number): Promise<Employee> => {
     try {
       return await requestJson<Employee>(
@@ -805,6 +982,39 @@ export const employeeService = {
       return [];
     }
   },
+
+  getAccessGroupsMetadata: async (): Promise<AccessGroupMetadata[]> =>
+    employeeService
+      .getMetadata<AccessGroupMetadata>("access-groups")
+      .then((items) =>
+        items
+          .filter((item) => Number.isFinite(item.id) && typeof item.name === "string" && item.name.trim())
+          .sort((left, right) => left.name.localeCompare(right.name, "vi"))
+      ),
+
+  getRegionsMetadata: async (): Promise<RegionMetadata[]> =>
+    requestOptionList<RegionMetadata>(
+      `${API_URL}/regions`,
+      "Error fetching regions metadata"
+    ),
+
+  getBranchesMetadata: async (): Promise<BranchMetadata[]> =>
+    requestOptionList<BranchMetadata>(
+      `${API_URL}/branches`,
+      "Error fetching branches metadata"
+    ),
+
+  getDepartmentsMetadata: async (): Promise<DepartmentMetadata[]> =>
+    requestOptionList<DepartmentMetadata>(
+      `${API_URL}/departments`,
+      "Error fetching departments metadata"
+    ),
+
+  getJobTitlesMetadata: async (): Promise<JobTitleMetadata[]> =>
+    requestOptionList<JobTitleMetadata>(
+      `${API_URL}/jobtitles`,
+      "Error fetching job titles metadata"
+    ),
 
   getAddressTypesMetadata: async (): Promise<AddressTypeMetadata[]> =>
     employeeService.getMetadata<AddressTypeMetadata>(EMPLOYEE_METADATA_ENDPOINTS.addressTypes),
@@ -911,11 +1121,28 @@ export const employeeService = {
       throw createMissingEndpointError("PUT", "Thông tin cơ bản");
     }
 
+    const profile = await fetchEmployeeFullProfileFallback(id);
+    const basicInfoRecord = profile.basicInfo as unknown as Record<string, unknown>;
+    const normalizedPayload: EmployeeBasicInfoUpdateRequest = {
+      fullName: payload.fullName.trim(),
+      birthDate: payload.birthDate.trim() ? payload.birthDate : null,
+      genderCode: payload.gender.trim() || null,
+      maritalStatusCode: toNullableEditableString(
+        getRecordValue(basicInfoRecord, ["maritalStatusCode", "maritalStatus"])
+      ),
+      departmentId: profile.basicInfo.departmentId ?? null,
+      jobTitleId: profile.basicInfo.jobTitleId ?? null,
+      branchId: profile.basicInfo.branchId ?? null,
+      managerId: profile.basicInfo.managerId ?? null,
+      startDate: toNullableDateInputValue(profile.basicInfo.startDate),
+      avatar: toNullableEditableString(profile.basicInfo.avatar),
+    };
+
     return requestJson<unknown>(
       endpoint,
       {
         method: "PUT",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(normalizedPayload),
       },
       "Error updating employee basic info"
     );
@@ -944,11 +1171,20 @@ export const employeeService = {
       throw createMissingEndpointError("PUT", "Liên hệ");
     }
 
+    const normalizedEmail = payload.email.trim();
+    const normalizedPayload: EmployeeContactInfoUpdateRequest = {
+      phone: stripNonDigits(payload.phone) || null,
+      homePhone: stripNonDigits(payload.homePhone) || null,
+      email: normalizedEmail || null,
+      workEmail: normalizedEmail || null,
+      facebook: payload.facebook.trim() || null,
+    };
+
     return requestJson<unknown>(
       endpoint,
       {
         method: "PUT",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(normalizedPayload),
       },
       "Error updating employee contact info"
     );
@@ -985,11 +1221,27 @@ export const employeeService = {
       throw createMissingEndpointError("PUT", "Liên hệ khẩn cấp");
     }
 
+    const normalizedPayload: EmployeeEmergencyContactUpdateItemRequest[] =
+      [payload]
+        .filter((item) =>
+          [item.name, item.mobilePhone, item.relationship, item.homePhone, item.address].some(
+            (value) => value.trim()
+          )
+        )
+        .map((item) => ({
+          id: item.id ?? 0,
+          name: item.name.trim(),
+          relationship: item.relationship.trim(),
+          mobilePhone: stripNonDigits(item.mobilePhone),
+          homePhone: stripNonDigits(item.homePhone),
+          address: item.address.trim(),
+        }));
+
     return requestJson<unknown>(
       endpoint,
       {
         method: "PUT",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(normalizedPayload),
       },
       "Error updating employee emergency contact"
     );

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useRef } from 'react';
 import { employeeService, type EmployeeCreatePayload } from '../../../services/employeeService';
 import { useToast } from '../../../components/common/useToast';
 
@@ -38,7 +39,15 @@ interface ModalMetadata {
   accessGroups: MetadataOption[];
 }
 
-const DEFAULT_ACCESS_GROUP_KEY = 'nhan vien';
+interface MetadataLoadingState {
+  regions: boolean;
+  branches: boolean;
+  departments: boolean;
+  jobTitles: boolean;
+  accessGroups: boolean;
+}
+
+const DEFAULT_ACCESS_GROUP_KEYS = ['nhan vien', 'nhân viên', 'employee', 'user', 'staff'] as const;
 const VIETNAM_COUNTRY_CODE = '+84';
 const VIETNAM_PHONE_MAX_LENGTH = 10;
 const DEFAULT_PHONE_MAX_LENGTH = 15;
@@ -63,6 +72,24 @@ const EMAIL_REGEX = new RegExp(
 const EMAIL_ERROR_MESSAGE = CONFIGURED_COMPANY_EMAIL_DOMAIN
   ? `Email phải đúng định dạng và kết thúc bằng @${CONFIGURED_COMPANY_EMAIL_DOMAIN}, @gmail.com hoặc @outlook.com.vn`
   : 'Email phải đúng định dạng và dùng domain công ty hợp lệ, @gmail.com hoặc @outlook.com.vn';
+
+const INVITE_LINK = 'https://nexa-hr.com/invite/69c62e9908f09CbYE...';
+
+const INITIAL_METADATA: ModalMetadata = {
+  regions: [],
+  branches: [],
+  departments: [],
+  jobTitles: [],
+  accessGroups: [],
+};
+
+const INITIAL_METADATA_LOADING_STATE: MetadataLoadingState = {
+  regions: false,
+  branches: false,
+  departments: false,
+  jobTitles: false,
+  accessGroups: false,
+};
 
 const INITIAL_FORM_DATA: AddEmployeeFormData = {
   employeeCode: '',
@@ -125,6 +152,11 @@ const normalizeSearchText = (value: string) =>
     .trim()
     .toLowerCase();
 
+const resolveDefaultAccessGroupId = (accessGroups: MetadataOption[]): string =>
+  accessGroups.find((group) =>
+    DEFAULT_ACCESS_GROUP_KEYS.includes(normalizeSearchText(group.name) as (typeof DEFAULT_ACCESS_GROUP_KEYS)[number]),
+  )?.id?.toString() ?? '';
+
 const getPhoneMaxLength = (countryCode: string) =>
   countryCode === VIETNAM_COUNTRY_CODE ? VIETNAM_PHONE_MAX_LENGTH : DEFAULT_PHONE_MAX_LENGTH;
 
@@ -144,12 +176,48 @@ const getBackendErrorMessage = (value: unknown): string | null => {
   return null;
 };
 
+const fallbackCopyToClipboard = (value: string): boolean => {
+  if (typeof document === 'undefined') {
+    return false;
+  }
+
+  const textArea = document.createElement('textarea');
+  textArea.value = value;
+  textArea.setAttribute('readonly', 'true');
+  textArea.style.position = 'fixed';
+  textArea.style.opacity = '0';
+  textArea.style.pointerEvents = 'none';
+
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+  textArea.setSelectionRange(0, value.length);
+
+  const isCopied = document.execCommand('copy');
+  document.body.removeChild(textArea);
+
+  return isCopied;
+};
+
+const copyToClipboard = async (value: string): Promise<void> => {
+  if (navigator.clipboard?.writeText && window.isSecureContext) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  if (!fallbackCopyToClipboard(value)) {
+    throw new Error('Copy to clipboard is not available.');
+  }
+};
+
 const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { showToast, ToastComponent } = useToast();
   const [isExpanded, setIsExpanded] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [hasLoadedOrganizationMetadata, setHasLoadedOrganizationMetadata] = useState(false);
+  const hasUserEditedEmployeeCodeRef = useRef(false);
 
   // Form State
   const [formData, setFormData] = useState<AddEmployeeFormData>(INITIAL_FORM_DATA);
@@ -158,13 +226,10 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Metadata State
-  const [metadata, setMetadata] = useState<ModalMetadata>({
-    regions: [],
-    branches: [],
-    departments: [],
-    jobTitles: [],
-    accessGroups: [],
-  });
+  const [metadata, setMetadata] = useState<ModalMetadata>(INITIAL_METADATA);
+  const [metadataLoading, setMetadataLoading] = useState<MetadataLoadingState>(
+    INITIAL_METADATA_LOADING_STATE,
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -177,38 +242,94 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
     setErrors({});
     setIsExpanded(false);
     setShowPassword(false);
+    setHasLoadedOrganizationMetadata(false);
+    hasUserEditedEmployeeCodeRef.current = false;
+    setFormData(INITIAL_FORM_DATA);
+    setMetadata(INITIAL_METADATA);
+    setMetadataLoading(INITIAL_METADATA_LOADING_STATE);
     try {
-      const [code, regionItems, branchItems, departmentItems, jobTitleItems, accessGroupItems] = await Promise.all([
+      setMetadataLoading((prev) => ({
+        ...prev,
+        accessGroups: true,
+      }));
+
+      const [code, accessGroupItems] = await Promise.all([
         employeeService.getNextEmployeeCode(),
-        employeeService.getMetadata('regions'),
-        employeeService.getMetadata('branches'),
-        employeeService.getMetadata('departments'),
-        employeeService.getMetadata('job-titles'),
-        employeeService.getMetadata('access-groups'),
+        employeeService.getAccessGroupsMetadata(),
       ]);
 
-      const regions = normalizeMetadataOptions(regionItems);
-      const branches = normalizeMetadataOptions(branchItems);
-      const departments = normalizeMetadataOptions(departmentItems);
-      const jobTitles = normalizeMetadataOptions(jobTitleItems);
       const accessGroups = normalizeMetadataOptions(accessGroupItems);
-      const defaultAccessGroupId =
-        accessGroups.find((group) => normalizeSearchText(group.name) === DEFAULT_ACCESS_GROUP_KEY)?.id?.toString() ??
-        accessGroups[0]?.id?.toString() ??
-        '';
+      const defaultAccessGroupId = resolveDefaultAccessGroupId(accessGroups);
 
-      setFormData({
-        ...INITIAL_FORM_DATA,
-        employeeCode: code,
-        accessGroupId: defaultAccessGroupId,
-      });
-      setMetadata({ regions, branches, departments, jobTitles, accessGroups });
+      setFormData((prev) => ({
+        ...prev,
+        employeeCode: hasUserEditedEmployeeCodeRef.current ? prev.employeeCode : code,
+        accessGroupId: prev.accessGroupId || defaultAccessGroupId,
+      }));
+      setMetadata((prev) => ({
+        ...prev,
+        accessGroups,
+      }));
     } catch (error) {
       console.error('Fetch initial data error:', error);
     } finally {
+      setMetadataLoading((prev) => ({
+        ...prev,
+        accessGroups: false,
+      }));
       setLoading(false);
     }
   };
+
+  const loadOrganizationMetadata = async () => {
+    if (hasLoadedOrganizationMetadata) {
+      return;
+    }
+
+    setMetadataLoading((prev) => ({
+      ...prev,
+      regions: true,
+      branches: true,
+      departments: true,
+      jobTitles: true,
+    }));
+
+    try {
+      const [regionItems, branchItems, departmentItems, jobTitleItems] = await Promise.all([
+        employeeService.getRegionsMetadata(),
+        employeeService.getBranchesMetadata(),
+        employeeService.getDepartmentsMetadata(),
+        employeeService.getJobTitlesMetadata(),
+      ]);
+
+      setMetadata((prev) => ({
+        ...prev,
+        regions: normalizeMetadataOptions(regionItems),
+        branches: normalizeMetadataOptions(branchItems),
+        departments: normalizeMetadataOptions(departmentItems),
+        jobTitles: normalizeMetadataOptions(jobTitleItems),
+      }));
+      setHasLoadedOrganizationMetadata(true);
+    } catch (error) {
+      console.error('Load organization metadata error:', error);
+    } finally {
+      setMetadataLoading((prev) => ({
+        ...prev,
+        regions: false,
+        branches: false,
+        departments: false,
+        jobTitles: false,
+      }));
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen || !isExpanded) {
+      return;
+    }
+
+    void loadOrganizationMetadata();
+  }, [hasLoadedOrganizationMetadata, isExpanded, isOpen]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -256,6 +377,10 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
   };
 
   const handleInputChange = (field: keyof AddEmployeeFormData, value: string) => {
+    if (field === 'employeeCode') {
+      hasUserEditedEmployeeCodeRef.current = true;
+    }
+
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -297,6 +422,16 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
       delete next.phone;
       return next;
     });
+  };
+
+  const handleCopyInviteLink = async () => {
+    try {
+      await copyToClipboard(INVITE_LINK);
+      showToast('Đã sao chép liên kết!', 'success');
+    } catch (error) {
+      console.error('Copy invite link error:', error);
+      showToast('Không thể sao chép liên kết. Vui lòng thử lại.', 'error');
+    }
   };
 
   const handleSubmit = async () => {
@@ -399,13 +534,12 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
               </p>
               <div className="flex gap-2">
                 <div className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-xl text-[13px] text-gray-400 truncate flex items-center h-10">
-                  https://nexa-hr.com/invite/69c62e9908f09CbYE...
+                  {INVITE_LINK}
                 </div>
                 <button 
-                  onClick={() => {
-                    navigator.clipboard.writeText('https://nexa-hr.com/invite/69c62e9908f09CbYE...');
-                    showToast('Đã sao chép liên kết!', 'success');
-                  }}
+                  type="button"
+                  onClick={handleCopyInviteLink}
+
                   className="px-4 h-10 bg-[#192841] text-white text-xs font-bold rounded-xl hover:bg-[#253a5c] transition-all shadow-sm active:scale-95"
                 >
                   Sao chép link
@@ -486,9 +620,10 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
                   <select 
                     value={formData.accessGroupId}
                     onChange={(e) => handleInputChange('accessGroupId', e.target.value)}
-                    className={`w-full h-11 px-4 border rounded-xl text-sm appearance-none bg-white focus:outline-none focus:ring-4 transition-all pr-10 cursor-pointer ${errors.accessGroupId ? 'border-red-400 bg-red-50/30 ring-red-100' : 'border-gray-200 focus:border-[#192841] focus:ring-[#192841]/5'}`}
+                    disabled={metadataLoading.accessGroups}
+                    className={`w-full h-11 px-4 border rounded-xl text-sm appearance-none bg-white focus:outline-none focus:ring-4 transition-all pr-10 cursor-pointer disabled:bg-gray-50/50 disabled:text-gray-400 disabled:cursor-not-allowed ${errors.accessGroupId ? 'border-red-400 bg-red-50/30 ring-red-100' : 'border-gray-200 focus:border-[#192841] focus:ring-[#192841]/5'}`}
                   >
-                    <option value="">{loading ? 'Đang tải...' : 'Chọn nhóm truy cập'}</option>
+                    <option value="">{loading || metadataLoading.accessGroups ? 'Đang tải...' : 'Chọn nhóm truy cập'}</option>
                     {metadata.accessGroups.map(g => (
                       <option key={g.id} value={String(g.id)}>{g.name}</option>
                     ))}
@@ -546,9 +681,10 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
                     <select 
                       value={formData.regionId}
                       onChange={(e) => handleInputChange('regionId', e.target.value)}
-                      className="w-full h-11 px-4 border border-gray-200 rounded-xl text-sm appearance-none bg-white focus:outline-none focus:border-[#192841] focus:ring-4 focus:ring-[#192841]/5 transition-all pr-10 cursor-pointer"
+                      disabled={metadataLoading.regions}
+                      className="w-full h-11 px-4 border border-gray-200 rounded-xl text-sm appearance-none bg-white focus:outline-none focus:border-[#192841] focus:ring-4 focus:ring-[#192841]/5 transition-all pr-10 cursor-pointer disabled:bg-gray-50/50 disabled:text-gray-400 disabled:cursor-not-allowed"
                     >
-                      <option value="">{loading ? 'Đang tải...' : 'Chọn vùng'}</option>
+                      <option value="">{metadataLoading.regions ? 'Đang tải...' : 'Chọn vùng'}</option>
                       {metadata.regions.map(r => (
                         <option key={r.id} value={r.id}>{r.name}</option>
                       ))}
@@ -566,10 +702,10 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
                     <select 
                       value={formData.branchId}
                       onChange={(e) => handleInputChange('branchId', e.target.value)}
-                      className="w-full h-11 px-4 border border-gray-200 rounded-xl text-sm appearance-none bg-white focus:outline-none focus:border-[#192841] focus:ring-4 focus:ring-[#192841]/5 transition-all pr-10 disabled:bg-gray-50/50 cursor-pointer disabled:cursor-not-allowed"
-                      disabled={loading || (shouldFilterBranchesByRegion && !formData.regionId)}
+                      className="w-full h-11 px-4 border border-gray-200 rounded-xl text-sm appearance-none bg-white focus:outline-none focus:border-[#192841] focus:ring-4 focus:ring-[#192841]/5 transition-all pr-10 disabled:bg-gray-50/50 disabled:text-gray-400 cursor-pointer disabled:cursor-not-allowed"
+                      disabled={metadataLoading.branches || (shouldFilterBranchesByRegion && !formData.regionId)}
                     >
-                      <option value="">{loading ? 'Đang tải...' : 'Chọn chi nhánh'}</option>
+                      <option value="">{metadataLoading.branches ? 'Đang tải...' : shouldFilterBranchesByRegion && !formData.regionId ? 'Chọn vùng trước' : 'Chọn chi nhánh'}</option>
                       {filteredBranches.map(b => (
                         <option key={b.id} value={b.id}>{b.name}</option>
                       ))}
@@ -587,9 +723,10 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
                     <select 
                       value={formData.departmentId}
                       onChange={(e) => handleInputChange('departmentId', e.target.value)}
-                      className="w-full h-11 px-4 border border-gray-200 rounded-xl text-sm appearance-none bg-white focus:outline-none focus:border-[#192841] focus:ring-4 focus:ring-[#192841]/5 transition-all pr-10 cursor-pointer"
+                      disabled={metadataLoading.departments}
+                      className="w-full h-11 px-4 border border-gray-200 rounded-xl text-sm appearance-none bg-white focus:outline-none focus:border-[#192841] focus:ring-4 focus:ring-[#192841]/5 transition-all pr-10 cursor-pointer disabled:bg-gray-50/50 disabled:text-gray-400 disabled:cursor-not-allowed"
                     >
-                      <option value="">{loading ? 'Đang tải...' : 'Chọn phòng ban'}</option>
+                      <option value="">{metadataLoading.departments ? 'Đang tải...' : 'Chọn phòng ban'}</option>
                       {metadata.departments.map(d => (
                         <option key={d.id} value={d.id}>{d.name}</option>
                       ))}
@@ -607,9 +744,10 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
                     <select 
                       value={formData.jobTitleId}
                       onChange={(e) => handleInputChange('jobTitleId', e.target.value)}
-                      className="w-full h-11 px-4 border border-gray-200 rounded-xl text-sm appearance-none bg-white focus:outline-none focus:border-[#192841] focus:ring-4 focus:ring-[#192841]/5 transition-all pr-10 cursor-pointer"
+                      disabled={metadataLoading.jobTitles}
+                      className="w-full h-11 px-4 border border-gray-200 rounded-xl text-sm appearance-none bg-white focus:outline-none focus:border-[#192841] focus:ring-4 focus:ring-[#192841]/5 transition-all pr-10 cursor-pointer disabled:bg-gray-50/50 disabled:text-gray-400 disabled:cursor-not-allowed"
                     >
-                      <option value="">{loading ? 'Đang tải...' : 'Chọn chức danh'}</option>
+                      <option value="">{metadataLoading.jobTitles ? 'Đang tải...' : 'Chọn chức danh'}</option>
                       {metadata.jobTitles.map(j => (
                         <option key={j.id} value={j.id}>{j.name}</option>
                       ))}
@@ -667,3 +805,4 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
 };
 
 export default AddEmployeeModal;
+

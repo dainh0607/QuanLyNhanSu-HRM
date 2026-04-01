@@ -1,1 +1,1 @@
-export { default as EmployeeList } from './components/EmployeeListWithExport';
+export { default as EmployeeList } from './components/EmployeeListWithApiExport';

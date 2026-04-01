@@ -59,14 +59,15 @@ const ProfileSummarySection: React.FC<ProfileSummarySectionProps> = ({
             <h2 className="text-[32px] font-bold leading-tight text-slate-950">{fullName}</h2>
 
             {roleValue === EMPTY_VALUE ? (
-              <EmptyValueDash className="mt-1 text-lg" />
+              <p className="mt-1 text-sm font-[14px] text-slate-300">Vai trò: <EmptyValueDash className="mt-1 text-lg" /></p>
+              
             ) : (
               <p className="mt-1 text-lg text-slate-500">{roleValue}</p>
             )}
             {jobTitleValue === EMPTY_VALUE ? (
-              <p className="mt-1 text-sm font-medium text-slate-300">Chức vụ: -</p>
+              <p className="mt-1 text-sm font-[14px] text-slate-300">Chức vụ: <EmptyValueDash className="mt-1 text-lg" /></p>
             ) : (
-              <p className="mt-1 text-sm font-medium text-slate-400">Chức vụ: {jobTitleValue}</p>
+              <p className="mt-1 text-sm font-[14px] text-slate-400">Chức vụ: {jobTitleValue}</p>
             )}
 
             <div className="mt-8 grid grid-cols-1 gap-x-10 gap-y-4 sm:grid-cols-2">
@@ -102,20 +103,20 @@ const ProfileSummarySection: React.FC<ProfileSummarySectionProps> = ({
       <div className="rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
         <div className="space-y-6">
           <div>
-            <p className="text-[13px] font-medium text-slate-500">Hình thức làm việc</p>
+            <p className="text-[14px] font-medium text-slate-500">Hình thức làm việc</p>
             {workTypeValue === EMPTY_VALUE ? (
-              <EmptyValueDash className="mt-2 text-[15px]" />
+              <EmptyValueDash className="mt-2 text-[13px]" />
             ) : (
-              <p className="mt-2 text-[15px] font-semibold leading-7 text-slate-950">{workTypeValue}</p>
+              <p className="mt-2 text-[13px] font-semibold leading-7 text-slate-950">{workTypeValue}</p>
             )}
           </div>
 
           <div>
-            <p className="text-[13px] font-medium text-slate-500">Người quản lý trực tiếp</p>
+            <p className="text-[14px] font-medium text-slate-500">Người quản lý trực tiếp</p>
             {directManagerValue === EMPTY_VALUE ? (
-              <EmptyValueDash className="mt-2 text-[15px]" />
+              <EmptyValueDash className="mt-2 text-[13px]" />
             ) : (
-              <p className="mt-2 text-[15px] font-semibold leading-7 text-slate-950">
+              <p className="mt-2 text-[13px] font-semibold leading-7 text-slate-950">
                 {directManagerValue}
               </p>
             )}

@@ -31,6 +31,7 @@ export type PersonalFormMap = {
 export interface TabState<TForm> {
   data: TForm;
   initialData: TForm;
+  isDirty: boolean;
   errors: Record<string, string>;
   isLoading: boolean;
   isLoaded: boolean;

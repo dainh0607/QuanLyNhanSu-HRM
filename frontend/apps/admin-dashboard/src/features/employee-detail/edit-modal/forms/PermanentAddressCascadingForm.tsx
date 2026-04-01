@@ -401,25 +401,27 @@ const PermanentAddressCascadingForm: React.FC<PermanentAddressCascadingFormProps
 
   return (
     <>
-      <div className="mb-6 flex flex-wrap gap-3">
-        {(Object.keys(ADDRESS_FORM_CONFIG) as AddressFormKey[]).map((formKey) => {
-          const isActive = formKey === activeAddressForm;
+      <div className="mb-6">
+        <div className="inline-flex w-full max-w-[420px] rounded-[22px] border border-slate-200 bg-slate-100/80 p-1 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
+          {(Object.keys(ADDRESS_FORM_CONFIG) as AddressFormKey[]).map((formKey) => {
+            const isActive = formKey === activeAddressForm;
 
-          return (
-            <button
-              key={formKey}
-              type="button"
-              onClick={() => setActiveAddressForm(formKey)}
-              className={`inline-flex min-h-11 items-center justify-center rounded-2xl border px-5 text-sm font-bold transition-all ${
-                isActive
-                  ? 'border-emerald-500 bg-emerald-500 text-white shadow-[0_12px_24px_rgba(16,185,129,0.22)]'
-                  : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:text-emerald-600'
-              }`}
-            >
-              {ADDRESS_FORM_CONFIG[formKey].toggleLabel}
-            </button>
-          );
-        })}
+            return (
+              <button
+                key={formKey}
+                type="button"
+                onClick={() => setActiveAddressForm(formKey)}
+                className={`flex-1 rounded-[16px] px-4 py-2.5 text-sm font-bold transition-all ${
+                  isActive
+                    ? 'bg-emerald-500 text-white shadow-[0_12px_24px_rgba(16,185,129,0.22)]'
+                    : 'bg-transparent text-slate-600 hover:text-emerald-600'
+                }`}
+              >
+                {ADDRESS_FORM_CONFIG[formKey].toggleLabel}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <FormHeading title={activeConfig.title} description={activeConfig.description} />

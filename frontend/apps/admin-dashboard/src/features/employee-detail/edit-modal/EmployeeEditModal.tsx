@@ -29,6 +29,7 @@ import {
   isEmailValid,
   isFacebookValid,
   isNumericString,
+  isPhoneValid,
   isSkypeValid,
   mergeFormData,
   resolveSectionKey,
@@ -85,9 +86,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
   );
 
   const activePersonalState = personalForms[activePersonalTab];
-  const isCurrentTabDirty =
-    activeSection === 'personal' &&
-    !formsEqual(activePersonalState.data, activePersonalState.initialData);
+  const isCurrentTabDirty = activeSection === 'personal' && activePersonalState.isDirty;
   const shouldGuardLeaving = isCurrentTabDirty;
   const isSaveEnabled =
     activeSection === 'personal' &&
@@ -145,6 +144,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
             ...nextTab,
             data: mergedData,
             initialData: cloneForm(mergedData),
+            isDirty: false,
             errors: {},
             isLoading: false,
             isLoaded: true,
@@ -196,6 +196,13 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
             ...nextTab.data,
             [field]: value,
           },
+          isDirty: !formsEqual(
+            {
+              ...nextTab.data,
+              [field]: value,
+            },
+            nextTab.initialData,
+          ),
           errors: nextErrors,
         },
       };
@@ -208,6 +215,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
       [tabKey]: {
         ...prev[tabKey],
         data,
+        isDirty: !formsEqual(data, prev[tabKey].initialData),
         errors: {},
       },
     }));
@@ -217,12 +225,13 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
     data: EmployeeEditBasicInfoPayload,
   ): Promise<Record<string, string>> => {
     const nextErrors: Record<string, string> = {};
+    const employeeCode = data.employeeCode.trim();
 
     if (!data.fullName.trim()) {
       nextErrors.fullName = 'Họ tên là bắt buộc.';
     }
 
-    if (!data.employeeCode.trim()) {
+    if (!employeeCode) {
       nextErrors.employeeCode = 'Mã nhân viên là bắt buộc.';
     }
 
@@ -242,7 +251,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
 
     if (!nextErrors.employeeCode) {
       const employeeCodeExists = await employeeService.checkEmployeeCodeExists(
-        data.employeeCode,
+        employeeCode,
         employee.id,
       );
 
@@ -256,24 +265,33 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
 
   const validateContact = (data: EmployeeEditContactPayload): Record<string, string> => {
     const nextErrors: Record<string, string> = {};
+    const email = data.email.trim();
+    const phone = data.phone.trim();
+    const homePhone = data.homePhone.trim();
+    const skype = data.skype.trim();
+    const facebook = data.facebook.trim();
 
-    if (data.email.trim() && !isEmailValid(data.email.trim())) {
+    if (!email) {
+      nextErrors.email = 'Email là bắt buộc.';
+    } else if (!isEmailValid(email)) {
       nextErrors.email = 'Email không đúng định dạng.';
     }
 
-    if (data.phone.trim() && !isNumericString(data.phone.trim())) {
-      nextErrors.phone = 'Số điện thoại chỉ được nhập số.';
+    if (!phone) {
+      nextErrors.phone = 'Số điện thoại là bắt buộc.';
+    } else if (!isPhoneValid(phone)) {
+      nextErrors.phone = 'Số điện thoại phải gồm từ 9 đến 15 chữ số.';
     }
 
-    if (data.homePhone.trim() && !isNumericString(data.homePhone.trim())) {
-      nextErrors.homePhone = 'Số nhà riêng chỉ được nhập số.';
+    if (homePhone && !isPhoneValid(homePhone)) {
+      nextErrors.homePhone = 'Số nhà riêng phải gồm từ 9 đến 15 chữ số.';
     }
 
-    if (data.skype.trim() && !isSkypeValid(data.skype.trim())) {
+    if (skype && !isSkypeValid(skype)) {
       nextErrors.skype = 'Skype chỉ bao gồm chữ, số, dấu chấm, gạch dưới hoặc gạch ngang.';
     }
 
-    if (data.facebook.trim() && !isFacebookValid(data.facebook.trim())) {
+    if (facebook && !isFacebookValid(facebook)) {
       nextErrors.facebook = 'Facebook phải là username hoặc link facebook hợp lệ.';
     }
 
@@ -284,25 +302,27 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
     data: EmployeeEditEmergencyContactPayload,
   ): Record<string, string> => {
     const nextErrors: Record<string, string> = {};
+    const mobilePhone = data.mobilePhone.trim();
+    const homePhone = data.homePhone.trim();
 
     if (!data.name.trim()) {
       nextErrors.name = 'Tên người liên hệ là bắt buộc.';
     }
 
-    if (!data.mobilePhone.trim()) {
+    if (!mobilePhone) {
       nextErrors.mobilePhone = 'Số điện thoại khẩn cấp là bắt buộc.';
-    } else if (!isNumericString(data.mobilePhone.trim())) {
-      nextErrors.mobilePhone = 'Số điện thoại khẩn cấp chỉ được nhập số.';
+    } else if (!isPhoneValid(mobilePhone)) {
+      nextErrors.mobilePhone = 'Số điện thoại khẩn cấp phải gồm từ 9 đến 15 chữ số.';
     }
 
     if (!data.relationship.trim()) {
       nextErrors.relationship = 'Quan hệ với nhân viên là bắt buộc.';
     }
 
-    if (!data.homePhone.trim()) {
+    if (!homePhone) {
       nextErrors.homePhone = 'Số cố định khẩn cấp là bắt buộc.';
-    } else if (!isNumericString(data.homePhone.trim())) {
-      nextErrors.homePhone = 'Số cố định khẩn cấp chỉ được nhập số.';
+    } else if (!isPhoneValid(homePhone)) {
+      nextErrors.homePhone = 'Số cố định khẩn cấp phải gồm từ 9 đến 15 chữ số.';
     }
 
     if (!data.address.trim()) {
@@ -417,10 +437,13 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
         [activePersonalTab]: {
           ...prev[activePersonalTab],
           initialData: cloneForm(prev[activePersonalTab].data),
+          isDirty: false,
           errors: {},
           isSubmitting: false,
         },
       }));
+
+      await loadPersonalTab(activePersonalTab);
 
       showToast(PERSONAL_TAB_SUCCESS_MESSAGES[activePersonalTab], 'success');
       onSaved?.();
