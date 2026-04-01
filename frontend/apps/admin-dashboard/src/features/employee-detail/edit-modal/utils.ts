@@ -1,4 +1,5 @@
 import type {
+  EmployeeEditMaritalStatusCode,
   EmployeeEditDependentsPayload,
   EmployeeFullProfile,
 } from '../../../services/employeeService';
@@ -44,6 +45,9 @@ export const normalizeText = (value?: string): string =>
     .toLowerCase();
 
 export const stripNonDigits = (value?: string | null): string => (value ?? '').replace(/\D/g, '');
+
+const toMaritalStatusCode = (value: unknown): EmployeeEditMaritalStatusCode =>
+  normalizeText(typeof value === 'string' ? value : '') === 'married' ? 'MARRIED' : 'SINGLE';
 
 export const joinAddressParts = (...parts: Array<string | undefined>): string =>
   parts.filter((part): part is string => Boolean(part && part.trim())).join(', ');
@@ -266,7 +270,18 @@ export const buildSeedForms = (
       dependentDuration: toStringValue(dependent.dependentDuration),
       reason: toStringValue(dependent.reason),
     })),
-    additionalInfo: {},
+    additionalInfo: {
+      unionGroup: toStringValue(getRecordValue(basicInfoRecord, ['unionGroup', 'unionName'])),
+      ethnicity: toStringValue(getRecordValue(basicInfoRecord, ['ethnicity'])),
+      religion: toStringValue(getRecordValue(basicInfoRecord, ['religion'])),
+      taxCode: stripNonDigits(
+        toStringValue(getRecordValue(basicInfoRecord, ['taxCode', 'tax_code'])),
+      ),
+      maritalStatusCode: toMaritalStatusCode(
+        getRecordValue(basicInfoRecord, ['maritalStatusCode', 'maritalStatus']),
+      ),
+      note: toStringValue(getRecordValue(basicInfoRecord, ['note', 'notes'])),
+    },
   };
 };
 
@@ -339,6 +354,7 @@ export const PHONE_REGEX = /^\d{9,15}$/;
 export const isEmailValid = (value: string): boolean => EMAIL_REGEX.test(value.trim());
 export const isPhoneValid = (value: string): boolean => PHONE_REGEX.test(value.trim());
 export const isNumericString = (value: string): boolean => /^\d+$/.test(value);
+export const isTaxCodeValid = (value: string): boolean => /^\d{10}(\d{3})?$/.test(value);
 export const isSkypeValid = (value: string): boolean => /^[a-zA-Z0-9._-]{3,50}$/.test(value);
 export const isFacebookValid = (value: string): boolean =>
   /^(https?:\/\/)?(www\.)?facebook\.com\/[A-Za-z0-9.]+\/?$/.test(value) ||

@@ -396,6 +396,7 @@ const EMPLOYEE_PROFILE_ENDPOINTS = {
   basicInfo: `${API_URL}/employees/:employeeId/profile/basic-info`,
   contact: `${API_URL}/employees/:employeeId/profile/contact`,
   emergencyContact: `${API_URL}/employees/:employeeId/profile/emergency-contacts`,
+  otherInfo: `${API_URL}/employees/:employeeId/profile/other-info`,
   addresses: `${API_URL}/employees/:employeeId/profile/addresses`,
   identity: `${API_URL}/employees/:employeeId/profile/identity`,
   education: `${API_URL}/employees/:employeeId/details/education`,
@@ -459,6 +460,17 @@ export interface EmployeeEditHealthPayload {
   chronicDisease: string;
   healthStatus: string;
   checkDate: string;
+}
+
+export type EmployeeEditMaritalStatusCode = "SINGLE" | "MARRIED";
+
+export interface EmployeeEditAdditionalInfoPayload {
+  unionGroup: string;
+  ethnicity: string;
+  religion: string;
+  taxCode: string;
+  maritalStatusCode: EmployeeEditMaritalStatusCode;
+  note: string;
 }
 
 export interface EmployeeEditDependentItemPayload {
@@ -557,6 +569,10 @@ const EMPLOYEE_EDIT_ENDPOINTS = {
     get: "",
     put: EMPLOYEE_PROFILE_ENDPOINTS.dependents,
   },
+  additionalInfo: {
+    get: EMPLOYEE_PROFILE_ENDPOINTS.otherInfo,
+    put: EMPLOYEE_PROFILE_ENDPOINTS.otherInfo,
+  },
 } as const;
 
 const toEditableString = (value: unknown): string => {
@@ -625,6 +641,116 @@ const getRecordValue = (source: Record<string, unknown>, keys: string[]): unknow
 
   return undefined;
 };
+
+const toOptionalNumber = (value: unknown): number | undefined => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    const parsedValue = Number(value);
+    return Number.isFinite(parsedValue) ? parsedValue : undefined;
+  }
+
+  return undefined;
+};
+
+const toBooleanValue = (value: unknown): boolean => {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "number") {
+    return value !== 0;
+  }
+
+  if (typeof value === "string") {
+    const normalizedValue = normalizeText(value);
+    return ["true", "1", "yes", "active"].includes(normalizedValue);
+  }
+
+  return false;
+};
+
+const toOptionalString = (value: unknown): string | undefined => {
+  const normalizedValue = toEditableString(value);
+  return normalizedValue || undefined;
+};
+
+const toOptionalDateString = (value: unknown): string | undefined =>
+  typeof value === "string" && value.trim() ? value.trim() : undefined;
+
+const extractNamedValue = (value: unknown): string => {
+  if (typeof value === "string") {
+    return toEditableString(value);
+  }
+
+  if (value && typeof value === "object") {
+    return toEditableString(
+      getRecordValue(value as Record<string, unknown>, ["name", "Name", "label", "Label"])
+    );
+  }
+
+  return "";
+};
+
+const resolveAccessGroupName = (source: Record<string, unknown>): string => {
+  const directValue = getRecordValue(source, [
+    "accessGroup",
+    "accessGroupName",
+    "groupName",
+    "roleName",
+    "roleDisplayName",
+    "role",
+  ]);
+
+  if (typeof directValue === "string") {
+    return toEditableString(directValue);
+  }
+
+  const collectionValue = getRecordValue(source, ["accessGroups", "roles"]);
+  if (Array.isArray(collectionValue)) {
+    const firstNamedValue = collectionValue
+      .map((item) => extractNamedValue(item))
+      .find((item) => item.trim());
+
+    if (firstNamedValue) {
+      return firstNamedValue;
+    }
+  }
+
+  return extractNamedValue(directValue);
+};
+
+const mapEmployeeListItem = (item: Record<string, unknown>): Employee => ({
+  id: toOptionalNumber(getRecordValue(item, ["id", "Id"])) ?? 0,
+  employeeCode: toEditableString(getRecordValue(item, ["employeeCode", "EmployeeCode"])),
+  fullName: toEditableString(getRecordValue(item, ["fullName", "FullName"])),
+  birthDate: toOptionalDateString(getRecordValue(item, ["birthDate", "BirthDate"])),
+  email: toEditableString(getRecordValue(item, ["email", "Email", "workEmail", "WorkEmail"])),
+  phone: toEditableString(getRecordValue(item, ["phone", "Phone", "mobilePhone", "MobilePhone"])),
+  identityNumber: toOptionalString(getRecordValue(item, ["identityNumber", "IdentityNumber"])),
+  startDate: toOptionalDateString(getRecordValue(item, ["startDate", "StartDate"])),
+  isActive: toBooleanValue(getRecordValue(item, ["isActive", "IsActive"])),
+  isResigned: toBooleanValue(getRecordValue(item, ["isResigned", "IsResigned"])),
+  departmentId: toOptionalNumber(getRecordValue(item, ["departmentId", "DepartmentId"])),
+  departmentName: toEditableString(getRecordValue(item, ["departmentName", "DepartmentName"])),
+  jobTitleId: toOptionalNumber(getRecordValue(item, ["jobTitleId", "JobTitleId"])),
+  jobTitleName: toEditableString(getRecordValue(item, ["jobTitleName", "JobTitleName"])),
+  branchId: toOptionalNumber(getRecordValue(item, ["branchId", "BranchId"])),
+  branchName: toEditableString(getRecordValue(item, ["branchName", "BranchName"])),
+  managerId: toOptionalNumber(getRecordValue(item, ["managerId", "ManagerId"])),
+  managerName: toOptionalString(getRecordValue(item, ["managerName", "ManagerName"])),
+  workEmail: toOptionalString(getRecordValue(item, ["workEmail", "WorkEmail"])),
+  avatar: toOptionalString(getRecordValue(item, ["avatar", "Avatar"])),
+  accessGroup: toOptionalString(resolveAccessGroupName(item)),
+  regionName: toOptionalString(getRecordValue(item, ["regionName", "RegionName"])),
+  displayOrder: toOptionalNumber(getRecordValue(item, ["displayOrder", "DisplayOrder"])),
+  gender: toOptionalString(getRecordValue(item, ["gender", "Gender", "genderName", "GenderName"])),
+  timekeepingCode: toOptionalString(getRecordValue(item, ["timekeepingCode", "TimekeepingCode"])),
+  workType: toOptionalString(getRecordValue(item, ["workType", "WorkType"])),
+  lastActive: toOptionalDateString(getRecordValue(item, ["lastActive", "LastActive"])),
+});
 
 const formatAddressText = (address?: EmployeeAddressProfile): string => {
   const raw = address?.address;
@@ -871,6 +997,24 @@ const mapHealthForEdit = (profile: EmployeeFullProfile): EmployeeEditHealthPaylo
   };
 };
 
+const normalizeMaritalStatusCode = (value: unknown): EmployeeEditMaritalStatusCode =>
+  normalizeText(typeof value === "string" ? value : "") === "married" ? "MARRIED" : "SINGLE";
+
+const mapAdditionalInfoForEdit = (
+  data: Partial<EmployeeEditAdditionalInfoPayload> | Record<string, unknown> | null | undefined
+): EmployeeEditAdditionalInfoPayload => {
+  const source = (data ?? {}) as Record<string, unknown>;
+
+  return {
+    unionGroup: toEditableString(source.unionGroup),
+    ethnicity: toEditableString(source.ethnicity),
+    religion: toEditableString(source.religion),
+    taxCode: stripNonDigits(source.taxCode),
+    maritalStatusCode: normalizeMaritalStatusCode(source.maritalStatusCode),
+    note: toEditableString(source.note),
+  };
+};
+
 const mapDependentsForEdit = (profile: EmployeeFullProfile): EmployeeEditDependentsPayload =>
   (profile.dependents ?? []).map((dependent) => ({
     id: dependent.id,
@@ -930,11 +1074,16 @@ export const employeeService = {
     }
 
     try {
-      return await requestJson<PaginatedResponse<Employee>>(
+      const response = await requestJson<PaginatedResponse<Record<string, unknown>>>(
         url.toString(),
         { method: "GET" },
         "Error fetching employees"
       );
+
+      return {
+        ...response,
+        items: (response.items ?? []).map((item) => mapEmployeeListItem(item)),
+      };
     } catch (error) {
       console.error("Fetch Employees Error:", error);
       throw error;
@@ -1611,6 +1760,61 @@ export const employeeService = {
         body: JSON.stringify(normalizedPayload),
       },
       "Error updating employee dependents"
+    );
+  },
+
+  getEmployeeEditAdditionalInfo: async (
+    id: number
+  ): Promise<EmployeeEditAdditionalInfoPayload> => {
+    const endpoint = resolveEmployeeEditEndpoint(EMPLOYEE_EDIT_ENDPOINTS.additionalInfo.get, id);
+    if (endpoint) {
+      const response = await requestJson<Record<string, unknown>>(
+        endpoint,
+        { method: "GET" },
+        "Error fetching employee additional info for edit"
+      );
+
+      return mapAdditionalInfoForEdit(response);
+    }
+
+    const profile = await fetchEmployeeFullProfileFallback(id);
+    const basicInfoRecord = profile.basicInfo as unknown as Record<string, unknown>;
+
+    return mapAdditionalInfoForEdit({
+      unionGroup: getRecordValue(basicInfoRecord, ["unionGroup", "unionName"]),
+      ethnicity: getRecordValue(basicInfoRecord, ["ethnicity"]),
+      religion: getRecordValue(basicInfoRecord, ["religion"]),
+      taxCode: getRecordValue(basicInfoRecord, ["taxCode", "tax_code"]),
+      maritalStatusCode: getRecordValue(basicInfoRecord, ["maritalStatusCode", "maritalStatus"]),
+      note: getRecordValue(basicInfoRecord, ["note", "notes"]),
+    });
+  },
+
+  updateEmployeeEditAdditionalInfo: async (
+    id: number,
+    payload: EmployeeEditAdditionalInfoPayload
+  ): Promise<unknown> => {
+    const endpoint = resolveEmployeeEditEndpoint(EMPLOYEE_EDIT_ENDPOINTS.additionalInfo.put, id);
+    if (!endpoint) {
+      throw createMissingEndpointError("PUT", "Thông tin khác");
+    }
+
+    const normalizedPayload = {
+      unionGroup: payload.unionGroup.trim() || null,
+      ethnicity: payload.ethnicity.trim() || null,
+      religion: payload.religion.trim() || null,
+      taxCode: stripNonDigits(payload.taxCode) || null,
+      maritalStatusCode: normalizeMaritalStatusCode(payload.maritalStatusCode),
+      note: payload.note.trim() || null,
+    };
+
+    return requestJson<unknown>(
+      endpoint,
+      {
+        method: "PUT",
+        body: JSON.stringify(normalizedPayload),
+      },
+      "Error updating employee additional info"
     );
   },
 };

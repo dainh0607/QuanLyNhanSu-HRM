@@ -1,5 +1,6 @@
 import React from 'react';
 import type {
+  EmployeeEditAdditionalInfoPayload,
   EmployeeEditBankAccountPayload,
   EmployeeEditBasicInfoPayload,
   EmployeeEditContactPayload,
@@ -12,6 +13,7 @@ import type {
 } from '../../../../services/employeeService';
 import type { PersonalFormsState, PersonalTabKey } from '../types';
 import { FormSkeleton } from './FormPrimitives';
+import AdditionalInfoForm from '../forms/AdditionalInfoForm';
 import BankAccountForm from '../forms/BankAccountForm';
 import BasicInfoForm from '../forms/BasicInfoForm';
 import ContactForm from '../forms/ContactForm';
@@ -21,7 +23,6 @@ import HealthForm from '../forms/HealthForm';
 import IdentityToggleForm from '../forms/IdentityToggleForm';
 import DependentsManagerForm from '../forms/DependentsManagerForm';
 import PermanentAddressCascadingForm from '../forms/PermanentAddressCascadingForm';
-import PersonalTabPlaceholder from './PersonalTabPlaceholder';
 
 interface PersonalTabPanelProps {
   activeTab: PersonalTabKey;
@@ -55,6 +56,10 @@ interface PersonalTabPanelProps {
     field: F,
     value: EmployeeEditHealthPayload[F],
   ) => void;
+  onAdditionalInfoChange: <F extends keyof EmployeeEditAdditionalInfoPayload>(
+    field: F,
+    value: EmployeeEditAdditionalInfoPayload[F],
+  ) => void;
   onCreateDependent: (value: EmployeeEditDependentsPayload[number]) => Promise<void>;
 }
 
@@ -69,6 +74,7 @@ const PersonalTabPanel: React.FC<PersonalTabPanelProps> = ({
   onIdentityChange,
   onBankAccountChange,
   onHealthChange,
+  onAdditionalInfoChange,
   onCreateDependent,
 }) => {
   const tabState = personalForms[activeTab];
@@ -147,7 +153,13 @@ const PersonalTabPanel: React.FC<PersonalTabPanelProps> = ({
         />
       );
     case 'additionalInfo':
-      return <PersonalTabPlaceholder tab="additionalInfo" title="Thông tin khác" />;
+      return (
+        <AdditionalInfoForm
+          data={personalForms.additionalInfo.data}
+          errors={personalForms.additionalInfo.errors}
+          onFieldChange={onAdditionalInfoChange}
+        />
+      );
     default:
       return null;
   }

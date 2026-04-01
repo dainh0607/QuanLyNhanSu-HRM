@@ -68,7 +68,7 @@ const isAdminAccessGroup = (accessGroup?: string): boolean => {
   const normalizedAccessGroup = normalizeText(accessGroup);
   return (
     normalizedAccessGroup.includes('quan tri') ||
-    normalizedAccessGroup === 'admin' ||
+    normalizedAccessGroup.includes('admin') ||
     normalizedAccessGroup.includes('administrator')
   );
 };

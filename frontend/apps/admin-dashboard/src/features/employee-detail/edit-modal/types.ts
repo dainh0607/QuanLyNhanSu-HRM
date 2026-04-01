@@ -1,4 +1,5 @@
 import type {
+  EmployeeEditAdditionalInfoPayload,
   EmployeeEditBankAccountPayload,
   EmployeeEditBasicInfoPayload,
   EmployeeEditContactPayload,
@@ -27,7 +28,7 @@ export type PersonalFormMap = {
   bankAccount: EmployeeEditBankAccountPayload;
   health: EmployeeEditHealthPayload;
   dependents: EmployeeEditDependentsPayload;
-  additionalInfo: EmployeeEditPlaceholderPayload;
+  additionalInfo: EmployeeEditAdditionalInfoPayload;
 };
 
 export interface TabState<TForm> {

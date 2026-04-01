@@ -2,6 +2,7 @@ import React, { useEffect, useEffectEvent, useState } from 'react';
 import { useToast } from '../../../components/common/useToast';
 import {
   employeeService,
+  type EmployeeEditAdditionalInfoPayload,
   type EmployeeEditBankAccountPayload,
   type EmployeeEditBasicInfoPayload,
   type EmployeeEditContactPayload,
@@ -32,6 +33,7 @@ import {
   mergeDependentClientFields,
   isNumericString,
   isPhoneValid,
+  isTaxCodeValid,
   isSkypeValid,
   mergeFormData,
   resolveSectionKey,
@@ -49,7 +51,7 @@ const PERSONAL_TAB_LOADERS: {
   bankAccount: employeeService.getEmployeeEditBankAccount,
   health: employeeService.getEmployeeEditHealth,
   dependents: employeeService.getEmployeeEditDependents,
-  additionalInfo: async () => ({}),
+  additionalInfo: employeeService.getEmployeeEditAdditionalInfo,
 };
 
 const PERSONAL_TAB_SAVERS: {
@@ -67,7 +69,7 @@ const PERSONAL_TAB_SAVERS: {
   bankAccount: employeeService.updateEmployeeEditBankAccount,
   health: employeeService.updateEmployeeEditHealth,
   dependents: employeeService.updateEmployeeEditDependents,
-  additionalInfo: async () => undefined,
+  additionalInfo: employeeService.updateEmployeeEditAdditionalInfo,
 };
 
 const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
@@ -369,6 +371,19 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
     return nextErrors;
   };
 
+  const validateAdditionalInfo = (
+    data: EmployeeEditAdditionalInfoPayload,
+  ): Record<string, string> => {
+    const nextErrors: Record<string, string> = {};
+    const taxCode = data.taxCode.trim();
+
+    if (taxCode && !isTaxCodeValid(taxCode)) {
+      nextErrors.taxCode = 'Mã số thuế phải gồm 10 hoặc 13 chữ số.';
+    }
+
+    return nextErrors;
+  };
+
   const validateCurrentTab = async (): Promise<Record<string, string>> => {
     switch (activePersonalTab) {
       case 'basicInfo':
@@ -381,6 +396,8 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
         return validateBankAccount(personalForms.bankAccount.data);
       case 'health':
         return validateHealth(personalForms.health.data);
+      case 'additionalInfo':
+        return validateAdditionalInfo(personalForms.additionalInfo.data);
       default:
         return {};
     }
@@ -437,6 +454,9 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
           break;
         case 'health':
           await PERSONAL_TAB_SAVERS.health(employee.id, personalForms.health.data);
+          break;
+        case 'additionalInfo':
+          await PERSONAL_TAB_SAVERS.additionalInfo(employee.id, personalForms.additionalInfo.data);
           break;
         default:
           break;
@@ -553,7 +573,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
             <EditModalSidebar activeSection={activeSection} onChange={handleSectionChange} />
 
             <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-              <div className="min-w-0 border-b border-slate-200 px-6 py-6 lg:px-9">
+              <div className="min-w-0 border-b border-slate-200 px-[1.1rem] pt-4 pb-[0.6rem] lg:px-[1.1rem]">
                 <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                   <div>
                     <h3 className="mt-1 text-[26px] font-bold tracking-tight text-[#253a69]">
@@ -611,6 +631,9 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
                     onIdentityChange={(field, value) => updateTabData('identity', field, value)}
                     onBankAccountChange={(field, value) => updateTabData('bankAccount', field, value)}
                     onHealthChange={(field, value) => updateTabData('health', field, value)}
+                    onAdditionalInfoChange={(field, value) =>
+                      updateTabData('additionalInfo', field, value)
+                    }
                     onCreateDependent={handleCreateDependent}
                   />
                 ) : (
