@@ -53,5 +53,75 @@ namespace ERP.API.Controllers
             var data = await _unitOfWork.Repository<Roles>().GetAllAsync();
             return Ok(data.Select(r => new { r.Id, name = r.name }));
         }
+
+        [HttpGet("address-types")]
+        public async Task<IActionResult> GetAddressTypes()
+        {
+            var data = (await _unitOfWork.Repository<AddressTypes>().GetAllAsync())
+                .OrderBy(type => type.name)
+                .Select(type => new { type.Id, name = type.name })
+                .ToList();
+
+            return Ok(data);
+        }
+
+        [HttpGet("address-countries")]
+        public async Task<IActionResult> GetAddressCountries()
+        {
+            var data = (await _unitOfWork.Repository<Addresses>().GetAllAsync())
+                .Select(address => address.country?.Trim())
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct()
+                .OrderBy(name => name)
+                .Select(name => new { name })
+                .ToList();
+
+            return Ok(data);
+        }
+
+        [HttpGet("address-cities")]
+        public async Task<IActionResult> GetAddressCities([FromQuery] string country)
+        {
+            if (string.IsNullOrWhiteSpace(country))
+            {
+                return Ok(Enumerable.Empty<object>());
+            }
+
+            var normalizedCountry = country.Trim();
+            var data = (await _unitOfWork.Repository<Addresses>().GetAllAsync())
+                .Where(address => string.Equals(address.country?.Trim(), normalizedCountry))
+                .Select(address => address.city?.Trim())
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct()
+                .OrderBy(name => name)
+                .Select(name => new { name })
+                .ToList();
+
+            return Ok(data);
+        }
+
+        [HttpGet("address-districts")]
+        public async Task<IActionResult> GetAddressDistricts([FromQuery] string country, [FromQuery] string city)
+        {
+            if (string.IsNullOrWhiteSpace(country) || string.IsNullOrWhiteSpace(city))
+            {
+                return Ok(Enumerable.Empty<object>());
+            }
+
+            var normalizedCountry = country.Trim();
+            var normalizedCity = city.Trim();
+            var data = (await _unitOfWork.Repository<Addresses>().GetAllAsync())
+                .Where(address =>
+                    string.Equals(address.country?.Trim(), normalizedCountry) &&
+                    string.Equals(address.city?.Trim(), normalizedCity))
+                .Select(address => address.district?.Trim())
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct()
+                .OrderBy(name => name)
+                .Select(name => new { name })
+                .ToList();
+
+            return Ok(data);
+        }
     }
 }

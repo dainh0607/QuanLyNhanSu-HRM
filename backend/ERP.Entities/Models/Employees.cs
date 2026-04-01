@@ -68,6 +68,10 @@ namespace ERP.Entities.Models
         [StringLength(50)]
         public string? nationality { get; set; }
 
+        [Column("origin_place")]
+        [StringLength(255)]
+        public string? origin_place { get; set; }
+
         [Column("tax_code")]
         [StringLength(20)]
         public string? tax_code { get; set; }
