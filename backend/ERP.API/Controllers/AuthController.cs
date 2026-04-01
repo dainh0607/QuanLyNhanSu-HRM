@@ -239,6 +239,40 @@ namespace ERP.API.Controllers
             return Ok(result);
         }
 
+        [HttpPost("invite")]
+        [Authorize(Roles = "Manager,Admin")]
+        public async Task<IActionResult> Invite([FromBody] InvitationRequestDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var userIdValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+
+            if (!int.TryParse(userIdValue, out var userId))
+                return Unauthorized();
+
+            var result = await _authService.GenerateInvitationAsync(dto, userId);
+            if (!result.Success)
+                return BadRequest(result);
+
+            return Ok(result);
+        }
+
+        [HttpGet("invitation/validate")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ValidateInvitation([FromQuery] string token)
+        {
+            if (string.IsNullOrEmpty(token))
+                return BadRequest("Token is required");
+
+            var result = await _authService.ValidateInvitationTokenAsync(token);
+            if (!result.Valid)
+                return BadRequest(result);
+
+            return Ok(result);
+        }
+
         private void WriteSessionCookies(AuthResponseDto result)
         {
             if (string.IsNullOrWhiteSpace(result.IdToken) ||

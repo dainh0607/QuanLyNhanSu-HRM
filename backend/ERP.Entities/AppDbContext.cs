@@ -108,6 +108,8 @@ namespace ERP.Entities
         public DbSet<Users> Users { get; set; }
         public DbSet<VehicleTypes> VehicleTypes { get; set; }
         public DbSet<WorkHistory> WorkHistory { get; set; }
+        public DbSet<InvitationTokens> InvitationTokens { get; set; }
+        public DbSet<EmployeeDocuments> EmployeeDocuments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -94,41 +94,40 @@ namespace ERP.Services.Employees
             var employee = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(employeeId);
             if (employee == null) return false;
 
-            var addressItems = dto.Addresses ?? new List<EmployeeAddressDto>();
-
             await _unitOfWork.BeginTransactionAsync();
             try
             {
-                employee.origin_place = string.IsNullOrWhiteSpace(dto.OriginPlace)
-                    ? null
-                    : dto.OriginPlace.Trim();
+                // AC 3.2 Update Employee base fields
+                employee.origin_place = dto.OriginPlace?.Trim();
+                // Assumed field for Current Address if exists on employee, otherwise skipped
+                // employee.current_address = dto.CurrentAddress; 
                 _unitOfWork.Repository<EmployeeEntity>().Update(employee);
 
-                var existingJoins = await _unitOfWork.Repository<EmployeeAddresses>()
-                    .FindAsync(x => x.employee_id == employeeId);
-                _unitOfWork.Repository<EmployeeAddresses>().RemoveRange(existingJoins);
+                // Clear existing specific address types (1: Permanent, 3: Merged)
+                var existingAddresses = await _unitOfWork.Repository<EmployeeAddresses>()
+                    .FindAsync(x => x.employee_id == employeeId && (x.address_type_id == 1 || x.address_type_id == 3));
+                _unitOfWork.Repository<EmployeeAddresses>().RemoveRange(existingAddresses);
 
-                await _unitOfWork.SaveChangesAsync();
-
-                foreach (var addressDto in addressItems.Where(item => item.Address != null))
+                // Function to add address if not empty
+                async Task AddAddress(AddressDto addrDto, int typeId, bool isCurrent)
                 {
-                    if (string.IsNullOrWhiteSpace(addressDto.Address.AddressLine) &&
-                        string.IsNullOrWhiteSpace(addressDto.Address.Ward) &&
-                        string.IsNullOrWhiteSpace(addressDto.Address.District) &&
-                        string.IsNullOrWhiteSpace(addressDto.Address.City) &&
-                        string.IsNullOrWhiteSpace(addressDto.Address.Country))
+                    if (string.IsNullOrWhiteSpace(addrDto.AddressLine) &&
+                        string.IsNullOrWhiteSpace(addrDto.Ward) &&
+                        string.IsNullOrWhiteSpace(addrDto.District) &&
+                        string.IsNullOrWhiteSpace(addrDto.City) &&
+                        string.IsNullOrWhiteSpace(addrDto.Country))
                     {
-                        continue;
+                        return;
                     }
 
                     var addr = new Addresses
                     {
-                        address_line = addressDto.Address.AddressLine ?? string.Empty,
-                        ward = addressDto.Address.Ward ?? string.Empty,
-                        district = addressDto.Address.District ?? string.Empty,
-                        city = addressDto.Address.City ?? string.Empty,
-                        country = addressDto.Address.Country ?? string.Empty,
-                        postal_code = addressDto.Address.PostalCode ?? string.Empty
+                        address_line = addrDto.AddressLine ?? string.Empty,
+                        ward = addrDto.Ward ?? string.Empty,
+                        district = addrDto.District ?? string.Empty,
+                        city = addrDto.City ?? string.Empty,
+                        country = addrDto.Country ?? string.Empty,
+                        postal_code = addrDto.PostalCode ?? string.Empty
                     };
                     await _unitOfWork.Repository<Addresses>().AddAsync(addr);
                     await _unitOfWork.SaveChangesAsync();
@@ -137,12 +136,33 @@ namespace ERP.Services.Employees
                     {
                         employee_id = employeeId,
                         address_id = addr.Id,
-                        address_type_id = addressDto.AddressTypeId,
-                        is_current = addressDto.IsCurrent,
-                        start_date = addressDto.StartDate,
-                        end_date = addressDto.EndDate
+                        address_type_id = typeId,
+                        is_current = isCurrent,
+                        start_date = DateTime.UtcNow
                     };
                     await _unitOfWork.Repository<EmployeeAddresses>().AddAsync(join);
+                }
+
+                // Save Permanent Address (AC 3.1)
+                if (dto.PermanentAddress != null)
+                {
+                    await AddAddress(dto.PermanentAddress, 1, true);
+                }
+
+                // Save Merged Address (AC 3.1)
+                if (dto.MergedAddress != null)
+                {
+                    await AddAddress(dto.MergedAddress, 3, false);
+                }
+
+                // Handle Additional Addresses if any
+                if (dto.AdditionalAddresses != null)
+                {
+                    foreach (var addr in dto.AdditionalAddresses)
+                    {
+                        if (addr.Address != null)
+                            await AddAddress(addr.Address, addr.AddressTypeId, addr.IsCurrent);
+                    }
                 }
 
                 await _unitOfWork.SaveChangesAsync();

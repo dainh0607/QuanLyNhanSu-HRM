@@ -8,5 +8,10 @@ namespace ERP.Services.Lookup
     {
         Task<IEnumerable<LookupDto>> GetGendersAsync();
         Task<IEnumerable<LookupDto>> GetMaritalStatusesAsync();
+        
+        // Geographical Cascading Lookups (AC 3.3)
+        Task<IEnumerable<GeographicalLookupDto>> GetCountriesAsync();
+        Task<IEnumerable<GeographicalLookupDto>> GetProvincesAsync(string countryCode);
+        Task<IEnumerable<GeographicalLookupDto>> GetDistrictsAsync(string provinceCode);
     }
 }

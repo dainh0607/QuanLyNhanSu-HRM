@@ -21,5 +21,15 @@ namespace ERP.Services.Auth
         /// Chức năng đổi mật khẩu cho người dùng hiện tại (bên trong Thông tin cá nhân)
         /// </summary>
         Task<AuthResponseDto> ChangePasswordAsync(int userId, ChangePasswordDto dto);
+
+        /// <summary>
+        /// Tạo link mời tham gia cho ứng viên/nhân viên mới
+        /// </summary>
+        Task<InvitationResponseDto> GenerateInvitationAsync(InvitationRequestDto dto, int creatorId);
+
+        /// <summary>
+        /// Kiểm tra tính hợp lệ của token mời
+        /// </summary>
+        Task<InvitationValidationDto> ValidateInvitationTokenAsync(string token);
     }
 }

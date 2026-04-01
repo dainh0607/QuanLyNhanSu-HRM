@@ -52,6 +52,22 @@ namespace ERP.Services.Auth
 
             try
             {
+                InvitationTokens invitation = null;
+                if (!string.IsNullOrEmpty(dto.InvitationToken))
+                {
+                    invitation = await _context.InvitationTokens
+                        .FirstOrDefaultAsync(i => i.Token == dto.InvitationToken && !i.IsUsed && i.ExpiresAt > DateTime.UtcNow);
+                    
+                    if (invitation == null)
+                    {
+                        return new AuthResponseDto { Success = false, Message = "Mã mời không hợp lệ hoặc đã hết hạn." };
+                    }
+
+                    if (!string.Equals(invitation.Email, dto.Email, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return new AuthResponseDto { Success = false, Message = "Email không khớp với mã mời." };
+                    }
+                }
                 var existingEmployee = await _context.Employees
                     .FirstOrDefaultAsync(e => e.email == dto.Email);
 
@@ -124,6 +140,15 @@ namespace ERP.Services.Auth
                     }
 
                     await _userService.AssignRoleAsync(user.Id, assignedRoleId);
+
+                    // Mark invitation as used
+                    if (invitation != null)
+                    {
+                        invitation.IsUsed = true;
+                        invitation.UsedAt = DateTime.UtcNow;
+                        await _context.SaveChangesAsync();
+                    }
+
                     await transaction.CommitAsync();
 
                     return new AuthResponseDto
@@ -859,6 +884,85 @@ namespace ERP.Services.Auth
             public string expiresIn { get; set; } = string.Empty;
             public string localId { get; set; } = string.Empty;
             public bool registered { get; set; }
+        }
+        public async Task<InvitationResponseDto> GenerateInvitationAsync(InvitationRequestDto dto, int creatorId)
+        {
+            try
+            {
+                var token = AuthTokenSecurity.GenerateOpaqueToken(32);
+                var expiresAt = DateTime.UtcNow.AddDays(dto.ExpirationDays);
+
+                var invitation = new InvitationTokens
+                {
+                    Token = token,
+                    Email = dto.Email,
+                    EmployeeId = dto.EmployeeId,
+                    ExpiresAt = expiresAt,
+                    CreatedBy = creatorId,
+                    IsUsed = false,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                _context.InvitationTokens.Add(invitation);
+                await _context.SaveChangesAsync();
+
+                // Build the invitation link (this should ideally come from configuration)
+                var baseUrl = _configuration["AppSettings:FrontendUrl"] ?? "http://localhost:3000";
+                var invitationLink = $"{baseUrl}/register?token={token}&email={Uri.EscapeDataString(dto.Email)}";
+
+                return new InvitationResponseDto
+                {
+                    Success = true,
+                    Message = "Tạo link mời thành công.",
+                    InvitationLink = invitationLink,
+                    Token = token,
+                    ExpiresAt = expiresAt
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in GenerateInvitationAsync");
+                return new InvitationResponseDto { Success = false, Message = "Lỗi khi tạo link mời." };
+            }
+        }
+
+        public async Task<InvitationValidationDto> ValidateInvitationTokenAsync(string token)
+        {
+            try
+            {
+                var invitation = await _context.InvitationTokens
+                    .Include(i => i.Employee)
+                    .FirstOrDefaultAsync(i => i.Token == token);
+
+                if (invitation == null)
+                {
+                    return new InvitationValidationDto { Valid = false, Message = "Mã mời không tồn tại." };
+                }
+
+                if (invitation.IsUsed)
+                {
+                    return new InvitationValidationDto { Valid = false, Message = "Mã mời đã được sử dụng." };
+                }
+
+                if (invitation.ExpiresAt < DateTime.UtcNow)
+                {
+                    return new InvitationValidationDto { Valid = false, Message = "Mã mời đã hết hạn." };
+                }
+
+                return new InvitationValidationDto
+                {
+                    Valid = true,
+                    Email = invitation.Email,
+                    FullName = invitation.Employee?.full_name ?? "",
+                    Message = "Mã mời hợp lệ."
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in ValidateInvitationTokenAsync");
+                return new InvitationValidationDto { Valid = false, Message = "Lỗi khi kiểm tra mã mời." };
+            }
         }
     }
 }

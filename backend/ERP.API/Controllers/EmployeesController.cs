@@ -12,10 +12,12 @@ namespace ERP.API.Controllers
     public class EmployeesController : ControllerBase
     {
         private readonly IEmployeeService _employeeService;
+        private readonly IEmployeeLifecycleService _lifecycleService;
 
-        public EmployeesController(IEmployeeService employeeService)
+        public EmployeesController(IEmployeeService employeeService, IEmployeeLifecycleService lifecycleService)
         {
             _employeeService = employeeService;
+            _lifecycleService = lifecycleService;
         }
 
         [HttpGet]
@@ -100,14 +102,36 @@ namespace ERP.API.Controllers
             return Ok(new { Message = "Cập nhật thành công" });
         }
 
-        [HttpDelete("{id}")]
-        [Authorize(Roles = "Manager,Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             var success = await _employeeService.DeleteAsync(id);
             if (!success) return NotFound();
 
             return Ok(new { Message = "Xóa thành công (Soft delete)" });
+        }
+
+        [HttpPut("{id}/resignation")]
+        [Authorize(Roles = "Manager,Admin")]
+        public async Task<IActionResult> Resign(int id, [FromBody] ResignationRequestDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var success = await _lifecycleService.ProcessResignationAsync(id, dto);
+            if (!success) return BadRequest(new { Message = "Không thể xử lý nghỉ việc" });
+
+            return Ok(new { Message = "Xử lý nghỉ việc thành công" });
+        }
+
+        [HttpPut("{id}/promotion")]
+        [Authorize(Roles = "Manager,Admin")]
+        public async Task<IActionResult> Promote(int id, [FromBody] PromotionRequestDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var success = await _lifecycleService.ProcessPromotionAsync(id, dto);
+            if (!success) return BadRequest(new { Message = "Không thể xử lý thăng tiến" });
+
+            return Ok(new { Message = "Xử lý thăng tiến thành công" });
         }
     }
 }

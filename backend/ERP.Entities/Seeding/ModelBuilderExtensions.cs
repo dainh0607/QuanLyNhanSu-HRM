@@ -35,7 +35,8 @@ namespace ERP.Entities.Seeding
             // 4. AddressTypes
             modelBuilder.Entity<AddressTypes>().HasData(
                 new AddressTypes { Id = 1, name = "Thường trú" },
-                new AddressTypes { Id = 2, name = "Tạm trú" }
+                new AddressTypes { Id = 2, name = "Tạm trú" },
+                new AddressTypes { Id = 3, name = "Sát nhập" }
             );
 
             // 5. LeaveTypes
