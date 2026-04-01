@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import { EmployeeList } from './features/employees';
-import { EmployeeDetail } from './features/employee-detail/EmployeeDetailView';
+import { EmployeeDetail } from './features/employee-detail/EmployeeDetailViewIntegrated';
 import type { Employee } from './features/employees/types';
 import { authService } from './services/authService';
 import type { User } from './services/authService';

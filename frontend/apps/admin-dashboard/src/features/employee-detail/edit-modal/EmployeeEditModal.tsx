@@ -5,12 +5,13 @@ import {
   type EmployeeEditBankAccountPayload,
   type EmployeeEditBasicInfoPayload,
   type EmployeeEditContactPayload,
+  type EmployeeEditDependentsPayload,
   type EmployeeEditEmergencyContactPayload,
   type EmployeeEditHealthPayload,
 } from '../../../services/employeeService';
 import { MODAL_SECTIONS, PERSONAL_TAB_SUCCESS_MESSAGES } from './constants';
 import EditModalSidebar from './components/EditModalSidebar';
-import PersonalTabNavigation from './components/PersonalTabNavigation';
+import PersonalTabNavigation from './components/PersonalTabNavigationV2';
 import PersonalTabPanel from './components/PersonalTabPanel';
 import SectionPlaceholder from './components/SectionPlaceholder';
 import UnsavedChangesDialog from './components/UnsavedChangesDialog';
@@ -28,6 +29,7 @@ import {
   formsEqual,
   isEmailValid,
   isFacebookValid,
+  mergeDependentClientFields,
   isNumericString,
   isPhoneValid,
   isSkypeValid,
@@ -46,6 +48,7 @@ const PERSONAL_TAB_LOADERS: {
   identity: employeeService.getEmployeeEditIdentity,
   bankAccount: employeeService.getEmployeeEditBankAccount,
   health: employeeService.getEmployeeEditHealth,
+  dependents: employeeService.getEmployeeEditDependents,
   additionalInfo: async () => ({}),
 };
 
@@ -63,6 +66,7 @@ const PERSONAL_TAB_SAVERS: {
   identity: employeeService.updateEmployeeEditIdentity,
   bankAccount: employeeService.updateEmployeeEditBankAccount,
   health: employeeService.updateEmployeeEditHealth,
+  dependents: employeeService.updateEmployeeEditDependents,
   additionalInfo: async () => undefined,
 };
 
@@ -136,7 +140,13 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
       const response = await PERSONAL_TAB_LOADERS[tabKey](employee.id);
       setPersonalForms((prev) => {
         const nextTab = prev[tabKey];
-        const mergedData = mergeFormData(nextTab.data, response);
+        const mergedData =
+          tabKey === 'dependents'
+            ? (mergeDependentClientFields(
+                nextTab.data as EmployeeEditDependentsPayload,
+                response as EmployeeEditDependentsPayload,
+              ) as PersonalFormMap[typeof tabKey])
+            : mergeFormData(nextTab.data, response);
 
         return {
           ...prev,
@@ -463,6 +473,29 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
     }
   };
 
+  const handleCreateDependent = async (dependent: EmployeeEditDependentsPayload[number]) => {
+    const nextDependents = [...personalForms.dependents.data, dependent];
+
+    await PERSONAL_TAB_SAVERS.dependents(employee.id, nextDependents);
+
+    setPersonalForms((prev) => ({
+      ...prev,
+      dependents: {
+        ...prev.dependents,
+        data: cloneForm(nextDependents),
+        initialData: cloneForm(nextDependents),
+        isDirty: false,
+        errors: {},
+        loadError: null,
+      },
+    }));
+
+    await loadPersonalTab('dependents');
+
+    showToast('Thêm người phụ thuộc thành công', 'success');
+    onSaved?.();
+  };
+
   const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget && !isDialogOpen) {
       requestAction(shouldGuardLeaving, onClose);
@@ -516,11 +549,11 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
             </button>
           </header>
 
-          <div className="flex min-h-0 flex-1">
+          <div className="flex min-h-0 flex-1 overflow-hidden">
             <EditModalSidebar activeSection={activeSection} onChange={handleSectionChange} />
 
-            <section className="flex min-h-0 flex-1 flex-col">
-              <div className="border-b border-slate-200 px-6 py-6 lg:px-9">
+            <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+              <div className="min-w-0 border-b border-slate-200 px-6 py-6 lg:px-9">
                 <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                   <div>
                     <h3 className="mt-1 text-[26px] font-bold tracking-tight text-[#253a69]">
@@ -555,7 +588,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
                 ) : null}
               </div>
 
-              <div className="min-h-0 flex-1 overflow-y-auto px-6 py-8 lg:px-9">
+              <div className="min-h-0 min-w-0 flex-1 overflow-y-auto px-6 py-8 lg:px-9">
                 {currentLoadError ? (
                   <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                     {currentLoadError}
@@ -578,6 +611,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
                     onIdentityChange={(field, value) => updateTabData('identity', field, value)}
                     onBankAccountChange={(field, value) => updateTabData('bankAccount', field, value)}
                     onHealthChange={(field, value) => updateTabData('health', field, value)}
+                    onCreateDependent={handleCreateDependent}
                   />
                 ) : (
                   <SectionPlaceholder

@@ -24,7 +24,7 @@ export const FormRow: React.FC<{
       {label}
       {required ? <span className="ml-1 text-rose-500">*</span> : null}
     </label>
-    <div>
+    <div className="w-full max-w-[720px]">
       {children}
       {error ? <p className="mt-2 text-xs font-medium text-rose-500">{error}</p> : null}
     </div>
@@ -39,7 +39,7 @@ export const FormSkeleton: React.FC = () => (
         className="grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)] lg:items-center lg:gap-6"
       >
         <div className="h-4 w-28 animate-pulse rounded-full bg-slate-200"></div>
-        <div className="h-12 animate-pulse rounded-2xl bg-slate-100"></div>
+        <div className="h-12 w-full max-w-[720px] animate-pulse rounded-2xl bg-slate-100"></div>
       </div>
     ))}
   </div>

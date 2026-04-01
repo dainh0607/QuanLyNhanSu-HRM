@@ -2,6 +2,7 @@ import type {
   EmployeeEditBankAccountPayload,
   EmployeeEditBasicInfoPayload,
   EmployeeEditContactPayload,
+  EmployeeEditDependentsPayload,
   EmployeeEditEducationPayload,
   EmployeeEditEmergencyContactPayload,
   EmployeeEditHealthPayload,
@@ -25,6 +26,7 @@ export type PersonalFormMap = {
   identity: EmployeeEditIdentityPayload;
   bankAccount: EmployeeEditBankAccountPayload;
   health: EmployeeEditHealthPayload;
+  dependents: EmployeeEditDependentsPayload;
   additionalInfo: EmployeeEditPlaceholderPayload;
 };
 

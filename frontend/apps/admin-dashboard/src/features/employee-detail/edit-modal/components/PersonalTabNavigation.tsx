@@ -14,17 +14,20 @@ const PersonalTabNavigation: React.FC<PersonalTabNavigationProps> = ({
   onChange,
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const [hasOverflow, setHasOverflow] = useState(false);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
   const updateScrollState = useCallback(() => {
     const container = scrollContainerRef.current;
     if (!container) {
+      setHasOverflow(false);
       setCanScrollLeft(false);
       setCanScrollRight(false);
       return;
     }
 
+    setHasOverflow(container.scrollWidth > container.clientWidth + 8);
     setCanScrollLeft(container.scrollLeft > 8);
     setCanScrollRight(container.scrollLeft + container.clientWidth < container.scrollWidth - 8);
   }, []);
@@ -57,9 +60,10 @@ const PersonalTabNavigation: React.FC<PersonalTabNavigationProps> = ({
     activeButton?.scrollIntoView({
       behavior: 'smooth',
       block: 'nearest',
-      inline: 'center',
+      inline: 'nearest',
     });
-  }, [activeTab]);
+    window.requestAnimationFrame(updateScrollState);
+  }, [activeTab, updateScrollState]);
 
   const handleScrollBy = (direction: 'left' | 'right') => {
     scrollContainerRef.current?.scrollBy({
@@ -69,12 +73,13 @@ const PersonalTabNavigation: React.FC<PersonalTabNavigationProps> = ({
   };
 
   return (
-    <div className="mt-7 flex items-center gap-2">
-      <button
+    <div className="mt-7 flex min-w-0 items-center gap-2">
+      {hasOverflow ? (
+        <button
         type="button"
         onClick={() => handleScrollBy('left')}
         disabled={!canScrollLeft}
-        className={`inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border transition-colors ${
+        className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors ${
           canScrollLeft
             ? 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900'
             : 'cursor-not-allowed border-slate-100 bg-slate-50 text-slate-300'
@@ -82,14 +87,15 @@ const PersonalTabNavigation: React.FC<PersonalTabNavigationProps> = ({
         aria-label="Cuộn sang trái"
       >
         <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-      </button>
+        </button>
+      ) : null}
 
       <div className="min-w-0 flex-1 overflow-hidden">
         <div
           ref={scrollContainerRef}
-          className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
-          <div className="flex min-w-max items-center gap-8 border-b border-slate-200">
+          <div className="flex min-w-max items-center gap-6 border-b border-slate-200 lg:gap-8">
             {PERSONAL_TABS.map((tab) => {
               const isActive = tab.key === activeTab;
               const isDirty = personalForms[tab.key].isDirty && personalForms[tab.key].isLoaded;
@@ -100,9 +106,10 @@ const PersonalTabNavigation: React.FC<PersonalTabNavigationProps> = ({
                   data-personal-tab={tab.key}
                   type="button"
                   onClick={() => onChange(tab.key)}
-                  className={`relative whitespace-nowrap pb-4 text-sm font-semibold transition-colors ${
+                  className={`relative shrink-0 whitespace-nowrap pb-4 text-sm font-semibold transition-colors ${
                     isActive ? 'text-emerald-600' : 'text-slate-500 hover:text-slate-800'
                   }`}
+                  aria-current={isActive ? 'page' : undefined}
                 >
                   {tab.label}
                   {isDirty ? (
@@ -118,11 +125,12 @@ const PersonalTabNavigation: React.FC<PersonalTabNavigationProps> = ({
         </div>
       </div>
 
-      <button
+      {hasOverflow ? (
+        <button
         type="button"
         onClick={() => handleScrollBy('right')}
         disabled={!canScrollRight}
-        className={`inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border transition-colors ${
+        className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors ${
           canScrollRight
             ? 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900'
             : 'cursor-not-allowed border-slate-100 bg-slate-50 text-slate-300'
@@ -130,7 +138,8 @@ const PersonalTabNavigation: React.FC<PersonalTabNavigationProps> = ({
         aria-label="Cuộn sang phải"
       >
         <span className="material-symbols-outlined text-[18px]">chevron_right</span>
-      </button>
+        </button>
+      ) : null}
     </div>
   );
 };
