@@ -1,13 +1,4 @@
-using System.Threading.Tasks;
-using ERP.DTOs.Auth;
-
-namespace ERP.Services.Auth
-{
-    public interface IAuthService
-    {
-        Task<AuthResponseDto> SignUpAsync(SignUpDto dto);
-        Task<AuthResponseDto> LoginAsync(LoginDto dto);
-        Task<AuthResponseDto> PreRegisterStaffAsync(PreRegisterStaffDto dto);
-        string GenerateInternalToken(UserInfoDto user);
-    }
-}
+// File này giữ lại để tương thích DI registration.
+// Interface đầy đủ được định nghĩa bên trong AuthService.cs
+// (namespace ERP.Services.Auth, public interface IAuthService)
+// Không thêm gì ở đây để tránh lỗi duplicate definition.
