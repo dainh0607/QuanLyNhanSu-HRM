@@ -125,8 +125,7 @@ const refreshSessionInternal = async (): Promise<boolean> => {
 
     applyAuthResponse(data);
     return true;
-  } catch (error) {
-    console.error("Refresh Session Error:", error);
+  } catch {
     clearAuthSession();
     return false;
   }
@@ -177,8 +176,7 @@ export const authService = {
         success: false,
         message: data.message || "Email hoac mat khau khong chinh xac.",
       };
-    } catch (error) {
-      console.error("Login Error:", error);
+    } catch {
       clearAuthSession();
       return {
         success: false,
@@ -209,8 +207,7 @@ export const authService = {
         success: false,
         message: data.message || "Dang ky that bai.",
       };
-    } catch (error) {
-      console.error("Register Error:", error);
+    } catch {
       return {
         success: false,
         message: "Khong the ket noi toi may chu.",
@@ -231,8 +228,7 @@ export const authService = {
       const user = normalizeUser(data);
       currentUser = user;
       return user;
-    } catch (error) {
-      console.error("Check Auth Error:", error);
+    } catch {
       clearAuthSession();
       return null;
     }
@@ -251,8 +247,7 @@ export const authService = {
         credentials: "include",
         headers: createHeaders(undefined, "POST"),
       });
-    } catch (error) {
-      console.error("Logout Error:", error);
+    } catch {
     } finally {
       clearAuthSession();
     }

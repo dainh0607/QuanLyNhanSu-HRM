@@ -2,9 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using ERP.DTOs.Auth;
 using ERP.Entities;
@@ -14,48 +17,30 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Net.Http.Json;
-using System.Security.Claims;
-using System.Text;
-using System.Text.Json;
+using EmployeeEntity = ERP.Entities.Models.Employees;
 
 namespace ERP.Services.Auth
 {
-    public interface IAuthService
-    {
-        Task<AuthResponseDto> SignUpAsync(SignUpDto dto);
-        Task<AuthResponseDto> LoginAsync(LoginDto dto, AuthSessionContextDto sessionContext);
-        Task<AuthResponseDto> RefreshSessionAsync(string refreshToken, AuthSessionContextDto sessionContext);
-        Task RevokeSessionAsync(string refreshToken);
-        Task<UserInfoDto?> GetUserByUidAsync(string uid);
-        Task<UserInfoDto?> GetUserByIdAsync(int userId);
-        Task<string?> VerifyTokenAsync(string idToken);
-        Task<int> SyncFirebaseUsersAsync();
-        Task<AuthResponseDto> PreRegisterStaffAsync(PreRegisterStaffDto dto);
-        string GenerateInternalToken(UserInfoDto user, string sessionId);
-        Task<string> CreateFirebaseUserAsync(string email, string password, string displayName, int employeeId);
-    }
-
     public class AuthService : IAuthService
     {
         private readonly AppDbContext _context;
         private readonly ILogger<AuthService> _logger;
         private readonly IConfiguration _configuration;
         private readonly IFirebaseService _firebaseService;
-        private readonly IUserService _userService;
+        private readonly IHttpClientFactory _httpClientFactory;
 
         public AuthService(
             AppDbContext context,
             ILogger<AuthService> logger,
             IConfiguration configuration,
+            IFirebaseService firebaseService,
             IHttpClientFactory httpClientFactory)
         {
             _context = context;
             _logger = logger;
             _configuration = configuration;
             _firebaseService = firebaseService;
-            _userService = userService;
+            _httpClientFactory = httpClientFactory;
         }
 
         public async Task<AuthResponseDto> SignUpAsync(SignUpDto dto)
@@ -82,17 +67,28 @@ namespace ERP.Services.Auth
                     }
                 }
 
-                var userArgs = new UserRecordArgs
-                {
-                    Email = dto.Email,
-                    Password = dto.Password,
-                    DisplayName = dto.FullName,
-                    PhoneNumber = dto.PhoneNumber,
-                    Disabled = false
-                };
-                    var firebaseUser = await _firebaseService.CreateUserAsync(userArgs);
+                var bypassAuth = _configuration.GetValue<bool>("Firebase:BypassAuth", false);
+                string firebaseUid;
 
-                var firebaseUser = await FirebaseAuth.DefaultInstance.CreateUserAsync(userArgs);
+                if (bypassAuth)
+                {
+                    _logger.LogInformation("Firebase auth bypassed for sign up user {Email}", dto.Email);
+                    firebaseUid = $"bypass_{Guid.NewGuid():N}";
+                }
+                else
+                {
+                    var userArgs = new UserRecordArgs
+                    {
+                        Email = dto.Email,
+                        Password = dto.Password,
+                        DisplayName = dto.FullName,
+                        PhoneNumber = dto.PhoneNumber,
+                        Disabled = false
+                    };
+                    
+                    var firebaseUser = await _firebaseService.CreateUserAsync(userArgs);
+                    firebaseUid = firebaseUser.Uid;
+                }
 
                 var employeeWithCode = await _context.Employees
                     .FirstOrDefaultAsync(e => e.employee_code == dto.EmployeeCode || e.email == dto.Email);
@@ -120,7 +116,7 @@ namespace ERP.Services.Auth
                 {
                     employee_id = employeeWithCode.Id,
                     username = BuildInternalUsername(employeeWithCode.employee_code, employeeWithCode.Id),
-                    firebase_uid = firebaseUser.Uid,
+                    firebase_uid = firebaseUid,
                     is_active = true,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
@@ -202,6 +198,36 @@ namespace ERP.Services.Auth
         {
             try
             {
+                var bypassAuth = _configuration.GetValue<bool>("Firebase:BypassAuth", false);
+                if (bypassAuth)
+                {
+                    _logger.LogInformation("Firebase auth bypassed for user {Email}", dto.Email);
+                    var localUserForBypass = await _context.Users
+                        .Include(u => u.Employee)
+                        .FirstOrDefaultAsync(u => u.is_active && (u.username == dto.Email || u.Employee.email == dto.Email));
+
+                    if (localUserForBypass == null)
+                    {
+                        return new AuthResponseDto
+                        {
+                            Success = false,
+                            Message = "Tai khoan khong ton tai (Bypass mode)"
+                        };
+                    }
+
+                    var userInfoBypass = await BuildUserInfoAsync(localUserForBypass);
+                    if (userInfoBypass == null)
+                    {
+                        return new AuthResponseDto
+                        {
+                            Success = false,
+                            Message = "Khong the tai thong tin nguoi dung (Bypass mode)"
+                        };
+                    }
+                    
+                    return await CreateSessionResponseAsync(localUserForBypass.Id, userInfoBypass, sessionContext, "Dang nhap thanh cong");
+                }
+
                 var apiKey = _configuration["Firebase:apiKey"];
                 if (string.IsNullOrWhiteSpace(apiKey))
                 {

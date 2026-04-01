@@ -152,7 +152,6 @@ using (var scope = app.Services.CreateScope())
             logger.LogInformation("Database initialization and sync complete.");
         }
 
-        await AuthSessionSchemaInitializer.EnsureCreatedAsync(context);
     }
     catch (Exception ex)
     {

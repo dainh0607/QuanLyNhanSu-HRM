@@ -7,6 +7,7 @@ using ERP.Entities;
 using ERP.Entities.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using EmployeeEntity = ERP.Entities.Models.Employees;
 
 namespace ERP.Services.Auth
 {
@@ -98,7 +99,7 @@ namespace ERP.Services.Auth
                             try
                             {
                                 var employeeCode = fbUser.Email?.Split('@')[0].ToUpper() ?? "EMP_" + Guid.NewGuid().ToString().Substring(0, 8);
-                                var newEmployee = new Employees
+                                var newEmployee = new EmployeeEntity
                                 {
                                     employee_code = employeeCode,
                                     full_name = fbUser.DisplayName ?? fbUser.Email,

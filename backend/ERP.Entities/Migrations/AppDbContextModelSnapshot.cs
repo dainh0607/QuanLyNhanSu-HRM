@@ -489,6 +489,89 @@ namespace ERP.Entities.Migrations
                     b.ToTable("AttendanceSettings", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.AuthSessions", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("csrf_token_hash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)")
+                        .HasColumnName("csrf_token_hash");
+
+                    b.Property<DateTime>("expires_at")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("ip_address")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)")
+                        .HasColumnName("ip_address");
+
+                    b.Property<bool>("is_active")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<DateTime?>("last_used_at")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("last_used_at");
+
+                    b.Property<string>("refresh_token_hash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)")
+                        .HasColumnName("refresh_token_hash");
+
+                    b.Property<string>("replaced_by_session_id")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("replaced_by_session_id");
+
+                    b.Property<DateTime?>("revoked_at")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("revoked_at");
+
+                    b.Property<string>("session_id")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("session_id");
+
+                    b.Property<string>("user_agent")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)")
+                        .HasColumnName("user_agent");
+
+                    b.Property<int>("user_id")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("refresh_token_hash")
+                        .IsUnique();
+
+                    b.HasIndex("session_id")
+                        .IsUnique();
+
+                    b.HasIndex("user_id", "is_active");
+
+                    b.ToTable("AuthSessions");
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.BankAccounts", b =>
                 {
                     b.Property<int>("Id")
@@ -628,22 +711,27 @@ namespace ERP.Entities.Migrations
                         new
                         {
                             Id = 1,
-                            name = "Thử việc"
+                            name = "Hợp đồng thử việc"
                         },
                         new
                         {
                             Id = 2,
-                            name = "Hợp đồng 1 năm"
+                            name = "Hợp đồng lao động xác định thời hạn (12 tháng)"
                         },
                         new
                         {
                             Id = 3,
-                            name = "Hợp đồng 3 năm"
+                            name = "Hợp đồng lao động xác định thời hạn (36 tháng)"
                         },
                         new
                         {
                             Id = 4,
-                            name = "Hợp đồng không thời hạn"
+                            name = "Hợp đồng lao động không xác định thời hạn"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            name = "Hợp đồng khoán việc / Cộng tác viên"
                         });
                 });
 
@@ -4940,6 +5028,17 @@ namespace ERP.Entities.Migrations
                         .IsRequired();
 
                     b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("ERP.Entities.Models.AuthSessions", b =>
+                {
+                    b.HasOne("ERP.Entities.Models.Users", "User")
+                        .WithMany()
+                        .HasForeignKey("user_id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.BankAccounts", b =>

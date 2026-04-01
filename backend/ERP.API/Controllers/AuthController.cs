@@ -240,7 +240,7 @@ namespace ERP.API.Controllers
             {
                 HttpOnly = true,
                 Secure = IsSecureRequest(),
-                SameSite = SameSiteMode.Strict,
+                SameSite = SameSiteMode.Lax,
                 Path = "/",
                 IsEssential = true
             };
@@ -249,7 +249,7 @@ namespace ERP.API.Controllers
             {
                 HttpOnly = true,
                 Secure = IsSecureRequest(),
-                SameSite = SameSiteMode.Strict,
+                SameSite = SameSiteMode.Lax,
                 Path = "/api/auth",
                 IsEssential = true
             };
@@ -258,7 +258,7 @@ namespace ERP.API.Controllers
             {
                 HttpOnly = false,
                 Secure = IsSecureRequest(),
-                SameSite = SameSiteMode.Strict,
+                SameSite = SameSiteMode.Lax,
                 Path = "/",
                 IsEssential = true
             };
@@ -274,7 +274,7 @@ namespace ERP.API.Controllers
             {
                 HttpOnly = true,
                 Secure = IsSecureRequest(),
-                SameSite = SameSiteMode.Strict,
+                SameSite = SameSiteMode.Lax,
                 Path = path,
                 Expires = expiresAt,
                 IsEssential = true
@@ -287,7 +287,7 @@ namespace ERP.API.Controllers
             {
                 HttpOnly = false,
                 Secure = IsSecureRequest(),
-                SameSite = SameSiteMode.Strict,
+                SameSite = SameSiteMode.Lax,
                 Path = "/",
                 Expires = expiresAt,
                 IsEssential = true
