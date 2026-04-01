@@ -31,5 +31,11 @@ namespace ERP.API.Controllers
 
         [HttpGet("districts/{provinceCode}")]
         public async Task<IActionResult> GetDistricts(string provinceCode) => Ok(await _lookupService.GetDistrictsAsync(provinceCode));
+
+        [HttpGet("education-levels")]
+        public async Task<IActionResult> GetEducationLevels() => Ok(await _lookupService.GetEducationLevelsAsync());
+
+        [HttpGet("majors")]
+        public async Task<IActionResult> GetMajors() => Ok(await _lookupService.GetMajorsAsync());
     }
 }

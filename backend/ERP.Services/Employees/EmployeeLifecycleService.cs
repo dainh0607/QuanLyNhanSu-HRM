@@ -40,21 +40,34 @@ namespace ERP.Services.Employees
                 // e.g., Set department head to false if they were
                 employee.is_department_head = false;
 
-                // 3. Create a RequestResignations record for history
-                var resignationRecord = new RequestResignations
+                // 3. Create a Requests record (Auditable parent)
+                var request = new Requests
                 {
+                    request_type_id = 4, // WORK (Close enough for now, ideally REQ_RESIGN)
                     employee_id = employeeId,
-                    resignation_date = dto.ResignationDate,
-                    reason = dto.Reason,
+                    status = "Approved",
+                    created_by = employeeId, // Assumed by self or admin
+                    approved_by = null,
+                    approved_at = DateTime.UtcNow,
                     note = dto.Note,
-                    status = "Approved", // Assuming this is an admin action
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
+                };
+                _context.Requests.Add(request);
+                await _context.SaveChangesAsync();
+
+                // 4. Create a RequestResignations record for details
+                var resignationRecord = new RequestResignations
+                {
+                    request_id = request.Id,
+                    resignation_date = dto.ResignationDate,
+                    reason = dto.Reason,
+                    handover_employee_id = null
                 };
 
                 _context.RequestResignations.Add(resignationRecord);
                 
-                // 4. Deactivate associated User accounts
+                // 5. Deactivate associated User accounts
                 var users = await _context.Users
                     .Where(u => u.employee_id == employeeId)
                     .ToListAsync();
@@ -98,10 +111,8 @@ namespace ERP.Services.Employees
                     job_title_id = dto.NewJobTitleId ?? employee.job_title_id,
                     salary_amount = dto.NewSalaryAmount,
                     note = dto.Note,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    // These fields are required in the entity based on my previous view_file, 
-                    // but I'll provide defaults if missing from DTO
+                    // Remove CreatedAt/UpdatedAt as they are not on BaseEntity
+                    // These fields are required in the entity
                     work_status = "Active",
                     payment_method = "Bank Transfer",
                     city = "",

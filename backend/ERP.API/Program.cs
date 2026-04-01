@@ -14,6 +14,7 @@ using ERP.Services.Employees;
 using ERP.Services.Organization;
 using ERP.Services.Lookup;
 using ERP.Services.Contracts;
+using ERP.Services.Common;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;

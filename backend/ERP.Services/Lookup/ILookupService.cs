@@ -13,5 +13,9 @@ namespace ERP.Services.Lookup
         Task<IEnumerable<GeographicalLookupDto>> GetCountriesAsync();
         Task<IEnumerable<GeographicalLookupDto>> GetProvincesAsync(string countryCode);
         Task<IEnumerable<GeographicalLookupDto>> GetDistrictsAsync(string provinceCode);
+
+        // Education Lookups (AC 4.1)
+        Task<IEnumerable<LookupDto>> GetEducationLevelsAsync();
+        Task<IEnumerable<LookupDto>> GetMajorsAsync();
     }
 }

@@ -534,23 +534,78 @@ namespace ERP.Services.Employees
         public async Task<byte[]> ExportEmployeesToCsvAsync()
         {
             var employees = await _unitOfWork.Repository<EmployeeEntity>().GetAllAsync();
-            var activeEmployees = employees.Where(e => e.is_active).ToList();
+            var activeEmployees = employees.Where(e => e.is_active).OrderBy(e => e.employee_code).ToList();
+
+            // Fetch lookups once for efficiency
+            var genders = (await _unitOfWork.Repository<Genders>().GetAllAsync()).ToDictionary(x => x.code, x => x.name);
+            var maritalStatuses = (await _unitOfWork.Repository<MaritalStatuses>().GetAllAsync()).ToDictionary(x => x.code, x => x.name);
+            var departments = (await _unitOfWork.Repository<Departments>().GetAllAsync()).ToDictionary(x => x.Id, x => x.name);
+            var jobTitles = (await _unitOfWork.Repository<JobTitles>().GetAllAsync()).ToDictionary(x => x.Id, x => x.name);
+            
+            // Related data (fetching all to avoid N+1, then indexing locally)
+            var bankAccounts = await _unitOfWork.Repository<BankAccounts>().GetAllAsync();
 
             var sb = new StringBuilder();
-            sb.AppendLine("ID,Mã NV,Họ Tên,Email,Số điện thoại,Phòng ban,Ngày bắt đầu,Trạng thái");
+            
+            // Header string matching the requested format
+            var headers = new List<string>
+            {
+                "STT", "Mã nhân viên", "Họ và tên", "Giới tính", "Ngày sinh", 
+                "Điện thoại", "Email", "Số CMND/CCCD", "Ngày cấp", "Nơi cấp", 
+                "MST cá nhân", "Tình trạng hôn nhân", "Số tài khoản", "Ngân hàng", 
+                "Chi nhánh ngân hàng", "Phòng ban", "Bộ phận", "Chức danh", 
+                "Ngày bắt đầu", "Trạng thái"
+            };
+            sb.AppendLine(string.Join(",", headers));
 
+            int index = 1;
             foreach (var emp in activeEmployees)
             {
-                var departmentName = "";
-                if (emp.department_id.HasValue)
+                var genderName = emp.gender_code != null && genders.ContainsKey(emp.gender_code) ? genders[emp.gender_code] : "";
+                var maritalName = emp.marital_status_code != null && maritalStatuses.ContainsKey(emp.marital_status_code) ? maritalStatuses[emp.marital_status_code] : "";
+                var deptName = emp.department_id.HasValue && departments.ContainsKey(emp.department_id.Value) ? departments[emp.department_id.Value] : "";
+                var titleName = emp.job_title_id.HasValue && jobTitles.ContainsKey(emp.job_title_id.Value) ? jobTitles[emp.job_title_id.Value] : "";
+                
+                var empBank = bankAccounts.FirstOrDefault(b => b.employee_id == emp.Id);
+
+                // Helper to escape CSV values (handle quotes and commas)
+                string Escape(string? val) 
                 {
-                    var dept = await _unitOfWork.Repository<Departments>().GetByIdAsync(emp.department_id.Value);
-                    departmentName = dept?.name ?? "";
+                    if (string.IsNullOrEmpty(val)) return "\"\"";
+                    return $"\"{val.Replace("\"", "\"\"")}\"";
                 }
 
-                sb.AppendLine($"{emp.Id},{emp.employee_code},{emp.full_name},{emp.email},{emp.phone},{departmentName},{emp.start_date:yyyy-MM-dd},{(emp.is_active ? "Đang làm việc" : "Nghỉ việc")}");
+                string FormatDate(DateTime? dt) => dt?.ToString("dd/MM/yyyy") ?? "";
+
+                var row = new List<string>
+                {
+                    index.ToString(),
+                    Escape(emp.employee_code),
+                    Escape(emp.full_name),
+                    Escape(genderName),
+                    Escape(FormatDate(emp.birth_date)),
+                    Escape(emp.phone),
+                    Escape(emp.email),
+                    Escape(emp.identity_number),
+                    Escape(FormatDate(emp.identity_issue_date)),
+                    Escape(emp.identity_issue_place),
+                    Escape(emp.tax_code),
+                    Escape(maritalName),
+                    Escape(empBank?.account_number),
+                    Escape(empBank?.bank_name),
+                    Escape(empBank?.branch),
+                    Escape(deptName),
+                    Escape(""), // Bộ phận
+                    Escape(titleName),
+                    Escape(FormatDate(emp.start_date)),
+                    Escape(emp.is_active ? "Đang làm việc" : "Nghỉ việc")
+                };
+
+                sb.AppendLine(string.Join(",", row));
+                index++;
             }
 
+            // Return UTF-8 with BOM for proper Vietnamese character rendering in Excel
             return Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
         }
 
