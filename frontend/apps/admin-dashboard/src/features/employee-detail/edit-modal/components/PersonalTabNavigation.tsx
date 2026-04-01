@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { PERSONAL_TABS } from '../constants';
 import type { PersonalFormsState, PersonalTabKey } from '../types';
-import { formsEqual } from '../utils';
 
 interface PersonalTabNavigationProps {
   activeTab: PersonalTabKey;
@@ -93,9 +92,7 @@ const PersonalTabNavigation: React.FC<PersonalTabNavigationProps> = ({
           <div className="flex min-w-max items-center gap-8 border-b border-slate-200">
             {PERSONAL_TABS.map((tab) => {
               const isActive = tab.key === activeTab;
-              const isDirty =
-                !formsEqual(personalForms[tab.key].data, personalForms[tab.key].initialData) &&
-                personalForms[tab.key].isLoaded;
+              const isDirty = personalForms[tab.key].isDirty && personalForms[tab.key].isLoaded;
 
               return (
                 <button

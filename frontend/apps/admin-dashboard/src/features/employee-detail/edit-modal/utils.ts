@@ -85,6 +85,7 @@ export const resolveSectionKey = (sectionLabel?: string): ModalSectionKey => {
 export const createTabState = <TForm,>(data: TForm): TabState<TForm> => ({
   data: cloneForm(data),
   initialData: cloneForm(data),
+  isDirty: false,
   errors: {},
   isLoading: false,
   isLoaded: false,
@@ -266,7 +267,11 @@ export const createPersonalFormsState = (seed: PersonalFormMap): PersonalFormsSt
   additionalInfo: createTabState(seed.additionalInfo),
 });
 
-export const isEmailValid = (value: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+export const EMAIL_REGEX = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+export const PHONE_REGEX = /^\d{9,15}$/;
+
+export const isEmailValid = (value: string): boolean => EMAIL_REGEX.test(value.trim());
+export const isPhoneValid = (value: string): boolean => PHONE_REGEX.test(value.trim());
 export const isNumericString = (value: string): boolean => /^\d+$/.test(value);
 export const isSkypeValid = (value: string): boolean => /^[a-zA-Z0-9._-]{3,50}$/.test(value);
 export const isFacebookValid = (value: string): boolean =>

@@ -1,5 +1,3 @@
-export { default } from './EmployeeListWithApiExport';
-/*
 import { useCallback, useEffect, useState } from 'react';
 import { useToast } from '../../../components/common/useToast';
 import { employeeService } from '../../../services/employeeService';
@@ -133,39 +131,25 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onSelectEmployee }) => {
       setIsExportingBasicInfo(true);
 
       try {
-        const shouldFetchAllEmployees = totalRecords > employees.length;
-        const exportEmployees = shouldFetchAllEmployees
-          ? (
-              await employeeService.getEmployees(
-                1,
-                totalRecords,
-                searchTerm,
-                statusFilter !== 'Tất cả' ? statusFilter : undefined,
-              )
-            ).items
-          : employees;
+        const { blob, filename } = await employeeService.exportEmployeesBasicInfoFile({
+          columnIds: selectedColumns.map((column) => column.id),
+          searchTerm,
+          status: statusFilter !== 'Tất cả' ? statusFilter : undefined,
+        });
 
-        const csvRows = [
-          selectedColumns.map((column) => escapeCsvCell(column.label)).join(','),
-          ...exportEmployees.map((employee) =>
-            selectedColumns
-              .map((column) => escapeCsvCell(column.getValue(employee)))
-              .join(','),
-          ),
-        ];
-
-        const timestamp = getLocalDateStamp();
-        downloadCsv(csvRows.join('\r\n'), `thong-tin-co-ban-nhan-su-${timestamp}.csv`);
+        downloadFile(blob, filename);
         setIsBasicInfoExportOpen(false);
-        showToast(`Đã xuất file cho ${exportEmployees.length} nhân sự.`, 'success');
+        showToast('Đã tải xuống file thông tin cơ bản.', 'success');
       } catch (error) {
         console.error('Export basic info failed:', error);
-        showToast('Xuất file thất bại. Vui lòng thử lại.', 'error');
+        const errorMessage =
+          error instanceof Error ? error.message : 'Xuất file thất bại. Vui lòng thử lại.';
+        showToast(errorMessage, 'error');
       } finally {
         setIsExportingBasicInfo(false);
       }
     },
-    [employees, searchTerm, showToast, statusFilter, totalRecords],
+    [searchTerm, showToast, statusFilter, totalRecords],
   );
 
   return (
@@ -258,4 +242,3 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onSelectEmployee }) => {
 };
 
 export default EmployeeList;
-*/

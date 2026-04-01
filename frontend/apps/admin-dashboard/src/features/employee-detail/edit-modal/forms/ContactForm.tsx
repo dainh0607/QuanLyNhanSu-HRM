@@ -19,7 +19,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ data, errors, onFieldChange }
       description="Quản lý thông tin liên hệ cá nhân và các kênh kết nối mạng xã hội."
     />
     <div className="space-y-5">
-      <FormRow label="Email" error={errors.email}>
+      <FormRow label="Email" required error={errors.email}>
         <input
           type="email"
           value={data.email}
@@ -29,7 +29,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ data, errors, onFieldChange }
         />
       </FormRow>
 
-      <FormRow label="Số điện thoại" error={errors.phone}>
+      <FormRow label="Số điện thoại" required error={errors.phone}>
         <input
           type="text"
           inputMode="numeric"

@@ -23,12 +23,12 @@ const SummaryInfoItem: React.FC<SummaryInfoItemProps> = ({
       <span className="material-symbols-outlined text-[20px] text-emerald-500">{icon}</span>
       {isEmpty ? (
         emptyState === 'prompt' ? (
-          <EmptyValuePrompt label={emptyLabel} className="flex-1 text-[15px]" />
+          <EmptyValuePrompt label={emptyLabel} className="flex-1 text-[13px]" />
         ) : (
-          <EmptyValueDash className="flex-1 text-[15px]" />
+          <EmptyValueDash className="flex-1 text-[13px]" />
         )
       ) : (
-        <span className="truncate text-[15px] leading-6 text-slate-700">{value}</span>
+        <span className="truncate text-[13px] leading-6 text-slate-700">{value}</span>
       )}
     </div>
   );
