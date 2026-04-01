@@ -213,6 +213,32 @@ namespace ERP.API.Controllers
             }
         }
 
+        [HttpPost("change-password")]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var userIdValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? User.FindFirst(Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames.Sub)?.Value;
+
+            if (!int.TryParse(userIdValue, out var userId))
+            {
+                return Unauthorized(new { Message = "Không thể xác định danh tính người dùng." });
+            }
+
+            var result = await _authService.ChangePasswordAsync(userId, dto);
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+
+            return Ok(result);
+        }
+
         private void WriteSessionCookies(AuthResponseDto result)
         {
             if (string.IsNullOrWhiteSpace(result.IdToken) ||

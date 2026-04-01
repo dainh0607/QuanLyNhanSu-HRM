@@ -27,6 +27,7 @@ namespace ERP.Services.Auth
         private readonly ILogger<AuthService> _logger;
         private readonly IConfiguration _configuration;
         private readonly IFirebaseService _firebaseService;
+        private readonly IUserService _userService;
         private readonly IHttpClientFactory _httpClientFactory;
 
         public AuthService(
@@ -34,12 +35,14 @@ namespace ERP.Services.Auth
             ILogger<AuthService> logger,
             IConfiguration configuration,
             IFirebaseService firebaseService,
-            IUserService userService)
+            IUserService userService,
+            IHttpClientFactory httpClientFactory)
         {
             _context = context;
             _logger = logger;
             _configuration = configuration;
             _firebaseService = firebaseService;
+            _userService = userService;
             _httpClientFactory = httpClientFactory;
         }
 
@@ -67,29 +70,16 @@ namespace ERP.Services.Auth
                     }
                 }
 
-                var bypassAuth = _configuration.GetValue<bool>("Firebase:BypassAuth", false);
-                string firebaseUid;
-
-                if (bypassAuth)
-                {
-                    _logger.LogInformation("Firebase auth bypassed for sign up user {Email}", dto.Email);
-                    firebaseUid = $"bypass_{Guid.NewGuid():N}";
-                }
-                else
-                {
-                    var userArgs = new UserRecordArgs
-                    {
-                        Email = dto.Email,
-                        Password = dto.Password,
-                        DisplayName = dto.FullName,
-                        PhoneNumber = dto.PhoneNumber,
-                        Disabled = false
-                    };
-                    
-                    firebaseUid = firebaseUser.Uid;
-                }
-
                 UserRecord firebaseUser;
+                var userArgs = new UserRecordArgs
+                {
+                    Email = dto.Email,
+                    Password = dto.Password,
+                    DisplayName = dto.FullName,
+                    PhoneNumber = dto.PhoneNumber,
+                    Disabled = false
+                };
+
                 try
                 {
                     firebaseUser = await _firebaseService.CreateUserAsync(userArgs);
@@ -98,7 +88,7 @@ namespace ERP.Services.Auth
                 {
                     await transaction.RollbackAsync();
                     _logger.LogError(fbEx, "Firebase error during sign up");
-                    return new AuthResponseDto { Success = false, Message = "Khong the tao tai khoan Firebase." };
+                    return new AuthResponseDto { Success = false, Message = "Không thể tạo tài khoản Firebase." };
                 }
 
                 try
@@ -530,6 +520,51 @@ namespace ERP.Services.Auth
             }
 
             return syncCount;
+        }
+
+        public async Task<AuthResponseDto> ChangePasswordAsync(int userId, ChangePasswordDto dto)
+        {
+            try
+            {
+                var localUser = await _context.Users
+                    .Include(u => u.Employee)
+                    .FirstOrDefaultAsync(u => u.Id == userId && u.is_active);
+
+                if (localUser == null)
+                {
+                    return new AuthResponseDto { Success = false, Message = "Người dùng không tồn tại hoặc đã bị khóa." };
+                }
+
+                if (string.IsNullOrEmpty(localUser.Employee?.email))
+                {
+                    return new AuthResponseDto { Success = false, Message = "Email không hợp lệ. Vui lòng liên hệ quản trị viên." };
+                }
+
+                // 1. Verify old password
+                var verifyResult = await _firebaseService.SignInWithPasswordAsync(localUser.Employee.email, dto.OldPassword);
+                if (!verifyResult.Success)
+                {
+                    return new AuthResponseDto { Success = false, Message = "Mật khẩu cũ không đúng." };
+                }
+
+                // 2. Update to new password in Firebase
+                await _firebaseService.UpdateUserPasswordAsync(localUser.firebase_uid, dto.NewPassword);
+
+                return new AuthResponseDto
+                {
+                    Success = true,
+                    Message = "Đổi mật khẩu thành công."
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in ChangePasswordAsync for userId {UserId}", userId);
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Lỗi xảy ra trong quá trình đổi mật khẩu."
+                };
+            }
         }
 
         public async Task<AuthResponseDto> PreRegisterStaffAsync(PreRegisterStaffDto dto)

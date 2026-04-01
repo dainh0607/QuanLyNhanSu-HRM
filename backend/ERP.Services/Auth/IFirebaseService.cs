@@ -11,5 +11,6 @@ namespace ERP.Services.Auth
         Task<IEnumerable<UserRecord>> ListAllUsersAsync();
         Task DeleteUserAsync(string uid);
         Task<(bool Success, string? IdToken, string? RefreshToken, int? ExpiresIn, string? Message)> SignInWithPasswordAsync(string email, string password);
+        Task UpdateUserPasswordAsync(string uid, string newPassword);
     }
 }

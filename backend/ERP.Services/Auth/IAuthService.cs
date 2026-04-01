@@ -1,4 +1,25 @@
-// File này giữ lại để tương thích DI registration.
-// Interface đầy đủ được định nghĩa bên trong AuthService.cs
-// (namespace ERP.Services.Auth, public interface IAuthService)
-// Không thêm gì ở đây để tránh lỗi duplicate definition.
+using System.Threading.Tasks;
+using ERP.DTOs.Auth;
+
+namespace ERP.Services.Auth
+{
+    public interface IAuthService
+    {
+        Task<AuthResponseDto> SignUpAsync(SignUpDto dto);
+        Task<AuthResponseDto> LoginAsync(LoginDto dto, AuthSessionContextDto sessionContext);
+        Task<AuthResponseDto> RefreshSessionAsync(string refreshToken, AuthSessionContextDto sessionContext);
+        Task RevokeSessionAsync(string refreshToken);
+        Task<UserInfoDto?> GetUserByUidAsync(string uid);
+        Task<UserInfoDto?> GetUserByIdAsync(int userId);
+        Task<string?> VerifyTokenAsync(string idToken);
+        Task<int> SyncFirebaseUsersAsync();
+        Task<AuthResponseDto> PreRegisterStaffAsync(PreRegisterStaffDto dto);
+        string GenerateInternalToken(UserInfoDto user, string sessionId);
+        Task<string> CreateFirebaseUserAsync(string email, string password, string displayName, int employeeId);
+        
+        /// <summary>
+        /// Chức năng đổi mật khẩu cho người dùng hiện tại (bên trong Thông tin cá nhân)
+        /// </summary>
+        Task<AuthResponseDto> ChangePasswordAsync(int userId, ChangePasswordDto dto);
+    }
+}
