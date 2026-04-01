@@ -30,8 +30,7 @@ namespace ERP.Services.Employees
 
         public async Task<PaginatedListDto<EmployeeDto>> GetPagedListAsync(EmployeeFilterDto filter)
         {
-            var employees = await _unitOfWork.Repository<EmployeeEntity>().GetAllAsync();
-            var query = employees.AsQueryable();
+            var query = _unitOfWork.Repository<EmployeeEntity>().AsQueryable();
 
             // 1. Search Term (Universal search)
             if (!string.IsNullOrEmpty(filter.SearchTerm))
@@ -546,7 +545,7 @@ namespace ERP.Services.Employees
             var bankAccounts = await _unitOfWork.Repository<BankAccounts>().GetAllAsync();
 
             var sb = new StringBuilder();
-            
+
             // Header string matching the requested format
             var headers = new List<string>
             {
@@ -556,7 +555,8 @@ namespace ERP.Services.Employees
                 "Chi nhánh ngân hàng", "Phòng ban", "Bộ phận", "Chức danh", 
                 "Ngày bắt đầu", "Trạng thái"
             };
-            sb.AppendLine(string.Join(",", headers));
+            // Use semicolon (';') - Native delimiter for Vietnamese Windows Excel
+            sb.AppendLine(string.Join(";", headers));
 
             int index = 1;
             foreach (var emp in activeEmployees)
@@ -568,11 +568,11 @@ namespace ERP.Services.Employees
                 
                 var empBank = bankAccounts.FirstOrDefault(b => b.employee_id == emp.Id);
 
-                // Helper to escape CSV values (handle quotes and commas)
+                // Helper to escape CSV values (handle quotes and semicolons)
                 string Escape(string? val) 
                 {
-                    if (string.IsNullOrEmpty(val)) return "\"\"";
-                    return $"\"{val.Replace("\"", "\"\"")}\"";
+                    if (string.IsNullOrEmpty(val)) return ""; // Return empty (no "")
+                    return $"\"{val.Replace("\"", "\"\"")}\""; // Quote and escape
                 }
 
                 string FormatDate(DateTime? dt) => dt?.ToString("dd/MM/yyyy") ?? "";
@@ -601,12 +601,17 @@ namespace ERP.Services.Employees
                     Escape(emp.is_active ? "Đang làm việc" : "Nghỉ việc")
                 };
 
-                sb.AppendLine(string.Join(",", row));
+                // Use semicolon (';') to join the row data
+                sb.AppendLine(string.Join(";", row));
                 index++;
             }
 
-            // Return UTF-8 with BOM for proper Vietnamese character rendering in Excel
-            return Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+            // Return UTF-8 with BOM (Byte Order Mark) — Most widely recognized by Excel 365+
+            var encoding = new System.Text.UTF8Encoding(true);
+            var headerBytes = encoding.GetPreamble();
+            var contentBytes = encoding.GetBytes(sb.ToString());
+            
+            return headerBytes.Concat(contentBytes).ToArray();
         }
 
         private EmployeeDto MapToDto(EmployeeEntity e)
