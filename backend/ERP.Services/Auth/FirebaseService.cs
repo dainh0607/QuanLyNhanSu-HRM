@@ -102,6 +102,16 @@ namespace ERP.Services.Auth
             }
         }
 
+        public async Task UpdateUserPasswordAsync(string uid, string newPassword)
+        {
+            var args = new UserRecordArgs
+            {
+                Uid = uid,
+                Password = newPassword
+            };
+            await FirebaseAuth.DefaultInstance.UpdateUserAsync(args);
+        }
+
         private class FirebaseLoginResponse
         {
             public string idToken { get; set; }

@@ -63,3 +63,48 @@ Content-Type: application/json
     "note": "Bằng khá"
   }
 ]
+
+### [US-8] GET - Lấy thông tin khác của nhân viên (AC 8.3)
+# Trả về MaritalStatusCode = "SINGLE" nếu nhân viên chưa có dữ liệu.
+GET {{baseUrl}}/employees/3/profile/other-info
+Authorization: Bearer {{token}}
+
+### [US-8] PUT - Cập nhật thông tin khác: Độc thân (AC 8.4)
+# TaxCode hợp lệ: 10 chữ số
+PUT {{baseUrl}}/employees/3/profile/other-info
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "unionGroup": "Công đoàn cơ sở Phòng CNTT",
+  "ethnicity": "Kinh",
+  "religion": "Không",
+  "taxCode": "0123456789",
+  "maritalStatusCode": "SINGLE",
+  "note": "Nhân viên tiêu biểu quý 1/2026"
+}
+
+### [US-8] PUT - Cập nhật thông tin khác: Đã kết hôn (AC 8.4)
+# TaxCode hợp lệ: 13 chữ số
+PUT {{baseUrl}}/employees/3/profile/other-info
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "unionGroup": "",
+  "ethnicity": "Tày",
+  "religion": "Phật giáo",
+  "taxCode": "0123456789012",
+  "maritalStatusCode": "MARRIED",
+  "note": ""
+}
+
+### [US-8] PUT - Test validation: TaxCode sai định dạng (phải trả 400 Bad Request)
+PUT {{baseUrl}}/employees/3/profile/other-info
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "taxCode": "123ABC",
+  "maritalStatusCode": "SINGLE"
+}

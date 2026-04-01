@@ -14,7 +14,6 @@ namespace ERP.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
-        private readonly IUserService _userService;
         private readonly IFirebaseService _firebaseService;
         private readonly ILogger<AuthController> _logger;
         private readonly IConfiguration _configuration;
@@ -22,14 +21,12 @@ namespace ERP.API.Controllers
 
         public AuthController(
             IAuthService authService,
-            IUserService userService,
             IFirebaseService firebaseService,
             ILogger<AuthController> logger,
             IConfiguration configuration,
             IWebHostEnvironment environment)
         {
             _authService = authService;
-            _userService = userService;
             _firebaseService = firebaseService;
             _logger = logger;
             _configuration = configuration;
@@ -214,6 +211,32 @@ namespace ERP.API.Controllers
                 _logger.LogError(ex, "Error wiping Firebase users");
                 return StatusCode(500, new { Message = "Error wiping users", Error = ex.Message });
             }
+        }
+
+        [HttpPost("change-password")]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var userIdValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? User.FindFirst(Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames.Sub)?.Value;
+
+            if (!int.TryParse(userIdValue, out var userId))
+            {
+                return Unauthorized(new { Message = "Không thể xác định danh tính người dùng." });
+            }
+
+            var result = await _authService.ChangePasswordAsync(userId, dto);
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+
+            return Ok(result);
         }
 
         private void WriteSessionCookies(AuthResponseDto result)

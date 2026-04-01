@@ -27,6 +27,7 @@ namespace ERP.Services.Auth
         private readonly ILogger<AuthService> _logger;
         private readonly IConfiguration _configuration;
         private readonly IFirebaseService _firebaseService;
+        private readonly IUserService _userService;
         private readonly IHttpClientFactory _httpClientFactory;
 
         public AuthService(
@@ -34,12 +35,14 @@ namespace ERP.Services.Auth
             ILogger<AuthService> logger,
             IConfiguration configuration,
             IFirebaseService firebaseService,
+            IUserService userService,
             IHttpClientFactory httpClientFactory)
         {
             _context = context;
             _logger = logger;
             _configuration = configuration;
             _firebaseService = firebaseService;
+            _userService = userService;
             _httpClientFactory = httpClientFactory;
         }
 
@@ -67,125 +70,89 @@ namespace ERP.Services.Auth
                     }
                 }
 
-                var bypassAuth = _configuration.GetValue<bool>("Firebase:BypassAuth", false);
-                string firebaseUid;
-
-                if (bypassAuth)
+                UserRecord firebaseUser;
+                var userArgs = new UserRecordArgs
                 {
-                    _logger.LogInformation("Firebase auth bypassed for sign up user {Email}", dto.Email);
-                    firebaseUid = $"bypass_{Guid.NewGuid():N}";
-                }
-                else
-                {
-                    var userArgs = new UserRecordArgs
-                    {
-                        Email = dto.Email,
-                        Password = dto.Password,
-                        DisplayName = dto.FullName,
-                        PhoneNumber = dto.PhoneNumber,
-                        Disabled = false
-                    };
-                    
-                    var firebaseUser = await _firebaseService.CreateUserAsync(userArgs);
-                    firebaseUid = firebaseUser.Uid;
-                }
-
-                var employeeWithCode = await _context.Employees
-                    .FirstOrDefaultAsync(e => e.employee_code == dto.EmployeeCode || e.email == dto.Email);
-
-                var isPreRegistered = employeeWithCode != null;
-
-                if (employeeWithCode == null)
-                {
-                    employeeWithCode = new EmployeeEntity
-                    {
-                        employee_code = dto.EmployeeCode,
-                        full_name = dto.FullName,
-                        email = dto.Email,
-                        phone = dto.PhoneNumber,
-                        is_active = true,
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow
-                    };
-
-                    _context.Employees.Add(employeeWithCode);
-                    await _context.SaveChangesAsync();
-                }
-
-                var user = new Users
-                {
-                    employee_id = employeeWithCode.Id,
-                    username = BuildInternalUsername(employeeWithCode.employee_code, employeeWithCode.Id),
-                    firebase_uid = firebaseUid,
-                    is_active = true,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
+                    Email = dto.Email,
+                    Password = dto.Password,
+                    DisplayName = dto.FullName,
+                    PhoneNumber = dto.PhoneNumber,
+                    Disabled = false
                 };
 
-                _context.Users.Add(user);
-                await _context.SaveChangesAsync();
-
-                var assignedRoleId = 3;
-                var roleName = "User";
-
-                if (dto.Email.ToLower().Contains("admin"))
+                try
                 {
-                    assignedRoleId = 1;
-                    roleName = "Admin";
+                    firebaseUser = await _firebaseService.CreateUserAsync(userArgs);
                 }
-                else if (dto.Email.ToLower().Contains("manager") || !isPreRegistered)
+                catch (Exception fbEx)
                 {
-                    assignedRoleId = 2;
-                    roleName = "Manager";
+                    await transaction.RollbackAsync();
+                    _logger.LogError(fbEx, "Firebase error during sign up");
+                    return new AuthResponseDto { Success = false, Message = "Không thể tạo tài khoản Firebase." };
                 }
 
-                var userRole = new UserRoles
+                try
                 {
-                    user_id = user.Id,
-                    role_id = assignedRoleId,
-                    is_active = true,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
-
-                _context.UserRoles.Add(userRole);
-                await _context.SaveChangesAsync();
-
-                await transaction.CommitAsync();
-
-                return new AuthResponseDto
-                {
-                    Success = true,
-                    Message = "Dang ky thanh cong. Vui long dang nhap.",
-                    User = new UserInfoDto
+                    // Create/Update Local Employee
+                    if (existingEmployee == null)
                     {
-                        UserId = user.Id,
-                        EmployeeId = employeeWithCode.Id,
-                        Email = employeeWithCode.email ?? dto.Email,
-                        FullName = employeeWithCode.full_name ?? dto.FullName,
-                        EmployeeCode = employeeWithCode.employee_code ?? string.Empty,
-                        PhoneNumber = employeeWithCode.phone ?? string.Empty,
-                        IsActive = user.is_active,
-                        Roles = new List<string> { roleName }
+                        existingEmployee = new ERP.Entities.Models.Employees
+                        {
+                            employee_code = dto.EmployeeCode,
+                            full_name = dto.FullName,
+                            email = dto.Email,
+                            phone = dto.PhoneNumber,
+                            is_active = true,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        };
+                        _context.Employees.Add(existingEmployee);
+                        await _context.SaveChangesAsync();
                     }
-                };
-            }
-            catch (FirebaseAuthException ex)
-            {
-                await transaction.RollbackAsync();
-                _logger.LogError(ex, "Firebase error during sign up");
 
-                return new AuthResponseDto
+                    // Create Local User
+                    var user = await _userService.CreateLocalUserAsync(existingEmployee.Id, dto.Email, firebaseUser.Uid);
+
+                    // Assign Roles
+                    int assignedRoleId = 3; // Default User
+                    string masterEmail = _configuration["AdminSettings:MasterEmail"];
+
+                    if (!string.IsNullOrEmpty(masterEmail) &&
+                        string.Equals(dto.Email, masterEmail, StringComparison.OrdinalIgnoreCase))
+                    {
+                        assignedRoleId = 1; // Admin
+                    }
+
+                    await _userService.AssignRoleAsync(user.Id, assignedRoleId);
+                    await transaction.CommitAsync();
+
+                    return new AuthResponseDto
+                    {
+                        Success = true,
+                        Message = "Dang ky thanh cong",
+                        User = await _userService.GetByIdAsync(user.Id)
+                    };
+                }
+                catch (Exception)
                 {
-                    Success = false,
-                    Message = $"Loi Firebase: {ex.AuthErrorCode}"
-                };
+                    await transaction.RollbackAsync();
+                    try
+                    {
+                        if (firebaseUser != null && !string.IsNullOrEmpty(firebaseUser.Uid))
+                        {
+                            await _firebaseService.DeleteUserAsync(firebaseUser.Uid);
+                        }
+                    }
+                    catch (Exception fbEx)
+                    {
+                        _logger.LogError($"Failed to rollback Firebase user {firebaseUser?.Uid}: {fbEx.Message}");
+                    }
+                    throw;
+                }
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error in SignUpAsync");
-
                 return new AuthResponseDto
                 {
                     Success = false,
@@ -198,117 +165,22 @@ namespace ERP.Services.Auth
         {
             try
             {
-                var bypassAuth = _configuration.GetValue<bool>("Firebase:BypassAuth", false);
-                if (bypassAuth)
+                var firebaseResult = await _firebaseService.SignInWithPasswordAsync(dto.Email, dto.Password);
+                if (!firebaseResult.Success)
                 {
-                    _logger.LogInformation("Firebase auth bypassed for user {Email}", dto.Email);
-                    var localUserForBypass = await _context.Users
-                        .Include(u => u.Employee)
-                        .FirstOrDefaultAsync(u => u.is_active && (u.username == dto.Email || u.Employee.email == dto.Email));
-
-                    if (localUserForBypass == null)
-                    {
-                        return new AuthResponseDto
-                        {
-                            Success = false,
-                            Message = "Tai khoan khong ton tai (Bypass mode)"
-                        };
-                    }
-
-                    var userInfoBypass = await BuildUserInfoAsync(localUserForBypass);
-                    if (userInfoBypass == null)
-                    {
-                        return new AuthResponseDto
-                        {
-                            Success = false,
-                            Message = "Khong the tai thong tin nguoi dung (Bypass mode)"
-                        };
-                    }
-                    
-                    return await CreateSessionResponseAsync(localUserForBypass.Id, userInfoBypass, sessionContext, "Dang nhap thanh cong");
+                    return new AuthResponseDto { Success = false, Message = firebaseResult.Message ?? "Dang nhap that bai" };
                 }
 
-                var apiKey = _configuration["Firebase:apiKey"];
-                if (string.IsNullOrWhiteSpace(apiKey))
-                {
-                    return new AuthResponseDto
-                    {
-                        Success = false,
-                        Message = "Firebase API Key is missing"
-                    };
-                }
-
-                var client = _httpClientFactory.CreateClient();
-                var loginUrl = $"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={apiKey}";
-
-                var requestBody = new
-                {
-                    email = dto.Email,
-                    password = dto.Password,
-                    returnSecureToken = true
-                };
-
-                var response = await client.PostAsJsonAsync(loginUrl, requestBody);
-                var content = await response.Content.ReadAsStringAsync();
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    _logger.LogWarning("Firebase login failed for {Email}: {Content}", dto.Email, content);
-                    return new AuthResponseDto
-                    {
-                        Success = false,
-                        Message = "Email hoac mat khau khong chinh xac"
-                    };
-                }
-
-                var firebaseResponse = JsonSerializer.Deserialize<FirebaseLoginResponse>(content);
-                if (firebaseResponse == null || string.IsNullOrWhiteSpace(firebaseResponse.localId))
-                {
-                    return new AuthResponseDto
-                    {
-                        Success = false,
-                        Message = "Khong the doc phan hoi dang nhap tu Firebase"
-                    };
-                }
-
-                var localUser = await FindLocalUserForLoginAsync(firebaseResponse.localId, dto.Email);
+                var localUser = await FindLocalUserForLoginAsync(firebaseResult.IdToken ?? string.Empty, dto.Email);
                 if (localUser == null)
                 {
-                    return new AuthResponseDto
-                    {
-                        Success = false,
-                        Message = "Tai khoan khong duoc tim thay trong he thong local"
-                    };
-                }
-
-                var shouldUpdateLocalUser = false;
-                if (!string.Equals(localUser.firebase_uid, firebaseResponse.localId, StringComparison.Ordinal))
-                {
-                    localUser.firebase_uid = firebaseResponse.localId;
-                    shouldUpdateLocalUser = true;
-                }
-
-                var internalUsername = BuildInternalUsername(localUser.Employee?.employee_code, localUser.Employee?.Id ?? localUser.Id);
-                if (!string.Equals(localUser.username, internalUsername, StringComparison.Ordinal))
-                {
-                    localUser.username = internalUsername;
-                    shouldUpdateLocalUser = true;
-                }
-
-                if (shouldUpdateLocalUser)
-                {
-                    localUser.UpdatedAt = DateTime.UtcNow;
-                    await _context.SaveChangesAsync();
+                    return new AuthResponseDto { Success = false, Message = "Tai khoan khong duoc tim thay trong he thong local" };
                 }
 
                 var userInfo = await BuildUserInfoAsync(localUser);
                 if (userInfo == null)
                 {
-                    return new AuthResponseDto
-                    {
-                        Success = false,
-                        Message = "Khong the tai thong tin nguoi dung"
-                    };
+                    return new AuthResponseDto { Success = false, Message = "Khong the tai thong tin nguoi dung" };
                 }
 
                 return await CreateSessionResponseAsync(localUser.Id, userInfo, sessionContext, "Dang nhap thanh cong");
@@ -316,11 +188,7 @@ namespace ERP.Services.Auth
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error in LoginAsync");
-                return new AuthResponseDto
-                {
-                    Success = false,
-                    Message = "Loi xay ra trong qua trinh dang nhap"
-                };
+                return new AuthResponseDto { Success = false, Message = "Loi xay ra trong qua trinh dang nhap" };
             }
         }
 
@@ -652,6 +520,51 @@ namespace ERP.Services.Auth
             }
 
             return syncCount;
+        }
+
+        public async Task<AuthResponseDto> ChangePasswordAsync(int userId, ChangePasswordDto dto)
+        {
+            try
+            {
+                var localUser = await _context.Users
+                    .Include(u => u.Employee)
+                    .FirstOrDefaultAsync(u => u.Id == userId && u.is_active);
+
+                if (localUser == null)
+                {
+                    return new AuthResponseDto { Success = false, Message = "Người dùng không tồn tại hoặc đã bị khóa." };
+                }
+
+                if (string.IsNullOrEmpty(localUser.Employee?.email))
+                {
+                    return new AuthResponseDto { Success = false, Message = "Email không hợp lệ. Vui lòng liên hệ quản trị viên." };
+                }
+
+                // 1. Verify old password
+                var verifyResult = await _firebaseService.SignInWithPasswordAsync(localUser.Employee.email, dto.OldPassword);
+                if (!verifyResult.Success)
+                {
+                    return new AuthResponseDto { Success = false, Message = "Mật khẩu cũ không đúng." };
+                }
+
+                // 2. Update to new password in Firebase
+                await _firebaseService.UpdateUserPasswordAsync(localUser.firebase_uid, dto.NewPassword);
+
+                return new AuthResponseDto
+                {
+                    Success = true,
+                    Message = "Đổi mật khẩu thành công."
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in ChangePasswordAsync for userId {UserId}", userId);
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Lỗi xảy ra trong quá trình đổi mật khẩu."
+                };
+            }
         }
 
         public async Task<AuthResponseDto> PreRegisterStaffAsync(PreRegisterStaffDto dto)

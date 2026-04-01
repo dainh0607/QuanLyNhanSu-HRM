@@ -16,5 +16,10 @@ namespace ERP.Services.Auth
         Task<AuthResponseDto> PreRegisterStaffAsync(PreRegisterStaffDto dto);
         string GenerateInternalToken(UserInfoDto user, string sessionId);
         Task<string> CreateFirebaseUserAsync(string email, string password, string displayName, int employeeId);
+        
+        /// <summary>
+        /// Chức năng đổi mật khẩu cho người dùng hiện tại (bên trong Thông tin cá nhân)
+        /// </summary>
+        Task<AuthResponseDto> ChangePasswordAsync(int userId, ChangePasswordDto dto);
     }
 }

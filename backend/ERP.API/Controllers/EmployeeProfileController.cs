@@ -64,5 +64,35 @@ namespace ERP.API.Controllers
             if (!success && dtos.Count > 0) return BadRequest();
             return Ok(new { Message = "Emergency contacts updated" });
         }
+
+        // ─── Tab: Thông tin khác (US-8) ─────────────────────────────────────────
+
+        /// <summary>
+        /// AC 8.3: Lấy cụm dữ liệu "Thông tin khác" của nhân viên.
+        /// Nếu nhân viên chưa có dữ liệu, marital_status mặc định trả về "SINGLE".
+        /// </summary>
+        [HttpGet("other-info")]
+        public async Task<IActionResult> GetOtherInfo(int id)
+        {
+            var result = await _profileService.GetOtherInfoAsync(id);
+            if (result == null) return NotFound(new { Message = $"Không tìm thấy nhân viên có Id = {id}." });
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// AC 8.4: Cập nhật cụm dữ liệu "Thông tin khác" của nhân viên.
+        /// Validation MST (10 hoặc 13 chữ số thuần) được thực hiện qua [RegularExpression] trên DTO.
+        /// </summary>
+        [HttpPut("other-info")]
+        [Authorize(Roles = "Manager,Admin")]
+        public async Task<IActionResult> UpdateOtherInfo(int id, [FromBody] OtherInfoDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var success = await _profileService.UpdateOtherInfoAsync(id, dto);
+            if (!success) return NotFound(new { Message = $"Không tìm thấy nhân viên có Id = {id}." });
+
+            return Ok(new { Message = "Cập nhật thông tin khác thành công." });
+        }
     }
 }

@@ -18,5 +18,7 @@ namespace ERP.Services.Employees
         Task<bool> UpdateContactInfoAsync(int employeeId, ContactInfoDto dto);
         Task<bool> UpdateBasicInfoAsync(int employeeId, BasicInfoDto dto);
         Task<bool> UpdateWorkHistoryAsync(int employeeId, List<WorkHistoryDto> dtos);
+        Task<OtherInfoDto?> GetOtherInfoAsync(int employeeId);
+        Task<bool> UpdateOtherInfoAsync(int employeeId, OtherInfoDto dto);
     }
 }

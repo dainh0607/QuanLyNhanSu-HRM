@@ -301,5 +301,52 @@ namespace ERP.Services.Employees
             await _unitOfWork.Repository<WorkHistory>().AddRangeAsync(newEntities);
             return await _unitOfWork.SaveChangesAsync() > 0;
         }
+
+        // ─── Thông tin khác (AC 8) ────────────────────────────────────────────────
+
+        /// <summary>
+        /// Lấy dữ liệu cụm "Thông tin khác" của nhân viên theo AC 8.3.
+        /// Trả về null nếu nhân viên không tồn tại.
+        /// Nếu marital_status_code chưa có, mặc định trả về "SINGLE".
+        /// </summary>
+        public async Task<OtherInfoDto?> GetOtherInfoAsync(int employeeId)
+        {
+            var emp = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(employeeId);
+            if (emp == null) return null;
+
+            return new OtherInfoDto
+            {
+                UnionGroup       = emp.union_member ? "Đoàn viên" : null,
+                Ethnicity        = emp.ethnicity,
+                Religion         = emp.religion,
+                TaxCode          = emp.tax_code,
+                MaritalStatusCode = string.IsNullOrWhiteSpace(emp.marital_status_code)
+                                        ? "SINGLE"
+                                        : emp.marital_status_code,
+                Note             = emp.note
+            };
+        }
+
+        /// <summary>
+        /// Cập nhật cụm "Thông tin khác" của nhân viên theo AC 8.4.
+        /// Mapping UnionGroup -> union_member (true nếu có giá trị, false nếu rỗng/null).
+        /// </summary>
+        public async Task<bool> UpdateOtherInfoAsync(int employeeId, OtherInfoDto dto)
+        {
+            var emp = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(employeeId);
+            if (emp == null) return false;
+
+            emp.union_member       = !string.IsNullOrWhiteSpace(dto.UnionGroup);
+            emp.ethnicity          = dto.Ethnicity;
+            emp.religion           = dto.Religion;
+            emp.tax_code           = dto.TaxCode;
+            emp.marital_status_code = string.IsNullOrWhiteSpace(dto.MaritalStatusCode)
+                                         ? "SINGLE"
+                                         : dto.MaritalStatusCode;
+            emp.note               = dto.Note;
+
+            _unitOfWork.Repository<EmployeeEntity>().Update(emp);
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
     }
 }
