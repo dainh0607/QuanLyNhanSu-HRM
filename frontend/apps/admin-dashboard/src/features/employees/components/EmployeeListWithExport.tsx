@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useToast } from '../../../components/common/Toast';
+import { useToast } from '../../../components/common/useToast';
 import { employeeService } from '../../../services/employeeService';
 import {
   BASIC_INFO_EXPORT_COLUMNS,
@@ -120,7 +120,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onSelectEmployee }) => {
         try {
           await employeeService.deleteEmployee(id);
           fetchEmployees();
-        } catch (error) {
+        } catch {
           alert('Xóa thất bại. Vui lòng thử lại.');
         }
       }
@@ -192,6 +192,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onSelectEmployee }) => {
 
       <div className="flex flex-1 gap-6 min-h-0 overflow-hidden relative">
         <FilterSidebar
+          key={JSON.stringify(activeFilters)}
           isOpen={isFilterOpen}
           onClose={() => setIsFilterOpen(false)}
           onApply={handleApplyFilters}
@@ -251,14 +252,15 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onSelectEmployee }) => {
         onSuccess={fetchEmployees}
       />
 
-      <BasicInfoExportModal
-        isOpen={isBasicInfoExportOpen}
-        columns={BASIC_INFO_EXPORT_COLUMNS}
-        totalEmployees={totalRecords}
-        isExporting={isExportingBasicInfo}
-        onClose={() => setIsBasicInfoExportOpen(false)}
-        onExport={handleExportBasicInfo}
-      />
+      {isBasicInfoExportOpen && (
+        <BasicInfoExportModal
+          columns={BASIC_INFO_EXPORT_COLUMNS}
+          totalEmployees={totalRecords}
+          isExporting={isExportingBasicInfo}
+          onClose={() => setIsBasicInfoExportOpen(false)}
+          onExport={handleExportBasicInfo}
+        />
+      )}
 
       {ToastComponent}
     </main>

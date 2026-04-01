@@ -51,6 +51,11 @@ namespace ERP.Repositories.Implementations
             return await query.ToListAsync();
         }
 
+        public Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> expression)
+        {
+            return FindAsync(expression, null);
+        }
+
         public async Task AddAsync(T entity)
         {
             await _dbSet.AddAsync(entity);

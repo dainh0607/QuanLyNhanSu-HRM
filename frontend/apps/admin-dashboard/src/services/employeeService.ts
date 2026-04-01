@@ -230,14 +230,14 @@ export const employeeService = {
     }
   },
 
-  getMetadata: async (type: string): Promise<any[]> => {
+  getMetadata: async <T = unknown>(type: string): Promise<T[]> => {
     try {
       const response = await authFetch(`${API_URL}/metadata/${type}`, { method: "GET" });
       if (!response.ok) {
         return [];
       }
 
-      return (await response.json()) as any[];
+      return (await response.json()) as T[];
     } catch (error) {
       console.error(`Fetch Metadata ${type} Error:`, error);
       return [];

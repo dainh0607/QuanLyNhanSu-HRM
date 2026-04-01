@@ -248,6 +248,7 @@ export const authService = {
         headers: createHeaders(undefined, "POST"),
       });
     } catch {
+      // Ignore logout request failures and still clear the local session.
     } finally {
       clearAuthSession();
     }

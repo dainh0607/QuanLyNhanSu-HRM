@@ -20,7 +20,13 @@ namespace ERP.API.Controllers
         private readonly IConfiguration _configuration;
         private readonly IWebHostEnvironment _environment;
 
-        public AuthController(IAuthService authService, ILogger<AuthController> logger, IConfiguration configuration, IWebHostEnvironment environment)
+        public AuthController(
+            IAuthService authService,
+            IUserService userService,
+            IFirebaseService firebaseService,
+            ILogger<AuthController> logger,
+            IConfiguration configuration,
+            IWebHostEnvironment environment)
         {
             _authService = authService;
             _userService = userService;
@@ -70,6 +76,7 @@ namespace ERP.API.Controllers
             if (!int.TryParse(userIdValue, out var userId))
             {
                 return Unauthorized();
+            }
 
             var user = await _authService.GetUserByIdAsync(userId);
             if (user == null)

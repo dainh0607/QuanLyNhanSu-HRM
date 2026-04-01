@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { employeeService, type EmployeeCreatePayload } from '../../../services/employeeService';
-import { useToast } from '../../../components/common/Toast';
+import { useToast } from '../../../components/common/useToast';
 
 interface AddEmployeeModalProps {
   isOpen: boolean;
@@ -135,11 +135,11 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
 
   // Metadata State
   const [metadata, setMetadata] = useState<ModalMetadata>({
-    regions: [] as any[],
-    branches: [] as any[],
-    departments: [] as any[],
-    jobTitles: [] as any[],
-    accessGroups: [] as any[],
+    regions: [],
+    branches: [],
+    departments: [],
+    jobTitles: [],
+    accessGroups: [],
   });
 
   useEffect(() => {
@@ -278,6 +278,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
         onClose();
         if (onSuccess) onSuccess();
       }, 1000);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error('Submit error:', error);
       showToast(error.Message || 'Có lỗi xảy ra khi tạo nhân viên', 'error');
