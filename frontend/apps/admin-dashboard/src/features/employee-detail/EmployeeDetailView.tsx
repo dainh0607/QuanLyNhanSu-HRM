@@ -4,6 +4,8 @@ import {
   type EmployeeFullProfile,
 } from '../../services/employeeService';
 import type { Employee } from '../employees/types';
+import EmployeeEditModal from './edit-modal/EmployeeEditModal';
+import type { PersonalTabKey } from './edit-modal/types';
 import EmployeeDetailTabs from './components/EmployeeDetailTabs';
 import PasswordChangeModal from './components/PasswordChangeModal';
 import PersonalTabContent from './components/PersonalTabContent';
@@ -30,6 +32,14 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
   const [profile, setProfile] = useState<EmployeeFullProfile | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [profileReloadToken, setProfileReloadToken] = useState<number>(0);
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+  const [editModalInitialSectionLabel, setEditModalInitialSectionLabel] = useState<string>(
+    EMPLOYEE_DETAIL_TABS[0],
+  );
+  const [editModalInitialPersonalTab, setEditModalInitialPersonalTab] = useState<PersonalTabKey>(
+    'basicInfo',
+  );
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState<boolean>(false);
   const [passwordForm, setPasswordForm] = useState({
     password: '',
@@ -65,7 +75,7 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
     return () => {
       isMounted = false;
     };
-  }, [employee.id]);
+  }, [employee.id, profileReloadToken]);
 
   const basicInfo = profile?.basicInfo;
   const basicInfoRecord = (basicInfo ?? {}) as Record<string, unknown>;
@@ -189,6 +199,26 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
     handleClosePasswordModal();
   };
 
+  const handleOpenEditModal = () => {
+    setEditModalInitialSectionLabel(EMPLOYEE_DETAIL_TABS[0]);
+    setEditModalInitialPersonalTab('basicInfo');
+    setIsEditModalOpen(true);
+  };
+
+  const handleOpenEditPersonalTab = (tab: PersonalTabKey) => {
+    setEditModalInitialSectionLabel(EMPLOYEE_DETAIL_TABS[0]);
+    setEditModalInitialPersonalTab(tab);
+    setIsEditModalOpen(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+  };
+
+  const handleEditSaved = () => {
+    setProfileReloadToken((prev) => prev + 1);
+  };
+
   return (
     <div className="h-screen overflow-y-auto overflow-x-hidden bg-[#f3f4f6]">
       <div className="w-full px-6 py-8 lg:px-8 xl:px-10">
@@ -240,6 +270,7 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
               </button>
               <button
                 type="button"
+                onClick={handleOpenEditModal}
                 className="inline-flex items-center rounded-md bg-[#1f2937] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#111827]"
               >
                 <span className="material-symbols-outlined mr-1.5 text-[14px]">edit</span>
@@ -254,6 +285,7 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
                 employee={employee}
                 isLoading={isLoading}
                 loadError={loadError}
+                onOpenEditTab={handleOpenEditPersonalTab}
                 data={{
                   basicInfo,
                   emergencyContact,
@@ -300,6 +332,19 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
           onFieldChange={handlePasswordFieldChange}
           onConfirm={handleConfirmPassword}
         />
+
+        {isEditModalOpen ? (
+          <EmployeeEditModal
+            key={`employee-edit-${employee.id}-${editModalInitialSectionLabel}-${editModalInitialPersonalTab}`}
+            isOpen={isEditModalOpen}
+            employee={employee}
+            profile={profile}
+            initialSectionLabel={editModalInitialSectionLabel}
+            initialPersonalTab={editModalInitialPersonalTab}
+            onClose={handleCloseEditModal}
+            onSaved={handleEditSaved}
+          />
+        ) : null}
       </div>
     </div>
   );

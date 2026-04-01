@@ -9,7 +9,7 @@ namespace ERP.Services.Employees
         Task<bool> UpdateBankAccountsAsync(int employeeId, List<BankAccountDto> dtos);
         Task<bool> UpdateEmergencyContactsAsync(int employeeId, List<EmergencyContactDto> dtos);
         Task<bool> UpdateHealthRecordAsync(int employeeId, HealthRecordDto dto);
-        Task<bool> UpdateAddressesAsync(int employeeId, List<EmployeeAddressDto> dtos);
+        Task<bool> UpdateAddressesAsync(int employeeId, AddressProfileUpdateDto dto);
         Task<bool> UpdateEducationAsync(int employeeId, List<EducationDto> dtos);
         Task<bool> UpdateSkillsAsync(int employeeId, List<EmployeeSkillDto> dtos);
         Task<bool> UpdateCertificatesAsync(int employeeId, List<EmployeeCertificateDto> dtos);

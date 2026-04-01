@@ -81,3 +81,15 @@ export const pickAddress = (
 
   return matched ?? fallback;
 };
+
+export const getFirstEmptyLabel = (
+  fields: Array<{
+    label: string;
+    value: string;
+  }>,
+): string | null => fields.find((field) => field.value === EMPTY_VALUE)?.label ?? null;
+
+export const getEmptyValueMode = (
+  label: string,
+  firstEmptyLabel: string | null,
+): 'prompt' | 'dash' => (label === firstEmptyLabel ? 'prompt' : 'dash');

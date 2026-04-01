@@ -89,40 +89,71 @@ namespace ERP.Services.Employees
             return await _unitOfWork.SaveChangesAsync() > 0;
         }
 
-        public async Task<bool> UpdateAddressesAsync(int employeeId, List<EmployeeAddressDto> dtos)
+        public async Task<bool> UpdateAddressesAsync(int employeeId, AddressProfileUpdateDto dto)
         {
-            // This is trickier because of the Addresses table vs EmployeeAddresses join table
-            var existingJoins = await _unitOfWork.Repository<EmployeeAddresses>().FindAsync(x => x.employee_id == employeeId);
-            _unitOfWork.Repository<EmployeeAddresses>().RemoveRange(existingJoins);
+            var employee = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(employeeId);
+            if (employee == null) return false;
 
-            foreach (var dto in dtos)
+            var addressItems = dto.Addresses ?? new List<EmployeeAddressDto>();
+
+            await _unitOfWork.BeginTransactionAsync();
+            try
             {
-                // Create or find address
-                var addr = new Addresses
-                {
-                    address_line = dto.Address.AddressLine,
-                    ward = dto.Address.Ward,
-                    district = dto.Address.District,
-                    city = dto.Address.City,
-                    country = dto.Address.Country,
-                    postal_code = dto.Address.PostalCode
-                };
-                await _unitOfWork.Repository<Addresses>().AddAsync(addr);
-                await _unitOfWork.SaveChangesAsync(); // Need ID for join
+                employee.origin_place = string.IsNullOrWhiteSpace(dto.OriginPlace)
+                    ? null
+                    : dto.OriginPlace.Trim();
+                _unitOfWork.Repository<EmployeeEntity>().Update(employee);
 
-                var join = new EmployeeAddresses
+                var existingJoins = await _unitOfWork.Repository<EmployeeAddresses>()
+                    .FindAsync(x => x.employee_id == employeeId);
+                _unitOfWork.Repository<EmployeeAddresses>().RemoveRange(existingJoins);
+
+                await _unitOfWork.SaveChangesAsync();
+
+                foreach (var addressDto in addressItems.Where(item => item.Address != null))
                 {
-                    employee_id = employeeId,
-                    address_id = addr.Id,
-                    address_type_id = dto.AddressTypeId,
-                    is_current = dto.IsCurrent,
-                    start_date = dto.StartDate,
-                    end_date = dto.EndDate
-                };
-                await _unitOfWork.Repository<EmployeeAddresses>().AddAsync(join);
+                    if (string.IsNullOrWhiteSpace(addressDto.Address.AddressLine) &&
+                        string.IsNullOrWhiteSpace(addressDto.Address.Ward) &&
+                        string.IsNullOrWhiteSpace(addressDto.Address.District) &&
+                        string.IsNullOrWhiteSpace(addressDto.Address.City) &&
+                        string.IsNullOrWhiteSpace(addressDto.Address.Country))
+                    {
+                        continue;
+                    }
+
+                    var addr = new Addresses
+                    {
+                        address_line = addressDto.Address.AddressLine ?? string.Empty,
+                        ward = addressDto.Address.Ward ?? string.Empty,
+                        district = addressDto.Address.District ?? string.Empty,
+                        city = addressDto.Address.City ?? string.Empty,
+                        country = addressDto.Address.Country ?? string.Empty,
+                        postal_code = addressDto.Address.PostalCode ?? string.Empty
+                    };
+                    await _unitOfWork.Repository<Addresses>().AddAsync(addr);
+                    await _unitOfWork.SaveChangesAsync();
+
+                    var join = new EmployeeAddresses
+                    {
+                        employee_id = employeeId,
+                        address_id = addr.Id,
+                        address_type_id = addressDto.AddressTypeId,
+                        is_current = addressDto.IsCurrent,
+                        start_date = addressDto.StartDate,
+                        end_date = addressDto.EndDate
+                    };
+                    await _unitOfWork.Repository<EmployeeAddresses>().AddAsync(join);
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+                return true;
             }
-
-            return await _unitOfWork.SaveChangesAsync() > 0;
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
         }
 
         public async Task<bool> UpdateEducationAsync(int employeeId, List<EducationDto> dtos)

@@ -64,7 +64,7 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
             {/* Badges (Thẻ thông tin nhỏ) */}
             <div className="flex flex-wrap gap-2">
               <div className="flex items-center px-3 py-1.5 bg-gray-50 rounded-lg text-xs font-medium text-gray-600 border border-gray-100">
-                <span className="material-symbols-outlined text-[13px] mr-1.5 text-gray-400">call</span>
+                <span className="material-symbols-outlined text-[10px] mr-1.5 text-gray-400">call</span>
                 {employee.phone || '-'}
               </div>
               <div className="flex items-center px-3 py-1.5 bg-gray-50 rounded-lg text-xs font-medium text-gray-600 border border-gray-100">

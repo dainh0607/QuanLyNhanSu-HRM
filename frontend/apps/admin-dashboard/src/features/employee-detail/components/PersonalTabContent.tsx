@@ -9,10 +9,20 @@ import type {
   EmployeeProfileBasicInfo,
 } from '../../../services/employeeService';
 import type { Employee } from '../../employees/types';
+import type { PersonalTabKey } from '../edit-modal/types';
 import { EMPTY_VALUE } from '../constants';
-import { displayValue, formatAddress, formatDate, formatMetric } from '../utils';
+import {
+  displayValue,
+  formatAddress,
+  formatDate,
+  formatMetric,
+  getEmptyValueMode,
+  getFirstEmptyLabel,
+} from '../utils';
 import DetailBlock from './DetailBlock';
 import DetailField from './DetailField';
+import EmptyValueDash from './EmptyValueDash';
+import EmptyValuePrompt from './EmptyValuePrompt';
 
 export interface PersonalTabData {
   basicInfo?: EmployeeProfileBasicInfo;
@@ -51,6 +61,7 @@ interface PersonalTabContentProps {
   isLoading: boolean;
   loadError: string | null;
   data: PersonalTabData;
+  onOpenEditTab?: (tab: PersonalTabKey) => void;
 }
 
 const PersonalTabContent: React.FC<PersonalTabContentProps> = ({
@@ -58,6 +69,7 @@ const PersonalTabContent: React.FC<PersonalTabContentProps> = ({
   isLoading,
   loadError,
   data,
+  onOpenEditTab,
 }) => {
   const {
     basicInfo,
@@ -90,6 +102,114 @@ const PersonalTabContent: React.FC<PersonalTabContentProps> = ({
     taxCodeValue,
     noteValue,
   } = data;
+  const basicInfoFullNameValue = displayValue(basicInfo?.fullName, employee.fullName);
+  const basicInfoBirthDateValue = formatDate(basicInfo?.birthDate ?? employee.birthDate);
+  const basicInfoEmployeeCodeValue = displayValue(basicInfo?.employeeCode, employee.employeeCode);
+  const contactAddressValue = formatAddress(contactAddress);
+  const emergencyNameValue = displayValue(emergencyContact?.name);
+  const emergencyMobileValue = displayValue(emergencyContact?.mobilePhone);
+  const emergencyRelationshipValue = displayValue(emergencyContact?.relationship);
+  const emergencyHomePhoneValue = displayValue(emergencyContact?.homePhone);
+  const emergencyAddressValue = displayValue(emergencyContact?.address);
+  const permanentCountryValue = displayValue(permanentAddress?.address?.country);
+  const permanentCityValue = displayValue(permanentAddress?.address?.city);
+  const permanentDistrictValue = displayValue(permanentAddress?.address?.district);
+  const permanentWardValue = displayValue(permanentAddress?.address?.ward);
+  const permanentAddressLineValue = displayValue(permanentAddress?.address?.addressLine);
+  const mergedCountryValue = displayValue(mergedAddress?.address?.country);
+  const mergedCityValue = displayValue(mergedAddress?.address?.city);
+  const mergedWardValue = displayValue(mergedAddress?.address?.ward);
+  const mergedAddressLineValue = displayValue(mergedAddress?.address?.addressLine);
+  const educationInstitutionValue = displayValue(education?.institution);
+  const educationMajorValue = displayValue(education?.major);
+  const educationLevelValue = displayValue(education?.level);
+  const educationIssueDateValue = formatDate(education?.issueDate);
+  const educationNoteValue = displayValue(education?.note);
+  const bankAccountNumberValue = displayValue(bankAccount?.accountNumber);
+  const bankAccountHolderValue = displayValue(bankAccount?.accountHolder);
+  const bankNameValue = displayValue(bankAccount?.bankName);
+  const bankBranchValue = displayValue(bankAccount?.branch);
+  const healthHeightValue = formatMetric(healthRecord?.height, 'cm');
+  const healthWeightValue = formatMetric(healthRecord?.weight, 'kg');
+  const healthBloodTypeValue = displayValue(healthRecord?.bloodType);
+  const healthStatusValue = displayValue(healthRecord?.healthStatus);
+  const healthDiseaseValue = displayValue(
+    healthRecord?.congenitalDisease,
+    healthRecord?.chronicDisease,
+  );
+  const healthCheckDateValue = formatDate(healthRecord?.checkDate);
+  const basicInfoPromptLabel = getFirstEmptyLabel([
+    { label: 'Họ và tên', value: basicInfoFullNameValue },
+    { label: 'Ngày sinh', value: basicInfoBirthDateValue },
+    { label: 'Giới tính', value: genderValue },
+    { label: 'Mã nhân viên', value: basicInfoEmployeeCodeValue },
+  ]);
+  const contactPromptLabel = getFirstEmptyLabel([
+    { label: 'Email', value: contactEmail },
+    { label: 'Số điện thoại', value: contactPhone },
+    { label: 'Tài khoản Skype', value: socialSkype },
+    { label: 'Facebook', value: socialFacebook },
+    { label: 'Địa chỉ', value: contactAddressValue },
+  ]);
+  const emergencyPromptLabel = getFirstEmptyLabel([
+    { label: 'Tên', value: emergencyNameValue },
+    { label: 'Số di động', value: emergencyMobileValue },
+    { label: 'Quan hệ', value: emergencyRelationshipValue },
+    { label: 'Số cố định', value: emergencyHomePhoneValue },
+    { label: 'Địa chỉ khẩn cấp', value: emergencyAddressValue },
+  ]);
+  const permanentAddressPromptLabel = getFirstEmptyLabel([
+    { label: 'Quốc gia', value: permanentCountryValue },
+    { label: 'Tỉnh/Thành phố', value: permanentCityValue },
+    { label: 'Quận/Huyện', value: permanentDistrictValue },
+    { label: 'Phường/Xã/Thị trấn', value: permanentWardValue },
+    { label: 'Địa chỉ thường trú', value: permanentAddressLineValue },
+    { label: 'Nguyên quán', value: originPlace },
+  ]);
+  const mergedAddressPromptLabel = getFirstEmptyLabel([
+    { label: 'Quốc gia', value: mergedCountryValue },
+    { label: 'Tỉnh/Thành phố', value: mergedCityValue },
+    { label: 'Phường/Xã/Thị trấn', value: mergedWardValue },
+    { label: 'Địa chỉ thường trú', value: mergedAddressLineValue },
+    { label: 'Nguyên quán', value: originPlace },
+  ]);
+  const educationPromptLabel = getFirstEmptyLabel([
+    { label: 'Trường đại học/Học viện', value: educationInstitutionValue },
+    { label: 'Chuyên ngành', value: educationMajorValue },
+    { label: 'Trình độ', value: educationLevelValue },
+    { label: 'Ngày cấp', value: educationIssueDateValue },
+    { label: 'Ghi chú', value: educationNoteValue },
+  ]);
+  const identityPromptLabel =
+    passportNumber !== EMPTY_VALUE
+      ? getFirstEmptyLabel([
+          { label: 'Loại định danh', value: identityType },
+          { label: 'Số hộ chiếu', value: passportNumber },
+          { label: 'Ngày cấp', value: passportIssueDate },
+          { label: 'Ngày hết hạn', value: passportExpiryDate },
+          { label: 'Nơi cấp', value: passportIssuePlace },
+        ])
+      : getFirstEmptyLabel([
+          { label: 'Loại định danh', value: identityType },
+          { label: 'Số CCCD', value: identityNumber },
+          { label: 'Ngày cấp', value: identityIssueDate },
+          { label: 'Nơi cấp', value: identityIssuePlace },
+        ]);
+  const bankPromptLabel = getFirstEmptyLabel([
+    { label: 'Số tài khoản', value: bankAccountNumberValue },
+    { label: 'Chủ tài khoản', value: bankAccountHolderValue },
+    { label: 'Ngân hàng', value: bankNameValue },
+    { label: 'Chi nhánh', value: bankBranchValue },
+  ]);
+  const healthPromptLabel: string | null = null;
+  const additionalInfoPromptLabel: string | null = null;
+  const handleOpenBasicInfoTab = () => onOpenEditTab?.('basicInfo');
+  const handleOpenContactTab = () => onOpenEditTab?.('contact');
+  const handleOpenEmergencyContactTab = () => onOpenEditTab?.('emergencyContact');
+  const handleOpenPermanentAddressTab = () => onOpenEditTab?.('permanentAddress');
+  const handleOpenEducationTab = () => onOpenEditTab?.('education');
+  const handleOpenIdentityTab = () => onOpenEditTab?.('identity');
+  const handleOpenBankAccountTab = () => onOpenEditTab?.('bankAccount');
 
   return (
     <div className="space-y-8">
@@ -107,50 +227,121 @@ const PersonalTabContent: React.FC<PersonalTabContentProps> = ({
 
       <DetailBlock title="Thông tin cơ bản">
         <div className="grid grid-cols-1 gap-x-10 gap-y-6 md:grid-cols-2 xl:grid-cols-4">
-          <DetailField label="Họ và tên" value={displayValue(basicInfo?.fullName, employee.fullName)} />
-          <DetailField label="Ngày sinh" value={formatDate(basicInfo?.birthDate ?? employee.birthDate)} />
-          <DetailField label="Giới tính" value={genderValue} />
-          <DetailField label="Mã nhân viên" value={displayValue(basicInfo?.employeeCode, employee.employeeCode)} mono />
+          <DetailField
+            label="Họ và tên"
+            value={basicInfoFullNameValue}
+            emptyState={getEmptyValueMode('Họ và tên', basicInfoPromptLabel)}
+            onEmptyClick={handleOpenBasicInfoTab}
+          />
+          <DetailField
+            label="Ngày sinh"
+            value={basicInfoBirthDateValue}
+            emptyState={getEmptyValueMode('Ngày sinh', basicInfoPromptLabel)}
+            onEmptyClick={handleOpenBasicInfoTab}
+          />
+          <DetailField
+            label="Giới tính"
+            value={genderValue}
+            emptyState={getEmptyValueMode('Giới tính', basicInfoPromptLabel)}
+            onEmptyClick={handleOpenBasicInfoTab}
+          />
+          <DetailField
+            label="Mã nhân viên"
+            value={basicInfoEmployeeCodeValue}
+            mono
+            emptyState={getEmptyValueMode('Mã nhân viên', basicInfoPromptLabel)}
+            onEmptyClick={handleOpenBasicInfoTab}
+          />
         </div>
       </DetailBlock>
 
       <DetailBlock title="Liên hệ">
         <div className="grid grid-cols-1 gap-x-10 gap-y-6 md:grid-cols-2 xl:grid-cols-4">
-          <DetailField label="Email" value={contactEmail} />
-          <DetailField label="Số điện thoại" value={contactPhone} />
+          <DetailField
+            label="Email"
+            value={contactEmail}
+            emptyState={getEmptyValueMode('Email', contactPromptLabel)}
+            onEmptyClick={handleOpenContactTab}
+          />
+          <DetailField
+            label="Số điện thoại"
+            value={contactPhone}
+            emptyState={getEmptyValueMode('Số điện thoại', contactPromptLabel)}
+            onEmptyClick={handleOpenContactTab}
+          />
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Mạng xã hội</p>
             <div className="mt-2 flex items-center gap-2">
               <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 px-2 text-[11px] font-bold text-emerald-700">
                 S
               </span>
-              <span className="text-sm font-semibold text-slate-900">{socialSkype}</span>
+              {socialSkype === EMPTY_VALUE ? (
+                getEmptyValueMode('Tài khoản Skype', contactPromptLabel) === 'prompt' ? (
+                  <EmptyValuePrompt label="Tài khoản Skype" onClick={handleOpenContactTab} />
+                ) : (
+                  <EmptyValueDash />
+                )
+              ) : (
+                <span className="text-sm font-semibold text-slate-900">{socialSkype}</span>
+              )}
             </div>
             <div className="mt-2 flex items-center gap-2">
               <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-sky-200 bg-sky-50 px-2 text-[11px] font-bold text-sky-700">
                 f
               </span>
-              <span className="text-sm font-semibold text-slate-900">{socialFacebook}</span>
+              {socialFacebook === EMPTY_VALUE ? (
+                getEmptyValueMode('Facebook', contactPromptLabel) === 'prompt' ? (
+                  <EmptyValuePrompt label="Facebook" onClick={handleOpenContactTab} />
+                ) : (
+                  <EmptyValueDash />
+                )
+              ) : (
+                <span className="text-sm font-semibold text-slate-900">{socialFacebook}</span>
+              )}
             </div>
           </div>
           <DetailField
             label="Địa chỉ"
-            value={formatAddress(contactAddress)}
+            value={contactAddressValue}
             className="md:col-span-2 xl:col-span-4"
+            emptyState={getEmptyValueMode('Địa chỉ', contactPromptLabel)}
+            onEmptyClick={handleOpenContactTab}
           />
         </div>
       </DetailBlock>
 
       <DetailBlock title="Liên hệ khẩn cấp">
         <div className="grid grid-cols-1 gap-x-10 gap-y-6 md:grid-cols-2 xl:grid-cols-4">
-          <DetailField label="Tên" value={displayValue(emergencyContact?.name)} />
-          <DetailField label="Số di động" value={displayValue(emergencyContact?.mobilePhone)} />
-          <DetailField label="Quan hệ" value={displayValue(emergencyContact?.relationship)} />
-          <DetailField label="Số cố định" value={displayValue(emergencyContact?.homePhone)} />
+          <DetailField
+            label="Tên"
+            value={emergencyNameValue}
+            emptyState={getEmptyValueMode('Tên', emergencyPromptLabel)}
+            onEmptyClick={handleOpenEmergencyContactTab}
+          />
+          <DetailField
+            label="Số di động"
+            value={emergencyMobileValue}
+            emptyState={getEmptyValueMode('Số di động', emergencyPromptLabel)}
+            onEmptyClick={handleOpenEmergencyContactTab}
+          />
+          <DetailField
+            label="Quan hệ"
+            value={emergencyRelationshipValue}
+            emptyState={getEmptyValueMode('Quan hệ', emergencyPromptLabel)}
+            onEmptyClick={handleOpenEmergencyContactTab}
+          />
+          <DetailField
+            label="Số cố định"
+            value={emergencyHomePhoneValue}
+            emptyState={getEmptyValueMode('Số cố định', emergencyPromptLabel)}
+            onEmptyClick={handleOpenEmergencyContactTab}
+          />
           <DetailField
             label="Địa chỉ khẩn cấp"
-            value={displayValue(emergencyContact?.address)}
+            value={emergencyAddressValue}
             className="md:col-span-2 xl:col-span-4"
+            emptyState={getEmptyValueMode('Địa chỉ khẩn cấp', emergencyPromptLabel)}
+            onEmptyClick={handleOpenEmergencyContactTab}
           />
         </div>
       </DetailBlock>
@@ -158,52 +349,178 @@ const PersonalTabContent: React.FC<PersonalTabContentProps> = ({
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
         <DetailBlock title="Địa chỉ thường trú">
           <div className="grid grid-cols-1 gap-x-10 gap-y-6 md:grid-cols-2">
-            <DetailField label="Quốc gia" value={displayValue(permanentAddress?.address?.country)} />
-            <DetailField label="Tỉnh/Thành phố" value={displayValue(permanentAddress?.address?.city)} />
-            <DetailField label="Quận/Huyện" value={displayValue(permanentAddress?.address?.district)} />
-            <DetailField label="Phường/Xã/Thị trấn" value={displayValue(permanentAddress?.address?.ward)} />
-            <DetailField label="Địa chỉ thường trú" value={displayValue(permanentAddress?.address?.addressLine)} />
-            <DetailField label="Nguyên quán" value={originPlace} />
+            <DetailField
+              label="Quốc gia"
+              value={permanentCountryValue}
+              emptyState={getEmptyValueMode('Quốc gia', permanentAddressPromptLabel)}
+              onEmptyClick={handleOpenPermanentAddressTab}
+            />
+            <DetailField
+              label="Tỉnh/Thành phố"
+              value={permanentCityValue}
+              emptyState={getEmptyValueMode('Tỉnh/Thành phố', permanentAddressPromptLabel)}
+              onEmptyClick={handleOpenPermanentAddressTab}
+            />
+            <DetailField
+              label="Quận/Huyện"
+              value={permanentDistrictValue}
+              emptyState={getEmptyValueMode('Quận/Huyện', permanentAddressPromptLabel)}
+              onEmptyClick={handleOpenPermanentAddressTab}
+            />
+            <DetailField
+              label="Phường/Xã/Thị trấn"
+              value={permanentWardValue}
+              emptyState={getEmptyValueMode('Phường/Xã/Thị trấn', permanentAddressPromptLabel)}
+              onEmptyClick={handleOpenPermanentAddressTab}
+            />
+            <DetailField
+              label="Địa chỉ thường trú"
+              value={permanentAddressLineValue}
+              emptyState={getEmptyValueMode('Địa chỉ thường trú', permanentAddressPromptLabel)}
+              onEmptyClick={handleOpenPermanentAddressTab}
+            />
+            <DetailField
+              label="Nguyên quán"
+              value={originPlace}
+              emptyState={getEmptyValueMode('Nguyên quán', permanentAddressPromptLabel)}
+              onEmptyClick={handleOpenPermanentAddressTab}
+            />
           </div>
         </DetailBlock>
 
         <DetailBlock title="Địa chỉ sát nhập">
           <div className="grid grid-cols-1 gap-x-10 gap-y-6 md:grid-cols-2">
-            <DetailField label="Quốc gia" value={displayValue(mergedAddress?.address?.country)} />
-            <DetailField label="Tỉnh/Thành phố" value={displayValue(mergedAddress?.address?.city)} />
-            <DetailField label="Phường/Xã/Thị trấn" value={displayValue(mergedAddress?.address?.ward)} />
-            <DetailField label="Địa chỉ thường trú" value={displayValue(mergedAddress?.address?.addressLine)} />
-            <DetailField label="Nguyên quán" value={originPlace} className="md:col-span-2" />
+            <DetailField
+              label="Quốc gia"
+              value={mergedCountryValue}
+              emptyState={getEmptyValueMode('Quốc gia', mergedAddressPromptLabel)}
+              onEmptyClick={handleOpenPermanentAddressTab}
+            />
+            <DetailField
+              label="Tỉnh/Thành phố"
+              value={mergedCityValue}
+              emptyState={getEmptyValueMode('Tỉnh/Thành phố', mergedAddressPromptLabel)}
+              onEmptyClick={handleOpenPermanentAddressTab}
+            />
+            <DetailField
+              label="Phường/Xã/Thị trấn"
+              value={mergedWardValue}
+              emptyState={getEmptyValueMode('Phường/Xã/Thị trấn', mergedAddressPromptLabel)}
+              onEmptyClick={handleOpenPermanentAddressTab}
+            />
+            <DetailField
+              label="Địa chỉ thường trú"
+              value={mergedAddressLineValue}
+              emptyState={getEmptyValueMode('Địa chỉ thường trú', mergedAddressPromptLabel)}
+              onEmptyClick={handleOpenPermanentAddressTab}
+            />
+            <DetailField
+              label="Nguyên quán"
+              value={originPlace}
+              className="md:col-span-2"
+              emptyState={getEmptyValueMode('Nguyên quán', mergedAddressPromptLabel)}
+              onEmptyClick={handleOpenPermanentAddressTab}
+            />
           </div>
         </DetailBlock>
       </div>
 
       <DetailBlock title="Trình độ học vấn">
         <div className="grid grid-cols-1 gap-x-10 gap-y-6 md:grid-cols-2 xl:grid-cols-4">
-          <DetailField label="Trường đại học/Học viện" value={displayValue(education?.institution)} />
-          <DetailField label="Chuyên ngành" value={displayValue(education?.major)} />
-          <DetailField label="Trình độ" value={displayValue(education?.level)} />
-          <DetailField label="Ngày cấp" value={formatDate(education?.issueDate)} />
-          <DetailField label="Ghi chú" value={displayValue(education?.note)} className="md:col-span-2 xl:col-span-4" />
+          <DetailField
+            label="Trường đại học/Học viện"
+            value={educationInstitutionValue}
+            emptyState={getEmptyValueMode('Trường đại học/Học viện', educationPromptLabel)}
+            onEmptyClick={handleOpenEducationTab}
+          />
+          <DetailField
+            label="Chuyên ngành"
+            value={educationMajorValue}
+            emptyState={getEmptyValueMode('Chuyên ngành', educationPromptLabel)}
+            onEmptyClick={handleOpenEducationTab}
+          />
+          <DetailField
+            label="Trình độ"
+            value={educationLevelValue}
+            emptyState={getEmptyValueMode('Trình độ', educationPromptLabel)}
+            onEmptyClick={handleOpenEducationTab}
+          />
+          <DetailField
+            label="Ngày cấp"
+            value={educationIssueDateValue}
+            emptyState={getEmptyValueMode('Ngày cấp', educationPromptLabel)}
+            onEmptyClick={handleOpenEducationTab}
+          />
+          <DetailField
+            label="Ghi chú"
+            value={educationNoteValue}
+            className="md:col-span-2 xl:col-span-4"
+            emptyState={getEmptyValueMode('Ghi chú', educationPromptLabel)}
+            onEmptyClick={handleOpenEducationTab}
+          />
         </div>
       </DetailBlock>
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
         <DetailBlock title="Thông tin định danh">
           <div className="grid grid-cols-1 gap-x-10 gap-y-6 md:grid-cols-2">
-            <DetailField label="Loại định danh" value={identityType} />
+            <DetailField
+              label="Loại định danh"
+              value={identityType}
+              emptyState={getEmptyValueMode('Loại định danh', identityPromptLabel)}
+              onEmptyClick={handleOpenIdentityTab}
+            />
             {passportNumber !== EMPTY_VALUE ? (
               <>
-                <DetailField label="Số hộ chiếu" value={passportNumber} mono />
-                <DetailField label="Ngày cấp" value={passportIssueDate} />
-                <DetailField label="Ngày hết hạn" value={passportExpiryDate} />
-                <DetailField label="Nơi cấp" value={passportIssuePlace} className="md:col-span-2" />
+                <DetailField
+                  label="Số hộ chiếu"
+                  value={passportNumber}
+                  mono
+                  emptyState={getEmptyValueMode('Số hộ chiếu', identityPromptLabel)}
+                  onEmptyClick={handleOpenIdentityTab}
+                />
+                <DetailField
+                  label="Ngày cấp"
+                  value={passportIssueDate}
+                  emptyState={getEmptyValueMode('Ngày cấp', identityPromptLabel)}
+                  onEmptyClick={handleOpenIdentityTab}
+                />
+                <DetailField
+                  label="Ngày hết hạn"
+                  value={passportExpiryDate}
+                  emptyState={getEmptyValueMode('Ngày hết hạn', identityPromptLabel)}
+                  onEmptyClick={handleOpenIdentityTab}
+                />
+                <DetailField
+                  label="Nơi cấp"
+                  value={passportIssuePlace}
+                  className="md:col-span-2"
+                  emptyState={getEmptyValueMode('Nơi cấp', identityPromptLabel)}
+                  onEmptyClick={handleOpenIdentityTab}
+                />
               </>
             ) : (
               <>
-                <DetailField label="Số CCCD" value={identityNumber} mono />
-                <DetailField label="Ngày cấp" value={identityIssueDate} />
-                <DetailField label="Nơi cấp" value={identityIssuePlace} className="md:col-span-2" />
+                <DetailField
+                  label="Số CCCD"
+                  value={identityNumber}
+                  mono
+                  emptyState={getEmptyValueMode('Số CCCD', identityPromptLabel)}
+                  onEmptyClick={handleOpenIdentityTab}
+                />
+                <DetailField
+                  label="Ngày cấp"
+                  value={identityIssueDate}
+                  emptyState={getEmptyValueMode('Ngày cấp', identityPromptLabel)}
+                  onEmptyClick={handleOpenIdentityTab}
+                />
+                <DetailField
+                  label="Nơi cấp"
+                  value={identityIssuePlace}
+                  className="md:col-span-2"
+                  emptyState={getEmptyValueMode('Nơi cấp', identityPromptLabel)}
+                  onEmptyClick={handleOpenIdentityTab}
+                />
               </>
             )}
           </div>
@@ -211,10 +528,31 @@ const PersonalTabContent: React.FC<PersonalTabContentProps> = ({
 
         <DetailBlock title="Thông tin ngân hàng">
           <div className="grid grid-cols-1 gap-x-10 gap-y-6 md:grid-cols-2">
-            <DetailField label="Số tài khoản" value={displayValue(bankAccount?.accountNumber)} mono />
-            <DetailField label="Chủ tài khoản" value={displayValue(bankAccount?.accountHolder)} />
-            <DetailField label="Ngân hàng" value={displayValue(bankAccount?.bankName)} />
-            <DetailField label="Chi nhánh" value={displayValue(bankAccount?.branch)} />
+            <DetailField
+              label="Số tài khoản"
+              value={bankAccountNumberValue}
+              mono
+              emptyState={getEmptyValueMode('Số tài khoản', bankPromptLabel)}
+              onEmptyClick={handleOpenBankAccountTab}
+            />
+            <DetailField
+              label="Chủ tài khoản"
+              value={bankAccountHolderValue}
+              emptyState={getEmptyValueMode('Chủ tài khoản', bankPromptLabel)}
+              onEmptyClick={handleOpenBankAccountTab}
+            />
+            <DetailField
+              label="Ngân hàng"
+              value={bankNameValue}
+              emptyState={getEmptyValueMode('Ngân hàng', bankPromptLabel)}
+              onEmptyClick={handleOpenBankAccountTab}
+            />
+            <DetailField
+              label="Chi nhánh"
+              value={bankBranchValue}
+              emptyState={getEmptyValueMode('Chi nhánh', bankPromptLabel)}
+              onEmptyClick={handleOpenBankAccountTab}
+            />
           </div>
         </DetailBlock>
       </div>
@@ -222,26 +560,72 @@ const PersonalTabContent: React.FC<PersonalTabContentProps> = ({
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
         <DetailBlock title="Sức khỏe">
           <div className="grid grid-cols-1 gap-x-10 gap-y-6 md:grid-cols-2">
-            <DetailField label="Chiều cao" value={formatMetric(healthRecord?.height, 'cm')} />
-            <DetailField label="Cân nặng" value={formatMetric(healthRecord?.weight, 'kg')} />
-            <DetailField label="Nhóm máu" value={displayValue(healthRecord?.bloodType)} />
-            <DetailField label="Tình trạng sức khỏe" value={displayValue(healthRecord?.healthStatus)} />
+            <DetailField
+              label="Chiều cao"
+              value={healthHeightValue}
+              emptyState={getEmptyValueMode('Chiều cao', healthPromptLabel)}
+            />
+            <DetailField
+              label="Cân nặng"
+              value={healthWeightValue}
+              emptyState={getEmptyValueMode('Cân nặng', healthPromptLabel)}
+            />
+            <DetailField
+              label="Nhóm máu"
+              value={healthBloodTypeValue}
+              emptyState={getEmptyValueMode('Nhóm máu', healthPromptLabel)}
+            />
+            <DetailField
+              label="Tình trạng sức khỏe"
+              value={healthStatusValue}
+              emptyState={getEmptyValueMode('Tình trạng sức khỏe', healthPromptLabel)}
+            />
             <DetailField
               label="Bệnh bẩm sinh/mãn tính"
-              value={displayValue(healthRecord?.congenitalDisease, healthRecord?.chronicDisease)}
+              value={healthDiseaseValue}
+              emptyState={getEmptyValueMode('Bệnh bẩm sinh/mãn tính', healthPromptLabel)}
             />
-            <DetailField label="Ngày kiểm tra gần nhất" value={formatDate(healthRecord?.checkDate)} />
+            <DetailField
+              label="Ngày kiểm tra gần nhất"
+              value={healthCheckDateValue}
+              emptyState={getEmptyValueMode('Ngày kiểm tra gần nhất', healthPromptLabel)}
+            />
           </div>
         </DetailBlock>
 
         <DetailBlock title="Thông tin khác">
           <div className="grid grid-cols-1 gap-x-10 gap-y-6 md:grid-cols-2">
-            <DetailField label="Công đoàn" value={unionValue} />
-            <DetailField label="Tôn giáo" value={religionValue} />
-            <DetailField label="Dân tộc" value={ethnicityValue} />
-            <DetailField label="Tình trạng hôn nhân" value={maritalStatusValue} />
-            <DetailField label="Mã số thuế" value={taxCodeValue} mono />
-            <DetailField label="Ghi chú" value={noteValue} />
+            <DetailField
+              label="Công đoàn"
+              value={unionValue}
+              emptyState={getEmptyValueMode('Công đoàn', additionalInfoPromptLabel)}
+            />
+            <DetailField
+              label="Tôn giáo"
+              value={religionValue}
+              emptyState={getEmptyValueMode('Tôn giáo', additionalInfoPromptLabel)}
+            />
+            <DetailField
+              label="Dân tộc"
+              value={ethnicityValue}
+              emptyState={getEmptyValueMode('Dân tộc', additionalInfoPromptLabel)}
+            />
+            <DetailField
+              label="Tình trạng hôn nhân"
+              value={maritalStatusValue}
+              emptyState={getEmptyValueMode('Tình trạng hôn nhân', additionalInfoPromptLabel)}
+            />
+            <DetailField
+              label="Mã số thuế"
+              value={taxCodeValue}
+              mono
+              emptyState={getEmptyValueMode('Mã số thuế', additionalInfoPromptLabel)}
+            />
+            <DetailField
+              label="Ghi chú"
+              value={noteValue}
+              emptyState={getEmptyValueMode('Ghi chú', additionalInfoPromptLabel)}
+            />
           </div>
         </DetailBlock>
       </div>
