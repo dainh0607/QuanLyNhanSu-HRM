@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using ERP.DTOs.Contracts;
 using ERP.Entities.Models;
 using ERP.Repositories.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Services.Contracts
 {
@@ -19,10 +20,12 @@ namespace ERP.Services.Contracts
 
         public async Task<IEnumerable<ContractDto>> GetByEmployeeIdAsync(int employeeId)
         {
-            var contracts = await _unitOfWork.Repository<Entities.Models.Contracts>().FindAsync(
-                x => x.employee_id == employeeId,
-                includeProperties: "Employee,ContractType"
-            );
+            var contracts = await _unitOfWork.Repository<Entities.Models.Contracts>()
+                .AsQueryable()
+                .Include(x => x.Employee)
+                .Include(x => x.ContractType)
+                .Where(x => x.employee_id == employeeId)
+                .ToListAsync();
 
             return contracts.Select(x => new ContractDto
             {
@@ -44,10 +47,11 @@ namespace ERP.Services.Contracts
 
         public async Task<ContractDto> GetByIdAsync(int id)
         {
-            var x = (await _unitOfWork.Repository<Entities.Models.Contracts>().FindAsync(
-                c => c.Id == id,
-                includeProperties: "Employee,ContractType"
-            )).FirstOrDefault();
+            var x = await _unitOfWork.Repository<Entities.Models.Contracts>()
+                .AsQueryable()
+                .Include(c => c.Employee)
+                .Include(c => c.ContractType)
+                .FirstOrDefaultAsync(c => c.Id == id);
 
             if (x == null) return null;
 
@@ -71,6 +75,12 @@ namespace ERP.Services.Contracts
 
         public async Task<bool> CreateAsync(ContractCreateDto dto)
         {
+            // 1. Validation: Overlapping dates
+            if (await CheckOverlappingContractAsync(dto.EmployeeId, dto.EffectiveDate ?? DateTime.UtcNow, dto.ExpiryDate))
+            {
+                throw new Exception("Nhân viên này đã có hợp đồng khác hiệu lực trong khoảng thời gian này.");
+            }
+
             var contract = new Entities.Models.Contracts
             {
                 employee_id = dto.EmployeeId,
@@ -89,10 +99,43 @@ namespace ERP.Services.Contracts
             return await _unitOfWork.SaveChangesAsync() > 0;
         }
 
+        private async Task<bool> CheckOverlappingContractAsync(int employeeId, DateTime startDate, DateTime? endDate, int? excludeContractId = null)
+        {
+            var contracts = await _unitOfWork.Repository<Entities.Models.Contracts>().FindAsync(c => 
+                c.employee_id == employeeId && 
+                c.status != "Terminated" && // Ignore terminated contracts
+                c.status != "Cancelled" &&
+                (!excludeContractId.HasValue || c.Id != excludeContractId.Value));
+
+            foreach (var c in contracts)
+            {
+                // Condition for overlap:
+                // (StartA <= EndB) and (EndA >= StartB)
+                // If End is null, treat it as a very far future date
+                DateTime endA = endDate ?? DateTime.MaxValue;
+                DateTime endB = c.expiry_date ?? DateTime.MaxValue;
+
+                if (startDate <= endB && endA >= c.effective_date)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public async Task<bool> UpdateAsync(int id, ContractUpdateDto dto)
         {
             var contract = await _unitOfWork.Repository<Entities.Models.Contracts>().GetByIdAsync(id);
             if (contract == null) return false;
+
+            // 1. Validation: Overlapping dates
+            DateTime newStartDate = dto.EffectiveDate ?? contract.effective_date ?? DateTime.UtcNow;
+            DateTime? newEndDate = dto.ExpiryDate ?? contract.expiry_date;
+            
+            if (await CheckOverlappingContractAsync(contract.employee_id, newStartDate, newEndDate, id))
+            {
+                throw new Exception("Cập nhật thất bại: Khoảng thời gian hiệu lực mới bị chồng chéo với hợp đồng khác.");
+            }
 
             contract.contract_number = dto.ContractNumber;
             contract.contract_type_id = dto.ContractTypeId;

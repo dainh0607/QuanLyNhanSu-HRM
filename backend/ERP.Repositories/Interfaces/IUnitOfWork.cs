@@ -15,5 +15,20 @@ namespace ERP.Repositories.Interfaces
         /// </summary>
         /// <returns>The number of state entries written to the database.</returns>
         Task<int> SaveChangesAsync();
+
+        /// <summary>
+        /// Begins a new transaction.
+        /// </summary>
+        Task BeginTransactionAsync();
+
+        /// <summary>
+        /// Commits the current transaction.
+        /// </summary>
+        Task CommitTransactionAsync();
+
+        /// <summary>
+        /// Rolls back the current transaction.
+        /// </summary>
+        Task RollbackTransactionAsync();
     }
 }

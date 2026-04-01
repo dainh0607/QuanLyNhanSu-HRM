@@ -10,6 +10,7 @@ using ERP.Entities.Models;
 using ERP.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
+using FirebaseAdmin.Auth;
 using EmployeeEntity = ERP.Entities.Models.Employees;
 
 namespace ERP.Services.Employees
@@ -17,12 +18,14 @@ namespace ERP.Services.Employees
     public class EmployeeService : IEmployeeService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IAuthService _authService;
+        private readonly IFirebaseService _firebaseService;
+        private readonly IUserService _userService;
 
-        public EmployeeService(IUnitOfWork unitOfWork, IAuthService authService)
+        public EmployeeService(IUnitOfWork unitOfWork, IFirebaseService firebaseService, IUserService userService)
         {
             _unitOfWork = unitOfWork;
-            _authService = authService;
+            _firebaseService = firebaseService;
+            _userService = userService;
         }
 
         public async Task<PaginatedListDto<EmployeeDto>> GetPagedListAsync(EmployeeFilterDto filter)
@@ -144,19 +147,19 @@ namespace ERP.Services.Employees
             }
             else
             {
-                // Mặc định sắp xếp theo mã nhân viên
                 query = query.OrderBy(e => e.employee_code);
             }
 
-            // 8. Pagination
-            var count = query.Count();
-            var items = query
+            // 8. Execution & Mapping
+            var count = await query.CountAsync();
+            var items = await query
                 .Skip((filter.PageNumber - 1) * filter.PageSize)
                 .Take(filter.PageSize)
-                .Select(e => MapToDto(e))
-                .ToList();
+                .ToListAsync();
 
-            return new PaginatedListDto<EmployeeDto>(items, count, filter.PageNumber, filter.PageSize);
+            var dtos = items.Select(e => MapToDto(e)).ToList();
+
+            return new PaginatedListDto<EmployeeDto>(dtos, count, filter.PageNumber, filter.PageSize);
         }
 
         public async Task<EmployeeDto?> GetByIdAsync(int id)
@@ -311,62 +314,119 @@ namespace ERP.Services.Employees
 
         public async Task<EmployeeDto> CreateAsync(EmployeeCreateDto dto)
         {
-            // 1. Check for duplicates
+            // 1. Validations
+            if (dto.BranchId.HasValue && await _unitOfWork.Repository<Branches>().GetByIdAsync(dto.BranchId.Value) == null)
+                throw new Exception($"Chi nhánh ID {dto.BranchId} không tồn tại.");
+
+            if (dto.DepartmentId.HasValue && await _unitOfWork.Repository<Departments>().GetByIdAsync(dto.DepartmentId.Value) == null)
+                throw new Exception($"Phòng ban ID {dto.DepartmentId} không tồn tại.");
+
+            if (dto.JobTitleId.HasValue && await _unitOfWork.Repository<JobTitles>().GetByIdAsync(dto.JobTitleId.Value) == null)
+                throw new Exception($"Chức danh ID {dto.JobTitleId} không tồn tại.");
+
+            // Check for duplicates
             var existingByCode = await _unitOfWork.Repository<EmployeeEntity>().FindAsync(e => e.employee_code == dto.EmployeeCode);
             if (existingByCode.Any())
-            {
                 throw new Exception($"Mã nhân viên '{dto.EmployeeCode}' đã tồn tại.");
-            }
 
             if (!string.IsNullOrEmpty(dto.Email))
             {
                 var existingByEmail = await _unitOfWork.Repository<EmployeeEntity>().FindAsync(e => e.email == dto.Email);
                 if (existingByEmail.Any())
-                {
                     throw new Exception($"Email '{dto.Email}' đã tồn tại.");
-                }
             }
 
-            // 2. Create Employee
-            var employee = new EmployeeEntity
+            // 2. Start Transaction
+            await _unitOfWork.BeginTransactionAsync();
+            try
             {
-                employee_code = dto.EmployeeCode,
-                full_name = dto.FullName,
-                email = dto.Email,
-                phone = dto.Phone,
-                birth_date = dto.BirthDate,
-                gender_code = dto.GenderCode,
-                marital_status_code = dto.MaritalStatusCode,
-                department_id = dto.DepartmentId,
-                job_title_id = dto.JobTitleId,
-                branch_id = dto.BranchId,
-                manager_id = dto.ManagerId,
-                start_date = dto.StartDate,
-                identity_number = dto.IdentityNumber,
-                work_email = dto.WorkEmail,
-                avatar = dto.Avatar,
-                is_active = true,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
+                var employee = new EmployeeEntity
+                {
+                    employee_code = dto.EmployeeCode,
+                    full_name = dto.FullName,
+                    email = dto.Email,
+                    phone = dto.Phone,
+                    birth_date = dto.BirthDate,
+                    gender_code = dto.GenderCode,
+                    marital_status_code = dto.MaritalStatusCode,
+                    department_id = dto.DepartmentId,
+                    job_title_id = dto.JobTitleId,
+                    branch_id = dto.BranchId,
+                    manager_id = dto.ManagerId,
+                    start_date = dto.StartDate,
+                    identity_number = dto.IdentityNumber,
+                    work_email = dto.WorkEmail,
+                    avatar = dto.Avatar,
+                    is_active = true,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
 
-            await _unitOfWork.Repository<EmployeeEntity>().AddAsync(employee);
-            await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.Repository<EmployeeEntity>().AddAsync(employee);
+                await _unitOfWork.SaveChangesAsync();
 
-            // 3. Create Firebase User via AuthService (which also creates local User and Role)
-            await _authService.CreateFirebaseUserAsync(
-                dto.Email ?? dto.EmployeeCode, 
-                dto.Password, 
-                dto.FullName, 
-                employee.Id);
+                // 3. Create Firebase User
+                var userArgs = new UserRecordArgs()
+                {
+                    Email = dto.Email ?? dto.EmployeeCode + "@nexahrm.local",
+                    Password = dto.Password,
+                    DisplayName = dto.FullName,
+                    PhoneNumber = dto.Phone,
+                    Disabled = false
+                };
+                
+                var firebaseUser = await _firebaseService.CreateUserAsync(userArgs);
 
-            return MapToDto(employee);
+                try
+                {
+                    // 4. Create local User mapping
+                    var user = await _userService.CreateLocalUserAsync(employee.Id, userArgs.Email, firebaseUser.Uid);
+
+                    // 5. Assign default User role
+                    await _userService.AssignRoleAsync(user.Id, 3); // 3 = User
+
+                    await _unitOfWork.CommitTransactionAsync();
+                }
+                catch (Exception)
+                {
+                    // Rollback Firebase if subsequent local processing fails
+                    try 
+                    { 
+                        await _firebaseService.DeleteUserAsync(firebaseUser.Uid); 
+                    } 
+                    catch { }
+                    throw;
+                }
+                return MapToDto(employee);
+            }
+            catch (Exception)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
         }
 
         public async Task<bool> UpdateAsync(int id, EmployeeUpdateDto dto)
         {
             var employee = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(id);
             if (employee == null) return false;
+
+            // 1. Validations
+            if (dto.BranchId.HasValue && await _unitOfWork.Repository<Branches>().GetByIdAsync(dto.BranchId.Value) == null)
+                throw new Exception($"Chi nhánh ID {dto.BranchId} không tồn tại.");
+
+            if (dto.DepartmentId.HasValue && await _unitOfWork.Repository<Departments>().GetByIdAsync(dto.DepartmentId.Value) == null)
+                throw new Exception($"Phòng ban ID {dto.DepartmentId} không tồn tại.");
+
+            if (dto.JobTitleId.HasValue && await _unitOfWork.Repository<JobTitles>().GetByIdAsync(dto.JobTitleId.Value) == null)
+                throw new Exception($"Chức danh ID {dto.JobTitleId} không tồn tại.");
+
+            if (!string.IsNullOrEmpty(dto.Email))
+            {
+                var existingByEmail = await _unitOfWork.Repository<EmployeeEntity>().FindAsync(e => e.email == dto.Email && e.Id != id);
+                if (existingByEmail.Any())
+                    throw new Exception($"Email '{dto.Email}' đã được nhân viên khác sử dụng.");
+            }
 
             employee.full_name = dto.FullName;
             employee.email = dto.Email;
