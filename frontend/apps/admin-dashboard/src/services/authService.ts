@@ -20,6 +20,12 @@ export interface AuthResponse {
   expiresIn?: number;
 }
 
+export interface ChangePasswordPayload {
+  oldPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5122/api";
 const CSRF_COOKIE_NAME = "hrm_csrf_token";
 const CSRF_HEADER_NAME = "X-CSRF-Token";
@@ -211,6 +217,34 @@ export const authService = {
       return {
         success: false,
         message: "Khong the ket noi toi may chu.",
+      };
+    }
+  },
+
+  changePassword: async (payload: ChangePasswordPayload): Promise<AuthResponse> => {
+    try {
+      const response = await authFetch(`${API_URL}/auth/change-password`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      const data = (await response.json()) as AuthResponse;
+
+      if (response.ok && data.success) {
+        return {
+          success: true,
+          message: data.message || "Doi mat khau thanh cong.",
+        };
+      }
+
+      return {
+        success: false,
+        message: data.message || "Khong the doi mat khau.",
+      };
+    } catch {
+      return {
+        success: false,
+        message: "Khong the ket noi toi may chu. Vui long thu lai sau.",
       };
     }
   },

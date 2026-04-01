@@ -3,6 +3,7 @@ import type {
   EmployeeEditBankAccountPayload,
   EmployeeEditBasicInfoPayload,
   EmployeeEditContactPayload,
+  EmployeeEditDependentsPayload,
   EmployeeEditEducationPayload,
   EmployeeEditEmergencyContactPayload,
   EmployeeEditHealthPayload,
@@ -18,6 +19,7 @@ import EducationListForm from '../forms/EducationListForm';
 import EmergencyContactForm from '../forms/EmergencyContactForm';
 import HealthForm from '../forms/HealthForm';
 import IdentityToggleForm from '../forms/IdentityToggleForm';
+import DependentsManagerForm from '../forms/DependentsManagerForm';
 import PermanentAddressCascadingForm from '../forms/PermanentAddressCascadingForm';
 import PersonalTabPlaceholder from './PersonalTabPlaceholder';
 
@@ -53,6 +55,7 @@ interface PersonalTabPanelProps {
     field: F,
     value: EmployeeEditHealthPayload[F],
   ) => void;
+  onCreateDependent: (value: EmployeeEditDependentsPayload[number]) => Promise<void>;
 }
 
 const PersonalTabPanel: React.FC<PersonalTabPanelProps> = ({
@@ -66,6 +69,7 @@ const PersonalTabPanel: React.FC<PersonalTabPanelProps> = ({
   onIdentityChange,
   onBankAccountChange,
   onHealthChange,
+  onCreateDependent,
 }) => {
   const tabState = personalForms[activeTab];
 
@@ -135,7 +139,13 @@ const PersonalTabPanel: React.FC<PersonalTabPanelProps> = ({
           onFieldChange={onHealthChange}
         />
       );
-      return <PersonalTabPlaceholder tab="health" title="Sức khỏe" />;
+    case 'dependents':
+      return (
+        <DependentsManagerForm
+          data={personalForms.dependents.data}
+          onCreateDependent={onCreateDependent}
+        />
+      );
     case 'additionalInfo':
       return <PersonalTabPlaceholder tab="additionalInfo" title="Thông tin khác" />;
     default:

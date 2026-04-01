@@ -490,6 +490,22 @@ const PermanentAddressCascadingForm: React.FC<PermanentAddressCascadingFormProps
             placeholder="Nhập nguyên quán"
           />
         </FormRow>
+        {activeAddressForm === 'permanentAddress' ? (
+          <FormRow label="Địa chỉ hiện tại">
+            <input
+              type="text"
+              value={data.mergedAddress.addressLine}
+              onChange={(event) =>
+                onFieldChange('mergedAddress', {
+                  ...data.mergedAddress,
+                  addressLine: event.target.value,
+                })
+              }
+              className={getFieldClassName(false)}
+              placeholder="Nhập địa chỉ hiện tại"
+            />
+          </FormRow>
+        ) : null}
       </div>
     </>
   );

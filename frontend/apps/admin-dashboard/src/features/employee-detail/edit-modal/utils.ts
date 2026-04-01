@@ -1,4 +1,7 @@
-import type { EmployeeFullProfile } from '../../../services/employeeService';
+import type {
+  EmployeeEditDependentsPayload,
+  EmployeeFullProfile,
+} from '../../../services/employeeService';
 import type { Employee } from '../../employees/types';
 import { getRecordValue, pickAddress } from '../utils';
 import type { ModalSectionKey, PersonalFormMap, PersonalFormsState, TabState } from './types';
@@ -251,6 +254,18 @@ export const buildSeedForms = (
       healthStatus: toStringValue(profile?.healthRecord?.healthStatus),
       checkDate: toDateInputValue(profile?.healthRecord?.checkDate),
     },
+    dependents: (profile?.dependents ?? []).map((dependent) => ({
+      id: dependent.id,
+      fullName: toStringValue(dependent.fullName),
+      birthDate: toDateInputValue(dependent.birthDate),
+      gender: '',
+      identityNumber: toStringValue(dependent.identityNumber),
+      relationship: toStringValue(dependent.relationship),
+      permanentAddress: toStringValue(dependent.permanentAddress),
+      temporaryAddress: toStringValue(dependent.temporaryAddress),
+      dependentDuration: toStringValue(dependent.dependentDuration),
+      reason: toStringValue(dependent.reason),
+    })),
     additionalInfo: {},
   };
 };
@@ -264,8 +279,59 @@ export const createPersonalFormsState = (seed: PersonalFormMap): PersonalFormsSt
   identity: createTabState(seed.identity),
   bankAccount: createTabState(seed.bankAccount),
   health: createTabState(seed.health),
+  dependents: createTabState(seed.dependents),
   additionalInfo: createTabState(seed.additionalInfo),
 });
+
+export const buildDependentClientSignature = (
+  dependent: Pick<
+    EmployeeEditDependentsPayload[number],
+    | 'fullName'
+    | 'birthDate'
+    | 'identityNumber'
+    | 'relationship'
+    | 'permanentAddress'
+    | 'temporaryAddress'
+    | 'dependentDuration'
+    | 'reason'
+  >,
+): string =>
+  [
+    dependent.fullName,
+    dependent.birthDate,
+    dependent.identityNumber,
+    dependent.relationship,
+    dependent.permanentAddress,
+    dependent.temporaryAddress,
+    dependent.dependentDuration,
+    dependent.reason,
+  ]
+    .map((value) => value.trim().toLowerCase())
+    .join('|');
+
+export const mergeDependentClientFields = (
+  previous: EmployeeEditDependentsPayload,
+  incoming: EmployeeEditDependentsPayload,
+): EmployeeEditDependentsPayload => {
+  const genderBySignature = new Map<string, string>();
+
+  previous.forEach((dependent) => {
+    const gender = dependent.gender.trim();
+    if (!gender) {
+      return;
+    }
+
+    genderBySignature.set(buildDependentClientSignature(dependent), gender);
+  });
+
+  return incoming.map((dependent) => ({
+    ...dependent,
+    gender:
+      dependent.gender.trim() ||
+      genderBySignature.get(buildDependentClientSignature(dependent)) ||
+      '',
+  }));
+};
 
 export const EMAIL_REGEX = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 export const PHONE_REGEX = /^\d{9,15}$/;

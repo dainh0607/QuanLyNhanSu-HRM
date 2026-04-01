@@ -21,6 +21,7 @@ export const PERSONAL_TABS = [
   { key: 'identity', label: 'Thông tin định danh' },
   { key: 'bankAccount', label: 'Thông tin ngân hàng' },
   { key: 'health', label: 'Sức khỏe' },
+  { key: 'dependents', label: 'Người phụ thuộc' },
   { key: 'additionalInfo', label: 'Thông tin khác' },
 ] as const;
 
@@ -44,6 +45,7 @@ export const PERSONAL_TAB_SUCCESS_MESSAGES = {
   identity: 'Đã lưu thông tin định danh.',
   bankAccount: 'Đã lưu thông tin ngân hàng.',
   health: 'Đã lưu thông tin sức khỏe.',
+  dependents: 'Đã lưu người phụ thuộc.',
   additionalInfo: 'Đã lưu thông tin khác.',
 } as const;
 

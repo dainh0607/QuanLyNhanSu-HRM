@@ -401,6 +401,7 @@ const EMPLOYEE_PROFILE_ENDPOINTS = {
   education: `${API_URL}/employees/:employeeId/details/education`,
   bankAccounts: `${API_URL}/employees/:employeeId/details/bank-accounts`,
   healthRecord: `${API_URL}/employees/:employeeId/details/health-record`,
+  dependents: `${API_URL}/employees/:employeeId/details/dependents`,
 } as const;
 
 const EMPLOYEE_FULL_PROFILE_ENDPOINT = `${API_URL}/employees/:employeeId/full-profile`;
@@ -460,9 +461,33 @@ export interface EmployeeEditHealthPayload {
   checkDate: string;
 }
 
+export interface EmployeeEditDependentItemPayload {
+  id?: number;
+  fullName: string;
+  birthDate: string;
+  gender: string;
+  identityNumber: string;
+  relationship: string;
+  permanentAddress: string;
+  temporaryAddress: string;
+  dependentDuration: string;
+  reason: string;
+}
+
+export type EmployeeEditDependentsPayload = EmployeeEditDependentItemPayload[];
+
 export interface EmployeeExportFileResult {
   blob: Blob;
   filename: string;
+}
+
+export interface EmployeeListFilters {
+  genderCode?: string;
+  departmentId?: number;
+  branchId?: number;
+  jobTitleId?: number;
+  regionId?: number;
+  accessGroupId?: number;
 }
 
 interface EmployeeBasicInfoUpdateRequest {
@@ -527,6 +552,10 @@ const EMPLOYEE_EDIT_ENDPOINTS = {
   health: {
     get: "",
     put: EMPLOYEE_PROFILE_ENDPOINTS.healthRecord,
+  },
+  dependents: {
+    get: "",
+    put: EMPLOYEE_PROFILE_ENDPOINTS.dependents,
   },
 } as const;
 
@@ -842,12 +871,27 @@ const mapHealthForEdit = (profile: EmployeeFullProfile): EmployeeEditHealthPaylo
   };
 };
 
+const mapDependentsForEdit = (profile: EmployeeFullProfile): EmployeeEditDependentsPayload =>
+  (profile.dependents ?? []).map((dependent) => ({
+    id: dependent.id,
+    fullName: toEditableString(dependent.fullName),
+    birthDate: toDateInputValue(dependent.birthDate),
+    gender: "",
+    identityNumber: toEditableString(dependent.identityNumber),
+    relationship: toEditableString(dependent.relationship),
+    permanentAddress: toEditableString(dependent.permanentAddress),
+    temporaryAddress: toEditableString(dependent.temporaryAddress),
+    dependentDuration: toEditableString(dependent.dependentDuration),
+    reason: toEditableString(dependent.reason),
+  }));
+
 export const employeeService = {
   getEmployees: async (
     pageNumber: number = 1,
     pageSize: number = 15,
     searchTerm: string = "",
-    status?: string
+    status?: string,
+    filters?: EmployeeListFilters
   ): Promise<PaginatedResponse<Employee>> => {
     const url = new URL(`${API_URL}/employees`);
     url.searchParams.append("pageNumber", pageNumber.toString());
@@ -859,6 +903,30 @@ export const employeeService = {
 
     if (status) {
       url.searchParams.append("status", status);
+    }
+
+    if (filters?.genderCode) {
+      url.searchParams.append("genderCode", filters.genderCode);
+    }
+
+    if (typeof filters?.departmentId === "number") {
+      url.searchParams.append("departmentId", String(filters.departmentId));
+    }
+
+    if (typeof filters?.branchId === "number") {
+      url.searchParams.append("branchId", String(filters.branchId));
+    }
+
+    if (typeof filters?.jobTitleId === "number") {
+      url.searchParams.append("jobTitleId", String(filters.jobTitleId));
+    }
+
+    if (typeof filters?.regionId === "number") {
+      url.searchParams.append("regionId", String(filters.regionId));
+    }
+
+    if (typeof filters?.accessGroupId === "number") {
+      url.searchParams.append("accessGroupId", String(filters.accessGroupId));
     }
 
     try {
@@ -1485,6 +1553,64 @@ export const employeeService = {
         body: JSON.stringify(normalizedPayload),
       },
       "Error updating employee health info"
+    );
+  },
+
+  getEmployeeEditDependents: async (id: number): Promise<EmployeeEditDependentsPayload> => {
+    const endpoint = resolveEmployeeEditEndpoint(EMPLOYEE_EDIT_ENDPOINTS.dependents.get, id);
+    if (endpoint) {
+      return requestJson<EmployeeEditDependentsPayload>(
+        endpoint,
+        { method: "GET" },
+        "Error fetching employee dependents for edit"
+      );
+    }
+
+    const profile = await fetchEmployeeFullProfileFallback(id);
+    return mapDependentsForEdit(profile);
+  },
+
+  updateEmployeeEditDependents: async (
+    id: number,
+    payload: EmployeeEditDependentsPayload
+  ): Promise<unknown> => {
+    const endpoint = resolveEmployeeEditEndpoint(EMPLOYEE_EDIT_ENDPOINTS.dependents.put, id);
+    if (!endpoint) {
+      throw createMissingEndpointError("PUT", "Người phụ thuộc");
+    }
+
+    const normalizedPayload = payload
+      .filter((item) =>
+        [
+          item.fullName,
+          item.birthDate,
+          item.identityNumber,
+          item.relationship,
+          item.permanentAddress,
+          item.temporaryAddress,
+          item.dependentDuration,
+          item.reason,
+        ].some((value) => value.trim())
+      )
+      .map((item) => ({
+        id: item.id ?? 0,
+        fullName: item.fullName.trim(),
+        birthDate: item.birthDate.trim() ? item.birthDate : null,
+        identityNumber: item.identityNumber.trim(),
+        relationship: item.relationship.trim(),
+        permanentAddress: item.permanentAddress.trim(),
+        temporaryAddress: item.temporaryAddress.trim(),
+        dependentDuration: item.dependentDuration.trim(),
+        reason: item.reason.trim(),
+      }));
+
+    return requestJson<unknown>(
+      endpoint,
+      {
+        method: "PUT",
+        body: JSON.stringify(normalizedPayload),
+      },
+      "Error updating employee dependents"
     );
   },
 };

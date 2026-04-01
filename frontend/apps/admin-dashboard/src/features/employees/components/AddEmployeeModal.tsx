@@ -2,6 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useRef } from 'react';
 import { employeeService, type EmployeeCreatePayload } from '../../../services/employeeService';
 import { useToast } from '../../../components/common/useToast';
+import {
+  DEFAULT_PHONE_COUNTRY_VALUE,
+  PHONE_COUNTRY_OPTIONS,
+  getDialCodeByPhoneCountryValue,
+  getPhoneLengthDescriptionByCountryValue,
+  getPhoneLengthRuleByCountryValue,
+  getPhoneCountryOptionByValue,
+  validatePhoneNumberByCountryValue,
+} from '../data/phoneCountryOptions';
 
 interface AddEmployeeModalProps {
   isOpen: boolean;
@@ -48,9 +57,40 @@ interface MetadataLoadingState {
 }
 
 const DEFAULT_ACCESS_GROUP_KEYS = ['nhan vien', 'nhân viên', 'employee', 'user', 'staff'] as const;
-const VIETNAM_COUNTRY_CODE = '+84';
-const VIETNAM_PHONE_MAX_LENGTH = 10;
-const DEFAULT_PHONE_MAX_LENGTH = 15;
+const ACCESS_GROUP_PRESETS = [
+  {
+    key: 'regionalManager',
+    label: 'Quản lý vùng',
+    order: 1,
+    aliases: [
+      'quan ly vung',
+      'regional manager',
+      'regionalmanager',
+      'region manager',
+      'regionmanager',
+      'area manager',
+      'manager region',
+    ],
+  },
+  {
+    key: 'branchManager',
+    label: 'Quản lý chi nhánh',
+    order: 2,
+    aliases: ['quan ly chi nhanh', 'branch manager', 'branchmanager', 'manager branch'],
+  },
+  {
+    key: 'manager',
+    label: 'Quản lý',
+    order: 0,
+    aliases: ['quan ly', 'manager'],
+  },
+  {
+    key: 'employee',
+    label: 'Nhân viên',
+    order: 3,
+    aliases: [...DEFAULT_ACCESS_GROUP_KEYS],
+  },
+] as const;
 const MIN_PASSWORD_LENGTH = 7;
 const CONFIGURED_COMPANY_EMAIL_DOMAIN = (import.meta.env.VITE_COMPANY_EMAIL_DOMAIN ?? '')
   .trim()
@@ -95,7 +135,7 @@ const INITIAL_FORM_DATA: AddEmployeeFormData = {
   employeeCode: '',
   fullName: '',
   email: '',
-  countryCode: VIETNAM_COUNTRY_CODE,
+  countryCode: DEFAULT_PHONE_COUNTRY_VALUE,
   phone: '',
   accessGroupId: '',
   password: '',
@@ -152,13 +192,48 @@ const normalizeSearchText = (value: string) =>
     .trim()
     .toLowerCase();
 
+const resolveAccessGroupPreset = (
+  accessGroupName: string,
+): (typeof ACCESS_GROUP_PRESETS)[number] | undefined => {
+  const normalizedName = normalizeSearchText(accessGroupName);
+
+  return ACCESS_GROUP_PRESETS.find((preset) =>
+    preset.aliases.some(
+      (alias) => normalizedName === alias || normalizedName.includes(alias),
+    ),
+  );
+};
+
+const normalizeAccessGroupOptions = (items: unknown[]): MetadataOption[] => {
+  const matchedGroups = new Map<
+    (typeof ACCESS_GROUP_PRESETS)[number]['key'],
+    MetadataOption & { sortOrder: number }
+  >();
+
+  normalizeMetadataOptions(items).forEach((item) => {
+    const matchedPreset = resolveAccessGroupPreset(item.name);
+    if (!matchedPreset || matchedGroups.has(matchedPreset.key)) {
+      return;
+    }
+
+    matchedGroups.set(matchedPreset.key, {
+      ...item,
+      name: matchedPreset.label,
+      sortOrder: matchedPreset.order,
+    });
+  });
+
+  return Array.from(matchedGroups.values())
+    .sort((left, right) => left.sortOrder - right.sortOrder)
+    .map(({ sortOrder: _sortOrder, ...item }) => item);
+};
+
 const resolveDefaultAccessGroupId = (accessGroups: MetadataOption[]): string =>
-  accessGroups.find((group) =>
-    DEFAULT_ACCESS_GROUP_KEYS.includes(normalizeSearchText(group.name) as (typeof DEFAULT_ACCESS_GROUP_KEYS)[number]),
-  )?.id?.toString() ?? '';
+  accessGroups.find((group) => resolveAccessGroupPreset(group.name)?.key === 'employee')?.id?.toString() ??
+  '';
 
 const getPhoneMaxLength = (countryCode: string) =>
-  countryCode === VIETNAM_COUNTRY_CODE ? VIETNAM_PHONE_MAX_LENGTH : DEFAULT_PHONE_MAX_LENGTH;
+  getPhoneLengthRuleByCountryValue(countryCode).maxLength;
 
 const normalizeBackendErrorKey = (key: string) =>
   key ? `${key.charAt(0).toLowerCase()}${key.slice(1)}` : key;
@@ -258,7 +333,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
         employeeService.getAccessGroupsMetadata(),
       ]);
 
-      const accessGroups = normalizeMetadataOptions(accessGroupItems);
+      const accessGroups = normalizeAccessGroupOptions(accessGroupItems);
       const defaultAccessGroupId = resolveDefaultAccessGroupId(accessGroups);
 
       setFormData((prev) => ({
@@ -352,10 +427,15 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
     }
 
     // Số điện thoại là bắt buộc; mã +84 không được vượt quá 10 số
-    if (!formData.phone) {
+    if (false && !formData.phone) {
       newErrors.phone = 'Số điện thoại là bắt buộc';
-    } else if (formData.countryCode === VIETNAM_COUNTRY_CODE && formData.phone.length > VIETNAM_PHONE_MAX_LENGTH) {
+    } else if (false) {
       newErrors.phone = 'Với mã +84, số điện thoại không được quá 10 số';
+    }
+
+    const phoneError = validatePhoneNumberByCountryValue(formData.countryCode, formData.phone);
+    if (phoneError) {
+      newErrors.phone = phoneError;
     }
 
     if (!formData.accessGroupId) {
@@ -451,7 +531,9 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
         password: formData.password,
         accessGroupId,
         email: formData.email.trim() || null,
-        phone: formData.phone ? `${formData.countryCode}${formData.phone}` : null,
+        phone: formData.phone
+          ? `${getDialCodeByPhoneCountryValue(formData.countryCode)}${formData.phone}`
+          : null,
         branchId: getOptionalNumber(formData.branchId),
         departmentId: getOptionalNumber(formData.departmentId),
         jobTitleId: getOptionalNumber(formData.jobTitleId),
@@ -499,6 +581,9 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
   const filteredBranches = shouldFilterBranchesByRegion && formData.regionId
     ? metadata.branches.filter((branch) => branch.regionId === getOptionalNumber(formData.regionId))
     : metadata.branches;
+  const selectedPhoneCountryOption = getPhoneCountryOptionByValue(formData.countryCode);
+  const phoneLengthDescription = getPhoneLengthDescriptionByCountryValue(formData.countryCode);
+  const phoneValidationHint = `Số điện thoại phải có ${phoneLengthDescription} cho mã ${getDialCodeByPhoneCountryValue(formData.countryCode)}.`;
 
   return (
     <div 
@@ -587,16 +672,21 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
               </label>
               <div className="space-y-1.5">
                 <div className="flex gap-2.5">
-                  <div className="relative w-28 group">
+                  <div className="relative w-[135px] shrink-0 group">
                     <select 
                       value={formData.countryCode}
                       onChange={(e) => handleCountryCodeChange(e.target.value)}
-                      className="w-full h-11 px-3 border border-gray-200 rounded-xl text-sm appearance-none bg-white focus:outline-none focus:border-[#192841] focus:ring-4 focus:ring-[#192841]/5 transition-all pr-8 cursor-pointer"
+                      className="w-full h-11 rounded-xl border border-gray-200 bg-white px-3 pr-8 text-sm text-transparent appearance-none focus:outline-none focus:border-[#192841] focus:ring-4 focus:ring-[#192841]/5 transition-all cursor-pointer"
                     >
-                      <option value="+84">+84</option>
-                      <option value="+1">+1</option>
-                      <option value="+44">+44</option>
+                      {PHONE_COUNTRY_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value} style={{ color: '#0f172a' }}>
+                          {option.label}
+                        </option>
+                      ))}
                     </select>
+                    <span className="pointer-events-none absolute inset-y-0 left-3 right-9 flex items-center truncate text-sm text-gray-700">
+                      {selectedPhoneCountryOption?.selectedLabel ?? ''}
+                    </span>
                     <span className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-focus-within:rotate-180 transition-transform text-[20px]">expand_more</span>
                   </div>
                   <input 
@@ -604,11 +694,17 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
                     placeholder="Nhập số điện thoại" 
                     value={formData.phone}
                     onChange={handlePhoneChange}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     maxLength={getPhoneMaxLength(formData.countryCode)}
                     className={`flex-1 h-11 px-4 border rounded-xl text-sm focus:outline-none focus:ring-4 transition-all ${errors.phone ? 'border-red-400 bg-red-50/30 ring-red-100' : 'border-gray-200 focus:border-[#192841] focus:ring-[#192841]/5'}`}
                   />
                 </div>
-                {errors.phone && <p className="text-[11px] font-medium text-red-500 pl-1">{errors.phone}</p>}
+                {errors.phone ? (
+                  <p className="text-[11px] font-medium text-red-500 pl-1">{errors.phone}</p>
+                ) : (
+                  <p className="text-[11px] font-medium text-gray-400 pl-1">{phoneValidationHint}</p>
+                )}
               </div>
             </div>
 

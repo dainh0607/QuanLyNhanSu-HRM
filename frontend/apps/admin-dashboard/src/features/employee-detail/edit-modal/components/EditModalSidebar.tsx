@@ -8,7 +8,7 @@ interface EditModalSidebarProps {
 }
 
 const EditModalSidebar: React.FC<EditModalSidebarProps> = ({ activeSection, onChange }) => (
-  <aside className="hidden w-[286px] border-r border-slate-200 bg-slate-50/80 lg:flex lg:flex-col">
+  <aside className="hidden w-[250px] shrink-0 overflow-hidden border-r border-slate-200 bg-slate-50/80 lg:flex lg:flex-col">
     <div className="flex-1 overflow-y-auto py-5">
       {MODAL_SECTIONS.map((section) => {
         const isActive = section.key === activeSection;
@@ -24,8 +24,8 @@ const EditModalSidebar: React.FC<EditModalSidebarProps> = ({ activeSection, onCh
                 : 'border-transparent text-slate-500 hover:bg-white hover:text-slate-800'
             }`}
           >
-            <span className="material-symbols-outlined text-[22px]">{section.icon}</span>
-            <span className="text-[15px] font-semibold">{section.label}</span>
+            <span className="material-symbols-outlined shrink-0 text-[22px]">{section.icon}</span>
+            <span className="whitespace-nowrap text-[15px] font-semibold">{section.label}</span>
           </button>
         );
       })}

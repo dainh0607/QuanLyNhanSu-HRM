@@ -1,121 +1,284 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useEffect, useState } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
+import './App.css';
 
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+interface InviteRegistrationFormData {
+  email: string;
+  phone: string;
+  fullName: string;
+  password: string;
+  confirmPassword: string;
 }
 
-export default App
+type InviteRegistrationErrors = Partial<Record<keyof InviteRegistrationFormData, string>>;
+
+const INITIAL_FORM_DATA: InviteRegistrationFormData = {
+  email: '',
+  phone: '',
+  fullName: '',
+  password: '',
+  confirmPassword: '',
+};
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MIN_PASSWORD_LENGTH = 7;
+
+const getInviteTokenFromPath = (pathname: string): string | null => {
+  const normalizedPath = pathname.replace(/\/+$/, '') || '/';
+  const matchedPath = normalizedPath.match(/^\/invite\/([^/]+)$/i);
+
+  if (!matchedPath?.[1]) {
+    return null;
+  }
+
+  return decodeURIComponent(matchedPath[1]);
+};
+
+const validateForm = (formData: InviteRegistrationFormData): InviteRegistrationErrors => {
+  const nextErrors: InviteRegistrationErrors = {};
+  const normalizedEmail = formData.email.trim();
+  const normalizedPhone = formData.phone.replace(/\D/g, '');
+
+  if (!formData.fullName.trim()) {
+    nextErrors.fullName = 'Họ và tên là bắt buộc.';
+  }
+
+  if (!normalizedEmail) {
+    nextErrors.email = 'Email là bắt buộc.';
+  } else if (!EMAIL_REGEX.test(normalizedEmail)) {
+    nextErrors.email = 'Email chưa đúng định dạng.';
+  }
+
+  if (!normalizedPhone) {
+    nextErrors.phone = 'Số điện thoại là bắt buộc.';
+  } else if (normalizedPhone.length < 9 || normalizedPhone.length > 15) {
+    nextErrors.phone = 'Số điện thoại cần từ 9 đến 15 chữ số.';
+  }
+
+  if (!formData.password) {
+    nextErrors.password = 'Mật khẩu là bắt buộc.';
+  } else if (formData.password.length < MIN_PASSWORD_LENGTH) {
+    nextErrors.password = 'Mật khẩu phải dài hơn 6 ký tự.';
+  }
+
+  if (!formData.confirmPassword) {
+    nextErrors.confirmPassword = 'Vui lòng xác nhận mật khẩu.';
+  } else if (formData.confirmPassword !== formData.password) {
+    nextErrors.confirmPassword = 'Mật khẩu xác nhận chưa khớp.';
+  }
+
+  return nextErrors;
+};
+
+const formatTokenPreview = (token: string): string => {
+  if (token.length <= 18) {
+    return token;
+  }
+
+  return `${token.slice(0, 10)}...${token.slice(-6)}`;
+};
+
+function InviteRegistrationPage({ inviteToken }: { inviteToken: string }) {
+  const [formData, setFormData] = useState<InviteRegistrationFormData>(INITIAL_FORM_DATA);
+  const [errors, setErrors] = useState<InviteRegistrationErrors>({});
+  const [formMessage, setFormMessage] = useState('');
+
+  const handleInputChange =
+    (field: keyof InviteRegistrationFormData) =>
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const rawValue = event.target.value;
+      const nextValue =
+        field === 'phone'
+          ? rawValue.replace(/[^\d+]/g, '').replace(/(?!^)\+/g, '').slice(0, 16)
+          : rawValue;
+
+      setFormData((prev) => ({
+        ...prev,
+        [field]: nextValue,
+      }));
+
+      setErrors((prev) => {
+        if (!prev[field]) {
+          return prev;
+        }
+
+        const nextErrors = { ...prev };
+        delete nextErrors[field];
+        return nextErrors;
+      });
+
+      if (formMessage) {
+        setFormMessage('');
+      }
+    };
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const nextErrors = validateForm(formData);
+    setErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length > 0) {
+      setFormMessage('');
+      return;
+    }
+
+    setFormMessage(
+      'Thông tin đã hợp lệ. Màn hình FE này đã sẵn sàng để BE nối API xác thực lời mời và tạo tài khoản.',
+    );
+  };
+
+  return (
+    <main className="invite-shell">
+      <div className="invite-orb invite-orb-left" />
+      <div className="invite-orb invite-orb-right" />
+
+      <section className="invite-layout">
+        <article className="invite-hero-card">
+          <span className="invite-badge">Lời mời tham gia hệ thống</span>
+          <h1>Chào mừng bạn đến với NexaHR</h1>
+          <p className="invite-hero-copy">
+            Bạn đã nhận được lời mời tạo tài khoản để hoàn tất hồ sơ và bắt đầu sử dụng hệ thống.
+            Vui lòng điền đầy đủ thông tin bên phải để kích hoạt tài khoản của mình.
+          </p>
+
+          <div className="invite-token-panel">
+            <span className="invite-token-label">Mã lời mời</span>
+            <code className="invite-token-value">{formatTokenPreview(inviteToken)}</code>
+          </div>
+
+          <div className="invite-hero-list">
+            <div>
+              <strong>Thiết lập nhanh</strong>
+              <p>Hoàn thiện thông tin cơ bản chỉ trong một lần đăng ký.</p>
+            </div>
+            <div>
+              <strong>Kích hoạt tài khoản cá nhân</strong>
+              <p>Sẵn sàng cho BE xác thực token và tạo tài khoản ngay trên cùng flow này.</p>
+            </div>
+            <div>
+              <strong>Bảo mật hơn</strong>
+              <p>Mật khẩu được tạo trực tiếp bởi người dùng thay vì gửi qua kênh thủ công.</p>
+            </div>
+          </div>
+        </article>
+
+        <section className="invite-form-card">
+          <div className="invite-form-header">
+            <p className="invite-form-kicker">Tự đăng ký tài khoản</p>
+            <h2>Điền thông tin của bạn</h2>
+            <p className="invite-form-note">
+              Form FE đã sẵn sàng để BE nối API kiểm tra link mời và submit đăng ký.
+            </p>
+          </div>
+
+          <form className="invite-form" onSubmit={handleSubmit} noValidate>
+            <label className="invite-field">
+              <span>Email</span>
+              <input
+                type="email"
+                placeholder="Nhập email của bạn"
+                value={formData.email}
+                onChange={handleInputChange('email')}
+                className={errors.email ? 'is-invalid' : ''}
+              />
+              {errors.email && <small>{errors.email}</small>}
+            </label>
+
+            <label className="invite-field">
+              <span>Số điện thoại</span>
+              <input
+                type="tel"
+                placeholder="Nhập số điện thoại"
+                value={formData.phone}
+                onChange={handleInputChange('phone')}
+                className={errors.phone ? 'is-invalid' : ''}
+              />
+              {errors.phone && <small>{errors.phone}</small>}
+            </label>
+
+            <label className="invite-field">
+              <span>Họ và tên</span>
+              <input
+                type="text"
+                placeholder="Nhập họ và tên"
+                value={formData.fullName}
+                onChange={handleInputChange('fullName')}
+                className={errors.fullName ? 'is-invalid' : ''}
+              />
+              {errors.fullName && <small>{errors.fullName}</small>}
+            </label>
+
+            <label className="invite-field">
+              <span>Mật khẩu</span>
+              <input
+                type="password"
+                placeholder="Tạo mật khẩu"
+                value={formData.password}
+                onChange={handleInputChange('password')}
+                className={errors.password ? 'is-invalid' : ''}
+              />
+              {errors.password && <small>{errors.password}</small>}
+            </label>
+
+            <label className="invite-field">
+              <span>Xác nhận mật khẩu</span>
+              <input
+                type="password"
+                placeholder="Nhập lại mật khẩu"
+                value={formData.confirmPassword}
+                onChange={handleInputChange('confirmPassword')}
+                className={errors.confirmPassword ? 'is-invalid' : ''}
+              />
+              {errors.confirmPassword && <small>{errors.confirmPassword}</small>}
+            </label>
+
+            {formMessage && <div className="invite-form-message">{formMessage}</div>}
+
+            <button type="submit" className="invite-submit-button">
+              Tạo tài khoản
+            </button>
+          </form>
+        </section>
+      </section>
+    </main>
+  );
+}
+
+function InviteFallbackPage() {
+  return (
+    <main className="invite-shell invite-shell-fallback">
+      <section className="invite-fallback-card">
+        <span className="invite-badge">Link lời mời</span>
+        <h1>Không tìm thấy lời mời hợp lệ</h1>
+        <p>
+          Vui lòng truy cập đúng đường dẫn có dạng <code>/invite/:token</code> để mở form đăng ký
+          tài khoản.
+        </p>
+      </section>
+    </main>
+  );
+}
+
+function App() {
+  const [pathname, setPathname] = useState(() => window.location.pathname);
+
+  useEffect(() => {
+    const handleLocationChange = () => {
+      setPathname(window.location.pathname);
+    };
+
+    window.addEventListener('popstate', handleLocationChange);
+    return () => window.removeEventListener('popstate', handleLocationChange);
+  }, []);
+
+  const inviteToken = getInviteTokenFromPath(pathname);
+
+  if (!inviteToken) {
+    return <InviteFallbackPage />;
+  }
+
+  return <InviteRegistrationPage inviteToken={inviteToken} />;
+}
+
+export default App;
