@@ -48,10 +48,11 @@ namespace ERP.API.Controllers
 
         [HttpPut("addresses")]
         [Authorize(Roles = "Manager,Admin")]
-        public async Task<IActionResult> UpdateAddresses(int id, [FromBody] List<EmployeeAddressDto> dtos)
+        public async Task<IActionResult> UpdateAddresses(int id, [FromBody] AddressProfileUpdateDto dto)
         {
-            var success = await _profileService.UpdateAddressesAsync(id, dtos);
-            if (!success && dtos.Count > 0) return BadRequest();
+            var request = dto ?? new AddressProfileUpdateDto();
+            var success = await _profileService.UpdateAddressesAsync(id, request);
+            if (!success) return BadRequest();
             return Ok(new { Message = "Addresses updated" });
         }
 

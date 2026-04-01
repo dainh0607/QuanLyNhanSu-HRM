@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Net.Http;
 using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -20,28 +21,13 @@ using EmployeeEntity = ERP.Entities.Models.Employees;
 
 namespace ERP.Services.Auth
 {
-    public interface IAuthService
-    {
-        Task<AuthResponseDto> SignUpAsync(SignUpDto dto);
-        Task<AuthResponseDto> LoginAsync(LoginDto dto, AuthSessionContextDto sessionContext);
-        Task<AuthResponseDto> RefreshSessionAsync(string refreshToken, AuthSessionContextDto sessionContext);
-        Task RevokeSessionAsync(string refreshToken);
-        Task<UserInfoDto?> GetUserByUidAsync(string uid);
-        Task<UserInfoDto?> GetUserByIdAsync(int userId);
-        Task<string?> VerifyTokenAsync(string idToken);
-        Task<int> SyncFirebaseUsersAsync();
-        Task<AuthResponseDto> PreRegisterStaffAsync(PreRegisterStaffDto dto);
-        string GenerateInternalToken(UserInfoDto user, string sessionId);
-        Task<string> CreateFirebaseUserAsync(string email, string password, string displayName, int employeeId);
-    }
-
     public class AuthService : IAuthService
     {
         private readonly AppDbContext _context;
         private readonly ILogger<AuthService> _logger;
         private readonly IConfiguration _configuration;
         private readonly IFirebaseService _firebaseService;
-        private readonly IUserService _userService;
+        private readonly IHttpClientFactory _httpClientFactory;
 
         public AuthService(
             AppDbContext context,
@@ -54,7 +40,7 @@ namespace ERP.Services.Auth
             _logger = logger;
             _configuration = configuration;
             _firebaseService = firebaseService;
-            _userService = userService;
+            _httpClientFactory = httpClientFactory;
         }
 
         public async Task<AuthResponseDto> SignUpAsync(SignUpDto dto)
@@ -81,14 +67,27 @@ namespace ERP.Services.Auth
                     }
                 }
 
-                var userArgs = new UserRecordArgs
+                var bypassAuth = _configuration.GetValue<bool>("Firebase:BypassAuth", false);
+                string firebaseUid;
+
+                if (bypassAuth)
                 {
-                    Email = dto.Email,
-                    Password = dto.Password,
-                    DisplayName = dto.FullName,
-                    PhoneNumber = dto.PhoneNumber,
-                    Disabled = false
-                };
+                    _logger.LogInformation("Firebase auth bypassed for sign up user {Email}", dto.Email);
+                    firebaseUid = $"bypass_{Guid.NewGuid():N}";
+                }
+                else
+                {
+                    var userArgs = new UserRecordArgs
+                    {
+                        Email = dto.Email,
+                        Password = dto.Password,
+                        DisplayName = dto.FullName,
+                        PhoneNumber = dto.PhoneNumber,
+                        Disabled = false
+                    };
+                    
+                    firebaseUid = firebaseUser.Uid;
+                }
 
                 UserRecord firebaseUser;
                 try
@@ -549,7 +548,7 @@ namespace ERP.Services.Auth
                     };
                 }
 
-                var employee = new ERP.Entities.Models.Employees
+                var employee = new EmployeeEntity
                 {
                     employee_code = dto.EmployeeCode ?? $"STAFF_{Guid.NewGuid():N}"[..8],
                     full_name = dto.FullName,

@@ -44,9 +44,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister, onLoginSucc
       } else {
         setError(response.message || 'Đăng nhập thất bại.');
       }
-    } catch (err) {
+    } catch {
       setError('Đã có lỗi xảy ra. Vui lòng thử lại sau.');
-      console.error('LoginPage: Error:', err);
     } finally {
       setLoading(false);
     }

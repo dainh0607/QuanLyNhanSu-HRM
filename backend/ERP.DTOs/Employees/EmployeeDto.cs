@@ -15,6 +15,7 @@ namespace ERP.DTOs.Employees
         public string? IdentityIssuePlace { get; set; }
         public string? Passport { get; set; }
         public string? Nationality { get; set; }
+        public string? OriginPlace { get; set; }
         public string? Ethnicity { get; set; }
         public string? Religion { get; set; }
         public DateTime? StartDate { get; set; }

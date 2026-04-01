@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { employeeService, type EmployeeCreatePayload } from '../../../services/employeeService';
-import { useToast } from '../../../components/common/Toast';
+import { useToast } from '../../../components/common/useToast';
 
 interface AddEmployeeModalProps {
   isOpen: boolean;
@@ -14,7 +14,7 @@ interface AddEmployeeFormData {
   email: string;
   countryCode: string;
   phone: string;
-  accessGroup: string;
+  accessGroupId: string;
   password: string;
   regionId: string;
   branchId: string;
@@ -38,13 +38,39 @@ interface ModalMetadata {
   accessGroups: MetadataOption[];
 }
 
+const DEFAULT_ACCESS_GROUP_KEY = 'nhan vien';
+const VIETNAM_COUNTRY_CODE = '+84';
+const VIETNAM_PHONE_MAX_LENGTH = 10;
+const DEFAULT_PHONE_MAX_LENGTH = 15;
+const MIN_PASSWORD_LENGTH = 7;
+const CONFIGURED_COMPANY_EMAIL_DOMAIN = (import.meta.env.VITE_COMPANY_EMAIL_DOMAIN ?? '')
+  .trim()
+  .toLowerCase()
+  .replace(/^@/, '');
+const PUBLIC_EMAIL_DOMAINS = ['gmail.com', 'outlook.com.vn'] as const;
+const GENERIC_COMPANY_EMAIL_DOMAIN_PATTERN = '[A-Z0-9-]+(?:\\.[A-Z0-9-]+)+';
+const EMAIL_REGEX = new RegExp(
+  `^[A-Z0-9._%+-]+@(?:${
+    [
+      ...(CONFIGURED_COMPANY_EMAIL_DOMAIN
+        ? [CONFIGURED_COMPANY_EMAIL_DOMAIN.replace(/\./g, '\\.')]
+        : [GENERIC_COMPANY_EMAIL_DOMAIN_PATTERN]),
+      ...PUBLIC_EMAIL_DOMAINS.map((domain) => domain.replace(/\./g, '\\.')),
+    ].join('|')
+  })$`,
+  'i'
+);
+const EMAIL_ERROR_MESSAGE = CONFIGURED_COMPANY_EMAIL_DOMAIN
+  ? `Email phải đúng định dạng và kết thúc bằng @${CONFIGURED_COMPANY_EMAIL_DOMAIN}, @gmail.com hoặc @outlook.com.vn`
+  : 'Email phải đúng định dạng và dùng domain công ty hợp lệ, @gmail.com hoặc @outlook.com.vn';
+
 const INITIAL_FORM_DATA: AddEmployeeFormData = {
   employeeCode: '',
   fullName: '',
   email: '',
-  countryCode: '+84',
+  countryCode: VIETNAM_COUNTRY_CODE,
   phone: '',
-  accessGroup: 'Nhân viên',
+  accessGroupId: '',
   password: '',
   regionId: '',
   branchId: '',
@@ -92,6 +118,16 @@ const getOptionalNumber = (value: string): number | null => {
   return Number.isNaN(parsedValue) ? null : parsedValue;
 };
 
+const normalizeSearchText = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+
+const getPhoneMaxLength = (countryCode: string) =>
+  countryCode === VIETNAM_COUNTRY_CODE ? VIETNAM_PHONE_MAX_LENGTH : DEFAULT_PHONE_MAX_LENGTH;
+
 const normalizeBackendErrorKey = (key: string) =>
   key ? `${key.charAt(0).toLowerCase()}${key.slice(1)}` : key;
 
@@ -116,30 +152,18 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
   const [submitting, setSubmitting] = useState(false);
 
   // Form State
-  const [formData, setFormData] = useState<AddEmployeeFormData>({
-    employeeCode: '',
-    fullName: '',
-    email: '',
-    countryCode: '+84',
-    phone: '',
-    accessGroup: 'Nhân viên',
-    password: '',
-    regionId: '',
-    branchId: '',
-    departmentId: '',
-    jobTitleId: '',
-  });
+  const [formData, setFormData] = useState<AddEmployeeFormData>(INITIAL_FORM_DATA);
 
   // Error State
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Metadata State
   const [metadata, setMetadata] = useState<ModalMetadata>({
-    regions: [] as any[],
-    branches: [] as any[],
-    departments: [] as any[],
-    jobTitles: [] as any[],
-    accessGroups: [] as any[],
+    regions: [],
+    branches: [],
+    departments: [],
+    jobTitles: [],
+    accessGroups: [],
   });
 
   useEffect(() => {
@@ -168,15 +192,15 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
       const departments = normalizeMetadataOptions(departmentItems);
       const jobTitles = normalizeMetadataOptions(jobTitleItems);
       const accessGroups = normalizeMetadataOptions(accessGroupItems);
-      const defaultAccessGroup =
-        accessGroups.find((group) => group.name === INITIAL_FORM_DATA.accessGroup)?.name ??
-        accessGroups[0]?.name ??
-        INITIAL_FORM_DATA.accessGroup;
+      const defaultAccessGroupId =
+        accessGroups.find((group) => normalizeSearchText(group.name) === DEFAULT_ACCESS_GROUP_KEY)?.id?.toString() ??
+        accessGroups[0]?.id?.toString() ??
+        '';
 
       setFormData({
         ...INITIAL_FORM_DATA,
         employeeCode: code,
-        accessGroup: defaultAccessGroup,
+        accessGroupId: defaultAccessGroupId,
       });
       setMetadata({ regions, branches, departments, jobTitles, accessGroups });
     } catch (error) {
@@ -188,6 +212,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
+    const trimmedEmail = formData.email.trim();
 
     if (!formData.employeeCode.trim()) {
       newErrors.employeeCode = 'Mã nhân viên là bắt buộc';
@@ -199,30 +224,31 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
     }
     
     // Email (nếu nhập thì phải đúng định dạng)
-    if (formData.email) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.email)) {
-        newErrors.email = 'Định dạng email không hợp lệ (VD: example@mail.com)';
-      }
+    if (!trimmedEmail) {
+      newErrors.email = 'Email là bắt buộc';
+    } else if (!EMAIL_REGEX.test(trimmedEmail)) {
+      newErrors.email = EMAIL_ERROR_MESSAGE;
     }
 
-    // Số điện thoại (nếu nhập thì phải từ 9-11 số)
-    if (formData.phone) {
-      if (formData.phone.length < 9 || formData.phone.length > 11) {
-        newErrors.phone = 'Số điện thoại phải từ 9 đến 11 chữ số';
-      }
+    // Số điện thoại là bắt buộc; mã +84 không được vượt quá 10 số
+    if (!formData.phone) {
+      newErrors.phone = 'Số điện thoại là bắt buộc';
+    } else if (formData.countryCode === VIETNAM_COUNTRY_CODE && formData.phone.length > VIETNAM_PHONE_MAX_LENGTH) {
+      newErrors.phone = 'Với mã +84, số điện thoại không được quá 10 số';
     }
 
-    // Nhóm truy cập
-    if (!formData.accessGroup || formData.accessGroup === 'Chọn nhóm') {
-      newErrors.accessGroup = 'Vui lòng chọn nhóm truy cập';
+    if (!formData.accessGroupId) {
+      newErrors.accessGroupId = 'Vui lòng chọn nhóm truy cập';
     }
 
-    // Mật khẩu
     if (!formData.password) {
       newErrors.password = 'Mật khẩu là bắt buộc';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
+    } else if (formData.password.length < MIN_PASSWORD_LENGTH) {
+      newErrors.password = 'Mật khẩu phải dài hơn 6 ký tự';
+    }
+
+    if (newErrors.employeeCode) {
+      setIsExpanded(true);
     }
 
     setErrors(newErrors);
@@ -251,12 +277,36 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, ''); // Numeric only
+    const value = e.target.value.replace(/\D/g, '').slice(0, getPhoneMaxLength(formData.countryCode));
     handleInputChange('phone', value);
+  };
+
+  const handleCountryCodeChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      countryCode: value,
+      phone: prev.phone.slice(0, getPhoneMaxLength(value)),
+    }));
+
+    setErrors((prev) => {
+      if (!prev.phone) {
+        return prev;
+      }
+
+      const next = { ...prev };
+      delete next.phone;
+      return next;
+    });
   };
 
   const handleSubmit = async () => {
     if (!validate()) return;
+
+    const accessGroupId = getOptionalNumber(formData.accessGroupId);
+    if (!accessGroupId) {
+      setErrors((prev) => ({ ...prev, accessGroupId: 'Vui lòng chọn nhóm truy cập' }));
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -264,6 +314,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
         employeeCode: formData.employeeCode.trim(),
         fullName: formData.fullName.trim(),
         password: formData.password,
+        accessGroupId,
         email: formData.email.trim() || null,
         phone: formData.phone ? `${formData.countryCode}${formData.phone}` : null,
         branchId: getOptionalNumber(formData.branchId),
@@ -278,6 +329,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
         onClose();
         if (onSuccess) onSuccess();
       }, 1000);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error('Submit error:', error);
       showToast(error.Message || 'Có lỗi xảy ra khi tạo nhân viên', 'error');
@@ -291,6 +343,9 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
             backendErrors[normalizeBackendErrorKey(key)] = firstMessage;
           }
         });
+        if (backendErrors.employeeCode) {
+          setIsExpanded(true);
+        }
         setErrors(prev => ({ ...prev, ...backendErrors }));
       }
     } finally {
@@ -393,13 +448,15 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
 
             {/* Số điện thoại */}
             <div className="grid grid-cols-[1fr_2.5fr] items-start gap-6">
-              <label className="text-sm font-bold text-gray-700 pt-3">Số điện thoại</label>
+              <label className="text-sm font-bold text-gray-700 pt-3">
+                Số điện thoại <span className="text-red-500">*</span>
+              </label>
               <div className="space-y-1.5">
                 <div className="flex gap-2.5">
                   <div className="relative w-28 group">
                     <select 
                       value={formData.countryCode}
-                      onChange={(e) => handleInputChange('countryCode', e.target.value)}
+                      onChange={(e) => handleCountryCodeChange(e.target.value)}
                       className="w-full h-11 px-3 border border-gray-200 rounded-xl text-sm appearance-none bg-white focus:outline-none focus:border-[#192841] focus:ring-4 focus:ring-[#192841]/5 transition-all pr-8 cursor-pointer"
                     >
                       <option value="+84">+84</option>
@@ -413,6 +470,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
                     placeholder="Nhập số điện thoại" 
                     value={formData.phone}
                     onChange={handlePhoneChange}
+                    maxLength={getPhoneMaxLength(formData.countryCode)}
                     className={`flex-1 h-11 px-4 border rounded-xl text-sm focus:outline-none focus:ring-4 transition-all ${errors.phone ? 'border-red-400 bg-red-50/30 ring-red-100' : 'border-gray-200 focus:border-[#192841] focus:ring-[#192841]/5'}`}
                   />
                 </div>
@@ -426,18 +484,18 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
               <div className="space-y-1.5">
                 <div className="relative group">
                   <select 
-                    value={formData.accessGroup}
-                    onChange={(e) => handleInputChange('accessGroup', e.target.value)}
-                    className={`w-full h-11 px-4 border rounded-xl text-sm appearance-none bg-white focus:outline-none focus:ring-4 transition-all pr-10 cursor-pointer ${errors.accessGroup ? 'border-red-400 bg-red-50/30 ring-red-100' : 'border-gray-200 focus:border-[#192841] focus:ring-[#192841]/5'}`}
+                    value={formData.accessGroupId}
+                    onChange={(e) => handleInputChange('accessGroupId', e.target.value)}
+                    className={`w-full h-11 px-4 border rounded-xl text-sm appearance-none bg-white focus:outline-none focus:ring-4 transition-all pr-10 cursor-pointer ${errors.accessGroupId ? 'border-red-400 bg-red-50/30 ring-red-100' : 'border-gray-200 focus:border-[#192841] focus:ring-[#192841]/5'}`}
                   >
-                    <option value="Chọn nhóm">Chọn nhóm truy cập</option>
+                    <option value="">{loading ? 'Đang tải...' : 'Chọn nhóm truy cập'}</option>
                     {metadata.accessGroups.map(g => (
-                      <option key={g.id} value={g.name}>{g.name}</option>
+                      <option key={g.id} value={String(g.id)}>{g.name}</option>
                     ))}
                   </select>
                   <span className="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-focus-within:rotate-180 transition-transform text-[20px]">expand_more</span>
                 </div>
-                {errors.accessGroup && <p className="text-[11px] font-medium text-red-500 pl-1">{errors.accessGroup}</p>}
+                {errors.accessGroupId && <p className="text-[11px] font-medium text-red-500 pl-1">{errors.accessGroupId}</p>}
               </div>
             </div>
 
@@ -480,7 +538,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
             {isExpanded && (
               <div className="space-y-6 pt-4 animate-in fade-in slide-in-from-top-3 duration-300">
                 {/* Vùng */}
-                <div className="grid grid-cols-[1fr_2.5fr] items-center gap-6">
+                <div className="grid grid-cols-[1fr_2.5fr] items-start gap-6">
                   <label className="text-sm font-bold text-gray-700 flex items-center gap-1">
                     Vùng <span className="text-[11px] font-normal text-gray-400">(Tùy chọn)</span>
                   </label>
@@ -561,9 +619,9 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
                 </div>
 
                 {/* Mã nhân viên */}
-                <div className="grid grid-cols-[1fr_2.5fr] items-center gap-6">
+                <div className="grid grid-cols-[1fr_2.5fr] items-start gap-6">
                   <label className="text-sm font-bold text-gray-700 flex items-center gap-1">
-                    Mã nhân viên <span className="text-[11px] font-normal text-gray-400">(Tùy chọn)</span>
+                    Mã nhân viên <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <input 
@@ -571,11 +629,12 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
                       placeholder="Nhập mã nhân viên"
                       value={formData.employeeCode}
                       onChange={(e) => handleInputChange('employeeCode', e.target.value)}
-                      className={`w-full h-11 px-4 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-4 focus:ring-[#192841]/5 focus:border-[#192841] transition-all ${loading && !formData.employeeCode ? 'animate-pulse bg-gray-50' : ''}`}
+                      className={`w-full h-11 px-4 border rounded-xl text-sm focus:outline-none focus:ring-4 transition-all ${errors.employeeCode ? 'border-red-400 bg-red-50/30 ring-red-100' : 'border-gray-200 focus:border-[#192841] focus:ring-[#192841]/5'} ${loading && !formData.employeeCode ? 'animate-pulse bg-gray-50' : ''}`}
                     />
                     {loading && !formData.employeeCode && (
                        <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-[#192841]/20 border-t-[#192841] rounded-full animate-spin"></div>
                     )}
+                    {errors.employeeCode && <p className="mt-1 text-[11px] font-medium text-red-500 pl-1">{errors.employeeCode}</p>}
                   </div>
                 </div>
               </div>

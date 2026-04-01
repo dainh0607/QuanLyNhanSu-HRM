@@ -57,8 +57,8 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onSelectEmployee }) => {
       );
       setEmployees(response.items);
       setTotalRecords(response.totalCount);
-    } catch (error) {
-      console.error('Failed to fetch employees:', error);
+        } catch {
+      console.error('Failed to fetch employees');
     } finally {
       setIsLoading(false);
     }
@@ -97,7 +97,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onSelectEmployee }) => {
       try {
         await employeeService.deleteEmployee(id);
         fetchEmployees(); // Refresh list
-      } catch (error) {
+      } catch {
         alert('Xóa thất bại. Vui lòng thử lại.');
       }
     }
@@ -114,6 +114,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ onSelectEmployee }) => {
 
       <div className="flex flex-1 gap-6 min-h-0 overflow-hidden relative">
         <FilterSidebar 
+          key={JSON.stringify(activeFilters)}
           isOpen={isFilterOpen} 
           onClose={() => setIsFilterOpen(false)} 
           onApply={handleApplyFilters}

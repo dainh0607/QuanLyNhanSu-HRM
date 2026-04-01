@@ -30,8 +30,11 @@ namespace ERP.DTOs.Employees
         public DateTime? StartDate { get; set; }
         public string? IdentityNumber { get; set; }
 
+        [Required(ErrorMessage = "Nhóm truy cập là bắt buộc")]
+        public int? AccessGroupId { get; set; }
+
         [Required(ErrorMessage = "Mật khẩu là bắt buộc")]
-        [MinLength(6, ErrorMessage = "Mật khẩu phải từ 6 ký tự trở lên")]
+        [MinLength(7, ErrorMessage = "Mật khẩu phải dài hơn 6 ký tự")]
         public string Password { get; set; } = string.Empty;
 
         public string? WorkEmail { get; set; }

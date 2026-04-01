@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 
 export type ToastType = 'success' | 'error' | 'info';
 
@@ -36,24 +36,6 @@ const Toast: React.FC<ToastProps> = ({ message, type, onClose, duration = 3000 }
       </button>
     </div>
   );
-};
-
-export const useToast = () => {
-  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
-
-  const showToast = (message: string, type: ToastType = 'success') => {
-    setToast({ message, type });
-  };
-
-  const ToastComponent = toast ? (
-    <Toast 
-      message={toast.message} 
-      type={toast.type} 
-      onClose={() => setToast(null)} 
-    />
-  ) : null;
-
-  return { showToast, ToastComponent };
 };
 
 export default Toast;

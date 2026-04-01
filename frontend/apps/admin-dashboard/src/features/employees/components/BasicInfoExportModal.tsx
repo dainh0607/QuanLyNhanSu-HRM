@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { BasicInfoExportColumn } from '../data/basicInfoExportColumns';
 
 interface BasicInfoExportModalProps {
-  isOpen: boolean;
   columns: BasicInfoExportColumn[];
   totalEmployees: number;
   isExporting?: boolean;
@@ -11,27 +10,19 @@ interface BasicInfoExportModalProps {
 }
 
 const BasicInfoExportModal: React.FC<BasicInfoExportModalProps> = ({
-  isOpen,
   columns,
   totalEmployees,
   isExporting = false,
   onClose,
   onExport,
 }) => {
-  const [selectedColumnIds, setSelectedColumnIds] = useState<string[]>([]);
+  const [selectedColumnIds, setSelectedColumnIds] = useState<string[]>(() =>
+    columns.map((column) => column.id),
+  );
   const [searchTerm, setSearchTerm] = useState('');
   const selectAllRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!isOpen) return;
-
-    setSelectedColumnIds(columns.map((column) => column.id));
-    setSearchTerm('');
-  }, [isOpen, columns]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !isExporting) {
         onClose();
@@ -40,7 +31,7 @@ const BasicInfoExportModal: React.FC<BasicInfoExportModalProps> = ({
 
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [isExporting, isOpen, onClose]);
+  }, [isExporting, onClose]);
 
   const selectedCount = selectedColumnIds.length;
   const isAllSelected = columns.length > 0 && selectedCount === columns.length;
@@ -113,8 +104,6 @@ const BasicInfoExportModal: React.FC<BasicInfoExportModalProps> = ({
     if (selectedColumns.length === 0 || isExporting) return;
     onExport(selectedColumns);
   };
-
-  if (!isOpen) return null;
 
   return (
     <div

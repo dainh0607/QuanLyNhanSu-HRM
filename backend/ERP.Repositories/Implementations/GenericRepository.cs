@@ -35,9 +35,25 @@ namespace ERP.Repositories.Implementations
             return await _dbSet.ToListAsync();
         }
 
-        public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> expression)
+        public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> expression, string? includeProperties = null)
         {
-            return await _dbSet.Where(expression).ToListAsync();
+            IQueryable<T> query = _dbSet.Where(expression);
+
+            if (!string.IsNullOrWhiteSpace(includeProperties))
+            {
+                foreach (var includeProperty in includeProperties
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                {
+                    query = query.Include(includeProperty);
+                }
+            }
+
+            return await query.ToListAsync();
+        }
+
+        public Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> expression)
+        {
+            return FindAsync(expression, null);
         }
 
         public async Task AddAsync(T entity)

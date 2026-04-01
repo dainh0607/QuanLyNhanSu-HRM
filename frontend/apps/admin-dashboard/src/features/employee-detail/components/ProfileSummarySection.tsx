@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Employee } from '../../employees/types';
 import { EMPTY_VALUE } from '../constants';
+import EmptyValueDash from './EmptyValueDash';
 import SummaryInfoItem from './SummaryInfoItem';
 
 interface ProfileSummarySectionProps {
@@ -57,22 +58,42 @@ const ProfileSummarySection: React.FC<ProfileSummarySectionProps> = ({
           <div className="min-w-0 flex-1">
             <h2 className="text-[32px] font-bold leading-tight text-slate-950">{fullName}</h2>
 
-            <p className={`mt-1 text-lg ${roleValue === EMPTY_VALUE ? 'text-slate-400' : 'text-slate-500'}`}>
-              {roleValue}
-            </p>
-            <p
-              className={`mt-1 text-sm font-medium ${
-                jobTitleValue === EMPTY_VALUE ? 'text-slate-300' : 'text-slate-400'
-              }`}
-            >
-              Chức vụ: {jobTitleValue}
-            </p>
+            {roleValue === EMPTY_VALUE ? (
+              <EmptyValueDash className="mt-1 text-lg" />
+            ) : (
+              <p className="mt-1 text-lg text-slate-500">{roleValue}</p>
+            )}
+            {jobTitleValue === EMPTY_VALUE ? (
+              <p className="mt-1 text-sm font-medium text-slate-300">Chức vụ: -</p>
+            ) : (
+              <p className="mt-1 text-sm font-medium text-slate-400">Chức vụ: {jobTitleValue}</p>
+            )}
 
             <div className="mt-8 grid grid-cols-1 gap-x-10 gap-y-4 sm:grid-cols-2">
-              <SummaryInfoItem icon="call" value={contactPhone} />
-              <SummaryInfoItem icon="location_on" value={addressValue} />
-              <SummaryInfoItem icon="mail" value={contactEmail} />
-              <SummaryInfoItem icon="groups" value={departmentValue} />
+              <SummaryInfoItem
+                icon="call"
+                value={contactPhone}
+                emptyLabel="Số điện thoại"
+                emptyState="dash"
+              />
+              <SummaryInfoItem
+                icon="location_on"
+                value={addressValue}
+                emptyLabel="Địa chỉ"
+                emptyState="dash"
+              />
+              <SummaryInfoItem
+                icon="mail"
+                value={contactEmail}
+                emptyLabel="Email"
+                emptyState="dash"
+              />
+              <SummaryInfoItem
+                icon="groups"
+                value={departmentValue}
+                emptyLabel="Phòng ban"
+                emptyState="dash"
+              />
             </div>
           </div>
         </div>
@@ -82,24 +103,22 @@ const ProfileSummarySection: React.FC<ProfileSummarySectionProps> = ({
         <div className="space-y-6">
           <div>
             <p className="text-[13px] font-medium text-slate-500">Hình thức làm việc</p>
-            <p
-              className={`mt-2 text-[15px] font-semibold leading-7 ${
-                workTypeValue === EMPTY_VALUE ? 'text-slate-400' : 'text-slate-950'
-              }`}
-            >
-              {workTypeValue}
-            </p>
+            {workTypeValue === EMPTY_VALUE ? (
+              <EmptyValueDash className="mt-2 text-[15px]" />
+            ) : (
+              <p className="mt-2 text-[15px] font-semibold leading-7 text-slate-950">{workTypeValue}</p>
+            )}
           </div>
 
           <div>
             <p className="text-[13px] font-medium text-slate-500">Người quản lý trực tiếp</p>
-            <p
-              className={`mt-2 text-[15px] font-semibold leading-7 ${
-                directManagerValue === EMPTY_VALUE ? 'text-slate-400' : 'text-slate-950'
-              }`}
-            >
-              {directManagerValue}
-            </p>
+            {directManagerValue === EMPTY_VALUE ? (
+              <EmptyValueDash className="mt-2 text-[15px]" />
+            ) : (
+              <p className="mt-2 text-[15px] font-semibold leading-7 text-slate-950">
+                {directManagerValue}
+              </p>
+            )}
           </div>
         </div>
       </div>

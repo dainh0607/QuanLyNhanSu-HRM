@@ -1,10 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 
 const filterOptions = {
   'vùng': ['Miền Bắc', 'Miền Trung', 'Miền Nam'],
   'chi-nhánh': ['Trụ sở chính', 'CN Quận 1'],
   'phòng-ban': ['Kinh doanh', 'Kỹ thuật'],
 };
+
+type FilterOptionKey = keyof typeof filterOptions;
+
+const getFirstFilterOption = (id: string) => filterOptions[id as FilterOptionKey][0];
 
 interface FilterGroupProps {
   id: string;
@@ -26,39 +30,35 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
   initialFilters
 }) => {
   const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>(initialFilters);
-  const [checkedParents, setCheckedParents] = useState<Record<string, boolean>>(() => {
-    const initialChecked: Record<string, boolean> = {};
-    Object.keys(initialFilters).forEach(key => {
-      if (initialFilters[key].length > 0) initialChecked[key] = true;
-    });
-    return initialChecked;
-  });
+  const checkedParents = useMemo(() => {
+    const nextCheckedParents: Record<string, boolean> = {};
 
-  // Sync state if initialFilters change from parent (e.g. reset)
-  useEffect(() => {
-    setActiveFilters(initialFilters);
-    const initialChecked: Record<string, boolean> = {};
-    Object.keys(initialFilters).forEach(key => {
-      if (initialFilters[key].length > 0) initialChecked[key] = true;
+    Object.keys(activeFilters).forEach((key) => {
+      if (activeFilters[key].length > 0) {
+        nextCheckedParents[key] = true;
+      }
     });
-    setCheckedParents(initialChecked);
-  }, [initialFilters]);
+
+    return nextCheckedParents;
+  }, [activeFilters]);
 
   const handleParentCheck = (id: string, checked: boolean) => {
-    setCheckedParents((prev) => ({ ...prev, [id]: checked }));
     if (checked) {
-      if (!activeFilters[id] || activeFilters[id].length === 0) {
-        setActiveFilters((prev) => ({ ...prev, [id]: [filterOptions[id as keyof typeof filterOptions][0]] }));
-      }
-    } else {
-      setActiveFilters((prev) => ({ ...prev, [id]: [] }));
+      setActiveFilters((prev) =>
+        !prev[id] || prev[id].length === 0
+          ? { ...prev, [id]: [getFirstFilterOption(id)] }
+          : prev,
+      );
+      return;
     }
+
+    setActiveFilters((prev) => ({ ...prev, [id]: [] }));
   };
 
   const addFilter = (id: string) => {
     setActiveFilters((prev) => ({
       ...prev,
-      [id]: [...(prev[id] || []), filterOptions[id as keyof typeof filterOptions][0]],
+      [id]: [...(prev[id] || []), getFirstFilterOption(id)],
     }));
   };
 
@@ -66,9 +66,6 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
     setActiveFilters((prev) => {
       const newFilters = [...(prev[id] || [])];
       newFilters.splice(index, 1);
-      if (newFilters.length === 0) {
-        setCheckedParents((p) => ({ ...p, [id]: false }));
-      }
       return { ...prev, [id]: newFilters };
     });
   };
@@ -110,7 +107,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
                   value={val}
                   onChange={(e) => updateFilterValue(id, idx, e.target.value)}
                 >
-                  {filterOptions[id as keyof typeof filterOptions].map((opt) => (
+                  {filterOptions[id as FilterOptionKey].map((opt) => (
                     <option key={opt} value={opt}>
                       {opt}
                     </option>

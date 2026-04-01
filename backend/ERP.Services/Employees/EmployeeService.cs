@@ -324,6 +324,16 @@ namespace ERP.Services.Employees
             if (dto.JobTitleId.HasValue && await _unitOfWork.Repository<JobTitles>().GetByIdAsync(dto.JobTitleId.Value) == null)
                 throw new Exception($"Chức danh ID {dto.JobTitleId} không tồn tại.");
 
+            if (!dto.AccessGroupId.HasValue)
+                throw new Exception("Nhóm truy cập là bắt buộc.");
+
+            var accessGroup = await _unitOfWork.Repository<Roles>().GetByIdAsync(dto.AccessGroupId.Value);
+            if (accessGroup == null || !accessGroup.is_active)
+                throw new Exception($"Nhóm truy cập ID {dto.AccessGroupId} không tồn tại hoặc đã ngừng hoạt động.");
+
+            if (string.IsNullOrWhiteSpace(dto.Password) || dto.Password.Length <= 6)
+                throw new Exception("Mật khẩu phải dài hơn 6 ký tự.");
+
             // Check for duplicates
             var existingByCode = await _unitOfWork.Repository<EmployeeEntity>().FindAsync(e => e.employee_code == dto.EmployeeCode);
             if (existingByCode.Any())
@@ -382,8 +392,8 @@ namespace ERP.Services.Employees
                     // 4. Create local User mapping
                     var user = await _userService.CreateLocalUserAsync(employee.Id, userArgs.Email, firebaseUser.Uid);
 
-                    // 5. Assign default User role
-                    await _userService.AssignRoleAsync(user.Id, 3); // 3 = User
+                    // 5. Assign selected access group
+                    await _userService.AssignRoleAsync(user.Id, dto.AccessGroupId.Value);
 
                     await _unitOfWork.CommitTransactionAsync();
                 }
@@ -559,6 +569,7 @@ namespace ERP.Services.Employees
                 IdentityIssuePlace = e.identity_issue_place,
                 Passport = e.passport,
                 Nationality = e.nationality,
+                OriginPlace = e.origin_place,
                 Ethnicity = e.ethnicity,
                 Religion = e.religion,
                 StartDate = e.start_date,
