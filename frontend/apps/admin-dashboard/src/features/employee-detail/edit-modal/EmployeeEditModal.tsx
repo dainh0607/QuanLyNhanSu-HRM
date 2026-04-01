@@ -553,7 +553,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
             <EditModalSidebar activeSection={activeSection} onChange={handleSectionChange} />
 
             <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-              <div className="min-w-0 border-b border-slate-200 px-6 py-6 lg:px-9">
+              <div className="min-w-0 border-b border-slate-200 px-[1.1rem] pt-4 pb-[0.6rem] lg:px-[1.1rem]">
                 <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                   <div>
                     <h3 className="mt-1 text-[26px] font-bold tracking-tight text-[#253a69]">
