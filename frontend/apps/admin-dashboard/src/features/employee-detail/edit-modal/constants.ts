@@ -55,7 +55,11 @@ export const PERSONAL_TAB_PLACEHOLDER_COPY = {
     'Tab này đã được thêm vào thanh sub-tabs. Form chỉnh sửa chuyên biệt sẽ được nối ở bước tiếp theo.',
 } as const;
 
-export const GENDER_OPTIONS = ['Nam', 'Nữ', 'Khác'] as const;
+export const GENDER_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: 'MALE', label: 'Nam' },
+  { value: 'FEMALE', label: 'Nữ' },
+  { value: 'OTHER', label: 'Khác' },
+];
 
 export const IDENTITY_OPTIONS: Array<{ value: EmployeeIdentityType; label: string }> = [
   { value: 'CCCD', label: 'CCCD' },

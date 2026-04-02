@@ -159,9 +159,9 @@ export const buildSeedForms = (
       fullName: toStringValue(basicInfo?.fullName, employee.fullName),
       employeeCode: toStringValue(basicInfo?.employeeCode, employee.employeeCode),
       birthDate: toDateInputValue(basicInfo?.birthDate ?? employee.birthDate),
-      gender: toStringValue(
-        getRecordValue(basicInfoRecord, ['gender', 'genderName', 'genderCode']),
-        employee.gender,
+      genderCode: toStringValue(
+        getRecordValue(basicInfoRecord, ['genderCode', 'gender', 'genderName']),
+        employee.genderCode,
       ),
       displayOrder: toStringValue(
         getRecordValue(basicInfoRecord, ['displayOrder', 'sortOrder', 'orderNumber']),

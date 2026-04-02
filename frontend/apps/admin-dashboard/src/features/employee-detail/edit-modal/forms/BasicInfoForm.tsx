@@ -14,9 +14,11 @@ interface BasicInfoFormProps {
 }
 
 const BasicInfoForm: React.FC<BasicInfoFormProps> = ({ data, errors, onFieldChange }) => {
-  const genderOptions = data.gender.trim()
-    ? Array.from(new Set([...GENDER_OPTIONS, data.gender]))
-    : [...GENDER_OPTIONS];
+  const genderOptions = [...GENDER_OPTIONS];
+  const currentGender = data.genderCode.trim();
+  if (currentGender && !genderOptions.some((o) => o.value === currentGender)) {
+    genderOptions.push({ value: currentGender, label: currentGender });
+  }
 
   return (
     <>
@@ -54,17 +56,17 @@ const BasicInfoForm: React.FC<BasicInfoFormProps> = ({ data, errors, onFieldChan
           />
         </FormRow>
 
-        <FormRow label="Giới tính" required error={errors.gender}>
+        <FormRow label="Giới tính" required error={errors.genderCode}>
           <div className="relative">
             <select
-              value={data.gender}
-              onChange={(event) => onFieldChange('gender', event.target.value)}
-              className={`${getFieldClassName(Boolean(errors.gender))} appearance-none pr-12`}
+              value={data.genderCode}
+              onChange={(event) => onFieldChange('genderCode', event.target.value)}
+              className={`${getFieldClassName(Boolean(errors.genderCode))} appearance-none pr-12`}
             >
               <option value="">Chọn giới tính</option>
               {genderOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
+                <option key={option.value} value={option.value}>
+                  {option.label}
                 </option>
               ))}
             </select>

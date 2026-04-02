@@ -1,4 +1,4 @@
-﻿import type { Employee } from "../features/employees/types";
+import type { Employee } from "../features/employees/types";
 import { authFetch } from "./authService";
 import { PHONE_COUNTRY_NAMES } from "../features/employees/data/phoneCountryOptions";
 import { VIETNAM_PROVINCE_OPTIONS } from "../features/employee-detail/data/vietnamProvinceOptions";
@@ -251,7 +251,7 @@ export interface EmployeeEditBasicInfoPayload {
   fullName: string;
   employeeCode: string;
   birthDate: string;
-  gender: string;
+  genderCode: string;
   displayOrder: string;
   avatar: string;
 }
@@ -903,7 +903,8 @@ const mapEmployeeListItem = (item: Record<string, unknown>): Employee => ({
   accessGroup: toOptionalString(resolveAccessGroupName(item)),
   regionName: toOptionalString(getRecordValue(item, ["regionName", "RegionName"])),
   displayOrder: toOptionalNumber(getRecordValue(item, ["displayOrder", "DisplayOrder"])),
-  gender: toOptionalString(getRecordValue(item, ["gender", "Gender", "genderName", "GenderName"])),
+  genderCode: toOptionalString(getRecordValue(item, ["genderCode", "GenderCode", "gender", "Gender", "genderName", "GenderName"])),
+  maritalStatusCode: toOptionalString(getRecordValue(item, ["maritalStatusCode", "MaritalStatusCode", "maritalStatus", "MaritalStatus"])),
   timekeepingCode: toOptionalString(getRecordValue(item, ["timekeepingCode", "TimekeepingCode"])),
   workType: toOptionalString(getRecordValue(item, ["workType", "WorkType"])),
   lastActive: toOptionalDateString(getRecordValue(item, ["lastActive", "LastActive"])),
@@ -969,8 +970,8 @@ const mapBasicInfoForEdit = (profile: EmployeeFullProfile): EmployeeEditBasicInf
     fullName: toEditableString(profile.basicInfo.fullName),
     employeeCode: toEditableString(profile.basicInfo.employeeCode),
     birthDate: toDateInputValue(profile.basicInfo.birthDate),
-    gender: toEditableString(
-      getRecordValue(basicInfoRecord, ["gender", "genderName", "genderCode"])
+    genderCode: toEditableString(
+      getRecordValue(basicInfoRecord, ["genderCode", "gender"])
     ),
     displayOrder: toEditableString(
       getRecordValue(basicInfoRecord, ["displayOrder", "sortOrder", "orderNumber"])
@@ -1471,7 +1472,10 @@ export const employeeService = {
     }
 
     const profile = await fetchEmployeeFullProfileFallback(id);
-    return mapBasicInfoForEdit(profile);
+    return {
+      ...mapBasicInfoForEdit(profile),
+      genderCode: profile.basicInfo.genderCode || "",
+    };
   },
 
   updateEmployeeEditBasicInfo: async (
@@ -1484,16 +1488,13 @@ export const employeeService = {
     }
 
     const profile = await fetchEmployeeFullProfileFallback(id);
-    const basicInfoRecord = profile.basicInfo as unknown as Record<string, unknown>;
     const normalizedPayload: EmployeeBasicInfoUpdateRequest = {
       employeeCode: payload.employeeCode.trim(),
       fullName: payload.fullName.trim(),
       birthDate: payload.birthDate.trim() ? payload.birthDate : null,
-      genderCode: payload.gender.trim() || null,
+      genderCode: payload.genderCode.trim() || null,
       displayOrder: payload.displayOrder.trim() ? Number(payload.displayOrder.trim()) : null,
-      maritalStatusCode: toNullableEditableString(
-        getRecordValue(basicInfoRecord, ["maritalStatusCode", "maritalStatus"])
-      ),
+      maritalStatusCode: profile.basicInfo.maritalStatusCode ?? null,
       departmentId: profile.basicInfo.departmentId ?? null,
       jobTitleId: profile.basicInfo.jobTitleId ?? null,
       branchId: profile.basicInfo.branchId ?? null,

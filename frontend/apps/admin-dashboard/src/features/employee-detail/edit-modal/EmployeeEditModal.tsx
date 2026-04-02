@@ -268,8 +268,8 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
       nextErrors.birthDate = 'Ngày sinh là bắt buộc.';
     }
 
-    if (!data.gender.trim()) {
-      nextErrors.gender = 'Giới tính là bắt buộc.';
+    if (!data.genderCode.trim()) {
+      nextErrors.genderCode = 'Giới tính là bắt buộc.';
     }
 
     if (!data.displayOrder.trim()) {

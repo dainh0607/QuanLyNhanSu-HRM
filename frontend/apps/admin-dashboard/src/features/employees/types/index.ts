@@ -23,7 +23,8 @@ export interface Employee {
   accessGroup?: string;      // Nhóm truy cập
   regionName?: string;       // Vùng
   displayOrder?: number;      // Thứ tự hiển thị
-  gender?: string;           // Giới tính
+  genderCode?: string;         // Mã giới tính
+  maritalStatusCode?: string;  // Mã tình trạng hôn nhân
   timekeepingCode?: string;  // Mã chấm công
   workType?: string;         // Hình thức làm việc
   lastActive?: string;       // Hoạt động (Ngày truy cập cuối)
