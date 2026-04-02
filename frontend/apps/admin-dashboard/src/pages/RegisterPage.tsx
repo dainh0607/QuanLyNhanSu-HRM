@@ -1,5 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { authService } from '../services/authService';
+import {
+  DEFAULT_PHONE_COUNTRY_VALUE,
+  PHONE_COUNTRY_OPTIONS,
+  getDialCodeByPhoneCountryValue,
+  getPhoneCountryOptionByValue,
+  getPhoneLengthDescriptionByCountryValue,
+  validatePhoneNumberByCountryValue,
+} from '../features/employees/data/phoneCountryOptions';
 import './RegisterPage.css';
 
 const GoogleIcon = () => (
@@ -29,15 +37,57 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin, onRegist
   const [employeeCode, setEmployeeCode] = useState(''); // New field
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [phoneCountryValue, setPhoneCountryValue] = useState(DEFAULT_PHONE_COUNTRY_VALUE);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState(''); // New field
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [isPhoneCountryMenuOpen, setIsPhoneCountryMenuOpen] = useState(false);
+  const phoneCountryMenuRef = useRef<HTMLDivElement | null>(null);
+
+  const selectedPhoneCountry = useMemo(
+    () => getPhoneCountryOptionByValue(phoneCountryValue) ?? PHONE_COUNTRY_OPTIONS[0],
+    [phoneCountryValue],
+  );
+  const phoneLengthDescription = getPhoneLengthDescriptionByCountryValue(phoneCountryValue);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        phoneCountryMenuRef.current &&
+        event.target instanceof Node &&
+        !phoneCountryMenuRef.current.contains(event.target)
+      ) {
+        setIsPhoneCountryMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handlePhoneCountrySelect = (nextPhoneCountryValue: string) => {
+    const nextPhoneCountry =
+      getPhoneCountryOptionByValue(nextPhoneCountryValue) ?? selectedPhoneCountry;
+
+    setPhoneCountryValue(nextPhoneCountryValue);
+    setPhone((prevPhone) => prevPhone.replace(/\D/g, '').slice(0, nextPhoneCountry.maxLength));
+    setIsPhoneCountryMenuOpen(false);
+  };
+
+  const handlePhoneChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setPhone(event.target.value.replace(/\D/g, '').slice(0, selectedPhoneCountry.maxLength));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const phoneError = validatePhoneNumberByCountryValue(phoneCountryValue, phone);
+    if (phoneError) {
+      setError(phoneError);
+      return;
+    }
     if (!agreeTerms) {
       setError('Bạn cần đồng ý với điều khoản để tiếp tục.');
       return;
@@ -57,7 +107,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin, onRegist
         fullName, 
         employeeCode, 
         email, 
-        phoneNumber: phone, 
+        phoneNumber: `${getDialCodeByPhoneCountryValue(phoneCountryValue)}${phone}`, 
         password,
         confirmPassword 
       });
@@ -169,18 +219,61 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin, onRegist
         <label className="form-label" htmlFor="reg-phone">
           Số điện thoại
         </label>
-        <div className="input-wrapper">
-          <span className="input-icon material-symbols-outlined">phone</span>
-          <input
-            id="reg-phone"
-            type="tel"
-            className="input-field"
-            placeholder="09x xxx xxxx"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            autoComplete="tel"
-          />
+        <div className="phone-field-group">
+          <div className="phone-country-select" ref={phoneCountryMenuRef}>
+            <button
+              type="button"
+              className="phone-country-trigger"
+              onClick={() => setIsPhoneCountryMenuOpen((prev) => !prev)}
+              aria-haspopup="listbox"
+              aria-expanded={isPhoneCountryMenuOpen}
+            >
+              <span className="phone-country-trigger-text">
+                {selectedPhoneCountry?.selectedLabel ?? ''}
+              </span>
+              <span className="material-symbols-outlined phone-country-trigger-icon">
+                expand_more
+              </span>
+            </button>
+
+            {isPhoneCountryMenuOpen ? (
+              <div className="phone-country-menu" role="listbox">
+                {PHONE_COUNTRY_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    role="option"
+                    aria-selected={option.value === phoneCountryValue}
+                    className={`phone-country-option ${
+                      option.value === phoneCountryValue ? 'active' : ''
+                    }`}
+                    onClick={() => handlePhoneCountrySelect(option.value)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="input-wrapper phone-input-wrapper">
+            <span className="input-icon material-symbols-outlined">phone</span>
+            <input
+              id="reg-phone"
+              type="tel"
+              className="input-field"
+              placeholder="09x xxx xxxx"
+              value={phone}
+              onChange={handlePhoneChange}
+              autoComplete="tel"
+              inputMode="numeric"
+            />
+          </div>
         </div>
+        <p className="phone-field-hint">
+          Äá»™ dĂ i há»£p lá»‡: {phoneLengthDescription} cho mĂ£{' '}
+          {getDialCodeByPhoneCountryValue(phoneCountryValue)}
+        </p>
 
         <label className="form-label" htmlFor="reg-password">
           Mật khẩu

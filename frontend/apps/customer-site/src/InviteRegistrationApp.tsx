@@ -1,5 +1,3 @@
-export { default } from './InviteRegistrationApp';
-/*
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import './App.css';
@@ -48,10 +46,6 @@ const getInviteTokenFromPath = (pathname: string): string | null => {
 const validateForm = (formData: InviteRegistrationFormData): InviteRegistrationErrors => {
   const nextErrors: InviteRegistrationErrors = {};
   const normalizedEmail = formData.email.trim();
-  const phoneError = validatePhoneNumberByCountryValue(
-    formData.phoneCountryValue,
-    formData.phone,
-  );
 
   if (!formData.fullName.trim()) {
     nextErrors.fullName = 'Họ và tên là bắt buộc.';
@@ -63,10 +57,12 @@ const validateForm = (formData: InviteRegistrationFormData): InviteRegistrationE
     nextErrors.email = 'Email chưa đúng định dạng.';
   }
 
+  const phoneError = validatePhoneNumberByCountryValue(
+    formData.phoneCountryValue,
+    formData.phone,
+  );
   if (phoneError) {
-    nextErrors.phone = 'Số điện thoại là bắt buộc.';
-  } else if (normalizedPhone.length < 9 || normalizedPhone.length > 15) {
-    nextErrors.phone = 'Số điện thoại cần từ 9 đến 15 chữ số.';
+    nextErrors.phone = phoneError;
   }
 
   if (!formData.password) {
@@ -96,6 +92,41 @@ function InviteRegistrationPage({ inviteToken }: { inviteToken: string }) {
   const [formData, setFormData] = useState<InviteRegistrationFormData>(INITIAL_FORM_DATA);
   const [errors, setErrors] = useState<InviteRegistrationErrors>({});
   const [formMessage, setFormMessage] = useState('');
+  const [isPhoneCountryMenuOpen, setIsPhoneCountryMenuOpen] = useState(false);
+  const phoneCountryRef = useRef<HTMLDivElement | null>(null);
+
+  const selectedPhoneCountry = useMemo(
+    () =>
+      getPhoneCountryOptionByValue(formData.phoneCountryValue) ?? PHONE_COUNTRY_OPTIONS[0],
+    [formData.phoneCountryValue],
+  );
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        phoneCountryRef.current &&
+        event.target instanceof Node &&
+        !phoneCountryRef.current.contains(event.target)
+      ) {
+        setIsPhoneCountryMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const clearFieldError = (field: keyof InviteRegistrationFormData) => {
+    setErrors((prev) => {
+      if (!prev[field]) {
+        return prev;
+      }
+
+      const nextErrors = { ...prev };
+      delete nextErrors[field];
+      return nextErrors;
+    });
+  };
 
   const handleInputChange =
     (field: keyof InviteRegistrationFormData) =>
@@ -103,7 +134,7 @@ function InviteRegistrationPage({ inviteToken }: { inviteToken: string }) {
       const rawValue = event.target.value;
       const nextValue =
         field === 'phone'
-          ? rawValue.replace(/[^\d+]/g, '').replace(/(?!^)\+/g, '').slice(0, 16)
+          ? rawValue.replace(/\D/g, '').slice(0, selectedPhoneCountry.maxLength)
           : rawValue;
 
       setFormData((prev) => ({
@@ -111,20 +142,34 @@ function InviteRegistrationPage({ inviteToken }: { inviteToken: string }) {
         [field]: nextValue,
       }));
 
-      setErrors((prev) => {
-        if (!prev[field]) {
-          return prev;
-        }
+      clearFieldError(field);
 
-        const nextErrors = { ...prev };
-        delete nextErrors[field];
-        return nextErrors;
-      });
+      if (field === 'phone') {
+        clearFieldError('phoneCountryValue');
+      }
 
       if (formMessage) {
         setFormMessage('');
       }
     };
+
+  const handlePhoneCountrySelect = (nextPhoneCountryValue: string) => {
+    const nextPhoneCountry =
+      getPhoneCountryOptionByValue(nextPhoneCountryValue) ?? selectedPhoneCountry;
+
+    setFormData((prev) => ({
+      ...prev,
+      phoneCountryValue: nextPhoneCountryValue,
+      phone: prev.phone.slice(0, nextPhoneCountry.maxLength),
+    }));
+
+    clearFieldError('phone');
+    setIsPhoneCountryMenuOpen(false);
+
+    if (formMessage) {
+      setFormMessage('');
+    }
+  };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -152,8 +197,8 @@ function InviteRegistrationPage({ inviteToken }: { inviteToken: string }) {
           <span className="invite-badge">Lời mời tham gia hệ thống</span>
           <h1>Chào mừng bạn đến với NexaHR</h1>
           <p className="invite-hero-copy">
-            Bạn đã nhận được lời mời tạo tài khoản để hoàn tất hồ sơ và bắt đầu sử dụng hệ thống.
-            Vui lòng điền đầy đủ thông tin bên phải để kích hoạt tài khoản của mình.
+            Bạn đã nhận được lời mời tạo tài khoản để hoàn tất hồ sơ và bắt đầu sử dụng hệ
+            thống. Vui lòng điền đầy đủ thông tin bên phải để kích hoạt tài khoản của mình.
           </p>
 
           <div className="invite-token-panel">
@@ -196,20 +241,61 @@ function InviteRegistrationPage({ inviteToken }: { inviteToken: string }) {
                 onChange={handleInputChange('email')}
                 className={errors.email ? 'is-invalid' : ''}
               />
-              {errors.email && <small>{errors.email}</small>}
+              {errors.email ? <small>{errors.email}</small> : null}
             </label>
 
-            <label className="invite-field">
+            <div className="invite-field">
               <span>Số điện thoại</span>
-              <input
-                type="tel"
-                placeholder="Nhập số điện thoại"
-                value={formData.phone}
-                onChange={handleInputChange('phone')}
-                className={errors.phone ? 'is-invalid' : ''}
-              />
-              {errors.phone && <small>{errors.phone}</small>}
-            </label>
+              <div className="invite-phone-group">
+                <div className="invite-phone-country" ref={phoneCountryRef}>
+                  <button
+                    type="button"
+                    className={`invite-phone-trigger ${errors.phone ? 'is-invalid' : ''}`}
+                    aria-haspopup="listbox"
+                    aria-expanded={isPhoneCountryMenuOpen}
+                    onClick={() => setIsPhoneCountryMenuOpen((prev) => !prev)}
+                  >
+                    <span>{selectedPhoneCountry.selectedLabel}</span>
+                    <span className="invite-phone-chevron" aria-hidden="true">
+                      {isPhoneCountryMenuOpen ? '▴' : '▾'}
+                    </span>
+                  </button>
+
+                  {isPhoneCountryMenuOpen ? (
+                    <div className="invite-phone-menu" role="listbox">
+                      {PHONE_COUNTRY_OPTIONS.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          role="option"
+                          aria-selected={option.value === formData.phoneCountryValue}
+                          className={`invite-phone-option ${
+                            option.value === formData.phoneCountryValue ? 'is-active' : ''
+                          }`}
+                          onClick={() => handlePhoneCountrySelect(option.value)}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  placeholder="Nhập số điện thoại"
+                  value={formData.phone}
+                  onChange={handleInputChange('phone')}
+                  className={`invite-phone-input ${errors.phone ? 'is-invalid' : ''}`}
+                />
+              </div>
+
+              <span className="invite-field-hint">
+                Độ dài hợp lệ: {getPhoneLengthDescriptionByCountryValue(formData.phoneCountryValue)}
+              </span>
+              {errors.phone ? <small>{errors.phone}</small> : null}
+            </div>
 
             <label className="invite-field">
               <span>Họ và tên</span>
@@ -220,7 +306,7 @@ function InviteRegistrationPage({ inviteToken }: { inviteToken: string }) {
                 onChange={handleInputChange('fullName')}
                 className={errors.fullName ? 'is-invalid' : ''}
               />
-              {errors.fullName && <small>{errors.fullName}</small>}
+              {errors.fullName ? <small>{errors.fullName}</small> : null}
             </label>
 
             <label className="invite-field">
@@ -232,7 +318,7 @@ function InviteRegistrationPage({ inviteToken }: { inviteToken: string }) {
                 onChange={handleInputChange('password')}
                 className={errors.password ? 'is-invalid' : ''}
               />
-              {errors.password && <small>{errors.password}</small>}
+              {errors.password ? <small>{errors.password}</small> : null}
             </label>
 
             <label className="invite-field">
@@ -244,10 +330,10 @@ function InviteRegistrationPage({ inviteToken }: { inviteToken: string }) {
                 onChange={handleInputChange('confirmPassword')}
                 className={errors.confirmPassword ? 'is-invalid' : ''}
               />
-              {errors.confirmPassword && <small>{errors.confirmPassword}</small>}
+              {errors.confirmPassword ? <small>{errors.confirmPassword}</small> : null}
             </label>
 
-            {formMessage && <div className="invite-form-message">{formMessage}</div>}
+            {formMessage ? <div className="invite-form-message">{formMessage}</div> : null}
 
             <button type="submit" className="invite-submit-button">
               Tạo tài khoản
@@ -266,15 +352,15 @@ function InviteFallbackPage() {
         <span className="invite-badge">Link lời mời</span>
         <h1>Không tìm thấy lời mời hợp lệ</h1>
         <p>
-          Vui lòng truy cập đúng đường dẫn có dạng <code>/invite/:token</code> để mở form đăng ký
-          tài khoản.
+          Vui lòng truy cập đúng đường dẫn có dạng <code>/invite/:token</code> để mở form đăng
+          ký tài khoản.
         </p>
       </section>
     </main>
   );
 }
 
-function App() {
+function InviteRegistrationApp() {
   const [pathname, setPathname] = useState(() => window.location.pathname);
 
   useEffect(() => {
@@ -295,5 +381,4 @@ function App() {
   return <InviteRegistrationPage inviteToken={inviteToken} />;
 }
 
-export default App;
-*/
+export default InviteRegistrationApp;

@@ -314,12 +314,7 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
     try {
       const optimizedAvatar = await optimizeAvatarImage(file);
       const avatar = optimizedAvatar.dataUrl;
-      const basicInfoPayload = await employeeService.getEmployeeEditBasicInfo(employee.id);
-
-      await employeeService.updateEmployeeEditBasicInfo(employee.id, {
-        ...basicInfoPayload,
-        avatar,
-      });
+      await employeeService.updateEmployeeAvatar(employee.id, avatar);
 
       setDisplayEmployee((prev) => ({
         ...prev,

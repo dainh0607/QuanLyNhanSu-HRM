@@ -3,7 +3,7 @@ import type {
   EmployeeEditEducationItemPayload,
   EmployeeEditEducationPayload,
 } from '../../../../services/employeeService';
-import { FormHeading, FormRow } from '../components/FormPrimitives';
+import { DatePickerInput, FormHeading, FormRow } from '../components/FormPrimitives';
 import { getFieldClassName } from '../formStyles';
 
 interface EducationListFormProps {
@@ -193,11 +193,10 @@ const EducationListForm: React.FC<EducationListFormProps> = ({ data, onChange })
               </FormRow>
 
               <FormRow label="Ngày cấp">
-                <input
-                  type="date"
+                <DatePickerInput
                   value={item.issueDate}
-                  onChange={(event) => updateItem(index, { issueDate: event.target.value })}
-                  className={getFieldClassName(false)}
+                  ariaLabel={`ngày cấp bằng cấp ${index + 1}`}
+                  onChange={(value) => updateItem(index, { issueDate: value })}
                 />
               </FormRow>
 

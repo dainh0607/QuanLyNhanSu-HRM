@@ -201,8 +201,22 @@ const PersonalTabContent: React.FC<PersonalTabContentProps> = ({
     { label: 'Ngân hàng', value: bankNameValue },
     { label: 'Chi nhánh', value: bankBranchValue },
   ]);
-  const healthPromptLabel: string | null = null;
-  const additionalInfoPromptLabel: string | null = null;
+  const healthPromptLabel = getFirstEmptyLabel([
+    { label: 'Chiều cao', value: healthHeightValue },
+    { label: 'Cân nặng', value: healthWeightValue },
+    { label: 'Nhóm máu', value: healthBloodTypeValue },
+    { label: 'Tình trạng sức khỏe', value: healthStatusValue },
+    { label: 'Bệnh bẩm sinh/mãn tính', value: healthDiseaseValue },
+    { label: 'Ngày kiểm tra gần nhất', value: healthCheckDateValue },
+  ]);
+  const additionalInfoPromptLabel = getFirstEmptyLabel([
+    { label: 'Công đoàn', value: unionValue },
+    { label: 'Tôn giáo', value: religionValue },
+    { label: 'Dân tộc', value: ethnicityValue },
+    { label: 'Tình trạng hôn nhân', value: maritalStatusValue },
+    { label: 'Mã số thuế', value: taxCodeValue },
+    { label: 'Ghi chú', value: noteValue },
+  ]);
   const handleOpenBasicInfoTab = () => onOpenEditTab?.('basicInfo');
   const handleOpenContactTab = () => onOpenEditTab?.('contact');
   const handleOpenEmergencyContactTab = () => onOpenEditTab?.('emergencyContact');
@@ -210,6 +224,9 @@ const PersonalTabContent: React.FC<PersonalTabContentProps> = ({
   const handleOpenEducationTab = () => onOpenEditTab?.('education');
   const handleOpenIdentityTab = () => onOpenEditTab?.('identity');
   const handleOpenBankAccountTab = () => onOpenEditTab?.('bankAccount');
+  const handleOpenHealthTab = () => onOpenEditTab?.('health');
+  const handleOpenAdditionalInfoTab = () => onOpenEditTab?.('additionalInfo');
+  const handleOpenDependentsTab = () => onOpenEditTab?.('dependents');
 
   return (
     <div className="space-y-8">
@@ -564,31 +581,37 @@ const PersonalTabContent: React.FC<PersonalTabContentProps> = ({
               label="Chiều cao"
               value={healthHeightValue}
               emptyState={getEmptyValueMode('Chiều cao', healthPromptLabel)}
+              onEmptyClick={handleOpenHealthTab}
             />
             <DetailField
               label="Cân nặng"
               value={healthWeightValue}
               emptyState={getEmptyValueMode('Cân nặng', healthPromptLabel)}
+              onEmptyClick={handleOpenHealthTab}
             />
             <DetailField
               label="Nhóm máu"
               value={healthBloodTypeValue}
               emptyState={getEmptyValueMode('Nhóm máu', healthPromptLabel)}
+              onEmptyClick={handleOpenHealthTab}
             />
             <DetailField
               label="Tình trạng sức khỏe"
               value={healthStatusValue}
               emptyState={getEmptyValueMode('Tình trạng sức khỏe', healthPromptLabel)}
+              onEmptyClick={handleOpenHealthTab}
             />
             <DetailField
               label="Bệnh bẩm sinh/mãn tính"
               value={healthDiseaseValue}
               emptyState={getEmptyValueMode('Bệnh bẩm sinh/mãn tính', healthPromptLabel)}
+              onEmptyClick={handleOpenHealthTab}
             />
             <DetailField
               label="Ngày kiểm tra gần nhất"
               value={healthCheckDateValue}
               emptyState={getEmptyValueMode('Ngày kiểm tra gần nhất', healthPromptLabel)}
+              onEmptyClick={handleOpenHealthTab}
             />
           </div>
         </DetailBlock>
@@ -599,43 +622,61 @@ const PersonalTabContent: React.FC<PersonalTabContentProps> = ({
               label="Công đoàn"
               value={unionValue}
               emptyState={getEmptyValueMode('Công đoàn', additionalInfoPromptLabel)}
+              onEmptyClick={handleOpenAdditionalInfoTab}
             />
             <DetailField
               label="Tôn giáo"
               value={religionValue}
               emptyState={getEmptyValueMode('Tôn giáo', additionalInfoPromptLabel)}
+              onEmptyClick={handleOpenAdditionalInfoTab}
             />
             <DetailField
               label="Dân tộc"
               value={ethnicityValue}
               emptyState={getEmptyValueMode('Dân tộc', additionalInfoPromptLabel)}
+              onEmptyClick={handleOpenAdditionalInfoTab}
             />
             <DetailField
               label="Tình trạng hôn nhân"
               value={maritalStatusValue}
               emptyState={getEmptyValueMode('Tình trạng hôn nhân', additionalInfoPromptLabel)}
+              onEmptyClick={handleOpenAdditionalInfoTab}
             />
             <DetailField
               label="Mã số thuế"
               value={taxCodeValue}
               mono
               emptyState={getEmptyValueMode('Mã số thuế', additionalInfoPromptLabel)}
+              onEmptyClick={handleOpenAdditionalInfoTab}
             />
             <DetailField
               label="Ghi chú"
               value={noteValue}
               emptyState={getEmptyValueMode('Ghi chú', additionalInfoPromptLabel)}
+              onEmptyClick={handleOpenAdditionalInfoTab}
             />
           </div>
         </DetailBlock>
       </div>
 
-      <DetailBlock title="Người phụ thuộc">
+      <DetailBlock
+        title="Người phụ thuộc"
+        action={
+          <button
+            type="button"
+            onClick={handleOpenDependentsTab}
+            className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:border-emerald-300 hover:bg-emerald-100"
+          >
+            <span className="mr-1 text-sm leading-none">+</span>
+            Thêm người phụ thuộc
+          </button>
+        }
+      >
         {dependents.length === 0 ? (
           <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-6 py-12 text-center">
             <p className="text-sm font-semibold text-slate-700">Chưa có người phụ thuộc trong hồ sơ.</p>
             <p className="mt-1 text-sm text-slate-500">
-              Block này đã sẵn sàng hiển thị dạng bảng ngay khi backend trả dữ liệu.
+              Block này đã sẵn sàng hiển thị dạng bảng ngay khi có dữ liệu.
             </p>
           </div>
         ) : (

@@ -1,6 +1,7 @@
 ﻿import type { Employee } from "../features/employees/types";
 import { authFetch } from "./authService";
 import { PHONE_COUNTRY_NAMES } from "../features/employees/data/phoneCountryOptions";
+import { VIETNAM_PROVINCE_OPTIONS } from "../features/employee-detail/data/vietnamProvinceOptions";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5122/api";
 
@@ -27,7 +28,11 @@ const requestJson = async <T>(
     }
 
     const errorText = (await clonedResponse.text()).trim();
-    throw new Error(errorText || `${fallbackMessage}: ${response.statusText}`);
+    const error = new Error(errorText || `${fallbackMessage}: ${response.statusText}`) as Error & {
+      status?: number;
+    };
+    error.status = response.status;
+    throw error;
   }
 
   if (response.status === 204) {
@@ -52,7 +57,11 @@ const requestBlob = async (
     }
 
     const errorText = (await clonedResponse.text()).trim();
-    throw new Error(errorText || `${fallbackMessage}: ${response.statusText}`);
+    const error = new Error(errorText || `${fallbackMessage}: ${response.statusText}`) as Error & {
+      status?: number;
+    };
+    error.status = response.status;
+    throw error;
   }
 
   return {
@@ -89,6 +98,30 @@ const parseDownloadFilename = (
 
   const asciiFilenameMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
   return asciiFilenameMatch?.[1] || fallbackFilename;
+};
+
+const isNotFoundError = (error: unknown): boolean => {
+  if (error instanceof Error) {
+    const httpError = error as Error & { status?: number };
+    return httpError.status === 404 || error.message.toLowerCase().includes("not found");
+  }
+
+  if (typeof error === "object" && error !== null) {
+    const errorRecord = error as Record<string, unknown>;
+    const status =
+      errorRecord.status ??
+      errorRecord.statusCode ??
+      errorRecord.Status ??
+      errorRecord.StatusCode;
+    const messageSource =
+      errorRecord.message ?? errorRecord.Message ?? errorRecord.title ?? errorRecord.Title;
+    const message =
+      typeof messageSource === "string" ? messageSource.toLowerCase() : "";
+
+    return status === 404 || message.includes("not found");
+  }
+
+  return false;
 };
 
 export interface PaginatedResponse<T> {
@@ -418,6 +451,7 @@ const toEmployeeAddressUpdatePayload = (
 
 const EMPLOYEE_PROFILE_ENDPOINTS = {
   basicInfo: `${API_URL}/employees/:employeeId/profile/basic-info`,
+  avatar: `${API_URL}/employees/:employeeId/profile/avatar`,
   contact: `${API_URL}/employees/:employeeId/profile/contact`,
   emergencyContact: `${API_URL}/employees/:employeeId/profile/emergency-contacts`,
   otherInfo: `${API_URL}/employees/:employeeId/profile/other-info`,
@@ -659,6 +693,59 @@ const normalizeText = (value: unknown): string =>
         .replace(/[\u0300-\u036f]/g, "")
         .toLowerCase()
     : "";
+
+const isVietnamCountry = (value: string): boolean => {
+  const normalizedValue = normalizeText(value).replace(/[^a-z]/g, "");
+  return normalizedValue === "vietnam";
+};
+
+const getUniqueTrimmedValues = (values: Array<string | null | undefined>): string[] =>
+  Array.from(
+    new Set(
+      values
+        .map((value) => value?.trim())
+        .filter((value): value is string => Boolean(value))
+    )
+  );
+
+const getAddressCountryQueryCandidates = (country: string): string[] =>
+  isVietnamCountry(country)
+    ? getUniqueTrimmedValues([country, "Vietnam", "Việt Nam"])
+    : getUniqueTrimmedValues([country]);
+
+const getAddressCityQueryCandidates = (country: string, city: string): string[] => {
+  const trimmedCity = city.trim();
+  if (!trimmedCity) {
+    return [];
+  }
+
+  if (!isVietnamCountry(country)) {
+    return [trimmedCity];
+  }
+
+  const withoutProvincePrefix = trimmedCity.replace(/^Tỉnh\s+/iu, "").trim();
+  const withoutCityPrefix = trimmedCity.replace(/^Thành phố\s+/iu, "").trim();
+  const withoutTpPrefix = trimmedCity.replace(/^TP\.?\s+/iu, "").trim();
+  const normalizedCity = normalizeText(trimmedCity).replace(/[^a-z]/g, "");
+  const isHoChiMinh =
+    normalizedCity === "thanhphohochiminh" ||
+    normalizedCity === "hochiminh" ||
+    normalizedCity === "tphochiminh";
+
+  return getUniqueTrimmedValues([
+    trimmedCity,
+    withoutProvincePrefix,
+    withoutCityPrefix,
+    withoutTpPrefix,
+    withoutProvincePrefix ? `Tỉnh ${withoutProvincePrefix}` : undefined,
+    withoutCityPrefix ? `Thành phố ${withoutCityPrefix}` : undefined,
+    withoutTpPrefix ? `TP ${withoutTpPrefix}` : undefined,
+    isHoChiMinh ? "Thành phố Hồ Chí Minh" : undefined,
+    isHoChiMinh ? "Hồ Chí Minh" : undefined,
+    isHoChiMinh ? "TP Hồ Chí Minh" : undefined,
+    isHoChiMinh ? "TP. Hồ Chí Minh" : undefined,
+  ]);
+};
 
 const getRecordValue = (source: Record<string, unknown>, keys: string[]): unknown => {
   for (const key of keys) {
@@ -1290,16 +1377,20 @@ export const employeeService = {
       return [];
     }
 
+    const localVietnamOptions = isVietnamCountry(country) ? VIETNAM_PROVINCE_OPTIONS : [];
     const response = await authFetch(
       `${API_URL}/metadata/${EMPLOYEE_METADATA_ENDPOINTS.addressCities}?country=${encodeURIComponent(country)}`,
       { method: "GET" }
     );
     if (!response.ok) {
-      return [];
+      return getUniqueSortedOptionNames(localVietnamOptions);
     }
 
     const options = (await response.json()) as AddressOptionMetadata[];
-    return getUniqueSortedOptionNames(options.map((option) => option.name));
+    return getUniqueSortedOptionNames([
+      ...localVietnamOptions,
+      ...options.map((option) => option.name),
+    ]);
   },
 
   getAddressDistrictOptions: async (country: string, city: string): Promise<string[]> => {
@@ -1307,16 +1398,28 @@ export const employeeService = {
       return [];
     }
 
-    const response = await authFetch(
-      `${API_URL}/metadata/${EMPLOYEE_METADATA_ENDPOINTS.addressDistricts}?country=${encodeURIComponent(country)}&city=${encodeURIComponent(city)}`,
-      { method: "GET" }
-    );
-    if (!response.ok) {
-      return [];
+    const countryCandidates = getAddressCountryQueryCandidates(country);
+    const cityCandidates = getAddressCityQueryCandidates(country, city);
+
+    for (const countryCandidate of countryCandidates) {
+      for (const cityCandidate of cityCandidates) {
+        const response = await authFetch(
+          `${API_URL}/metadata/${EMPLOYEE_METADATA_ENDPOINTS.addressDistricts}?country=${encodeURIComponent(countryCandidate)}&city=${encodeURIComponent(cityCandidate)}`,
+          { method: "GET" }
+        );
+        if (!response.ok) {
+          continue;
+        }
+
+        const options = (await response.json()) as AddressOptionMetadata[];
+        const optionNames = getUniqueSortedOptionNames(options.map((option) => option.name));
+        if (optionNames.length > 0) {
+          return optionNames;
+        }
+      }
     }
 
-    const options = (await response.json()) as AddressOptionMetadata[];
-    return getUniqueSortedOptionNames(options.map((option) => option.name));
+    return [];
   },
 
   createEmployee: async (dto: EmployeeCreatePayload): Promise<unknown> => {
@@ -1407,6 +1510,39 @@ export const employeeService = {
       },
       "Error updating employee basic info"
     );
+  },
+
+  updateEmployeeAvatar: async (id: number, avatar: string | null): Promise<unknown> => {
+    const endpoint = resolveEmployeeEditEndpoint(EMPLOYEE_PROFILE_ENDPOINTS.avatar, id);
+    if (!endpoint) {
+      throw createMissingEndpointError("PUT", "Ảnh đại diện");
+    }
+
+    const normalizedAvatar = toNullableEditableString(avatar);
+
+    try {
+      return await requestJson<unknown>(
+        endpoint,
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            avatar: normalizedAvatar,
+          }),
+        },
+        "Error updating employee avatar"
+      );
+    } catch (error) {
+      if (!isNotFoundError(error)) {
+        throw error;
+      }
+
+      const basicInfoPayload = await employeeService.getEmployeeEditBasicInfo(id);
+
+      return employeeService.updateEmployeeEditBasicInfo(id, {
+        ...basicInfoPayload,
+        avatar: normalizedAvatar ?? "",
+      });
+    }
   },
 
   getEmployeeEditContact: async (id: number): Promise<EmployeeEditContactPayload> => {

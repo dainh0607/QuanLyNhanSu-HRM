@@ -227,7 +227,7 @@ const EmployeeDataTable: React.FC<EmployeeDataTableProps> = ({
               </th>
             ))}
 
-            <th className="sticky right-0 z-20 border-b border-l border-gray-100 bg-gray-50 px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
+            <th className="sticky right-0 z-[900] border-b border-l border-gray-100 bg-gray-50 px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
               Thao tác
             </th>
           </tr>
@@ -315,7 +315,7 @@ const EmployeeDataTable: React.FC<EmployeeDataTableProps> = ({
 
                 <td
                   className={`sticky right-0 border-b border-l border-gray-100 bg-white px-4 py-4 text-right shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.05)] group-hover:bg-gray-50 ${
-                    activeMenuId === employee.id ? 'z-[100]' : 'z-[50]'
+                    activeMenuId === employee.id ? 'z-[0]' : 'z-[0]'
                   }`}
                 >
                   <div className="relative inline-block text-left">
