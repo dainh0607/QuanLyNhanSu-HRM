@@ -19,17 +19,17 @@ namespace ERP.Entities.Seeding
 
             // 2. Genders
             modelBuilder.Entity<Genders>().HasData(
-                new Genders { Id = 1, code = "M", name = "Nam" },
-                new Genders { Id = 2, code = "F", name = "Nữ" },
-                new Genders { Id = 3, code = "O", name = "Khác" }
+                new Genders { Id = 1, code = "MALE", name = "Nam" },
+                new Genders { Id = 2, code = "FEMALE", name = "Nữ" },
+                new Genders { Id = 3, code = "OTHER", name = "Khác" }
             );
 
             // 3. MaritalStatuses
             modelBuilder.Entity<MaritalStatuses>().HasData(
-                new MaritalStatuses { Id = 1, code = "S", name = "Độc thân" },
-                new MaritalStatuses { Id = 2, code = "M", name = "Đã kết hôn" },
-                new MaritalStatuses { Id = 3, code = "D", name = "Ly hôn" },
-                new MaritalStatuses { Id = 4, code = "W", name = "Góa" }
+                new MaritalStatuses { Id = 1, code = "SINGLE", name = "Độc thân" },
+                new MaritalStatuses { Id = 2, code = "MARRIED", name = "Đã kết hôn" },
+                new MaritalStatuses { Id = 3, code = "DIVORCED", name = "Ly hôn" },
+                new MaritalStatuses { Id = 4, code = "WIDOWED", name = "Góa" }
             );
 
             // 4. AddressTypes

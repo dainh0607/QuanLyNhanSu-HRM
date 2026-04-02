@@ -26,11 +26,15 @@ namespace ERP.API.Auth
 
         private readonly RequestDelegate _next;
         private readonly AuthCsrfOptions _options;
+        private readonly IWebHostEnvironment _env;
+        private readonly ILogger<CsrfProtectionMiddleware> _logger;
 
-        public CsrfProtectionMiddleware(RequestDelegate next, AuthCsrfOptions options)
+        public CsrfProtectionMiddleware(RequestDelegate next, AuthCsrfOptions options, IWebHostEnvironment env, ILogger<CsrfProtectionMiddleware> logger)
         {
             _next = next;
             _options = options;
+            _env = env;
+            _logger = logger;
         }
 
         public async Task InvokeAsync(HttpContext context, AppDbContext dbContext)
@@ -90,13 +94,37 @@ namespace ERP.API.Auth
         private bool IsAllowedOrigin(HttpContext context)
         {
             var origin = context.Request.Headers.Origin.ToString();
+            
+            // 1. Allow missing Origin in Development for testing tools (REST Client, Postman)
             if (string.IsNullOrWhiteSpace(origin))
             {
-                return false;
+                if (_env.IsDevelopment())
+                {
+                    return true;
+                }
+                
+                // In Production, missing Origin might be a direct request or a tool.
+                // We fallback to checking Referer or simply reject if we want strict security.
+                // For now, let's treat missing Origin as same-origin check against Host header if Referer is missing too.
+                return false; 
             }
 
+            // Normalize for comparison (remove trailing slashes)
+            var normalizedOrigin = origin.TrimEnd('/');
+
+            // 2. Allow Same-Origin (Origin matches Host header)
+            var hostHeader = context.Request.Host.ToString();
+            var scheme = context.Request.Scheme;
+            var selfOrigin = $"{scheme}://{hostHeader}".TrimEnd('/');
+
+            if (string.Equals(normalizedOrigin, selfOrigin, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            // 3. Allow explicitly configured origins
             return _options.AllowedOrigins.Any(allowed =>
-                string.Equals(allowed, origin, StringComparison.OrdinalIgnoreCase));
+                string.Equals(allowed.TrimEnd('/'), normalizedOrigin, StringComparison.OrdinalIgnoreCase));
         }
 
         private async Task<AuthSessions?> ResolveSessionAsync(HttpContext context, AppDbContext dbContext)
@@ -123,8 +151,15 @@ namespace ERP.API.Auth
             return null;
         }
 
-        private static async Task RejectAsync(HttpContext context, string message)
+        private async Task RejectAsync(HttpContext context, string message)
         {
+            var origin = context.Request.Headers.Origin.ToString();
+            var path = context.Request.Path;
+            var method = context.Request.Method;
+            
+            _logger.LogWarning("CSRF Rejection: {Message}. Method: {Method}, Path: {Path}, Origin: {Origin}", 
+                message, method, path, string.IsNullOrWhiteSpace(origin) ? "(empty)" : origin);
+
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
             await context.Response.WriteAsJsonAsync(new
             {

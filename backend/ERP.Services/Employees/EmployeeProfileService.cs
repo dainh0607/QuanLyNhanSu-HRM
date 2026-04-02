@@ -303,9 +303,9 @@ namespace ERP.Services.Employees
             emp.employee_code = normalizedEmployeeCode;
             emp.full_name = dto.FullName;
             emp.birth_date = dto.BirthDate;
-            emp.gender_code = dto.GenderCode;
+            emp.gender_code = NormalizeCode(dto.GenderCode);
             emp.display_order = dto.DisplayOrder;
-            emp.marital_status_code = dto.MaritalStatusCode;
+            emp.marital_status_code = NormalizeCode(dto.MaritalStatusCode);
             emp.department_id = dto.DepartmentId;
             emp.job_title_id = dto.JobTitleId;
             emp.branch_id = dto.BranchId;
@@ -396,13 +396,16 @@ namespace ERP.Services.Employees
             emp.ethnicity          = dto.Ethnicity;
             emp.religion           = dto.Religion;
             emp.tax_code           = dto.TaxCode;
-            emp.marital_status_code = string.IsNullOrWhiteSpace(dto.MaritalStatusCode)
-                                         ? "SINGLE"
-                                         : dto.MaritalStatusCode;
+            emp.marital_status_code = NormalizeCode(dto.MaritalStatusCode) ?? "SINGLE";
             emp.note               = dto.Note;
 
             _unitOfWork.Repository<EmployeeEntity>().Update(emp);
             return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+
+        private string? NormalizeCode(string? code)
+        {
+            return string.IsNullOrWhiteSpace(code) ? null : code.Trim().ToUpper();
         }
     }
 }
