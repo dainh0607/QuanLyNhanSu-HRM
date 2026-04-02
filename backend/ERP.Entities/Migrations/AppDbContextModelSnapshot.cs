@@ -1631,8 +1631,7 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("updated_at");
 
                     b.Property<string>("avatar")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("nvarchar(max)")
                         .HasColumnName("avatar");
 
                     b.Property<DateTime?>("birth_date")

@@ -192,8 +192,7 @@ namespace ERP.Entities.Models
         [StringLength(100)]
         public string? work_email { get; set; }
 
-        [Column("avatar")]
-        [StringLength(500)]
+        [Column("avatar", TypeName = "nvarchar(max)")]
         public string? avatar { get; set; }
 
         [Column("probation_start_date")]

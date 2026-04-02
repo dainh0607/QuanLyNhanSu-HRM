@@ -311,7 +311,7 @@ namespace ERP.Services.Employees
             emp.branch_id = dto.BranchId;
             emp.manager_id = dto.ManagerId;
             emp.start_date = dto.StartDate;
-            emp.avatar = dto.Avatar;
+            emp.avatar = string.IsNullOrWhiteSpace(dto.Avatar) ? null : dto.Avatar.Trim();
 
             _unitOfWork.Repository<EmployeeEntity>().Update(emp);
             return await _unitOfWork.SaveChangesAsync() > 0;

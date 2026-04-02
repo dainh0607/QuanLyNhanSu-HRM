@@ -13,6 +13,11 @@ import PasswordChangeDialog from './components/PasswordChangeDialog';
 import PersonalTabContent from './components/PersonalTabContent';
 import ProfileSummarySection from './components/ProfileSummarySection';
 import SecondaryTabPlaceholder from './components/SecondaryTabPlaceholder';
+import {
+  AVATAR_LARGE_FILE_THRESHOLD_BYTES,
+  MAX_AVATAR_SOURCE_FILE_SIZE_BYTES,
+  optimizeAvatarImage,
+} from './avatarImageUtils';
 import { EMPTY_VALUE, EMPLOYEE_DETAIL_TABS } from './constants';
 import {
   displayValue,
@@ -30,25 +35,7 @@ interface EmployeeDetailProps {
 type EmployeeDetailTab = (typeof EMPLOYEE_DETAIL_TABS)[number];
 
 const MIN_PASSWORD_LENGTH = 7;
-const MAX_AVATAR_FILE_SIZE = 5 * 1024 * 1024;
-
-const readFileAsDataUrl = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      const result = reader.result;
-      if (typeof result === 'string' && result.trim()) {
-        resolve(result);
-        return;
-      }
-
-      reject(new Error('Không thể đọc dữ liệu ảnh.'));
-    };
-
-    reader.onerror = () => reject(new Error('Không thể đọc dữ liệu ảnh.'));
-    reader.readAsDataURL(file);
-  });
+const MAX_AVATAR_FILE_SIZE = MAX_AVATAR_SOURCE_FILE_SIZE_BYTES;
 
 export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack }) => {
   const { showToast, ToastComponent } = useToast();
@@ -318,14 +305,15 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
     }
 
     if (file.size > MAX_AVATAR_FILE_SIZE) {
-      showToast('Ảnh đại diện không được vượt quá 5MB.', 'error');
+      showToast('Ảnh đại diện quá lớn. Vui lòng chọn ảnh nhỏ hơn 25MB.', 'error');
       return;
     }
 
     setIsAvatarUploading(true);
 
     try {
-      const avatar = await readFileAsDataUrl(file);
+      const optimizedAvatar = await optimizeAvatarImage(file);
+      const avatar = optimizedAvatar.dataUrl;
       const basicInfoPayload = await employeeService.getEmployeeEditBasicInfo(employee.id);
 
       await employeeService.updateEmployeeEditBasicInfo(employee.id, {
@@ -349,10 +337,20 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
           : prev,
       );
       setProfileReloadToken((prev) => prev + 1);
-      showToast('Cập nhật ảnh đại diện thành công.', 'success');
+      showToast(
+        file.size > AVATAR_LARGE_FILE_THRESHOLD_BYTES
+          ? 'Đã nén và cập nhật ảnh đại diện thành công.'
+          : 'Cập nhật ảnh đại diện thành công.',
+        'success',
+      );
     } catch (error) {
       console.error('Update avatar error:', error);
-      showToast('Không thể cập nhật ảnh đại diện. Vui lòng thử lại.', 'error');
+      showToast(
+        error instanceof Error && error.message.trim()
+          ? error.message
+          : 'Không thể cập nhật ảnh đại diện. Vui lòng thử lại.',
+        'error',
+      );
     } finally {
       setIsAvatarUploading(false);
     }
