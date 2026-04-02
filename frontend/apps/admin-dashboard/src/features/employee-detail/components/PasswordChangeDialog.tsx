@@ -33,6 +33,11 @@ const PasswordChangeDialog: React.FC<PasswordChangeDialogProps> = ({
     return null;
   }
 
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    onConfirm();
+  };
+
   return (
     <div
       className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-950/40 px-4 backdrop-blur-sm"
@@ -42,6 +47,7 @@ const PasswordChangeDialog: React.FC<PasswordChangeDialogProps> = ({
         className="w-full max-w-[460px] rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_24px_80px_rgba(15,23,42,0.18)]"
         onClick={(event) => event.stopPropagation()}
       >
+        <form id="password-change-form" className="contents" onSubmit={handleSubmit} autoComplete="on">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h3 className="mt-2 text-xl font-bold text-slate-900">Đổi mật khẩu</h3>
@@ -117,8 +123,7 @@ const PasswordChangeDialog: React.FC<PasswordChangeDialogProps> = ({
             Hủy
           </button>
           <button
-            type="button"
-            onClick={onConfirm}
+            type="submit"
             disabled={
               isSubmitting ||
               !passwordForm.oldPassword ||
@@ -132,6 +137,7 @@ const PasswordChangeDialog: React.FC<PasswordChangeDialogProps> = ({
             {isSubmitting ? 'Đang lưu...' : 'Xác nhận'}
           </button>
         </div>
+        </form>
       </div>
     </div>
   );
