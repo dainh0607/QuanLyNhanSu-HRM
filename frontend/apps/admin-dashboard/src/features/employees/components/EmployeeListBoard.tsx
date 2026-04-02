@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useToast } from '../../../components/common/useToast';
+import { useToast } from '../../../hooks/useToast';
 import { employeeService, type EmployeeListFilters } from '../../../services/employeeService';
 import {
   BASIC_INFO_EXPORT_COLUMNS,
@@ -32,7 +32,7 @@ const downloadFile = (blob: Blob, filename: string) => {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
 const getFirstFilterValue = (filters: EmployeeFilterState, key: EmployeeFilterKey): string =>
@@ -167,6 +167,7 @@ const EmployeeListBoard: React.FC<EmployeeListProps> = ({ onSelectEmployee }) =>
           columnIds: selectedColumns.map((column) => column.id),
           searchTerm,
           status: statusFilter || undefined,
+          filters: listFilters,
         });
 
         downloadFile(blob, filename);
@@ -181,7 +182,7 @@ const EmployeeListBoard: React.FC<EmployeeListProps> = ({ onSelectEmployee }) =>
         setIsExportingBasicInfo(false);
       }
     },
-    [searchTerm, showToast, statusFilter, totalRecords],
+    [listFilters, searchTerm, showToast, statusFilter, totalRecords],
   );
 
   return (

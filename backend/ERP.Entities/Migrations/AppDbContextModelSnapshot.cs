@@ -1680,6 +1680,11 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("facebook");
 
+                    b.Property<string>("skype")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("skype");
+
                     b.Property<string>("full_name")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
@@ -1827,6 +1832,11 @@ namespace ERP.Entities.Migrations
                     b.Property<bool>("union_member")
                         .HasColumnType("bit")
                         .HasColumnName("union_member");
+
+                    b.Property<string>("union_group")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("union_group");
 
                     b.Property<string>("work_email")
                         .HasMaxLength(100)

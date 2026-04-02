@@ -2,14 +2,13 @@ import React from 'react';
 
 export const FormHeading: React.FC<{ title: string; description?: string }> = ({
   title,
-  description,
+  description: _description,
 }) => (
   <div className="mb-8">
     <div className="flex items-center gap-3">
       <span className="h-[3px] w-10 rounded-full bg-emerald-500"></span>
       <h4 className="text-[20px] font-bold text-slate-950">{title}</h4>
     </div>
-    {description ? <p className="mt-2 text-sm text-slate-500">{description}</p> : null}
   </div>
 );
 

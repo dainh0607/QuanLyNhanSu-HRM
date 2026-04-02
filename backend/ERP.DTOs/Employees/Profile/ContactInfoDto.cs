@@ -6,6 +6,7 @@ namespace ERP.DTOs.Employees.Profile
         public string? HomePhone { get; set; }
         public string? Email { get; set; }
         public string? WorkEmail { get; set; }
+        public string? Skype { get; set; }
         public string? Facebook { get; set; }
     }
 }

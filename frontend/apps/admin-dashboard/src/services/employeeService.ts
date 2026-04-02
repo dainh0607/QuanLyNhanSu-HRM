@@ -1,5 +1,6 @@
 ﻿import type { Employee } from "../features/employees/types";
 import { authFetch } from "./authService";
+import { PHONE_COUNTRY_NAMES } from "../features/employees/data/phoneCountryOptions";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5122/api";
 
@@ -19,12 +20,14 @@ const requestJson = async <T>(
   const response = await authFetch(input, init);
 
   if (!response.ok) {
+    const clonedResponse = response.clone();
     const errorData = await parseJsonSafely<unknown>(response);
     if (errorData) {
       throw errorData;
     }
 
-    throw new Error(`${fallbackMessage}: ${response.statusText}`);
+    const errorText = (await clonedResponse.text()).trim();
+    throw new Error(errorText || `${fallbackMessage}: ${response.statusText}`);
   }
 
   if (response.status === 204) {
@@ -42,12 +45,14 @@ const requestBlob = async (
   const response = await authFetch(input, init);
 
   if (!response.ok) {
+    const clonedResponse = response.clone();
     const errorData = await parseJsonSafely<unknown>(response);
     if (errorData) {
       throw errorData;
     }
 
-    throw new Error(`${fallbackMessage}: ${response.statusText}`);
+    const errorText = (await clonedResponse.text()).trim();
+    throw new Error(errorText || `${fallbackMessage}: ${response.statusText}`);
   }
 
   return {
@@ -55,6 +60,15 @@ const requestBlob = async (
     headers: response.headers,
   };
 };
+
+const getUniqueSortedOptionNames = (names: Array<string | null | undefined>): string[] =>
+  Array.from(
+    new Set(
+      names
+        .map((name) => name?.trim())
+        .filter((name): name is string => Boolean(name))
+    )
+  ).sort((left, right) => left.localeCompare(right, "en"));
 
 const parseDownloadFilename = (
   contentDisposition: string | null,
@@ -89,6 +103,14 @@ export interface PaginatedResponse<T> {
 export interface EmployeeProfileBasicInfo extends Partial<Employee> {
   id: number;
   originPlace?: string;
+  genderCode?: string;
+  maritalStatusCode?: string;
+  homePhone?: string;
+  skype?: string;
+  facebook?: string;
+  taxCode?: string;
+  unionGroup?: string;
+  note?: string;
 }
 
 export interface EmployeeProfileAddress {
@@ -143,6 +165,7 @@ export interface EmployeeDependentProfile {
   id: number;
   fullName?: string;
   birthDate?: string;
+  gender?: string;
   identityNumber?: string;
   relationship?: string;
   permanentAddress?: string;
@@ -197,6 +220,7 @@ export interface EmployeeEditBasicInfoPayload {
   birthDate: string;
   gender: string;
   displayOrder: string;
+  avatar: string;
 }
 
 export interface EmployeeEditContactPayload {
@@ -502,10 +526,18 @@ export interface EmployeeListFilters {
   accessGroupId?: number;
 }
 
+interface EmployeeListQueryOptions {
+  searchTerm?: string;
+  status?: string;
+  filters?: EmployeeListFilters;
+}
+
 interface EmployeeBasicInfoUpdateRequest {
+  employeeCode: string;
   fullName: string;
   birthDate: string | null;
   genderCode: string | null;
+  displayOrder: number | null;
   maritalStatusCode: string | null;
   departmentId: number | null;
   jobTitleId: number | null;
@@ -520,6 +552,7 @@ interface EmployeeContactInfoUpdateRequest {
   homePhone: string | null;
   email: string | null;
   workEmail: string | null;
+  skype: string | null;
   facebook: string | null;
 }
 
@@ -680,6 +713,43 @@ const toOptionalString = (value: unknown): string | undefined => {
 const toOptionalDateString = (value: unknown): string | undefined =>
   typeof value === "string" && value.trim() ? value.trim() : undefined;
 
+const appendEmployeeListQueryParams = (
+  url: URL,
+  options?: EmployeeListQueryOptions
+) => {
+  if (options?.searchTerm?.trim()) {
+    url.searchParams.append("searchTerm", options.searchTerm.trim());
+  }
+
+  if (options?.status?.trim()) {
+    url.searchParams.append("status", options.status.trim());
+  }
+
+  if (options?.filters?.genderCode) {
+    url.searchParams.append("genderCode", options.filters.genderCode);
+  }
+
+  if (typeof options?.filters?.departmentId === "number") {
+    url.searchParams.append("departmentId", String(options.filters.departmentId));
+  }
+
+  if (typeof options?.filters?.branchId === "number") {
+    url.searchParams.append("branchId", String(options.filters.branchId));
+  }
+
+  if (typeof options?.filters?.jobTitleId === "number") {
+    url.searchParams.append("jobTitleId", String(options.filters.jobTitleId));
+  }
+
+  if (typeof options?.filters?.regionId === "number") {
+    url.searchParams.append("regionId", String(options.filters.regionId));
+  }
+
+  if (typeof options?.filters?.accessGroupId === "number") {
+    url.searchParams.append("accessGroupId", String(options.filters.accessGroupId));
+  }
+};
+
 const extractNamedValue = (value: unknown): string => {
   if (typeof value === "string") {
     return toEditableString(value);
@@ -818,6 +888,7 @@ const mapBasicInfoForEdit = (profile: EmployeeFullProfile): EmployeeEditBasicInf
     displayOrder: toEditableString(
       getRecordValue(basicInfoRecord, ["displayOrder", "sortOrder", "orderNumber"])
     ),
+    avatar: toEditableString(getRecordValue(basicInfoRecord, ["avatar"])),
   };
 };
 
@@ -1020,7 +1091,7 @@ const mapDependentsForEdit = (profile: EmployeeFullProfile): EmployeeEditDepende
     id: dependent.id,
     fullName: toEditableString(dependent.fullName),
     birthDate: toDateInputValue(dependent.birthDate),
-    gender: "",
+    gender: toEditableString(dependent.gender),
     identityNumber: toEditableString(dependent.identityNumber),
     relationship: toEditableString(dependent.relationship),
     permanentAddress: toEditableString(dependent.permanentAddress),
@@ -1040,38 +1111,7 @@ export const employeeService = {
     const url = new URL(`${API_URL}/employees`);
     url.searchParams.append("pageNumber", pageNumber.toString());
     url.searchParams.append("pageSize", pageSize.toString());
-
-    if (searchTerm) {
-      url.searchParams.append("searchTerm", searchTerm);
-    }
-
-    if (status) {
-      url.searchParams.append("status", status);
-    }
-
-    if (filters?.genderCode) {
-      url.searchParams.append("genderCode", filters.genderCode);
-    }
-
-    if (typeof filters?.departmentId === "number") {
-      url.searchParams.append("departmentId", String(filters.departmentId));
-    }
-
-    if (typeof filters?.branchId === "number") {
-      url.searchParams.append("branchId", String(filters.branchId));
-    }
-
-    if (typeof filters?.jobTitleId === "number") {
-      url.searchParams.append("jobTitleId", String(filters.jobTitleId));
-    }
-
-    if (typeof filters?.regionId === "number") {
-      url.searchParams.append("regionId", String(filters.regionId));
-    }
-
-    if (typeof filters?.accessGroupId === "number") {
-      url.searchParams.append("accessGroupId", String(filters.accessGroupId));
-    }
+    appendEmployeeListQueryParams(url, { searchTerm, status, filters });
 
     try {
       const response = await requestJson<PaginatedResponse<Record<string, unknown>>>(
@@ -1094,6 +1134,7 @@ export const employeeService = {
     columnIds?: string[];
     searchTerm?: string;
     status?: string;
+    filters?: EmployeeListFilters;
   }): Promise<EmployeeExportFileResult> => {
     const url = new URL(`${API_URL}/employees/export`);
 
@@ -1104,13 +1145,11 @@ export const employeeService = {
       }
     });
 
-    if (options?.searchTerm?.trim()) {
-      url.searchParams.append("searchTerm", options.searchTerm.trim());
-    }
-
-    if (options?.status?.trim()) {
-      url.searchParams.append("status", options.status.trim());
-    }
+    appendEmployeeListQueryParams(url, {
+      searchTerm: options?.searchTerm,
+      status: options?.status,
+      filters: options?.filters,
+    });
 
     const today = new Date();
     const fallbackFilename = `Employees_${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}.csv`;
@@ -1240,7 +1279,10 @@ export const employeeService = {
     const options = await employeeService.getMetadata<AddressOptionMetadata>(
       EMPLOYEE_METADATA_ENDPOINTS.addressCountries
     );
-    return options.map((option) => option.name).filter(Boolean);
+    return getUniqueSortedOptionNames([
+      ...PHONE_COUNTRY_NAMES,
+      ...options.map((option) => option.name),
+    ]);
   },
 
   getAddressCityOptions: async (country: string): Promise<string[]> => {
@@ -1257,7 +1299,7 @@ export const employeeService = {
     }
 
     const options = (await response.json()) as AddressOptionMetadata[];
-    return options.map((option) => option.name).filter(Boolean);
+    return getUniqueSortedOptionNames(options.map((option) => option.name));
   },
 
   getAddressDistrictOptions: async (country: string, city: string): Promise<string[]> => {
@@ -1274,7 +1316,7 @@ export const employeeService = {
     }
 
     const options = (await response.json()) as AddressOptionMetadata[];
-    return options.map((option) => option.name).filter(Boolean);
+    return getUniqueSortedOptionNames(options.map((option) => option.name));
   },
 
   createEmployee: async (dto: EmployeeCreatePayload): Promise<unknown> => {
@@ -1341,9 +1383,11 @@ export const employeeService = {
     const profile = await fetchEmployeeFullProfileFallback(id);
     const basicInfoRecord = profile.basicInfo as unknown as Record<string, unknown>;
     const normalizedPayload: EmployeeBasicInfoUpdateRequest = {
+      employeeCode: payload.employeeCode.trim(),
       fullName: payload.fullName.trim(),
       birthDate: payload.birthDate.trim() ? payload.birthDate : null,
       genderCode: payload.gender.trim() || null,
+      displayOrder: payload.displayOrder.trim() ? Number(payload.displayOrder.trim()) : null,
       maritalStatusCode: toNullableEditableString(
         getRecordValue(basicInfoRecord, ["maritalStatusCode", "maritalStatus"])
       ),
@@ -1352,7 +1396,7 @@ export const employeeService = {
       branchId: profile.basicInfo.branchId ?? null,
       managerId: profile.basicInfo.managerId ?? null,
       startDate: toNullableDateInputValue(profile.basicInfo.startDate),
-      avatar: toNullableEditableString(profile.basicInfo.avatar),
+      avatar: toNullableEditableString(payload.avatar) ?? toNullableEditableString(profile.basicInfo.avatar),
     };
 
     return requestJson<unknown>(
@@ -1394,6 +1438,7 @@ export const employeeService = {
       homePhone: stripNonDigits(payload.homePhone) || null,
       email: normalizedEmail || null,
       workEmail: normalizedEmail || null,
+      skype: payload.skype.trim() || null,
       facebook: payload.facebook.trim() || null,
     };
 
@@ -1745,6 +1790,7 @@ export const employeeService = {
         id: item.id ?? 0,
         fullName: item.fullName.trim(),
         birthDate: item.birthDate.trim() ? item.birthDate : null,
+        gender: item.gender.trim() || null,
         identityNumber: item.identityNumber.trim(),
         relationship: item.relationship.trim(),
         permanentAddress: item.permanentAddress.trim(),

@@ -30,7 +30,7 @@ const IdentityToggleCard: React.FC<IdentityToggleCardProps> = ({
     <div className="flex items-start justify-between gap-4">
       <div>
         <p className="text-base font-bold text-slate-900">{label}</p>
-        <p className="mt-1 text-sm text-slate-500">{description}</p>
+        <p className="mt-1 hidden text-sm text-slate-500">{description}</p>
       </div>
 
       <button

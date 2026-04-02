@@ -68,10 +68,11 @@ const ColumnConfigSidebar: React.FC<ColumnConfigSidebarProps> = ({
 
   return (
     <div
-      className={`fixed top-16 right-0 w-[400px] h-[calc(100vh-64px)] bg-white shadow-2xl z-[60] border-l border-gray-200 flex flex-col transition-transform duration-300 ${
-        isOpen ? 'translate-x-0' : 'translate-x-full'
+      className={`fixed top-16 right-0 z-[60] flex h-[calc(100vh-64px)] w-[400px] flex-col border-l border-gray-200 bg-white shadow-2xl ${
+        isOpen ? 'open' : ''
       }`}
       id="column-sidebar"
+      aria-hidden={!isOpen}
     >
       {/* Header */}
       <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between shrink-0">
@@ -127,6 +128,7 @@ const ColumnConfigSidebar: React.FC<ColumnConfigSidebarProps> = ({
                 {col.show && (
                   <button
                     onClick={() => handleTogglePin(col.id)}
+                    data-purpose="pin-button"
                     className={`p-1 rounded transition-colors ${
                       col.pinned
                         ? 'text-[#192841] bg-[#192841]/10 hover:bg-[#192841]/20'

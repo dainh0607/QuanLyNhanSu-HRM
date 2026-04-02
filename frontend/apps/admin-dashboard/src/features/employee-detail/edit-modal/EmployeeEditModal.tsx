@@ -1,5 +1,5 @@
-import React, { useEffect, useEffectEvent, useState } from 'react';
-import { useToast } from '../../../components/common/useToast';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useToast } from '../../../hooks/useToast';
 import {
   employeeService,
   type EmployeeEditAdditionalInfoPayload,
@@ -15,8 +15,9 @@ import EditModalSidebar from './components/EditModalSidebar';
 import PersonalTabNavigation from './components/PersonalTabNavigationV2';
 import PersonalTabPanel from './components/PersonalTabPanel';
 import SectionPlaceholder from './components/SectionPlaceholder';
+import { isModalSectionAvailable } from './sectionAvailability';
 import UnsavedChangesDialog from './components/UnsavedChangesDialog';
-import useUnsavedChangesGuard from './hooks/useUnsavedChangesGuard';
+import useUnsavedChangesGuard from '../../../hooks/useUnsavedChangesGuard';
 import type {
   EmployeeEditModalProps,
   ModalSectionKey,
@@ -83,7 +84,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
 }) => {
   const { showToast, ToastComponent } = useToast();
   const { isDialogOpen, requestAction, confirmAction, cancelAction } = useUnsavedChangesGuard();
-  const [activeSection, setActiveSection] = useState(() => resolveSectionKey(initialSectionLabel));
+  const [activeSection, setActiveSection] = useState<ModalSectionKey>('personal');
   const [activePersonalTab, setActivePersonalTab] = useState<PersonalTabKey>(
     initialPersonalTab ?? 'basicInfo',
   );
@@ -100,15 +101,25 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
     !activePersonalState.isLoading &&
     !activePersonalState.isSubmitting &&
     isCurrentTabDirty;
+  const resolveAvailableSection = useCallback(
+    (section: ModalSectionKey) => (isModalSectionAvailable(section) ? section : 'personal'),
+    [],
+  );
 
   useEffect(() => {
     if (!isOpen) {
       return;
     }
 
-    setActiveSection(resolveSectionKey(initialSectionLabel));
-    setActivePersonalTab(initialPersonalTab ?? 'basicInfo');
-  }, [initialPersonalTab, initialSectionLabel, isOpen]);
+    const frameId = window.requestAnimationFrame(() => {
+      setActiveSection(resolveAvailableSection(resolveSectionKey(initialSectionLabel)));
+      setActivePersonalTab(initialPersonalTab ?? 'basicInfo');
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [initialPersonalTab, initialSectionLabel, isOpen, resolveAvailableSection]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -128,7 +139,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
     };
   }, [isDialogOpen, isOpen, onClose, requestAction, shouldGuardLeaving]);
 
-  const loadPersonalTab = useEffectEvent(async (tabKey: PersonalTabKey) => {
+  const loadPersonalTab = useCallback(async (tabKey: PersonalTabKey) => {
     setPersonalForms((prev) => ({
       ...prev,
       [tabKey]: {
@@ -176,7 +187,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
         },
       }));
     }
-  });
+  }, [employee.id]);
 
   useEffect(() => {
     if (!isOpen || activeSection !== 'personal') {
@@ -187,8 +198,14 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
       return;
     }
 
-    void loadPersonalTab(activePersonalTab);
-  }, [activePersonalTab, activeSection, isOpen, personalForms]);
+    const frameId = window.requestAnimationFrame(() => {
+      void loadPersonalTab(activePersonalTab);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [activePersonalTab, activeSection, isOpen, loadPersonalTab, personalForms]);
 
   const updateTabData = <K extends PersonalTabKey, F extends keyof PersonalFormMap[K]>(
     tabKey: K,
@@ -523,11 +540,13 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
   };
 
   const handleSectionChange = (section: ModalSectionKey) => {
-    if (section === activeSection) {
+    const nextSection = resolveAvailableSection(section);
+
+    if (nextSection === activeSection) {
       return;
     }
 
-    requestAction(shouldGuardLeaving, () => setActiveSection(section));
+    requestAction(shouldGuardLeaving, () => setActiveSection(nextSection));
   };
 
   const handlePersonalTabChange = (tab: PersonalTabKey) => {

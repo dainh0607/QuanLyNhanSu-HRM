@@ -99,8 +99,6 @@ namespace ERP.Services.Employees
             {
                 // AC 3.2 Update Employee base fields
                 employee.origin_place = dto.OriginPlace?.Trim();
-                // Assumed field for Current Address if exists on employee, otherwise skipped
-                // employee.current_address = dto.CurrentAddress; 
                 _unitOfWork.Repository<EmployeeEntity>().Update(employee);
 
                 // Clear existing specific address types (1: Permanent, 3: Merged)
@@ -146,13 +144,13 @@ namespace ERP.Services.Employees
                 // Save Permanent Address (AC 3.1)
                 if (dto.PermanentAddress != null)
                 {
-                    await AddAddress(dto.PermanentAddress, 1, true);
+                    await AddAddress(dto.PermanentAddress, 1, false);
                 }
 
                 // Save Merged Address (AC 3.1)
                 if (dto.MergedAddress != null)
                 {
-                    await AddAddress(dto.MergedAddress, 3, false);
+                    await AddAddress(dto.MergedAddress, 3, true);
                 }
 
                 // Handle Additional Addresses if any
@@ -238,6 +236,7 @@ namespace ERP.Services.Employees
                 employee_id = employeeId,
                 full_name = d.FullName,
                 birth_date = d.BirthDate,
+                gender = d.Gender,
                 identity_number = d.IdentityNumber,
                 relationship = d.Relationship,
                 permanent_address = d.PermanentAddress,
@@ -276,6 +275,7 @@ namespace ERP.Services.Employees
             emp.home_phone = dto.HomePhone;
             emp.email = dto.Email;
             emp.work_email = dto.WorkEmail;
+            emp.skype = dto.Skype;
             emp.facebook = dto.Facebook;
 
             _unitOfWork.Repository<EmployeeEntity>().Update(emp);
@@ -287,9 +287,24 @@ namespace ERP.Services.Employees
             var emp = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(employeeId);
             if (emp == null) return false;
 
+            var normalizedEmployeeCode = dto.EmployeeCode?.Trim();
+            if (string.IsNullOrWhiteSpace(normalizedEmployeeCode))
+            {
+                throw new ArgumentException("Mã nhân viên là bắt buộc.");
+            }
+
+            var duplicateEmployees = await _unitOfWork.Repository<EmployeeEntity>()
+                .FindAsync(x => x.employee_code == normalizedEmployeeCode && x.Id != employeeId);
+            if (duplicateEmployees.Any())
+            {
+                throw new ArgumentException($"Mã nhân viên '{normalizedEmployeeCode}' đã tồn tại.");
+            }
+
+            emp.employee_code = normalizedEmployeeCode;
             emp.full_name = dto.FullName;
             emp.birth_date = dto.BirthDate;
             emp.gender_code = dto.GenderCode;
+            emp.display_order = dto.DisplayOrder;
             emp.marital_status_code = dto.MaritalStatusCode;
             emp.department_id = dto.DepartmentId;
             emp.job_title_id = dto.JobTitleId;
@@ -347,6 +362,26 @@ namespace ERP.Services.Employees
             };
         }
 
+        public async Task<OtherInfoDto?> GetOtherInfoDetailsAsync(int employeeId)
+        {
+            var emp = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(employeeId);
+            if (emp == null) return null;
+
+            return new OtherInfoDto
+            {
+                UnionGroup = !string.IsNullOrWhiteSpace(emp.union_group)
+                    ? emp.union_group
+                    : (emp.union_member ? "Doan vien" : null),
+                Ethnicity = emp.ethnicity,
+                Religion = emp.religion,
+                TaxCode = emp.tax_code,
+                MaritalStatusCode = string.IsNullOrWhiteSpace(emp.marital_status_code)
+                    ? "SINGLE"
+                    : emp.marital_status_code,
+                Note = emp.note
+            };
+        }
+
         /// <summary>
         /// Cập nhật cụm "Thông tin khác" của nhân viên theo AC 8.4.
         /// Mapping UnionGroup -> union_member (true nếu có giá trị, false nếu rỗng/null).
@@ -356,7 +391,8 @@ namespace ERP.Services.Employees
             var emp = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(employeeId);
             if (emp == null) return false;
 
-            emp.union_member       = !string.IsNullOrWhiteSpace(dto.UnionGroup);
+            emp.union_group        = dto.UnionGroup?.Trim();
+            emp.union_member       = !string.IsNullOrWhiteSpace(emp.union_group);
             emp.ethnicity          = dto.Ethnicity;
             emp.religion           = dto.Religion;
             emp.tax_code           = dto.TaxCode;

@@ -37,11 +37,13 @@ const PersonalTabNavigationV2: React.FC<PersonalTabNavigationProps> = ({
   }, []);
 
   useEffect(() => {
-    updateScrollState();
+    const frameId = window.requestAnimationFrame(updateScrollState);
 
     const container = scrollContainerRef.current;
     if (!container) {
-      return;
+      return () => {
+        window.cancelAnimationFrame(frameId);
+      };
     }
 
     const handleScroll = () => updateScrollState();
@@ -51,6 +53,7 @@ const PersonalTabNavigationV2: React.FC<PersonalTabNavigationProps> = ({
     window.addEventListener('resize', handleResize);
 
     return () => {
+      window.cancelAnimationFrame(frameId);
       container.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleResize);
     };

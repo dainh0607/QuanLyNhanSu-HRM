@@ -4,7 +4,7 @@ import {
   type EmployeeEditAddressFormPayload,
   type EmployeeEditPermanentAddressPayload,
 } from '../../../../services/employeeService';
-import { FormHeading, FormRow } from '../components/FormPrimitives';
+import { FormRow } from '../components/FormPrimitives';
 import { getFieldClassName } from '../formStyles';
 
 type AddressFormKey = 'permanentAddress' | 'mergedAddress';
@@ -29,7 +29,6 @@ const ADDRESS_FORM_CONFIG: Record<
   {
     toggleLabel: string;
     title: string;
-    description: string;
     addressLabel: string;
     addressPlaceholder: string;
   }
@@ -37,16 +36,12 @@ const ADDRESS_FORM_CONFIG: Record<
   permanentAddress: {
     toggleLabel: 'Địa chỉ thường trú',
     title: 'Địa chỉ thường trú',
-    description:
-      'Cập nhật địa chỉ hộ khẩu, nguyên quán và dữ liệu hành chính theo đúng chuẩn lưu trữ của hệ thống.',
     addressLabel: 'Địa chỉ thường trú',
     addressPlaceholder: 'Nhập địa chỉ thường trú',
   },
   mergedAddress: {
     toggleLabel: 'Địa chỉ sát nhập',
     title: 'Địa chỉ sát nhập',
-    description:
-      'Cập nhật địa chỉ cư trú hiện tại. Tỉnh/Thành phố và Quận/Huyện sẽ tự động lọc theo cấp cha đã chọn.',
     addressLabel: 'Địa chỉ hiện tại',
     addressPlaceholder: 'Nhập địa chỉ hiện tại',
   },
@@ -190,7 +185,13 @@ const PermanentAddressCascadingForm: React.FC<PermanentAddressCascadingFormProps
   };
 
   useEffect(() => {
-    setActiveAddressForm('permanentAddress');
+    const frameId = window.requestAnimationFrame(() => {
+      setActiveAddressForm('permanentAddress');
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
   }, [data.permanentAddress.addressId, data.mergedAddress.addressId]);
 
   useEffect(() => {
@@ -222,19 +223,25 @@ const PermanentAddressCascadingForm: React.FC<PermanentAddressCascadingFormProps
     const country = data.permanentAddress.country.trim();
 
     if (!country) {
-      updateAddressState('permanentAddress', {
-        cities: [],
-        districts: [],
-        isLoadingCities: false,
-        isLoadingDistricts: false,
+      const resetFrameId = window.requestAnimationFrame(() => {
+        updateAddressState('permanentAddress', {
+          cities: [],
+          districts: [],
+          isLoadingCities: false,
+          isLoadingDistricts: false,
+        });
       });
-      return undefined;
+      return () => {
+        window.cancelAnimationFrame(resetFrameId);
+      };
     }
 
-    updateAddressState('permanentAddress', {
-      isLoadingCities: true,
-      districts: [],
-      isLoadingDistricts: false,
+    const loadingFrameId = window.requestAnimationFrame(() => {
+      updateAddressState('permanentAddress', {
+        isLoadingCities: true,
+        districts: [],
+        isLoadingDistricts: false,
+      });
     });
 
     const loadCities = async () => {
@@ -261,6 +268,7 @@ const PermanentAddressCascadingForm: React.FC<PermanentAddressCascadingFormProps
 
     return () => {
       isMounted = false;
+      window.cancelAnimationFrame(loadingFrameId);
     };
   }, [data.permanentAddress.country]);
 
@@ -270,15 +278,21 @@ const PermanentAddressCascadingForm: React.FC<PermanentAddressCascadingFormProps
     const city = data.permanentAddress.city.trim();
 
     if (!country || !city) {
-      updateAddressState('permanentAddress', {
-        districts: [],
-        isLoadingDistricts: false,
+      const resetFrameId = window.requestAnimationFrame(() => {
+        updateAddressState('permanentAddress', {
+          districts: [],
+          isLoadingDistricts: false,
+        });
       });
-      return undefined;
+      return () => {
+        window.cancelAnimationFrame(resetFrameId);
+      };
     }
 
-    updateAddressState('permanentAddress', {
-      isLoadingDistricts: true,
+    const loadingFrameId = window.requestAnimationFrame(() => {
+      updateAddressState('permanentAddress', {
+        isLoadingDistricts: true,
+      });
     });
 
     const loadDistricts = async () => {
@@ -305,6 +319,7 @@ const PermanentAddressCascadingForm: React.FC<PermanentAddressCascadingFormProps
 
     return () => {
       isMounted = false;
+      window.cancelAnimationFrame(loadingFrameId);
     };
   }, [data.permanentAddress.city, data.permanentAddress.country]);
 
@@ -313,19 +328,25 @@ const PermanentAddressCascadingForm: React.FC<PermanentAddressCascadingFormProps
     const country = data.mergedAddress.country.trim();
 
     if (!country) {
-      updateAddressState('mergedAddress', {
-        cities: [],
-        districts: [],
-        isLoadingCities: false,
-        isLoadingDistricts: false,
+      const resetFrameId = window.requestAnimationFrame(() => {
+        updateAddressState('mergedAddress', {
+          cities: [],
+          districts: [],
+          isLoadingCities: false,
+          isLoadingDistricts: false,
+        });
       });
-      return undefined;
+      return () => {
+        window.cancelAnimationFrame(resetFrameId);
+      };
     }
 
-    updateAddressState('mergedAddress', {
-      isLoadingCities: true,
-      districts: [],
-      isLoadingDistricts: false,
+    const loadingFrameId = window.requestAnimationFrame(() => {
+      updateAddressState('mergedAddress', {
+        isLoadingCities: true,
+        districts: [],
+        isLoadingDistricts: false,
+      });
     });
 
     const loadCities = async () => {
@@ -352,6 +373,7 @@ const PermanentAddressCascadingForm: React.FC<PermanentAddressCascadingFormProps
 
     return () => {
       isMounted = false;
+      window.cancelAnimationFrame(loadingFrameId);
     };
   }, [data.mergedAddress.country]);
 
@@ -361,15 +383,21 @@ const PermanentAddressCascadingForm: React.FC<PermanentAddressCascadingFormProps
     const city = data.mergedAddress.city.trim();
 
     if (!country || !city) {
-      updateAddressState('mergedAddress', {
-        districts: [],
-        isLoadingDistricts: false,
+      const resetFrameId = window.requestAnimationFrame(() => {
+        updateAddressState('mergedAddress', {
+          districts: [],
+          isLoadingDistricts: false,
+        });
       });
-      return undefined;
+      return () => {
+        window.cancelAnimationFrame(resetFrameId);
+      };
     }
 
-    updateAddressState('mergedAddress', {
-      isLoadingDistricts: true,
+    const loadingFrameId = window.requestAnimationFrame(() => {
+      updateAddressState('mergedAddress', {
+        isLoadingDistricts: true,
+      });
     });
 
     const loadDistricts = async () => {
@@ -396,13 +424,14 @@ const PermanentAddressCascadingForm: React.FC<PermanentAddressCascadingFormProps
 
     return () => {
       isMounted = false;
+      window.cancelAnimationFrame(loadingFrameId);
     };
   }, [data.mergedAddress.city, data.mergedAddress.country]);
 
   return (
     <>
       <div className="mb-6">
-        <div className="inline-flex w-full max-w-[420px] rounded-[22px] border border-slate-200 bg-slate-100/80 p-1 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
+        <div className="inline-flex w-full max-w-[400px] rounded-[22px] border border-slate-200 bg-slate-100/80 p-1 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
           {(Object.keys(ADDRESS_FORM_CONFIG) as AddressFormKey[]).map((formKey) => {
             const isActive = formKey === activeAddressForm;
 
@@ -411,7 +440,7 @@ const PermanentAddressCascadingForm: React.FC<PermanentAddressCascadingFormProps
                 key={formKey}
                 type="button"
                 onClick={() => setActiveAddressForm(formKey)}
-                className={`flex-1 rounded-[16px] px-4 py-2.5 text-sm font-bold transition-all ${
+                className={`flex-1 rounded-[17px] px-4 py-2.5 text-[0.8rem] font-bold transition-all ${
                   isActive
                     ? 'bg-emerald-500 text-white shadow-[0_12px_24px_rgba(16,185,129,0.22)]'
                     : 'bg-transparent text-slate-600 hover:text-emerald-600'
@@ -423,8 +452,6 @@ const PermanentAddressCascadingForm: React.FC<PermanentAddressCascadingFormProps
           })}
         </div>
       </div>
-
-      <FormHeading title={activeConfig.title} description={activeConfig.description} />
 
       <div className="space-y-5">
         <AddressSelectField

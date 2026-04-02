@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useRef } from 'react';
 import { employeeService, type EmployeeCreatePayload } from '../../../services/employeeService';
-import { useToast } from '../../../components/common/useToast';
+import { useToast } from '../../../hooks/useToast';
 import {
   DEFAULT_PHONE_COUNTRY_VALUE,
   PHONE_COUNTRY_OPTIONS,
@@ -225,7 +225,11 @@ const normalizeAccessGroupOptions = (items: unknown[]): MetadataOption[] => {
 
   return Array.from(matchedGroups.values())
     .sort((left, right) => left.sortOrder - right.sortOrder)
-    .map(({ sortOrder: _sortOrder, ...item }) => item);
+    .map((entry) => {
+      const { sortOrder, ...item } = entry;
+      void sortOrder;
+      return item;
+    });
 };
 
 const resolveDefaultAccessGroupId = (accessGroups: MetadataOption[]): string =>
@@ -356,7 +360,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
     }
   };
 
-  const loadOrganizationMetadata = async () => {
+  const loadOrganizationMetadata = useCallback(async () => {
     if (hasLoadedOrganizationMetadata) {
       return;
     }
@@ -396,7 +400,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
         jobTitles: false,
       }));
     }
-  };
+  }, [hasLoadedOrganizationMetadata]);
 
   useEffect(() => {
     if (!isOpen || !isExpanded) {
@@ -404,7 +408,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
     }
 
     void loadOrganizationMetadata();
-  }, [hasLoadedOrganizationMetadata, isExpanded, isOpen]);
+  }, [isExpanded, isOpen, loadOrganizationMetadata]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -424,13 +428,6 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
       newErrors.email = 'Email là bắt buộc';
     } else if (!EMAIL_REGEX.test(trimmedEmail)) {
       newErrors.email = EMAIL_ERROR_MESSAGE;
-    }
-
-    // Số điện thoại là bắt buộc; mã +84 không được vượt quá 10 số
-    if (false && !formData.phone) {
-      newErrors.phone = 'Số điện thoại là bắt buộc';
-    } else if (false) {
-      newErrors.phone = 'Với mã +84, số điện thoại không được quá 10 số';
     }
 
     const phoneError = validatePhoneNumberByCountryValue(formData.countryCode, formData.phone);

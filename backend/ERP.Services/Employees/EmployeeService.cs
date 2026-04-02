@@ -28,7 +28,7 @@ namespace ERP.Services.Employees
             _userService = userService;
         }
 
-        public async Task<PaginatedListDto<EmployeeDto>> GetPagedListAsync(EmployeeFilterDto filter)
+        private async Task<PaginatedListDto<EmployeeDto>> GetPagedListLegacyAsync(EmployeeFilterDto filter)
         {
             var query = _unitOfWork.Repository<EmployeeEntity>().AsQueryable();
 
@@ -254,6 +254,7 @@ namespace ERP.Services.Employees
                 Id = d.Id,
                 FullName = d.full_name,
                 BirthDate = d.birth_date,
+                Gender = d.gender,
                 IdentityNumber = d.identity_number,
                 Relationship = d.relationship,
                 PermanentAddress = d.permanent_address,
@@ -530,7 +531,7 @@ namespace ERP.Services.Employees
             return oldCode;
         }
 
-        public async Task<byte[]> ExportEmployeesToCsvAsync()
+        private async Task<byte[]> ExportEmployeesToCsvLegacyAsync()
         {
             var employees = await _unitOfWork.Repository<EmployeeEntity>().GetAllAsync();
             var activeEmployees = employees.Where(e => e.is_active).OrderBy(e => e.employee_code).ToList();
@@ -614,7 +615,7 @@ namespace ERP.Services.Employees
             return headerBytes.Concat(contentBytes).ToArray();
         }
 
-        private EmployeeDto MapToDto(EmployeeEntity e)
+        private EmployeeDto MapToDtoLegacy(EmployeeEntity e)
         {
             return new EmployeeDto
             {
@@ -622,8 +623,12 @@ namespace ERP.Services.Employees
                 EmployeeCode = e.employee_code,
                 FullName = e.full_name,
                 BirthDate = e.birth_date,
+                Gender = string.IsNullOrWhiteSpace(e.gender) ? e.gender_code : e.gender,
+                GenderCode = e.gender_code,
+                DisplayOrder = e.display_order,
                 Email = e.email,
                 Phone = e.phone,
+                HomePhone = e.home_phone,
                 IdentityNumber = e.identity_number,
                 IdentityIssueDate = e.identity_issue_date,
                 IdentityIssuePlace = e.identity_issue_place,
@@ -632,6 +637,8 @@ namespace ERP.Services.Employees
                 OriginPlace = e.origin_place,
                 Ethnicity = e.ethnicity,
                 Religion = e.religion,
+                TaxCode = e.tax_code,
+                MaritalStatusCode = e.marital_status_code,
                 StartDate = e.start_date,
                 IsActive = e.is_active,
                 IsResigned = e.is_resigned,
@@ -640,8 +647,594 @@ namespace ERP.Services.Employees
                 BranchId = e.branch_id,
                 ManagerId = e.manager_id,
                 WorkEmail = e.work_email,
+                Skype = e.skype,
+                Facebook = e.facebook,
+                UnionGroup = !string.IsNullOrWhiteSpace(e.union_group) ? e.union_group : (e.union_member ? "Doan vien" : null),
+                Note = e.note,
                 Avatar = e.avatar
             };
+        }
+        public async Task<PaginatedListDto<EmployeeDto>> GetPagedListAsync(EmployeeFilterDto filter)
+        {
+            var pageNumber = filter.PageNumber > 0 ? filter.PageNumber : 1;
+            var pageSize = filter.PageSize > 0 ? filter.PageSize : 10;
+            var filteredQuery = BuildFilteredEmployeeQuery(filter);
+            var count = await filteredQuery.CountAsync();
+
+            var items = await ApplyEmployeeSorting(filteredQuery, filter)
+                .Include(e => e.Region)
+                .Include(e => e.Branch)
+                .Include(e => e.Department)
+                .Include(e => e.JobTitle)
+                .Include(e => e.Manager)
+                .Include(e => e.Gender)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var accessGroupLookup = await BuildAccessGroupLookupAsync(items.Select(e => e.Id));
+            var dtos = items
+                .Select(e => MapToDto(
+                    e,
+                    accessGroupLookup.TryGetValue(e.Id, out var accessGroup) ? accessGroup : null))
+                .ToList();
+
+            return new PaginatedListDto<EmployeeDto>(dtos, count, pageNumber, pageSize);
+        }
+
+        public async Task<byte[]> ExportEmployeesToCsvAsync(EmployeeFilterDto filter, IEnumerable<string>? columns = null)
+        {
+            var employees = await ApplyEmployeeSorting(BuildFilteredEmployeeQuery(filter), filter)
+                .Include(e => e.Region)
+                .Include(e => e.Branch)
+                .Include(e => e.Department)
+                .Include(e => e.JobTitle)
+                .Include(e => e.Manager)
+                .Include(e => e.Gender)
+                .ToListAsync();
+
+            var employeeIds = employees.Select(e => e.Id).ToArray();
+            var accessGroupLookup = await BuildAccessGroupLookupAsync(employeeIds);
+            var bankLookup = await BuildBankAccountLookupAsync(employeeIds);
+            var permanentAddressLookup = await BuildPermanentAddressLookupAsync(employeeIds);
+            var professionalLevelLookup = await BuildEducationLevelLookupAsync(employeeIds);
+            var certificateLookup = await BuildCertificateLookupAsync(employeeIds);
+            var emergencyContactLookup = await BuildEmergencyContactLookupAsync(employeeIds);
+            var selectedColumns = ResolveExportColumns(columns);
+
+            var exportRows = employees.Select(employee =>
+            {
+                var employeeDto = MapToDto(
+                    employee,
+                    accessGroupLookup.TryGetValue(employee.Id, out var accessGroup) ? accessGroup : null);
+
+                bankLookup.TryGetValue(employee.Id, out var bankInfo);
+                permanentAddressLookup.TryGetValue(employee.Id, out var permanentAddress);
+                professionalLevelLookup.TryGetValue(employee.Id, out var professionalLevel);
+                certificateLookup.TryGetValue(employee.Id, out var certificates);
+                emergencyContactLookup.TryGetValue(employee.Id, out var emergencyContact);
+
+                return new EmployeeExportRow
+                {
+                    Employee = employeeDto,
+                    BankAccountNumber = bankInfo?.AccountNumber ?? string.Empty,
+                    BankName = bankInfo?.BankName ?? string.Empty,
+                    BankBranch = bankInfo?.Branch ?? string.Empty,
+                    WorkingTime = employee.work_type ?? string.Empty,
+                    ProfessionalLevel = professionalLevel ?? string.Empty,
+                    ProfessionalCertificates = certificates ?? string.Empty,
+                    EmergencyContact = emergencyContact ?? string.Empty,
+                    PermanentAddress = permanentAddress ?? string.Empty,
+                    ResignationReason = employee.resignation_reason ?? string.Empty,
+                    OtherInfo = employee.note ?? string.Empty,
+                };
+            }).ToList();
+
+            var sb = new StringBuilder();
+            sb.AppendLine(string.Join(";", new[] { "STT" }.Concat(selectedColumns.Select(column => EscapeCsv(column.Label)))));
+
+            for (var index = 0; index < exportRows.Count; index++)
+            {
+                var exportRow = exportRows[index];
+                var rowValues = new List<string> { (index + 1).ToString() };
+                rowValues.AddRange(selectedColumns.Select(column => EscapeCsv(column.GetValue(exportRow))));
+                sb.AppendLine(string.Join(";", rowValues));
+            }
+
+            var encoding = new UTF8Encoding(true);
+            var headerBytes = encoding.GetPreamble();
+            var contentBytes = encoding.GetBytes(sb.ToString());
+            return headerBytes.Concat(contentBytes).ToArray();
+        }
+
+        private EmployeeDto MapToDto(EmployeeEntity e, string? accessGroup = null)
+        {
+            return new EmployeeDto
+            {
+                Id = e.Id,
+                EmployeeCode = e.employee_code,
+                FullName = e.full_name,
+                BirthDate = e.birth_date,
+                Gender = !string.IsNullOrWhiteSpace(e.Gender?.name)
+                    ? e.Gender.name
+                    : (string.IsNullOrWhiteSpace(e.gender) ? e.gender_code : e.gender),
+                GenderCode = e.gender_code,
+                DisplayOrder = e.display_order,
+                Email = e.email,
+                Phone = e.phone,
+                HomePhone = e.home_phone,
+                IdentityNumber = e.identity_number,
+                IdentityIssueDate = e.identity_issue_date,
+                IdentityIssuePlace = e.identity_issue_place,
+                Passport = e.passport,
+                Nationality = e.nationality,
+                OriginPlace = e.origin_place,
+                Ethnicity = e.ethnicity,
+                Religion = e.religion,
+                TaxCode = e.tax_code,
+                MaritalStatusCode = e.marital_status_code,
+                StartDate = e.start_date,
+                IsActive = e.is_active,
+                IsResigned = e.is_resigned,
+                DepartmentId = e.department_id,
+                DepartmentName = e.Department?.name,
+                JobTitleId = e.job_title_id,
+                JobTitleName = e.JobTitle?.name,
+                RegionName = e.Region?.name,
+                AccessGroup = accessGroup,
+                BranchId = e.branch_id,
+                BranchName = e.Branch?.name,
+                ManagerId = e.manager_id,
+                ManagerName = e.Manager?.full_name,
+                WorkEmail = e.work_email,
+                Skype = e.skype,
+                Facebook = e.facebook,
+                UnionGroup = !string.IsNullOrWhiteSpace(e.union_group) ? e.union_group : (e.union_member ? "Doan vien" : null),
+                Note = e.note,
+                Avatar = e.avatar
+            };
+        }
+
+        private IQueryable<EmployeeEntity> BuildFilteredEmployeeQuery(EmployeeFilterDto filter)
+        {
+            var query = _unitOfWork.Repository<EmployeeEntity>().AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(filter.SearchTerm))
+            {
+                query = query.Where(e =>
+                    (e.full_name != null && e.full_name.Contains(filter.SearchTerm)) ||
+                    (e.email != null && e.email.Contains(filter.SearchTerm)) ||
+                    e.employee_code.Contains(filter.SearchTerm));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter.EmployeeCode))
+                query = query.Where(e => e.employee_code.Contains(filter.EmployeeCode));
+
+            if (!string.IsNullOrWhiteSpace(filter.FullName))
+                query = query.Where(e => e.full_name != null && e.full_name.Contains(filter.FullName));
+
+            if (!string.IsNullOrWhiteSpace(filter.Email))
+                query = query.Where(e => e.email != null && e.email.Contains(filter.Email));
+
+            if (!string.IsNullOrWhiteSpace(filter.Phone))
+                query = query.Where(e => e.phone != null && e.phone.Contains(filter.Phone));
+
+            if (!string.IsNullOrWhiteSpace(filter.IdentityNumber))
+                query = query.Where(e => e.identity_number != null && e.identity_number.Contains(filter.IdentityNumber));
+
+            if (!string.IsNullOrWhiteSpace(filter.TaxCode))
+                query = query.Where(e => e.tax_code != null && e.tax_code.Contains(filter.TaxCode));
+
+            if (!string.IsNullOrWhiteSpace(filter.GenderCode))
+                query = query.Where(e => e.gender_code == filter.GenderCode);
+
+            if (!string.IsNullOrWhiteSpace(filter.MaritalStatusCode))
+                query = query.Where(e => e.marital_status_code == filter.MaritalStatusCode);
+
+            if (filter.DepartmentId.HasValue)
+                query = query.Where(e => e.department_id == filter.DepartmentId);
+
+            if (filter.BranchId.HasValue)
+                query = query.Where(e => e.branch_id == filter.BranchId);
+
+            if (filter.JobTitleId.HasValue)
+                query = query.Where(e => e.job_title_id == filter.JobTitleId);
+
+            if (filter.AccessGroupId.HasValue)
+            {
+                var employeeIdsByAccessGroup = _unitOfWork.Repository<Users>().AsQueryable()
+                    .Where(user => user.is_active)
+                    .Join(
+                        _unitOfWork.Repository<UserRoles>().AsQueryable().Where(userRole => userRole.is_active),
+                        user => user.Id,
+                        userRole => userRole.user_id,
+                        (user, userRole) => new { user.employee_id, userRole.role_id })
+                    .Where(item => item.role_id == filter.AccessGroupId.Value)
+                    .Select(item => item.employee_id);
+
+                query = query.Where(e => employeeIdsByAccessGroup.Contains(e.Id));
+            }
+
+            if (filter.ManagerId.HasValue)
+                query = query.Where(e => e.manager_id == filter.ManagerId);
+
+            if (filter.RegionId.HasValue)
+                query = query.Where(e => e.region_id == filter.RegionId);
+
+            var normalizedStatus = filter.Status?.Trim().ToLowerInvariant();
+            var today = DateTime.Today;
+            if (normalizedStatus == "active")
+            {
+                query = query.Where(e => e.is_active && !e.is_resigned && (e.start_date == null || e.start_date <= today));
+            }
+            else if (normalizedStatus == "resigned")
+            {
+                query = query.Where(e => e.is_resigned);
+            }
+            else if (normalizedStatus == "inactive")
+            {
+                query = query.Where(e => !e.is_active && !e.is_resigned);
+            }
+            else if (normalizedStatus == "notstarted")
+            {
+                query = query.Where(e => e.start_date > today && !e.is_resigned);
+            }
+
+            if (filter.StartDateFrom.HasValue)
+                query = query.Where(e => e.start_date >= filter.StartDateFrom.Value);
+
+            if (filter.StartDateTo.HasValue)
+                query = query.Where(e => e.start_date <= filter.StartDateTo.Value);
+
+            if (filter.IsDepartmentHead.HasValue)
+                query = query.Where(e => e.is_department_head == filter.IsDepartmentHead.Value);
+
+            if (!string.IsNullOrWhiteSpace(filter.WorkType))
+                query = query.Where(e => e.work_type == filter.WorkType);
+
+            return query;
+        }
+
+        private static IQueryable<EmployeeEntity> ApplyEmployeeSorting(IQueryable<EmployeeEntity> query, EmployeeFilterDto filter)
+        {
+            if (!string.IsNullOrWhiteSpace(filter.SortBy))
+            {
+                switch (filter.SortBy.Trim().ToLowerInvariant())
+                {
+                    case "fullname":
+                    case "name":
+                        return filter.IsDescending ? query.OrderByDescending(e => e.full_name) : query.OrderBy(e => e.full_name);
+                    case "code":
+                    case "employeecode":
+                        return filter.IsDescending ? query.OrderByDescending(e => e.employee_code) : query.OrderBy(e => e.employee_code);
+                    case "startdate":
+                        return filter.IsDescending ? query.OrderByDescending(e => e.start_date) : query.OrderBy(e => e.start_date);
+                    case "department":
+                        return filter.IsDescending ? query.OrderByDescending(e => e.department_id) : query.OrderBy(e => e.department_id);
+                }
+            }
+
+            return query.OrderBy(e => e.employee_code);
+        }
+
+        private async Task<Dictionary<int, string>> BuildAccessGroupLookupAsync(IEnumerable<int> employeeIds)
+        {
+            var employeeIdList = employeeIds.Distinct().ToArray();
+            if (employeeIdList.Length == 0)
+            {
+                return new Dictionary<int, string>();
+            }
+
+            var roleAssignments = await _unitOfWork.Repository<Users>().AsQueryable()
+                .Where(user => user.is_active && employeeIdList.Contains(user.employee_id))
+                .Join(
+                    _unitOfWork.Repository<UserRoles>().AsQueryable().Where(userRole => userRole.is_active),
+                    user => user.Id,
+                    userRole => userRole.user_id,
+                    (user, userRole) => new { user.employee_id, userRole.role_id })
+                .Join(
+                    _unitOfWork.Repository<Roles>().AsQueryable().Where(role => role.is_active),
+                    item => item.role_id,
+                    role => role.Id,
+                    (item, role) => new { item.employee_id, RoleId = role.Id, RoleName = role.name })
+                .OrderBy(item => item.employee_id)
+                .ThenBy(item => item.RoleId)
+                .ToListAsync();
+
+            return roleAssignments
+                .GroupBy(item => item.employee_id)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.Select(item => item.RoleName).FirstOrDefault() ?? string.Empty);
+        }
+
+        private async Task<Dictionary<int, BankAccountExportInfo>> BuildBankAccountLookupAsync(IEnumerable<int> employeeIds)
+        {
+            var employeeIdList = employeeIds.Distinct().ToArray();
+            if (employeeIdList.Length == 0)
+            {
+                return new Dictionary<int, BankAccountExportInfo>();
+            }
+
+            var bankAccounts = await _unitOfWork.Repository<BankAccounts>().AsQueryable()
+                .Where(bankAccount => employeeIdList.Contains(bankAccount.employee_id))
+                .OrderByDescending(bankAccount => bankAccount.Id)
+                .ToListAsync();
+
+            return bankAccounts
+                .GroupBy(bankAccount => bankAccount.employee_id)
+                .ToDictionary(
+                    group => group.Key,
+                    group =>
+                    {
+                        var latest = group.First();
+                        return new BankAccountExportInfo
+                        {
+                            AccountNumber = latest.account_number ?? string.Empty,
+                            BankName = latest.bank_name ?? string.Empty,
+                            Branch = latest.branch ?? string.Empty,
+                        };
+                    });
+        }
+
+        private async Task<Dictionary<int, string>> BuildPermanentAddressLookupAsync(IEnumerable<int> employeeIds)
+        {
+            var employeeIdList = employeeIds.Distinct().ToArray();
+            if (employeeIdList.Length == 0)
+            {
+                return new Dictionary<int, string>();
+            }
+
+            var addressEntries = await (
+                from employeeAddress in _unitOfWork.Repository<EmployeeAddresses>().AsQueryable()
+                join address in _unitOfWork.Repository<Addresses>().AsQueryable()
+                    on employeeAddress.address_id equals address.Id
+                join addressType in _unitOfWork.Repository<AddressTypes>().AsQueryable()
+                    on employeeAddress.address_type_id equals addressType.Id into addressTypeJoin
+                from addressType in addressTypeJoin.DefaultIfEmpty()
+                where employeeIdList.Contains(employeeAddress.employee_id)
+                select new
+                {
+                    EmployeeId = employeeAddress.employee_id,
+                    employeeAddress.is_current,
+                    AddressTypeName = addressType != null ? addressType.name : string.Empty,
+                    AddressLine = address.address_line,
+                    Ward = address.ward,
+                    District = address.district,
+                    City = address.city,
+                    Country = address.country,
+                })
+                .ToListAsync();
+
+            return addressEntries
+                .GroupBy(entry => entry.EmployeeId)
+                .ToDictionary(
+                    group => group.Key,
+                    group =>
+                    {
+                        var chosen = group
+                            .OrderBy(entry => IsPermanentAddressType(entry.AddressTypeName) ? 0 : 1)
+                            .ThenBy(entry => entry.is_current ? 1 : 0)
+                            .First();
+
+                        return string.Join(", ", new[]
+                        {
+                            chosen.AddressLine,
+                            chosen.Ward,
+                            chosen.District,
+                            chosen.City,
+                            chosen.Country,
+                        }.Where(value => !string.IsNullOrWhiteSpace(value)));
+                    });
+        }
+
+        private async Task<Dictionary<int, string>> BuildEducationLevelLookupAsync(IEnumerable<int> employeeIds)
+        {
+            var employeeIdList = employeeIds.Distinct().ToArray();
+            if (employeeIdList.Length == 0)
+            {
+                return new Dictionary<int, string>();
+            }
+
+            var educationRecords = await _unitOfWork.Repository<Education>().AsQueryable()
+                .Where(education => employeeIdList.Contains(education.employee_id))
+                .OrderByDescending(education => education.issue_date)
+                .ThenByDescending(education => education.Id)
+                .ToListAsync();
+
+            return educationRecords
+                .GroupBy(education => education.employee_id)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.Select(education => education.level).FirstOrDefault(level => !string.IsNullOrWhiteSpace(level)) ?? string.Empty);
+        }
+
+        private async Task<Dictionary<int, string>> BuildCertificateLookupAsync(IEnumerable<int> employeeIds)
+        {
+            var employeeIdList = employeeIds.Distinct().ToArray();
+            if (employeeIdList.Length == 0)
+            {
+                return new Dictionary<int, string>();
+            }
+
+            var certificateEntries = await (
+                from employeeCertificate in _unitOfWork.Repository<EmployeeCertificates>().AsQueryable()
+                join certificate in _unitOfWork.Repository<Certificates>().AsQueryable()
+                    on employeeCertificate.certificate_id equals certificate.Id
+                where employeeIdList.Contains(employeeCertificate.employee_id)
+                select new
+                {
+                    EmployeeId = employeeCertificate.employee_id,
+                    Name = certificate.certificate_name
+                })
+                .ToListAsync();
+
+            return certificateEntries
+                .GroupBy(entry => entry.EmployeeId)
+                .ToDictionary(
+                    group => group.Key,
+                    group => string.Join(", ", group.Select(entry => entry.Name).Where(name => !string.IsNullOrWhiteSpace(name)).Distinct()));
+        }
+
+        private async Task<Dictionary<int, string>> BuildEmergencyContactLookupAsync(IEnumerable<int> employeeIds)
+        {
+            var employeeIdList = employeeIds.Distinct().ToArray();
+            if (employeeIdList.Length == 0)
+            {
+                return new Dictionary<int, string>();
+            }
+
+            var contacts = await _unitOfWork.Repository<EmergencyContacts>().AsQueryable()
+                .Where(contact => employeeIdList.Contains(contact.employee_id))
+                .OrderByDescending(contact => contact.Id)
+                .ToListAsync();
+
+            return contacts
+                .GroupBy(contact => contact.employee_id)
+                .ToDictionary(
+                    group => group.Key,
+                    group =>
+                    {
+                        var contact = group.First();
+                        return string.Join(" - ", new[]
+                        {
+                            contact.name,
+                            contact.mobile_phone,
+                        }.Where(value => !string.IsNullOrWhiteSpace(value)));
+                    });
+        }
+
+        private static IReadOnlyList<ExportColumnDefinition> ResolveExportColumns(IEnumerable<string>? columnIds)
+        {
+            var columnDefinitions = GetExportColumnDefinitions();
+            var defaultColumnIds = new[]
+            {
+                "employee-code",
+                "full-name",
+                "manager-name",
+                "phone",
+                "gender",
+                "region",
+                "branch",
+                "department",
+                "job-title",
+                "access-group",
+                "birth-date",
+                "identity-number",
+                "email",
+            };
+
+            var normalizedColumnIds = (columnIds ?? defaultColumnIds)
+                .Select(columnId => columnId?.Trim())
+                .Where(columnId => !string.IsNullOrWhiteSpace(columnId))
+                .Select(columnId => columnId!)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var resolvedColumns = normalizedColumnIds
+                .Where(columnDefinitions.ContainsKey)
+                .Select(columnId => columnDefinitions[columnId])
+                .ToList();
+
+            return resolvedColumns.Count > 0
+                ? resolvedColumns
+                : defaultColumnIds.Select(columnId => columnDefinitions[columnId]).ToList();
+        }
+
+        private static Dictionary<string, ExportColumnDefinition> GetExportColumnDefinitions()
+        {
+            return new Dictionary<string, ExportColumnDefinition>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["employee-code"] = new("Mã nhân viên", row => row.Employee.EmployeeCode),
+                ["full-name"] = new("Họ và tên", row => row.Employee.FullName ?? string.Empty),
+                ["manager-name"] = new("Quản lý trực tiếp", row => row.Employee.ManagerName ?? string.Empty),
+                ["resignation-date"] = new("Ngày nghỉ việc", _ => string.Empty),
+                ["resignation-reason"] = new("Lý do nghỉ việc", row => row.ResignationReason),
+                ["phone"] = new("Số điện thoại", row => row.Employee.Phone ?? string.Empty),
+                ["gender"] = new("Giới tính", row => row.Employee.Gender ?? string.Empty),
+                ["region"] = new("Vùng", row => row.Employee.RegionName ?? string.Empty),
+                ["branch"] = new("Chi nhánh", row => row.Employee.BranchName ?? string.Empty),
+                ["direct-department"] = new("Phòng ban trực thuộc", _ => string.Empty),
+                ["department"] = new("Phòng ban", row => row.Employee.DepartmentName ?? string.Empty),
+                ["job-title"] = new("Chức danh", row => row.Employee.JobTitleName ?? string.Empty),
+                ["concurrent-role"] = new("Kiêm nhiệm", _ => string.Empty),
+                ["group"] = new("Nhóm", _ => string.Empty),
+                ["access-group"] = new("Nhóm truy cập", row => row.Employee.AccessGroup ?? string.Empty),
+                ["birth-date"] = new("Ngày sinh", row => FormatDate(row.Employee.BirthDate)),
+                ["birth-place"] = new("Nơi sinh", _ => string.Empty),
+                ["tax-code"] = new("Mã số thuế", row => row.Employee.TaxCode ?? string.Empty),
+                ["professional-level"] = new("Trình độ chuyên môn", row => row.ProfessionalLevel),
+                ["professional-certificate"] = new("Chứng chỉ chuyên ngành", row => row.ProfessionalCertificates),
+                ["identity-number"] = new("CMND/CCCD", row => row.Employee.IdentityNumber ?? string.Empty),
+                ["passport"] = new("Hộ chiếu", row => row.Employee.Passport ?? string.Empty),
+                ["email"] = new("Email", row => !string.IsNullOrWhiteSpace(row.Employee.Email) ? row.Employee.Email! : row.Employee.WorkEmail ?? string.Empty),
+                ["bank"] = new("Ngân hàng", row => row.BankName),
+                ["timekeeping"] = new("Chấm công", _ => string.Empty),
+                ["working-time"] = new("Thời gian làm việc", row => row.WorkingTime),
+                ["salary-info"] = new("Thông tin mức lương", _ => string.Empty),
+                ["allowance-info"] = new("Thông tin phụ cấp", _ => string.Empty),
+                ["general-contact"] = new("Liên hệ chung", row => string.Join(" | ", new[] { row.Employee.Phone, row.Employee.Email }.Where(value => !string.IsNullOrWhiteSpace(value)))),
+                ["emergency-contact"] = new("Liên hệ khẩn cấp", row => row.EmergencyContact),
+                ["permanent-address"] = new("Địa chỉ thường trú", row => row.PermanentAddress),
+                ["other-info"] = new("Thông tin khác", row => row.OtherInfo),
+            };
+        }
+
+        private static bool IsPermanentAddressType(string? addressTypeName)
+        {
+            var normalizedName = (addressTypeName ?? string.Empty).Trim().ToLowerInvariant();
+            return normalizedName.Contains("thường trú")
+                || normalizedName.Contains("thuong tru")
+                || normalizedName.Contains("permanent");
+        }
+
+        private static string EscapeCsv(string? value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return string.Empty;
+            }
+
+            return $"\"{value.Replace("\"", "\"\"")}\"";
+        }
+
+        private static string FormatDate(DateTime? value)
+        {
+            return value?.ToString("dd/MM/yyyy") ?? string.Empty;
+        }
+
+        private sealed class ExportColumnDefinition
+        {
+            public ExportColumnDefinition(string label, Func<EmployeeExportRow, string> getValue)
+            {
+                Label = label;
+                GetValue = getValue;
+            }
+
+            public string Label { get; }
+            public Func<EmployeeExportRow, string> GetValue { get; }
+        }
+
+        private sealed class EmployeeExportRow
+        {
+            public EmployeeDto Employee { get; init; } = new EmployeeDto();
+            public string BankAccountNumber { get; init; } = string.Empty;
+            public string BankName { get; init; } = string.Empty;
+            public string BankBranch { get; init; } = string.Empty;
+            public string WorkingTime { get; init; } = string.Empty;
+            public string ProfessionalLevel { get; init; } = string.Empty;
+            public string ProfessionalCertificates { get; init; } = string.Empty;
+            public string EmergencyContact { get; init; } = string.Empty;
+            public string PermanentAddress { get; init; } = string.Empty;
+            public string ResignationReason { get; init; } = string.Empty;
+            public string OtherInfo { get; init; } = string.Empty;
+        }
+
+        private sealed class BankAccountExportInfo
+        {
+            public string AccountNumber { get; init; } = string.Empty;
+            public string BankName { get; init; } = string.Empty;
+            public string Branch { get; init; } = string.Empty;
         }
     }
 }

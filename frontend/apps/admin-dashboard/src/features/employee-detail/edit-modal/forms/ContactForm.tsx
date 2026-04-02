@@ -74,8 +74,8 @@ const ContactForm: React.FC<ContactFormProps> = ({ data, errors, onFieldChange }
       <FormRow label="Địa chỉ">
         <textarea
           value={data.address}
-          onChange={(event) => onFieldChange('address', event.target.value)}
-          className={`${getFieldClassName(false)} min-h-[112px] py-3`}
+          readOnly
+          className={`${getFieldClassName(false)} min-h-[112px] cursor-not-allowed bg-slate-100 py-3 text-slate-500 focus:border-slate-200 focus:bg-slate-100 focus:ring-0`}
           placeholder="Nhập địa chỉ liên hệ"
         />
       </FormRow>

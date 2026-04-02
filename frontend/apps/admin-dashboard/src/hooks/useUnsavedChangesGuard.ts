@@ -1,31 +1,31 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 
-type PendingAction = () => void;
+type PendingAction = (() => void) | null;
 
 export const useUnsavedChangesGuard = () => {
-  const pendingActionRef = useRef<PendingAction | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<PendingAction>(null);
 
-  const requestAction = useCallback((shouldBlock: boolean, action: PendingAction) => {
-    if (!shouldBlock) {
+  const requestAction = useCallback((shouldGuard: boolean, action: () => void) => {
+    if (!shouldGuard) {
       action();
       return;
     }
 
-    pendingActionRef.current = action;
+    setPendingAction(() => action);
     setIsDialogOpen(true);
   }, []);
 
   const confirmAction = useCallback(() => {
-    const nextAction = pendingActionRef.current;
-    pendingActionRef.current = null;
     setIsDialogOpen(false);
-    nextAction?.();
-  }, []);
+    const action = pendingAction;
+    setPendingAction(null);
+    action?.();
+  }, [pendingAction]);
 
   const cancelAction = useCallback(() => {
-    pendingActionRef.current = null;
     setIsDialogOpen(false);
+    setPendingAction(null);
   }, []);
 
   return {

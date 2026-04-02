@@ -18,6 +18,6 @@ namespace ERP.Services.Employees
         Task<bool> DeleteAsync(int id);
         Task<string> GenerateNextEmployeeCodeAsync(string prefix = "NV");
         Task<string> GetCodeForReturningEmployeeAsync(int employeeId, string prefix = "NV");
-        Task<byte[]> ExportEmployeesToCsvAsync();
+        Task<byte[]> ExportEmployeesToCsvAsync(EmployeeFilterDto filter, IEnumerable<string>? columns = null);
     }
 }

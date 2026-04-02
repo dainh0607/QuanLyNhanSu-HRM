@@ -20,6 +20,10 @@ namespace ERP.Entities.Models
         [Column("birth_date")]
         public DateTime? birth_date { get; set; }
 
+        [Column("gender")]
+        [StringLength(10)]
+        public string? gender { get; set; }
+
         [Column("identity_number")]
         [StringLength(20)]
         public string identity_number { get; set; }

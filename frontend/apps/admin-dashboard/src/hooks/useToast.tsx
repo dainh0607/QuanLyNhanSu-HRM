@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import Toast, { type ToastType } from './Toast';
+import Toast, { type ToastType } from '../components/common/Toast';
 
 interface ToastState {
   message: string;
@@ -27,3 +27,5 @@ export const useToast = () => {
 
   return { showToast, ToastComponent };
 };
+
+export default useToast;

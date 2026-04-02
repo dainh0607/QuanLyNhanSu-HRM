@@ -41,6 +41,10 @@ namespace ERP.Entities.Models
         [StringLength(100)]
         public string? facebook { get; set; }
 
+        [Column("skype")]
+        [StringLength(100)]
+        public string? skype { get; set; }
+
         [Column("identity_number")]
         [StringLength(20)]
         public string? identity_number { get; set; }
@@ -82,6 +86,10 @@ namespace ERP.Entities.Models
 
         [Column("union_member")]
         public bool union_member { get; set; }
+
+        [Column("union_group")]
+        [StringLength(100)]
+        public string? union_group { get; set; }
 
         [Column("note")]
         public string? note { get; set; }

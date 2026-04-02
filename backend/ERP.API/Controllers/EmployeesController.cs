@@ -67,9 +67,9 @@ namespace ERP.API.Controllers
 
         [HttpGet("export")]
         [Authorize(Roles = "Manager,Admin")]
-        public async Task<IActionResult> Export()
+        public async Task<IActionResult> Export([FromQuery] EmployeeFilterDto filter, [FromQuery(Name = "columns")] string[]? columns)
         {
-            var result = await _employeeService.ExportEmployeesToCsvAsync();
+            var result = await _employeeService.ExportEmployeesToCsvAsync(filter, columns);
             return File(result, "text/csv", $"Employees_{System.DateTime.Now:yyyyMMdd}.csv");
         }
 
@@ -102,6 +102,8 @@ namespace ERP.API.Controllers
             return Ok(new { Message = "Cập nhật thành công" });
         }
 
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Manager,Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             var success = await _employeeService.DeleteAsync(id);

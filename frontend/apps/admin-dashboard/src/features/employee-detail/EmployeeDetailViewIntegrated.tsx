@@ -4,7 +4,7 @@ import {
   type EmployeeFullProfile,
 } from '../../services/employeeService';
 import { authService } from '../../services/authService';
-import { useToast } from '../../components/common/useToast';
+import { useToast } from '../../hooks/useToast';
 import type { Employee } from '../employees/types';
 import EmployeeEditModal from './edit-modal/EmployeeEditModal';
 import type { PersonalTabKey } from './edit-modal/types';
@@ -30,9 +30,29 @@ interface EmployeeDetailProps {
 type EmployeeDetailTab = (typeof EMPLOYEE_DETAIL_TABS)[number];
 
 const MIN_PASSWORD_LENGTH = 7;
+const MAX_AVATAR_FILE_SIZE = 5 * 1024 * 1024;
+
+const readFileAsDataUrl = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result === 'string' && result.trim()) {
+        resolve(result);
+        return;
+      }
+
+      reject(new Error('Không thể đọc dữ liệu ảnh.'));
+    };
+
+    reader.onerror = () => reject(new Error('Không thể đọc dữ liệu ảnh.'));
+    reader.readAsDataURL(file);
+  });
 
 export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack }) => {
   const { showToast, ToastComponent } = useToast();
+  const [displayEmployee, setDisplayEmployee] = useState<Employee>(employee);
   const [activeTab, setActiveTab] = useState<EmployeeDetailTab>(EMPLOYEE_DETAIL_TABS[0]);
   const [profile, setProfile] = useState<EmployeeFullProfile | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -46,6 +66,7 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
     'basicInfo',
   );
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState<boolean>(false);
+  const [isAvatarUploading, setIsAvatarUploading] = useState<boolean>(false);
   const [passwordForm, setPasswordForm] = useState({
     oldPassword: '',
     password: '',
@@ -53,6 +74,10 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
   });
   const [passwordSubmitError, setPasswordSubmitError] = useState<string | null>(null);
   const [isPasswordSubmitting, setIsPasswordSubmitting] = useState<boolean>(false);
+
+  useEffect(() => {
+    setDisplayEmployee(employee);
+  }, [employee]);
 
   useEffect(() => {
     let isMounted = true;
@@ -173,6 +198,12 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
   const workTypeValue = displayValue(basicInfo?.workType, employee.workType);
   const directManagerValue = displayValue(basicInfo?.managerName, employee.managerName);
   const addressValue = formatAddress(contactAddress);
+  const avatarRaw = getRecordValue(basicInfoRecord, ['avatar']);
+  const avatarValue =
+    (typeof avatarRaw === 'string' && avatarRaw.trim()) ||
+    displayEmployee.avatar?.trim() ||
+    employee.avatar?.trim() ||
+    undefined;
 
   const currentUser = authService.getCurrentUser();
   const canChangeOwnPassword = currentUser?.employeeId === employee.id;
@@ -280,6 +311,53 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
     setProfileReloadToken((prev) => prev + 1);
   };
 
+  const handleAvatarSelected = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      showToast('Chỉ có thể tải lên tệp ảnh.', 'error');
+      return;
+    }
+
+    if (file.size > MAX_AVATAR_FILE_SIZE) {
+      showToast('Ảnh đại diện không được vượt quá 5MB.', 'error');
+      return;
+    }
+
+    setIsAvatarUploading(true);
+
+    try {
+      const avatar = await readFileAsDataUrl(file);
+      const basicInfoPayload = await employeeService.getEmployeeEditBasicInfo(employee.id);
+
+      await employeeService.updateEmployeeEditBasicInfo(employee.id, {
+        ...basicInfoPayload,
+        avatar,
+      });
+
+      setDisplayEmployee((prev) => ({
+        ...prev,
+        avatar,
+      }));
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              basicInfo: {
+                ...prev.basicInfo,
+                avatar,
+              },
+            }
+          : prev,
+      );
+      setProfileReloadToken((prev) => prev + 1);
+      showToast('Cập nhật ảnh đại diện thành công.', 'success');
+    } catch (error) {
+      console.error('Update avatar error:', error);
+      showToast('Không thể cập nhật ảnh đại diện. Vui lòng thử lại.', 'error');
+    } finally {
+      setIsAvatarUploading(false);
+    }
+  };
+
   return (
     <div className="h-screen overflow-y-auto overflow-x-hidden bg-[#f3f4f6]">
       <div className="w-full px-6 py-8 lg:px-8 xl:px-10">
@@ -300,8 +378,9 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
         <hr className="mt-3 border-slate-200" />
 
         <ProfileSummarySection
-          employee={employee}
+          employee={displayEmployee}
           fullName={fullNameValue}
+          avatarUrl={avatarValue}
           roleValue={roleValue}
           jobTitleValue={jobTitleValue}
           contactPhone={contactPhone}
@@ -310,6 +389,8 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
           departmentValue={departmentValue}
           workTypeValue={workTypeValue}
           directManagerValue={directManagerValue}
+          isAvatarUploading={isAvatarUploading}
+          onAvatarSelected={handleAvatarSelected}
         />
 
         <EmployeeDetailTabs
@@ -349,7 +430,7 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
           <div className="px-6 py-6 pb-8">
             {activeTab === EMPLOYEE_DETAIL_TABS[0] ? (
               <PersonalTabContent
-                employee={employee}
+                employee={displayEmployee}
                 isLoading={isLoading}
                 loadError={loadError}
                 onOpenEditTab={handleOpenEditPersonalTab}
@@ -407,7 +488,7 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
           <EmployeeEditModal
             key={`employee-edit-${employee.id}-${editModalInitialSectionLabel}-${editModalInitialPersonalTab}`}
             isOpen={isEditModalOpen}
-            employee={employee}
+            employee={displayEmployee}
             profile={profile}
             initialSectionLabel={editModalInitialSectionLabel}
             initialPersonalTab={editModalInitialPersonalTab}

@@ -323,6 +323,8 @@ export const PHONE_COUNTRY_OPTIONS: PhoneCountryOption[] = PHONE_COUNTRY_OPTION_
   })
   .sort((left, right) => left.name.localeCompare(right.name, 'en'));
 
+export const PHONE_COUNTRY_NAMES: string[] = PHONE_COUNTRY_OPTIONS.map((option) => option.name);
+
 export const DEFAULT_PHONE_COUNTRY_VALUE = createPhoneCountryOptionValue('Vietnam', VIETNAM_DIAL_CODE);
 
 export const getDialCodeByPhoneCountryValue = (value: string): string =>

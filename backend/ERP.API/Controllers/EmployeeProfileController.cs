@@ -23,9 +23,16 @@ namespace ERP.API.Controllers
         [Authorize(Roles = "Manager,Admin")]
         public async Task<IActionResult> UpdateBasicInfo(int id, [FromBody] BasicInfoDto dto)
         {
-            var success = await _profileService.UpdateBasicInfoAsync(id, dto);
-            if (!success) return BadRequest();
-            return Ok(new { Message = "Basic information updated" });
+            try
+            {
+                var success = await _profileService.UpdateBasicInfoAsync(id, dto);
+                if (!success) return BadRequest();
+                return Ok(new { Message = "Basic information updated" });
+            }
+            catch (System.ArgumentException ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
         }
 
         [HttpPut("identity")]
@@ -74,7 +81,7 @@ namespace ERP.API.Controllers
         [HttpGet("other-info")]
         public async Task<IActionResult> GetOtherInfo(int id)
         {
-            var result = await _profileService.GetOtherInfoAsync(id);
+            var result = await _profileService.GetOtherInfoDetailsAsync(id);
             if (result == null) return NotFound(new { Message = $"Không tìm thấy nhân viên có Id = {id}." });
             return Ok(result);
         }

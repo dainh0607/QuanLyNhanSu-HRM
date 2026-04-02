@@ -167,6 +167,7 @@ export const buildSeedForms = (
         getRecordValue(basicInfoRecord, ['displayOrder', 'sortOrder', 'orderNumber']),
         employee.displayOrder,
       ),
+      avatar: toStringValue(getRecordValue(basicInfoRecord, ['avatar']), employee.avatar),
     },
     contact: {
       email: toStringValue(basicInfo?.workEmail, basicInfo?.email, employee.workEmail, employee.email),
@@ -262,7 +263,7 @@ export const buildSeedForms = (
       id: dependent.id,
       fullName: toStringValue(dependent.fullName),
       birthDate: toDateInputValue(dependent.birthDate),
-      gender: '',
+      gender: toStringValue(dependent.gender),
       identityNumber: toStringValue(dependent.identityNumber),
       relationship: toStringValue(dependent.relationship),
       permanentAddress: toStringValue(dependent.permanentAddress),
