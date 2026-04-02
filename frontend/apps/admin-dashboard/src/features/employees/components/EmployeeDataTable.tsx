@@ -315,7 +315,7 @@ const EmployeeDataTable: React.FC<EmployeeDataTableProps> = ({
 
                 <td
                   className={`sticky right-0 border-b border-l border-gray-100 bg-white px-4 py-4 text-right shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.05)] group-hover:bg-gray-50 ${
-                    activeMenuId === employee.id ? 'z-[0]' : 'z-[0]'
+                    activeMenuId === employee.id
                   }`}
                 >
                   <div className="relative inline-block text-left">

@@ -1938,19 +1938,19 @@ namespace ERP.Entities.Migrations
                         new
                         {
                             Id = 1,
-                            code = "M",
+                            code = "MALE",
                             name = "Nam"
                         },
                         new
                         {
                             Id = 2,
-                            code = "F",
+                            code = "FEMALE",
                             name = "Nữ"
                         },
                         new
                         {
                             Id = 3,
-                            code = "O",
+                            code = "OTHER",
                             name = "Khác"
                         });
                 });
@@ -2507,25 +2507,25 @@ namespace ERP.Entities.Migrations
                         new
                         {
                             Id = 1,
-                            code = "S",
+                            code = "SINGLE",
                             name = "Độc thân"
                         },
                         new
                         {
                             Id = 2,
-                            code = "M",
+                            code = "MARRIED",
                             name = "Đã kết hôn"
                         },
                         new
                         {
                             Id = 3,
-                            code = "D",
+                            code = "DIVORCED",
                             name = "Ly hôn"
                         },
                         new
                         {
                             Id = 4,
-                            code = "W",
+                            code = "WIDOWED",
                             name = "Góa"
                         });
                 });
