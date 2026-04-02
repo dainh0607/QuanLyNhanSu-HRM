@@ -1,6 +1,6 @@
 import React from 'react';
 import type { EmployeeEditHealthPayload } from '../../../../services/employeeService';
-import { FormHeading, FormRow } from '../components/FormPrimitives';
+import { DatePickerInput, FormHeading, FormRow } from '../components/FormPrimitives';
 import { getFieldClassName } from '../formStyles';
 
 interface HealthFormProps {
@@ -137,11 +137,11 @@ const HealthForm: React.FC<HealthFormProps> = ({ data, errors, onFieldChange }) 
       </FormRow>
 
       <FormRow label="Ngày kiểm tra gần nhất">
-        <input
-          type="date"
+        <DatePickerInput
           value={data.checkDate}
-          onChange={(event) => onFieldChange('checkDate', event.target.value)}
-          className={getFieldClassName(false)}
+          hasError={Boolean(errors.checkDate)}
+          ariaLabel="ngày kiểm tra gần nhất"
+          onChange={(value) => onFieldChange('checkDate', value)}
         />
       </FormRow>
     </div>

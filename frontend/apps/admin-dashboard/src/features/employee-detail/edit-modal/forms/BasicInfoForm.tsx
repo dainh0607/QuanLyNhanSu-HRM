@@ -1,7 +1,7 @@
 import React from 'react';
 import type { EmployeeEditBasicInfoPayload } from '../../../../services/employeeService';
 import { GENDER_OPTIONS } from '../constants';
-import { FormHeading, FormRow } from '../components/FormPrimitives';
+import { DatePickerInput, FormHeading, FormRow } from '../components/FormPrimitives';
 import { getFieldClassName } from '../formStyles';
 
 interface BasicInfoFormProps {
@@ -46,11 +46,11 @@ const BasicInfoForm: React.FC<BasicInfoFormProps> = ({ data, errors, onFieldChan
         </FormRow>
 
         <FormRow label="Ngày sinh" required error={errors.birthDate}>
-          <input
-            type="date"
+          <DatePickerInput
             value={data.birthDate}
-            onChange={(event) => onFieldChange('birthDate', event.target.value)}
-            className={getFieldClassName(Boolean(errors.birthDate))}
+            onChange={(value) => onFieldChange('birthDate', value)}
+            hasError={Boolean(errors.birthDate)}
+            ariaLabel="ngày sinh"
           />
         </FormRow>
 

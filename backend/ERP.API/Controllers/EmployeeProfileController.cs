@@ -19,6 +19,14 @@ namespace ERP.API.Controllers
             _profileService = profileService;
         }
 
+        [HttpPut("avatar")]
+        public async Task<IActionResult> UpdateAvatar(int id, [FromBody] AvatarUpdateDto dto)
+        {
+            var success = await _profileService.UpdateAvatarAsync(id, dto?.Avatar);
+            if (!success) return BadRequest();
+            return Ok(new { Message = "Avatar updated" });
+        }
+
         [HttpPut("basic-info")]
         [Authorize(Roles = "Manager,Admin")]
         public async Task<IActionResult> UpdateBasicInfo(int id, [FromBody] BasicInfoDto dto)

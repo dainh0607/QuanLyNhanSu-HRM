@@ -22,6 +22,7 @@ interface DependentDraft {
 }
 
 const EMPTY_VALUE = '-';
+const DATE_DISPLAY_PLACEHOLDER = 'dd/mm/yyyy';
 
 const createEmptyDraft = (): DependentDraft => ({
   fullName: '',
@@ -47,6 +48,73 @@ const getTextareaClassName = (hasError: boolean): string =>
 
 const buildDependentDuration = (startDate: string, endDate: string): string =>
   `${startDate.trim()} ~ ${endDate.trim()}`;
+
+const maskDisplayDate = (value: string): string => {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+
+  if (digits.length <= 2) {
+    return digits;
+  }
+
+  if (digits.length <= 4) {
+    return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  }
+
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+};
+
+const formatDateForDisplay = (value: string): string => {
+  const normalizedValue = value.trim();
+  if (!normalizedValue) {
+    return '';
+  }
+
+  const isoMatch = normalizedValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    return `${isoMatch[3]}/${isoMatch[2]}/${isoMatch[1]}`;
+  }
+
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(normalizedValue)) {
+    return normalizedValue;
+  }
+
+  return maskDisplayDate(normalizedValue);
+};
+
+const parseDisplayDateToIso = (value: string): string => {
+  const normalizedValue = formatDateForDisplay(value);
+  const match = normalizedValue.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) {
+    return '';
+  }
+
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+  const parsedDate = new Date(Date.UTC(year, month - 1, day));
+
+  if (
+    parsedDate.getUTCFullYear() !== year ||
+    parsedDate.getUTCMonth() !== month - 1 ||
+    parsedDate.getUTCDate() !== day
+  ) {
+    return '';
+  }
+
+  return `${match[3]}-${match[2]}-${match[1]}`;
+};
+
+const toErrorMessage = (error: unknown): string => {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  if (typeof error === 'string' && error.trim()) {
+    return error;
+  }
+
+  return 'Không thể thêm người phụ thuộc. Vui lòng thử lại.';
+};
 
 const formatDateCell = (value?: string): string => {
   const normalizedValue = value?.trim() ?? '';
@@ -88,6 +156,60 @@ const displayCellValue = (value?: string): string => {
   return normalizedValue || EMPTY_VALUE;
 };
 
+const DatePickerInput: React.FC<{
+  value: string;
+  hasError: boolean;
+  onChange: (value: string) => void;
+  ariaLabel: string;
+}> = ({ value, hasError, onChange, ariaLabel }) => {
+  const nativeDateRef = React.useRef<HTMLInputElement>(null);
+
+  const openNativeDatePicker = () => {
+    const input = nativeDateRef.current;
+    if (!input) {
+      return;
+    }
+
+    if (typeof input.showPicker === 'function') {
+      input.showPicker();
+      return;
+    }
+
+    input.click();
+  };
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        value={formatDateForDisplay(value)}
+        onChange={(event) => onChange(maskDisplayDate(event.target.value))}
+        className={`${getFieldClassName(hasError)} pr-14`}
+        placeholder={DATE_DISPLAY_PLACEHOLDER}
+        inputMode="numeric"
+        aria-label={ariaLabel}
+      />
+      <button
+        type="button"
+        onClick={openNativeDatePicker}
+        className="absolute right-3 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-emerald-600"
+        aria-label={`Chọn ${ariaLabel}`}
+      >
+        <span className="material-symbols-outlined text-[20px]">calendar_month</span>
+      </button>
+      <input
+        ref={nativeDateRef}
+        type="date"
+        value={parseDisplayDateToIso(value)}
+        onChange={(event) => onChange(formatDateForDisplay(event.target.value))}
+        className="pointer-events-none absolute bottom-0 right-0 h-0 w-0 opacity-0"
+        tabIndex={-1}
+        aria-hidden="true"
+      />
+    </div>
+  );
+};
+
 const buildDependentKey = (
   dependent: EmployeeEditDependentsPayload[number],
   index: number,
@@ -109,15 +231,22 @@ const validateDraft = (draft: DependentDraft): Record<string, string> => {
 
   if (!draft.birthDate.trim()) {
     nextErrors.birthDate = 'Ngày tháng năm sinh là bắt buộc.';
+  } else if (!parseDisplayDateToIso(draft.birthDate)) {
+    nextErrors.birthDate = 'Ngày sinh phải đúng định dạng dd/mm/yyyy.';
   }
 
   if (!draft.relationship.trim()) {
     nextErrors.relationship = 'Quan hệ với người khai báo là bắt buộc.';
   }
 
+  const dependencyStartDateIso = parseDisplayDateToIso(draft.dependencyStartDate);
+  const dependencyEndDateIso = parseDisplayDateToIso(draft.dependencyEndDate);
+
   if (!draft.dependencyStartDate.trim() || !draft.dependencyEndDate.trim()) {
     nextErrors.dependentDuration = 'Thời gian phụ thuộc là bắt buộc.';
-  } else if (draft.dependencyStartDate > draft.dependencyEndDate) {
+  } else if (!dependencyStartDateIso || !dependencyEndDateIso) {
+    nextErrors.dependentDuration = 'Thời gian phụ thuộc phải đúng định dạng dd/mm/yyyy.';
+  } else if (dependencyStartDateIso > dependencyEndDateIso) {
     nextErrors.dependentDuration = 'Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.';
   }
 
@@ -140,12 +269,14 @@ const DependentsManagerForm: React.FC<DependentsManagerFormProps> = ({
   const [draft, setDraft] = useState<DependentDraft>(createEmptyDraft);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const updateDraft = <K extends keyof DependentDraft>(field: K, value: DependentDraft[K]) => {
     setDraft((prev) => ({
       ...prev,
       [field]: value,
     }));
+    setSubmitError(null);
 
     setErrors((prev) => {
       if (!(field in prev) && !(field === 'dependencyStartDate' || field === 'dependencyEndDate')) {
@@ -165,6 +296,7 @@ const DependentsManagerForm: React.FC<DependentsManagerFormProps> = ({
     setDraft(createEmptyDraft());
     setErrors({});
     setIsSubmitting(false);
+    setSubmitError(null);
   };
 
   const handleOpenCreateDialog = () => {
@@ -191,19 +323,24 @@ const DependentsManagerForm: React.FC<DependentsManagerFormProps> = ({
     }
 
     setIsSubmitting(true);
+    setSubmitError(null);
+
+    const birthDateIso = parseDisplayDateToIso(draft.birthDate);
+    const dependencyStartDateIso = parseDisplayDateToIso(draft.dependencyStartDate);
+    const dependencyEndDateIso = parseDisplayDateToIso(draft.dependencyEndDate);
 
     try {
       await onCreateDependent({
         fullName: draft.fullName.trim(),
         gender: draft.gender.trim(),
-        birthDate: draft.birthDate,
+        birthDate: birthDateIso,
         identityNumber: draft.identityNumber.trim(),
         relationship: draft.relationship.trim(),
         permanentAddress: draft.permanentAddress.trim(),
         temporaryAddress: draft.temporaryAddress.trim(),
         dependentDuration: buildDependentDuration(
-          draft.dependencyStartDate,
-          draft.dependencyEndDate,
+          dependencyStartDateIso,
+          dependencyEndDateIso,
         ),
         reason: draft.reason.trim(),
       });
@@ -212,6 +349,7 @@ const DependentsManagerForm: React.FC<DependentsManagerFormProps> = ({
       resetDialog();
     } catch (error) {
       console.error('Create dependent error:', error);
+      setSubmitError(toErrorMessage(error));
       setIsSubmitting(false);
     }
   };
@@ -376,11 +514,11 @@ const DependentsManagerForm: React.FC<DependentsManagerFormProps> = ({
                 </FormRow>
 
                 <FormRow label="Ngày tháng năm sinh" required error={errors.birthDate}>
-                  <input
-                    type="date"
+                  <DatePickerInput
                     value={draft.birthDate}
-                    onChange={(event) => updateDraft('birthDate', event.target.value)}
-                    className={getFieldClassName(Boolean(errors.birthDate))}
+                    onChange={(value) => updateDraft('birthDate', value)}
+                    hasError={Boolean(errors.birthDate)}
+                    ariaLabel="ngày tháng năm sinh"
                   />
                 </FormRow>
 
@@ -420,18 +558,18 @@ const DependentsManagerForm: React.FC<DependentsManagerFormProps> = ({
                         : 'border-slate-200'
                     }`}
                   >
-                    <input
-                      type="date"
+                    <DatePickerInput
                       value={draft.dependencyStartDate}
-                      onChange={(event) => updateDraft('dependencyStartDate', event.target.value)}
-                      className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition-all focus:border-emerald-400 focus:ring-4 focus:ring-emerald-50"
+                      onChange={(value) => updateDraft('dependencyStartDate', value)}
+                      hasError={Boolean(errors.dependentDuration)}
+                      ariaLabel="ngày bắt đầu phụ thuộc"
                     />
                     <span className="text-center text-lg font-bold text-slate-300">~</span>
-                    <input
-                      type="date"
+                    <DatePickerInput
                       value={draft.dependencyEndDate}
-                      onChange={(event) => updateDraft('dependencyEndDate', event.target.value)}
-                      className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition-all focus:border-emerald-400 focus:ring-4 focus:ring-emerald-50"
+                      onChange={(value) => updateDraft('dependencyEndDate', value)}
+                      hasError={Boolean(errors.dependentDuration)}
+                      ariaLabel="ngày kết thúc phụ thuộc"
                     />
                   </div>
                 </FormRow>
@@ -472,7 +610,12 @@ const DependentsManagerForm: React.FC<DependentsManagerFormProps> = ({
                 </FormRow>
               </div>
 
-              <div className="flex justify-end border-t border-slate-200 px-6 py-5">
+              <div className="flex flex-col gap-3 border-t border-slate-200 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+                {submitError ? (
+                  <p className="text-sm font-medium text-rose-500">{submitError}</p>
+                ) : (
+                  <div />
+                )}
                 <button
                   type="submit"
                   disabled={isSubmitting}

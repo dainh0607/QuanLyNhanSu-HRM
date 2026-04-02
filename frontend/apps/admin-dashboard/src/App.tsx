@@ -256,7 +256,7 @@ function App() {
   return (
     <div id="app-root-container">
       {isAuthenticated ? (
-                      <div className="min-h-screen bg-[#f8fafc]">
+        <div className="min-h-screen bg-[#f8fafc]">
           {/* Ẩn Header nếu đang ở trang Detail */}
           {currentView === 'list' && <Header user={user} onLogout={handleLogout} />}
           

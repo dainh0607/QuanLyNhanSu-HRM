@@ -316,7 +316,18 @@ namespace ERP.Services.Employees
             _unitOfWork.Repository<EmployeeEntity>().Update(emp);
             return await _unitOfWork.SaveChangesAsync() > 0;
         }
-    
+
+        public async Task<bool> UpdateAvatarAsync(int employeeId, string? avatar)
+        {
+            var emp = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(employeeId);
+            if (emp == null) return false;
+
+            emp.avatar = string.IsNullOrWhiteSpace(avatar) ? null : avatar.Trim();
+
+            _unitOfWork.Repository<EmployeeEntity>().Update(emp);
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+      
         public async Task<bool> UpdateWorkHistoryAsync(int employeeId, List<WorkHistoryDto> dtos)
         {
             var existing = await _unitOfWork.Repository<WorkHistory>().FindAsync(x => x.employee_id == employeeId);
