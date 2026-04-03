@@ -37,13 +37,11 @@ const PersonalTabNavigationV2: React.FC<PersonalTabNavigationProps> = ({
   }, []);
 
   useEffect(() => {
-    const frameId = window.requestAnimationFrame(updateScrollState);
+    updateScrollState();
 
     const container = scrollContainerRef.current;
     if (!container) {
-      return () => {
-        window.cancelAnimationFrame(frameId);
-      };
+      return;
     }
 
     const handleScroll = () => updateScrollState();
@@ -53,7 +51,6 @@ const PersonalTabNavigationV2: React.FC<PersonalTabNavigationProps> = ({
     window.addEventListener('resize', handleResize);
 
     return () => {
-      window.cancelAnimationFrame(frameId);
       container.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleResize);
     };
@@ -98,7 +95,7 @@ const PersonalTabNavigationV2: React.FC<PersonalTabNavigationProps> = ({
   };
 
   return (
-    <div className="mt-5 min-w-0">
+    <div className="mt-5 min-w-0 ">
       <div className="rounded-[24px] border border-slate-200/90 bg-slate-50/85 p-2 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
         <div className="relative">
           {hasOverflow ? (

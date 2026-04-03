@@ -19,6 +19,7 @@ export interface Employee {
   managerName?: string;
   workEmail?: string;
   avatar?: string;
+  gender?: string;
   // New fields requested by user
   accessGroup?: string;      // Nhóm truy cập
   regionName?: string;       // Vùng

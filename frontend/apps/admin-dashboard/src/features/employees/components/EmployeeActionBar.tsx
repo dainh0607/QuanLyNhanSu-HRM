@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface EmployeeActionBarProps {
   onToggleFilter: () => void;
@@ -25,6 +26,7 @@ const EmployeeActionBar: React.FC<EmployeeActionBarProps> = ({
   onStatusChange,
   selectedStatus,
 }) => {
+  const navigate = useNavigate();
   const [searchInput, setSearchInput] = useState('');
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const statusRef = useRef<HTMLDivElement>(null);
@@ -167,24 +169,25 @@ const EmployeeActionBar: React.FC<EmployeeActionBarProps> = ({
 
           <div className="absolute right-0 top-full z-[9999] hidden pt-1.5 group-hover:block">
             <div className="w-40 overflow-hidden rounded-xl border border-gray-200 bg-white py-2 shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
-              <a
-                className="block px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                href="#"
+              <button
+                type="button"
+                onClick={() => navigate('/personnel/contracts')}
+                className="block w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
               >
                 Hợp đồng
-              </a>
-              <a
-                className="block px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                href="#"
+              </button>
+              <button
+                type="button"
+                className="block w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
               >
                 Bảo hiểm
-              </a>
-              <a
-                className="block px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                href="#"
+              </button>
+              <button
+                type="button"
+                className="block w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
               >
                 Tài sản
-              </a>
+              </button>
             </div>
           </div>
         </div>

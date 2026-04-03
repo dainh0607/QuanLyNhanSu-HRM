@@ -1,11 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import { EmployeeList } from './features/employees';
+import { ContractsManagementPage } from './features/employees-contracts';
 import { EmployeeDetail } from './features/employee-detail/EmployeeDetailViewIntegrated';
+import type { PersonalTabKey } from './features/employee-detail/edit-modal/types';
 import type { Employee } from './features/employees/types';
 import { authService } from './services/authService';
 import type { User } from './services/authService';
+import { employeeService } from './services/employeeService';
 import './index.css';
 
 // Mock data mẫu để test khi chưa đăng nhập (user === null)
@@ -197,7 +201,7 @@ const Header = ({ user, onLogout }: { user: User | null; onLogout: () => void })
   );
 };
 
-function App() {
+function LegacyStateApp() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [user, setUser] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState<'login' | 'register'>('login');
@@ -288,4 +292,341 @@ function App() {
   );
 }
 
-export default App;
+void LegacyStateApp;
+
+type AuthRedirectState = {
+  from?: string;
+};
+
+type EmployeeRouteState = {
+  employee?: Employee;
+};
+
+const LoadingScreen = ({ message }: { message: string }) => (
+  <div className="min-h-screen bg-[#0a0f23] flex items-center justify-center">
+    <div className="text-center">
+      <div className="w-12 h-12 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+      <p className="text-white/60 text-sm font-medium">{message}</p>
+    </div>
+  </div>
+);
+
+const EmployeeListRoute = ({
+  user,
+  onLogout,
+}: {
+  user: User | null;
+  onLogout: () => Promise<void>;
+}) => {
+  const navigate = useNavigate();
+
+  const handleSelectEmployee = (employee: Employee) => {
+    navigate(`/personnel/employees/${employee.id}`, {
+      state: { employee },
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-[#f8fafc]">
+      <Header
+        user={user}
+        onLogout={() => {
+          void onLogout();
+        }}
+      />
+      <EmployeeList onSelectEmployee={handleSelectEmployee} />
+    </div>
+  );
+};
+
+const EmployeeDetailRoute = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { employeeId } = useParams();
+  const searchParams = new URLSearchParams(location.search);
+  const routeState = location.state as EmployeeRouteState | null;
+  const employeeFromRouteState = routeState?.employee ?? null;
+  const parsedEmployeeId = Number(employeeId);
+  const isValidEmployeeId = Number.isInteger(parsedEmployeeId) && parsedEmployeeId > 0;
+  const returnPath =
+    searchParams.get('from') === 'contracts' ? '/personnel/contracts' : '/personnel/employees';
+  const editTabQuery = searchParams.get('edit');
+  const initialEditPersonalTab: PersonalTabKey =
+    editTabQuery === 'contact' ||
+    editTabQuery === 'emergencyContact' ||
+    editTabQuery === 'permanentAddress' ||
+    editTabQuery === 'education' ||
+    editTabQuery === 'identity' ||
+    editTabQuery === 'bankAccount' ||
+    editTabQuery === 'health' ||
+    editTabQuery === 'dependents' ||
+    editTabQuery === 'additionalInfo'
+      ? editTabQuery
+      : 'basicInfo';
+  const openEditOnLoad = searchParams.has('edit');
+  const hasStateEmployee =
+    employeeFromRouteState !== null && employeeFromRouteState.id === parsedEmployeeId;
+  const [employee, setEmployee] = useState<Employee | null>(
+    hasStateEmployee ? employeeFromRouteState : null,
+  );
+  const [isLoading, setIsLoading] = useState<boolean>(!hasStateEmployee);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadToken, setReloadToken] = useState<number>(0);
+
+  useEffect(() => {
+    if (!isValidEmployeeId) {
+      setEmployee(null);
+      setLoadError('Employee id is invalid.');
+      setIsLoading(false);
+      return;
+    }
+
+    if (employeeFromRouteState && employeeFromRouteState.id === parsedEmployeeId) {
+      setEmployee(employeeFromRouteState);
+      setLoadError(null);
+      setIsLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadEmployee = async () => {
+      setIsLoading(true);
+      setLoadError(null);
+
+      try {
+        const data = await employeeService.getEmployeeById(parsedEmployeeId);
+        if (isMounted) {
+          setEmployee(data);
+        }
+      } catch (error) {
+        console.error(`Failed to load employee ${parsedEmployeeId}:`, error);
+        if (isMounted) {
+          setEmployee(null);
+          setLoadError('Khong the tai thong tin nhan su. Vui long thu lai.');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void loadEmployee();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [employeeFromRouteState, isValidEmployeeId, parsedEmployeeId, reloadToken]);
+
+  if (!isValidEmployeeId) {
+    return <Navigate to="/personnel/employees" replace />;
+  }
+
+  if (isLoading) {
+    return <LoadingScreen message="Dang tai ho so nhan su..." />;
+  }
+
+  if (!employee) {
+    return (
+      <div className="min-h-screen bg-[#f8fafc] px-6 py-10">
+        <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+          <button
+            type="button"
+            onClick={() => navigate(returnPath)}
+            className="mb-6 inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+          >
+            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+            Quay lai danh sach
+          </button>
+
+          <h1 className="text-xl font-semibold text-slate-900">Khong mo duoc ho so nhan su</h1>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            {loadError ?? 'Khong the tai du lieu cho trang chi tiet nay.'}
+          </p>
+
+          <div className="mt-6 flex gap-3">
+            <button
+              type="button"
+              onClick={() => setReloadToken((prev) => prev + 1)}
+              className="rounded-lg bg-[#134BBA] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0f3f9f]"
+            >
+              Thu lai
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(returnPath)}
+              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+            >
+              Ve danh sach
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <EmployeeDetail
+      employee={employee}
+      onBack={() => navigate(returnPath)}
+      openEditOnLoad={openEditOnLoad}
+      initialEditPersonalTab={initialEditPersonalTab}
+      highlightWorkTypeNotice={searchParams.get('from') === 'contracts'}
+    />
+  );
+};
+
+const ContractsRoute = ({
+  user,
+  onLogout,
+}: {
+  user: User | null;
+  onLogout: () => Promise<void>;
+}) => {
+  return (
+    <div className="min-h-screen bg-[#f8fafc]">
+      <Header
+        user={user}
+        onLogout={() => {
+          void onLogout();
+        }}
+      />
+      <ContractsManagementPage />
+    </div>
+  );
+};
+
+const LegacyEmployeesRedirect = () => <Navigate to="/personnel/employees" replace />;
+
+const LegacyEmployeeDetailRedirect = () => {
+  const { employeeId } = useParams();
+  const location = useLocation();
+
+  return (
+    <Navigate
+      to={`/personnel/employees/${employeeId ?? ''}${location.search}${location.hash}`}
+      replace
+    />
+  );
+};
+
+function RoutedApp() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [isInitializing, setIsInitializing] = useState<boolean>(true);
+
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        const currentUser = await authService.checkAuth();
+        if (currentUser) {
+          setIsAuthenticated(true);
+          setUser(currentUser);
+        }
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+
+    void initAuth();
+  }, []);
+
+  const handleLoginSuccess = () => {
+    const currentUser = authService.getCurrentUser();
+    const redirectState = location.state as AuthRedirectState | null;
+    const redirectPath =
+      redirectState?.from && redirectState.from !== '/login' && redirectState.from !== '/register'
+        ? redirectState.from
+        : '/personnel/employees';
+
+    setIsAuthenticated(true);
+    setUser(currentUser);
+    navigate(redirectPath, { replace: true });
+  };
+
+  const handleLogout = async () => {
+    await authService.logout();
+    setIsAuthenticated(false);
+    setUser(null);
+    navigate('/login', { replace: true });
+  };
+
+  if (isInitializing) {
+    return <LoadingScreen message="Hệ thống đang khởi động..." />;
+  }
+
+  const defaultRoute = isAuthenticated ? '/personnel/employees' : '/login';
+  const loginRedirectPath = `${location.pathname}${location.search}${location.hash}`;
+
+  return (
+    <div id="app-root-container">
+      <Routes>
+        <Route path="/" element={<Navigate to={defaultRoute} replace />} />
+        <Route
+          path="/login"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/personnel/employees" replace />
+            ) : (
+              <LoginPage
+                onNavigateToRegister={() => navigate('/register')}
+                onLoginSuccess={handleLoginSuccess}
+              />
+            )
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/personnel/employees" replace />
+            ) : (
+              <RegisterPage
+                onNavigateToLogin={() => navigate('/login')}
+                onRegisterSuccess={() => navigate('/login')}
+              />
+            )
+          }
+        />
+        <Route
+          path="/personnel/employees"
+          element={
+            isAuthenticated ? (
+              <EmployeeListRoute user={user} onLogout={handleLogout} />
+            ) : (
+              <Navigate to="/login" replace state={{ from: loginRedirectPath }} />
+            )
+          }
+        />
+        <Route
+          path="/personnel/contracts"
+          element={
+            isAuthenticated ? (
+              <ContractsRoute user={user} onLogout={handleLogout} />
+            ) : (
+              <Navigate to="/login" replace state={{ from: loginRedirectPath }} />
+            )
+          }
+        />
+        <Route
+          path="/personnel/employees/:employeeId"
+          element={
+            isAuthenticated ? (
+              <EmployeeDetailRoute />
+            ) : (
+              <Navigate to="/login" replace state={{ from: loginRedirectPath }} />
+            )
+          }
+        />
+        <Route path="/employees" element={<LegacyEmployeesRedirect />} />
+        <Route path="/employees/:employeeId" element={<LegacyEmployeeDetailRedirect />} />
+        <Route path="*" element={<Navigate to={defaultRoute} replace />} />
+      </Routes>
+    </div>
+  );
+}
+
+export default RoutedApp;

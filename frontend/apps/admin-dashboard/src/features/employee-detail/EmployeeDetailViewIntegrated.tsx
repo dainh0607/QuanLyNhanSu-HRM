@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   employeeService,
   type EmployeeFullProfile,
@@ -30,6 +30,9 @@ import {
 interface EmployeeDetailProps {
   employee: Employee;
   onBack: () => void;
+  openEditOnLoad?: boolean;
+  initialEditPersonalTab?: PersonalTabKey;
+  highlightWorkTypeNotice?: boolean;
 }
 
 type EmployeeDetailTab = (typeof EMPLOYEE_DETAIL_TABS)[number];
@@ -37,8 +40,15 @@ type EmployeeDetailTab = (typeof EMPLOYEE_DETAIL_TABS)[number];
 const MIN_PASSWORD_LENGTH = 7;
 const MAX_AVATAR_FILE_SIZE = MAX_AVATAR_SOURCE_FILE_SIZE_BYTES;
 
-export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack }) => {
+export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
+  employee,
+  onBack,
+  openEditOnLoad = false,
+  initialEditPersonalTab = 'basicInfo',
+  highlightWorkTypeNotice = false,
+}) => {
   const { showToast, ToastComponent } = useToast();
+  const autoOpenHandledRef = useRef(false);
   const [displayEmployee, setDisplayEmployee] = useState<Employee>(employee);
   const [activeTab, setActiveTab] = useState<EmployeeDetailTab>(EMPLOYEE_DETAIL_TABS[0]);
   const [profile, setProfile] = useState<EmployeeFullProfile | null>(null);
@@ -64,7 +74,23 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({ employee, onBack
 
   useEffect(() => {
     setDisplayEmployee(employee);
+    autoOpenHandledRef.current = false;
   }, [employee]);
+
+  useEffect(() => {
+    if (!openEditOnLoad || autoOpenHandledRef.current) {
+      return;
+    }
+
+    autoOpenHandledRef.current = true;
+    setEditModalInitialSectionLabel(EMPLOYEE_DETAIL_TABS[0]);
+    setEditModalInitialPersonalTab(initialEditPersonalTab);
+    setIsEditModalOpen(true);
+
+    if (highlightWorkTypeNotice) {
+      showToast('Đã mở nhanh phần Sửa hồ sơ để bạn tiếp tục cập nhật thông tin làm việc.', 'info');
+    }
+  }, [highlightWorkTypeNotice, initialEditPersonalTab, openEditOnLoad, showToast]);
 
   useEffect(() => {
     let isMounted = true;
