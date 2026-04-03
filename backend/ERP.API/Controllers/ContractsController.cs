@@ -73,5 +73,21 @@ namespace ERP.API.Controllers
             if (!success) return BadRequest();
             return Ok(new { Message = "Contract deleted successfully" });
         }
+
+        [HttpGet("export")]
+        [Authorize(Roles = "Manager,Admin")]
+        public async Task<IActionResult> Export([FromQuery] ContractFilterDto filter)
+        {
+            var bytes = await _contractService.ExportToCsvAsync(filter);
+            return File(bytes, "text/csv", $"Contracts_{System.DateTime.Now:yyyyMMddHHmmss}.csv");
+        }
+
+        [HttpPost("bulk-delete")]
+        [Authorize(Roles = "Manager,Admin")]
+        public async Task<IActionResult> BulkDelete([FromBody] int[] ids)
+        {
+            var count = await _contractService.DeleteMultipleAsync(ids);
+            return Ok(new { Message = $"{count} contracts deleted successfully", Count = count });
+        }
     }
 }

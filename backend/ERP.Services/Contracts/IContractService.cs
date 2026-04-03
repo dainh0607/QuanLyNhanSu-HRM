@@ -9,6 +9,8 @@ namespace ERP.Services.Contracts
     {
         Task<PaginatedListDto<ContractListItemDto>> GetPagedListAsync(ContractFilterDto filter);
         Task<ContractSummaryDto> GetSummaryAsync();
+        Task<byte[]> ExportToCsvAsync(ContractFilterDto filter);
+        Task<int> DeleteMultipleAsync(int[] ids);
         Task<IEnumerable<ContractDto>> GetByEmployeeIdAsync(int employeeId);
         Task<ContractDto> GetByIdAsync(int id);
         Task<bool> CreateAsync(ContractCreateDto dto);

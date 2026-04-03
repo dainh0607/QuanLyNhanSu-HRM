@@ -1,8 +1,11 @@
-import type { BranchMetadata, DepartmentMetadata } from '../../services/employeeService';
-import type { Employee } from '../employees/types';
+import type {
+  BranchMetadata,
+  DepartmentMetadata,
+} from "../../services/employeeService";
+import type { Employee } from "../employees/types";
 
-export type ContractStatusKey = 'effective' | 'pending' | 'expired';
-export type ContractCategoryKey = 'all' | 'official' | 'probation' | 'seasonal';
+export type ContractStatusKey = "effective" | "pending" | "expired";
+export type ContractCategoryKey = "all" | "official" | "probation" | "seasonal";
 
 export interface ContractDto {
   id: number;
@@ -27,7 +30,7 @@ export interface ContractListItem extends ContractDto {
   departmentName: string;
   avatar?: string;
   employeeWorkType?: string;
-  category: Exclude<ContractCategoryKey, 'all'>;
+  category: Exclude<ContractCategoryKey, "all">;
   statusKey: ContractStatusKey;
   statusLabel: string;
   statusColorClassName: string;
@@ -59,7 +62,14 @@ export interface ContractFilterMetadata {
 export interface ContractColumnConfig {
   id: string;
   label: string;
-  key: 'index' | 'contractNumber' | 'fullName' | 'branchName' | 'contractTypeName' | 'status' | 'expiryDate';
+  key:
+    | "index"
+    | "contractNumber"
+    | "fullName"
+    | "branchName"
+    | "contractTypeName"
+    | "status"
+    | "expiryDate";
   show: boolean;
   pinned: boolean;
   pinOrder?: number;
