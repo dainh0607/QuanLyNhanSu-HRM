@@ -18,6 +18,20 @@ namespace ERP.API.Controllers
             _contractService = contractService;
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetPagedList([FromQuery] ContractFilterDto filter)
+        {
+            var result = await _contractService.GetPagedListAsync(filter);
+            return Ok(result);
+        }
+
+        [HttpGet("summary")]
+        public async Task<IActionResult> GetSummary()
+        {
+            var summary = await _contractService.GetSummaryAsync();
+            return Ok(summary);
+        }
+
         [HttpGet("employee/{employeeId}")]
         public async Task<IActionResult> GetByEmployeeId(int employeeId)
         {

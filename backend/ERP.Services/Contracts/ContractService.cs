@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using ERP.DTOs;
 using ERP.DTOs.Contracts;
 using ERP.Entities.Models;
 using ERP.Repositories.Interfaces;
@@ -16,6 +17,138 @@ namespace ERP.Services.Contracts
         public ContractService(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
+        }
+
+        public async Task<PaginatedListDto<ContractListItemDto>> GetPagedListAsync(ContractFilterDto filter)
+        {
+            var query = _unitOfWork.Repository<Entities.Models.Contracts>()
+                .AsQueryable()
+                .Include(x => x.Employee)
+                    .ThenInclude(e => e.Branch)
+                .Include(x => x.Employee)
+                    .ThenInclude(e => e.Department)
+                .Include(x => x.Employee)
+                    .ThenInclude(e => e.JobTitle)
+                .Include(x => x.ContractType)
+                .AsQueryable();
+
+            // 1. Filtering
+            if (!string.IsNullOrEmpty(filter.Search))
+            {
+                query = query.Where(x => x.contract_number.Contains(filter.Search) || 
+                                         x.Employee.full_name.Contains(filter.Search) ||
+                                         x.Employee.employee_code.Contains(filter.Search));
+            }
+
+            if (!string.IsNullOrEmpty(filter.Status))
+            {
+                query = query.Where(x => x.status == filter.Status);
+            }
+
+            if (filter.ContractTypeId.HasValue)
+            {
+                query = query.Where(x => x.contract_type_id == filter.ContractTypeId);
+            }
+
+            if (filter.BranchId.HasValue)
+            {
+                query = query.Where(x => x.Employee.branch_id == filter.BranchId);
+            }
+
+            if (filter.DepartmentId.HasValue)
+            {
+                query = query.Where(x => x.Employee.department_id == filter.DepartmentId);
+            }
+
+            if (filter.FromDate.HasValue)
+            {
+                query = query.Where(x => x.effective_date >= filter.FromDate);
+            }
+
+            if (filter.ToDate.HasValue)
+            {
+                query = query.Where(x => x.effective_date <= filter.ToDate);
+            }
+
+            // 2. Counting
+            var totalCount = await query.CountAsync();
+
+            // 3. Paging & Projection
+            var items = await query
+                .OrderByDescending(x => x.effective_date)
+                .Skip((filter.PageNumber - 1) * filter.PageSize)
+                .Take(filter.PageSize)
+                .Select(x => new ContractListItemDto
+                {
+                    Id = x.Id,
+                    ContractNumber = x.contract_number,
+                    Status = x.status,
+                    StatusLabel = MapStatusToLabel(x.status),
+                    StatusColor = MapStatusToColor(x.status),
+                    SignDate = x.sign_date,
+                    EffectiveDate = x.effective_date,
+                    ExpiryDate = x.expiry_date,
+                    EmployeeId = x.employee_id,
+                    EmployeeCode = x.Employee.employee_code,
+                    FullName = x.Employee.full_name,
+                    BranchName = x.Employee.Branch.name,
+                    DepartmentName = x.Employee.Department.name,
+                    JobTitleName = x.Employee.JobTitle.name,
+                    ContractTypeId = x.contract_type_id,
+                    ContractTypeName = x.ContractType.name,
+                    SignedBy = x.signed_by,
+                    TaxType = x.tax_type,
+                    Attachment = x.attachment
+                })
+                .ToListAsync();
+
+            return new PaginatedListDto<ContractListItemDto>(items, totalCount, filter.PageNumber, filter.PageSize);
+        }
+
+        public async Task<ContractSummaryDto> GetSummaryAsync()
+        {
+            var repo = _unitOfWork.Repository<Entities.Models.Contracts>();
+            var today = DateTime.Today;
+            var expiringThreshold = today.AddDays(30);
+
+            var allContracts = await repo.AsQueryable().ToListAsync();
+
+            return new ContractSummaryDto
+            {
+                TotalContracts = allContracts.Count,
+                ActiveContracts = allContracts.Count(c => c.status == "Active"),
+                ExpiredContracts = allContracts.Count(c => c.status == "Expired" || (c.expiry_date.HasValue && c.expiry_date < today)),
+                ExpiringSoon = allContracts.Count(c => c.status == "Active" && c.expiry_date.HasValue && c.expiry_date >= today && c.expiry_date <= expiringThreshold),
+                DraftContracts = allContracts.Count(c => c.status == "Draft"),
+                ProbationContracts = allContracts.Count(c => c.ContractType != null && c.ContractType.name.Contains("Thử việc")),
+                OfficialContracts = allContracts.Count(c => c.ContractType != null && c.ContractType.name.Contains("Chính thức"))
+            };
+        }
+
+        private static string MapStatusToLabel(string status)
+        {
+            return status switch
+            {
+                "Active" => "Đang hiệu lực",
+                "Expired" => "Hết hạn",
+                "Draft" => "Bản nháp",
+                "Terminated" => "Đã chấm dứt",
+                "Cancelled" => "Đã hủy",
+                _ => status
+            };
+        }
+
+        private static string MapStatusToColor(string status)
+        {
+            return status switch
+            {
+                "Active" => "success",
+                "Expired" => "error",
+                "Draft" => "warning",
+                "Terminated" => "default",
+                "Cancelled" => "error",
+                _ => "default"
+            };
         }
 
         public async Task<IEnumerable<ContractDto>> GetByEmployeeIdAsync(int employeeId)
