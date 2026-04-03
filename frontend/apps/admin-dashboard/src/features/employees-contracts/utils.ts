@@ -3,12 +3,21 @@ import type {
   ContractCategoryKey,
   ContractDto,
   ContractListItem,
+  ContractListItemDto,
   ContractStatusKey,
   ContractSummary,
+  ContractSummaryDto,
 } from './types';
 import type { Employee } from '../employees/types';
 
-const normalizeText = (value: string | null | undefined) =>
+const STATUS_COLOR_CLASS_MAP: Record<string, string> = {
+  success: 'border border-emerald-200 bg-emerald-50 text-emerald-700',
+  warning: 'border border-amber-200 bg-amber-50 text-amber-700',
+  error: 'border border-rose-200 bg-rose-50 text-rose-700',
+  default: 'border border-slate-200 bg-slate-100 text-slate-700',
+};
+
+export const normalizeText = (value: string | null | undefined) =>
   (value ?? '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -163,6 +172,7 @@ export const mapContractListItem = (contract: ContractDto, employee: Employee): 
     statusColorClassName: presentation.statusColorClassName,
     expiryDateLabel: formatDisplayDate(contract.expiryDate),
     signDateLabel: formatDisplayDate(contract.signDate),
+    effectiveDateLabel: formatDisplayDate(contract.effectiveDate),
   };
 };
 
@@ -269,3 +279,139 @@ export const downloadExcelCompatibleFile = (filename: string, rows: string[][]) 
   document.body.removeChild(link);
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
+
+export const getContractTypeIdsByCategory = (category: ContractCategoryKey) => {
+  if (category === 'all') {
+    return [];
+  }
+
+  return CONTRACT_TYPE_OPTIONS.filter((option) => option.category === category).map((option) => option.id);
+};
+
+const getFallbackStatusPresentation = (statusKey: ContractStatusKey) => {
+  switch (statusKey) {
+    case 'effective':
+      return {
+        statusLabel: 'Đang hiệu lực',
+        statusColorClassName: STATUS_COLOR_CLASS_MAP.success,
+      };
+    case 'expired':
+      return {
+        statusLabel: 'Hết hạn',
+        statusColorClassName: STATUS_COLOR_CLASS_MAP.error,
+      };
+    default:
+      return {
+        statusLabel: 'Bản nháp',
+        statusColorClassName: STATUS_COLOR_CLASS_MAP.warning,
+      };
+  }
+};
+
+const resolveStatusColorClassName = (statusColor: string | null | undefined, statusKey: ContractStatusKey) => {
+  const normalizedStatusColor = normalizeText(statusColor);
+  return STATUS_COLOR_CLASS_MAP[normalizedStatusColor] ?? getFallbackStatusPresentation(statusKey).statusColorClassName;
+};
+
+export const resolveBackendContractStatus = (
+  contract: Pick<ContractDto, 'status' | 'effectiveDate' | 'signDate' | 'expiryDate'>,
+): ContractStatusKey => {
+  const normalizedStatus = normalizeText(contract.status);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const expiryDate = contract.expiryDate ? new Date(contract.expiryDate) : null;
+  const effectiveDate = contract.effectiveDate
+    ? new Date(contract.effectiveDate)
+    : contract.signDate
+      ? new Date(contract.signDate)
+      : null;
+
+  if (normalizedStatus.includes('expired') || normalizedStatus.includes('het han')) {
+    return 'expired';
+  }
+
+  if (
+    normalizedStatus.includes('active') ||
+    normalizedStatus.includes('hieu luc') ||
+    normalizedStatus.includes('effective')
+  ) {
+    return 'effective';
+  }
+
+  if (
+    normalizedStatus.includes('pending') ||
+    normalizedStatus.includes('draft') ||
+    normalizedStatus.includes('cho ky') ||
+    normalizedStatus.includes('waiting')
+  ) {
+    return 'pending';
+  }
+
+  if (expiryDate && !Number.isNaN(expiryDate.getTime()) && expiryDate < today) {
+    return 'expired';
+  }
+
+  if (effectiveDate && !Number.isNaN(effectiveDate.getTime()) && effectiveDate <= today) {
+    return 'effective';
+  }
+
+  return 'pending';
+};
+
+export const inferBackendCreateContractStatus = (signDate: string, expiryDate: string) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const normalizedSignDate = signDate ? new Date(signDate) : null;
+  const normalizedExpiryDate = expiryDate ? new Date(expiryDate) : null;
+
+  if (normalizedExpiryDate && !Number.isNaN(normalizedExpiryDate.getTime()) && normalizedExpiryDate < today) {
+    return 'Expired';
+  }
+
+  if (normalizedSignDate && !Number.isNaN(normalizedSignDate.getTime()) && normalizedSignDate <= today) {
+    return 'Active';
+  }
+
+  return 'Draft';
+};
+
+export const mapContractListItemDto = (contract: ContractListItemDto): ContractListItem => {
+  const statusKey = resolveBackendContractStatus(contract);
+  const fallbackPresentation = getFallbackStatusPresentation(statusKey);
+
+  return {
+    ...contract,
+    employeeCode: contract.employeeCode ?? 'Chưa cập nhật',
+    fullName: contract.fullName ?? contract.employeeName ?? 'Chưa cập nhật',
+    branchName: contract.branchName ?? 'Chưa cập nhật',
+    departmentName: contract.departmentName ?? 'Chưa cập nhật',
+    jobTitleName: contract.jobTitleName ?? null,
+    category: getContractCategory(contract.contractTypeId, contract.contractTypeName),
+    statusKey,
+    statusLabel: contract.statusLabel?.trim() || fallbackPresentation.statusLabel,
+    statusColorClassName: resolveStatusColorClassName(contract.statusColor, statusKey),
+    expiryDateLabel: formatDisplayDate(contract.expiryDate),
+    signDateLabel: formatDisplayDate(contract.signDate),
+    effectiveDateLabel: formatDisplayDate(contract.effectiveDate),
+  };
+};
+
+export const buildContractSummaryFromDto = (summary: ContractSummaryDto): ContractSummary => ({
+  effectiveCount: summary.activeContracts ?? 0,
+  pendingCount: summary.draftContracts ?? 0,
+  expiredCount: summary.expiredContracts ?? 0,
+});
+
+export const sortContractsByEffectiveDateDesc = (contracts: ContractListItem[]) =>
+  [...contracts].sort((left, right) => {
+    const leftTime = left.effectiveDate ? new Date(left.effectiveDate).getTime() : 0;
+    const rightTime = right.effectiveDate ? new Date(right.effectiveDate).getTime() : 0;
+
+    if (rightTime !== leftTime) {
+      return rightTime - leftTime;
+    }
+
+    return right.id - left.id;
+  });

@@ -20,7 +20,8 @@ namespace ERP.Services.Common
 
         public async Task<string> UploadFileAsync(Stream fileStream, string fileName, string contentType)
         {
-            var folderPath = Path.Combine(_environment.WebRootPath, UploadFolder);
+            var webRoot = string.IsNullOrEmpty(_environment.WebRootPath) ? Path.Combine(_environment.ContentRootPath, "wwwroot") : _environment.WebRootPath;
+            var folderPath = Path.Combine(webRoot, UploadFolder);
             if (!Directory.Exists(folderPath))
             {
                 Directory.CreateDirectory(folderPath);
@@ -43,7 +44,8 @@ namespace ERP.Services.Common
             try
             {
                 var fileName = Path.GetFileName(new Uri(fileUrl).LocalPath);
-                var filePath = Path.Combine(_environment.WebRootPath, UploadFolder, fileName);
+                var webRoot = string.IsNullOrEmpty(_environment.WebRootPath) ? Path.Combine(_environment.ContentRootPath, "wwwroot") : _environment.WebRootPath;
+                var filePath = Path.Combine(webRoot, UploadFolder, fileName);
 
                 if (File.Exists(filePath))
                 {

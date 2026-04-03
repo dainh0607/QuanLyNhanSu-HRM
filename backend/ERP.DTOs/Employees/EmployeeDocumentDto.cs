@@ -13,7 +13,7 @@ namespace ERP.DTOs.Employees
         public long FileSize { get; set; }
         public string FileExtension { get; set; }
         public DateTime? ExpiryDate { get; set; }
-        public string Note { get; set; }
+        public string? Note { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 
@@ -27,6 +27,6 @@ namespace ERP.DTOs.Employees
 
         public DateTime? ExpiryDate { get; set; }
 
-        public string Note { get; set; }
+        public string? Note { get; set; }
     }
 }
