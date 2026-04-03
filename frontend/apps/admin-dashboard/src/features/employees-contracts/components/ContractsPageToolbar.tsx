@@ -1,18 +1,28 @@
 import React from 'react';
 
 interface ContractsPageToolbarProps {
+  onBack: () => void;
   onCreateNew: () => void;
   onExport: () => void;
 }
 
-const ContractsPageToolbar: React.FC<ContractsPageToolbarProps> = ({ onCreateNew, onExport }) => {
+const ContractsPageToolbar: React.FC<ContractsPageToolbarProps> = ({
+  onBack,
+  onCreateNew,
+  onExport,
+}) => {
   return (
     <div className="mb-6 flex flex-col justify-between gap-4 shrink-0 md:flex-row md:items-center">
-      <div>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-900"
+          title="Quay lại danh sách nhân viên"
+        >
+          <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+        </button>
         <h1 className="text-2xl font-bold text-gray-900">Quản lý hợp đồng lao động</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Theo dõi tình trạng hợp đồng, chuẩn bị ký mới và quản lý dữ liệu tập trung trong module nhân sự.
-        </p>
       </div>
 
       <div className="flex items-center gap-3">

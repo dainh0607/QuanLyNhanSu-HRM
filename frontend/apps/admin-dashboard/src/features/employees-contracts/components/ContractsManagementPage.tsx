@@ -202,6 +202,7 @@ const ContractsManagementPage: React.FC = () => {
       id="main-content-container"
     >
       <ContractsPageToolbar
+        onBack={() => navigate('/personnel/employees')}
         onCreateNew={() => setIsCreateMethodOpen(true)}
         onExport={handleExport}
       />
