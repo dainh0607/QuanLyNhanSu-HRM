@@ -97,5 +97,15 @@ namespace ERP.Services.Lookup
             };
             return Task.FromResult<IEnumerable<LookupDto>>(data);
         }
+
+        public async Task<IEnumerable<LookupDto>> GetContractTypesAsync()
+        {
+            var data = await _unitOfWork.Repository<ContractTypes>().GetAllAsync();
+            return data.Select(x => new LookupDto
+            {
+                Code = x.Id.ToString(),
+                Name = x.name
+            });
+        }
     }
 }

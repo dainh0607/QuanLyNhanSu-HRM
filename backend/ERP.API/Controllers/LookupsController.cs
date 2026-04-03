@@ -37,5 +37,8 @@ namespace ERP.API.Controllers
 
         [HttpGet("majors")]
         public async Task<IActionResult> GetMajors() => Ok(await _lookupService.GetMajorsAsync());
+
+        [HttpGet("contract-types")]
+        public async Task<IActionResult> GetContractTypes() => Ok(await _lookupService.GetContractTypesAsync());
     }
 }

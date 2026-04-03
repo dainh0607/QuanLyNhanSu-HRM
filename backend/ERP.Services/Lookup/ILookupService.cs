@@ -17,5 +17,8 @@ namespace ERP.Services.Lookup
         // Education Lookups (AC 4.1)
         Task<IEnumerable<LookupDto>> GetEducationLevelsAsync();
         Task<IEnumerable<LookupDto>> GetMajorsAsync();
+
+        // Contract Lookups (SCRUM-218)
+        Task<IEnumerable<LookupDto>> GetContractTypesAsync();
     }
 }

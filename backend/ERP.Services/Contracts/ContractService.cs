@@ -21,6 +21,46 @@ namespace ERP.Services.Contracts
 
         public async Task<PaginatedListDto<ContractListItemDto>> GetPagedListAsync(ContractFilterDto filter)
         {
+            var query = BuildFilteredQuery(filter);
+
+            // 2. Counting
+            var totalCount = await query.CountAsync();
+
+            // 3. Paging & Projection
+            var items = await query
+                .OrderByDescending(x => x.effective_date)
+                .Skip((filter.PageNumber - 1) * filter.PageSize)
+                .Take(filter.PageSize)
+                .Select(x => new ContractListItemDto
+                {
+                    Id = x.Id,
+                    ContractNumber = x.contract_number,
+                    Status = x.status,
+                    StatusLabel = MapStatusToLabel(x.status),
+                    StatusColor = MapStatusToColor(x.status),
+                    SignDate = x.sign_date,
+                    EffectiveDate = x.effective_date,
+                    ExpiryDate = x.expiry_date,
+                    EmployeeId = x.employee_id,
+                    EmployeeCode = x.Employee.employee_code,
+                    FullName = x.Employee.full_name,
+                    Avatar = x.Employee.avatar,
+                    BranchName = x.Employee.Branch.name,
+                    DepartmentName = x.Employee.Department.name,
+                    JobTitleName = x.Employee.JobTitle.name,
+                    ContractTypeId = x.contract_type_id,
+                    ContractTypeName = x.ContractType.name,
+                    SignedBy = x.signed_by,
+                    TaxType = x.tax_type,
+                    Attachment = x.attachment
+                })
+                .ToListAsync();
+
+            return new PaginatedListDto<ContractListItemDto>(items, totalCount, filter.PageNumber, filter.PageSize);
+        }
+
+        private IQueryable<Entities.Models.Contracts> BuildFilteredQuery(ContractFilterDto filter)
+        {
             var query = _unitOfWork.Repository<Entities.Models.Contracts>()
                 .AsQueryable()
                 .Include(x => x.Employee)
@@ -70,39 +110,7 @@ namespace ERP.Services.Contracts
                 query = query.Where(x => x.effective_date <= filter.ToDate);
             }
 
-            // 2. Counting
-            var totalCount = await query.CountAsync();
-
-            // 3. Paging & Projection
-            var items = await query
-                .OrderByDescending(x => x.effective_date)
-                .Skip((filter.PageNumber - 1) * filter.PageSize)
-                .Take(filter.PageSize)
-                .Select(x => new ContractListItemDto
-                {
-                    Id = x.Id,
-                    ContractNumber = x.contract_number,
-                    Status = x.status,
-                    StatusLabel = MapStatusToLabel(x.status),
-                    StatusColor = MapStatusToColor(x.status),
-                    SignDate = x.sign_date,
-                    EffectiveDate = x.effective_date,
-                    ExpiryDate = x.expiry_date,
-                    EmployeeId = x.employee_id,
-                    EmployeeCode = x.Employee.employee_code,
-                    FullName = x.Employee.full_name,
-                    BranchName = x.Employee.Branch.name,
-                    DepartmentName = x.Employee.Department.name,
-                    JobTitleName = x.Employee.JobTitle.name,
-                    ContractTypeId = x.contract_type_id,
-                    ContractTypeName = x.ContractType.name,
-                    SignedBy = x.signed_by,
-                    TaxType = x.tax_type,
-                    Attachment = x.attachment
-                })
-                .ToListAsync();
-
-            return new PaginatedListDto<ContractListItemDto>(items, totalCount, filter.PageNumber, filter.PageSize);
+            return query;
         }
 
         public async Task<ContractSummaryDto> GetSummaryAsync()
@@ -111,12 +119,15 @@ namespace ERP.Services.Contracts
             var today = DateTime.Today;
             var expiringThreshold = today.AddDays(30);
 
-            var allContracts = await repo.AsQueryable().ToListAsync();
+            var allContracts = await repo.AsQueryable()
+                .Include(c => c.ContractType)
+                .ToListAsync();
 
             return new ContractSummaryDto
             {
                 TotalContracts = allContracts.Count,
                 ActiveContracts = allContracts.Count(c => c.status == "Active"),
+                PendingSignatureCount = allContracts.Count(c => c.status == "Draft"), // "Chờ ký"
                 ExpiredContracts = allContracts.Count(c => c.status == "Expired" || (c.expiry_date.HasValue && c.expiry_date < today)),
                 ExpiringSoon = allContracts.Count(c => c.status == "Active" && c.expiry_date.HasValue && c.expiry_date >= today && c.expiry_date <= expiringThreshold),
                 DraftContracts = allContracts.Count(c => c.status == "Draft"),
@@ -125,13 +136,92 @@ namespace ERP.Services.Contracts
             };
         }
 
+        public async Task<byte[]> ExportToCsvAsync(ContractFilterDto filter)
+        {
+            var contracts = await BuildFilteredQuery(filter)
+                .OrderByDescending(x => x.effective_date)
+                .ToListAsync();
+
+            var sb = new System.Text.StringBuilder();
+
+            // Header - Using semicolon (';') for Vietnamese Excel compatibility
+            var headers = new[] 
+            { 
+                "STT", "Mã nhân viên", "Họ và tên", "Số hợp đồng", "Loại hợp đồng", 
+                "Trạng thái", "Ngày ký", "Ngày hiệu lực", "Ngày hết hạn", 
+                "Chi nhánh", "Phòng ban", "Người ký", "Loại thuế TNCN" 
+            };
+            sb.AppendLine(string.Join(";", headers.Select(EscapeCsv)));
+
+            int index = 1;
+            foreach (var c in contracts)
+            {
+                var row = new List<string>
+                {
+                    index.ToString(),
+                    c.Employee?.employee_code ?? "",
+                    c.Employee?.full_name ?? "",
+                    c.contract_number ?? "",
+                    c.ContractType?.name ?? "",
+                    MapStatusToLabel(c.status),
+                    c.sign_date?.ToString("dd/MM/yyyy") ?? "",
+                    c.effective_date?.ToString("dd/MM/yyyy") ?? "",
+                    c.expiry_date?.ToString("dd/MM/yyyy") ?? "",
+                    c.Employee?.Branch?.name ?? "",
+                    c.Employee?.Department?.name ?? "",
+                    c.signed_by ?? "",
+                    c.tax_type ?? ""
+                };
+                sb.AppendLine(string.Join(";", row.Select(EscapeCsv)));
+                index++;
+            }
+
+            // UTF-8 with BOM
+            var encoding = new System.Text.UTF8Encoding(true);
+            var headerBytes = encoding.GetPreamble();
+            var contentBytes = encoding.GetBytes(sb.ToString());
+            
+            return headerBytes.Concat(contentBytes).ToArray();
+        }
+
+        public async Task<int> DeleteMultipleAsync(int[] ids)
+        {
+            if (ids == null || ids.Length == 0) return 0;
+
+            var repo = _unitOfWork.Repository<Entities.Models.Contracts>();
+            int count = 0;
+
+            foreach (var id in ids)
+            {
+                var contract = await repo.GetByIdAsync(id);
+                if (contract != null)
+                {
+                    repo.Remove(contract);
+                    count++;
+                }
+            }
+
+            if (count > 0)
+            {
+                await _unitOfWork.SaveChangesAsync();
+            }
+
+            return count;
+        }
+
+        private string EscapeCsv(string? val)
+        {
+            if (string.IsNullOrEmpty(val)) return "";
+            return $"\"{val.Replace("\"", "\"\"")}\"";
+        }
+
         private static string MapStatusToLabel(string status)
         {
             return status switch
             {
                 "Active" => "Đang hiệu lực",
                 "Expired" => "Hết hạn",
-                "Draft" => "Bản nháp",
+                "Draft" => "Chờ ký",
                 "Terminated" => "Đã chấm dứt",
                 "Cancelled" => "Đã hủy",
                 _ => status

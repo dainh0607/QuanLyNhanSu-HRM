@@ -23,6 +23,7 @@ namespace ERP.DTOs.Contracts
         public string BranchName { get; set; }
         public string DepartmentName { get; set; }
         public string JobTitleName { get; set; }
+        public string Avatar { get; set; }
 
         // Contract type
         public int? ContractTypeId { get; set; }
