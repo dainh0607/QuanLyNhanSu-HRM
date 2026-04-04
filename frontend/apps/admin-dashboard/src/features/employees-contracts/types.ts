@@ -192,14 +192,3 @@ export interface ToastActionPayload {
   label: string;
   onClick: () => void;
 }
-export interface ContractCreatePayload {
-  employeeId: number;
-  contractNumber: string;
-  contractTypeId: number;
-  signDate: string;
-  expiryDate: string;
-  signedBy: string;
-  taxType: string;
-  attachment: string;
-  status: string;
-}

@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { Employee } from '../../employees/types';
 import { REGULAR_CONTRACT_TYPE_OPTIONS, TAX_TYPE_OPTIONS } from '../constants';
 import { contractsService } from '../service';
-import type { SelectOption, ToastActionPayload } from '../types';
-import { inferBackendCreateContractStatus } from '../utils';
+import type { ContractListItem, SelectOption, ToastActionPayload } from '../types';
+import { inferCreateContractStatus, isContractNumberDuplicate } from '../utils';
 import ModalShell from './ModalShell';
 import SearchableSelect from './SearchableSelect';
 
@@ -12,6 +12,7 @@ interface RegularContractModalProps {
   employees: Employee[];
   employeeOptions: SelectOption[];
   signerOptions: SelectOption[];
+  existingContracts: ContractListItem[];
   onClose: () => void;
   onCreated: () => Promise<void> | void;
   onNavigateToEmployeeProfile: (employeeId: number) => void;
@@ -83,6 +84,7 @@ const RegularContractModal: React.FC<RegularContractModalProps> = ({
   employees,
   employeeOptions,
   signerOptions,
+  existingContracts,
   onClose,
   onCreated,
   onNavigateToEmployeeProfile,
@@ -146,17 +148,16 @@ const RegularContractModal: React.FC<RegularContractModalProps> = ({
     });
   };
 
-  const validateForm = async () => {
+  const validateForm = () => {
     const nextErrors: Record<string, string> = {};
-    const normalizedContractNumber = formValues.contractNumber.trim();
 
     if (!formValues.employeeId) {
       nextErrors.employeeId = 'Vui lòng chọn nhân viên.';
     }
 
-    if (!normalizedContractNumber) {
+    if (!formValues.contractNumber.trim()) {
       nextErrors.contractNumber = 'Số hợp đồng là bắt buộc.';
-    } else if (await contractsService.checkContractNumberExists(normalizedContractNumber)) {
+    } else if (isContractNumberDuplicate(existingContracts, formValues.contractNumber)) {
       nextErrors.contractNumber = 'Số hợp đồng đã tồn tại.';
     }
 
@@ -206,7 +207,7 @@ const RegularContractModal: React.FC<RegularContractModalProps> = ({
     setIsUploadingAttachment(true);
 
     try {
-      const uploadedUrl = await contractsService.uploadAttachment(Number(formValues.employeeId), file);
+      const uploadedUrl = await contractsService.uploadAttachment(file);
       setFormValues((prev) => ({
         ...prev,
         attachmentFile: file,
@@ -224,29 +225,29 @@ const RegularContractModal: React.FC<RegularContractModalProps> = ({
   };
 
   const handleSubmit = async () => {
+    const nextErrors = validateForm();
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      return;
+    }
+
+    if (!selectedEmployee?.workType?.trim()) {
+      showToast('Hồ sơ nhân viên bị thiếu Hình thức làm việc. Vui lòng cập nhật hồ sơ.', 'error', {
+        duration: 7000,
+        action: {
+          label: 'Đi tới hồ sơ',
+          onClick: () => {
+            onClose();
+            onNavigateToEmployeeProfile(Number(formValues.employeeId));
+          },
+        },
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      const nextErrors = await validateForm();
-      if (Object.keys(nextErrors).length > 0) {
-        setErrors(nextErrors);
-        return;
-      }
-
-      if (!selectedEmployee?.workType?.trim()) {
-        showToast('Hồ sơ nhân viên bị thiếu Hình thức làm việc. Vui lòng cập nhật hồ sơ.', 'error', {
-          duration: 7000,
-          action: {
-            label: 'Đi tới hồ sơ',
-            onClick: () => {
-              onClose();
-              onNavigateToEmployeeProfile(Number(formValues.employeeId));
-            },
-          },
-        });
-        return;
-      }
-
       await contractsService.createRegularContract({
         EmployeeId: Number(formValues.employeeId),
         ContractNumber: formValues.contractNumber.trim(),
@@ -257,7 +258,7 @@ const RegularContractModal: React.FC<RegularContractModalProps> = ({
         SignedBy: formValues.signedBy.trim(),
         TaxType: formValues.taxType,
         Attachment: formValues.attachmentUrl || null,
-        Status: inferBackendCreateContractStatus(formValues.signDate, formValues.expiryDate),
+        Status: inferCreateContractStatus(formValues.signDate, formValues.expiryDate),
       });
 
       await onCreated();

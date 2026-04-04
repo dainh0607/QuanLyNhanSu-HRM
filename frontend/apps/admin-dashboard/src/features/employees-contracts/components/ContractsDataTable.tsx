@@ -66,79 +66,56 @@ const ContractsDataTable: React.FC<ContractsDataTableProps> = ({
   const renderCell = (contract: ContractListItem, column: ContractColumnConfig, index: number) => {
     switch (column.key) {
       case 'index':
-        return (
-          <span className="font-medium text-slate-400">
-            {(startIndex + index + 1).toString().padStart(2, '0')}
-          </span>
-        );
+        return <span className="font-semibold text-slate-900">{startIndex + index + 1}</span>;
       case 'contractNumber':
         return (
-          <div className="group/code">
-            <p className="font-bold text-slate-900 group-hover/code:text-[#134BBA] transition-colors">{contract.contractNumber || '---'}</p>
-            <p className="mt-0.5 text-[11px] font-medium tracking-tight text-slate-400 uppercase">{contract.employeeCode}</p>
+          <div>
+            <p className="font-semibold text-slate-900">{contract.contractNumber || 'Chưa cập nhật'}</p>
+            <p className="mt-1 text-xs text-slate-500">{contract.employeeCode}</p>
           </div>
         );
       case 'fullName':
         return (
-          <div className="flex min-w-[280px] items-center gap-4">
-            <div className="relative shrink-0">
-              {contract.avatar ? (
-                <img
-                  src={contract.avatar}
-                  alt={contract.fullName}
-                  className="h-12 w-12 rounded-2xl object-cover ring-4 ring-slate-50 transition-transform group-hover:scale-105"
-                />
-              ) : (
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 text-[15px] font-black text-slate-600 ring-4 ring-slate-50 transition-transform group-hover:scale-105">
-                  {getNameInitials(contract.fullName)}
-                </div>
-              )}
-              <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-white bg-emerald-500 shadow-sm" />
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-[15px] font-bold text-slate-900">{contract.fullName}</p>
-              <div className="mt-0.5 flex items-center gap-2">
-                <span className="truncate text-xs font-medium text-slate-500">{contract.departmentName}</span>
+          <div className="flex min-w-[260px] items-center gap-3">
+            {contract.avatar ? (
+              <img
+                src={contract.avatar}
+                alt={contract.fullName}
+                className="h-11 w-11 rounded-full object-cover ring-2 ring-slate-100"
+              />
+            ) : (
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#d9f3ff] to-[#c4d8ff] text-sm font-bold text-[#1447b0] ring-2 ring-slate-100">
+                {getNameInitials(contract.fullName)}
               </div>
+            )}
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-slate-900">{contract.fullName}</p>
+              <p className="mt-1 truncate text-xs text-slate-500">{contract.departmentName}</p>
             </div>
           </div>
         );
       case 'branchName':
-        return (
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px] text-slate-300">location_on</span>
-            <span className="text-sm font-medium text-slate-600">{contract.branchName}</span>
-          </div>
-        );
+        return <span className="text-sm text-slate-600">{contract.branchName}</span>;
       case 'contractTypeName':
         return (
-          <div className="inline-flex items-center rounded-lg bg-slate-50 px-2.5 py-1 ring-1 ring-inset ring-slate-200/50">
-            <span className="text-xs font-bold text-slate-600">
-              {contract.contractTypeName || '---'}
-            </span>
-          </div>
+          <span className="text-sm text-slate-600">
+            {contract.contractTypeName || 'Chưa cập nhật'}
+          </span>
         );
       case 'status':
         return (
           <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-wider ring-1 ring-inset ${contract.statusColorClassName}`}
+            className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${contract.statusColorClassName}`}
           >
-            <span className="h-1.5 w-1.5 rounded-full bg-current opacity-40" />
             {contract.statusLabel}
           </span>
         );
       case 'expiryDate':
-        return (
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px] text-slate-300">calendar_today</span>
-            <span className="text-sm font-semibold text-slate-600">{contract.expiryDateLabel}</span>
-          </div>
-        );
+        return <span className="text-sm text-slate-600">{contract.expiryDateLabel}</span>;
       default:
         return null;
     }
   };
-
 
   return (
     <div className="flex-1 overflow-x-auto scroll-smooth">
@@ -171,15 +148,11 @@ const ContractsDataTable: React.FC<ContractsDataTableProps> = ({
 
         <tbody className="divide-y divide-gray-100">
           {contracts.map((contract, index) => (
-            <tr
-              key={contract.id}
-              className="group relative transition-all duration-200 hover:bg-[#F8FAFF]"
-            >
-              <td className="border-b border-gray-100 px-4 py-5 group-hover:bg-[#F8FAFF]">
-                <div className="absolute left-0 top-0 hidden h-full w-1 bg-[#134BBA] group-hover:block" />
+            <tr key={contract.id} className="group transition-colors hover:bg-gray-50">
+              <td className="border-b border-gray-100 bg-white px-4 py-4 group-hover:bg-gray-50">
                 <input
                   type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300 text-[#134BBA] focus:ring-[#134BBA]/20"
+                  className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
                   checked={selectedIds.has(contract.id)}
                   onChange={(event) =>
                     setSelectedIds((prev) => {
@@ -198,14 +171,13 @@ const ContractsDataTable: React.FC<ContractsDataTableProps> = ({
               {visibleColumns.map((column) => (
                 <td
                   key={column.id}
-                  className="whitespace-nowrap border-b border-gray-100 px-4 py-5 text-sm text-gray-600 group-hover:bg-[#F8FAFF]"
+                  className="whitespace-nowrap border-b border-gray-100 bg-white px-4 py-4 text-sm text-gray-600 group-hover:bg-gray-50"
                 >
                   {renderCell(contract, column, index)}
                 </td>
               ))}
 
-              <td className="sticky right-0 border-b border-l border-gray-100 bg-white px-4 py-5 text-right shadow-[-12px_0_20px_-10px_rgba(0,0,0,0.03)] group-hover:bg-[#F8FAFF]">
-
+              <td className="sticky right-0 border-b border-l border-gray-100 bg-white px-4 py-4 text-right shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.05)] group-hover:bg-gray-50">
                 <div className="relative inline-block text-left">
                   <button
                     type="button"

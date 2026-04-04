@@ -4,7 +4,6 @@ import { API_URL, requestJson } from '../../services/employee/core';
 import type { Employee } from '../employees/types';
 import {
   buildContractSummaryFromDto,
-  mapContractListItem,
   mapContractListItemDto,
   normalizeText,
   sortContractsByEffectiveDateDesc,
@@ -14,7 +13,6 @@ import type {
   ContractDto,
   ContractFilterMetadata,
   ContractsCollectionQuery,
-  ContractsDashboardData,
   ContractListItemDto,
   ContractSummary,
   ContractSummaryDto,
@@ -30,7 +28,6 @@ interface UploadedDocumentResponse {
 }
 
 const EMPLOYEE_PAGE_SIZE = 100;
-const CONTRACT_REQUEST_BATCH_SIZE = 10;
 const CONTRACT_COLLECTION_PAGE_SIZE = 100;
 
 const createEmployeeOptions = (employees: Employee[]) =>
@@ -115,6 +112,37 @@ const mapContractsPageResponse = (
   ...response,
   items: (response.items ?? []).map((item) => mapContractListItemDto(item)),
 });
+
+const exportContracts = async (filters: {
+  search?: string;
+  branchId?: string;
+  departmentId?: string;
+  status?: string;
+}) => {
+  const queryParams = new URLSearchParams({
+    ...(filters.search && { search: filters.search }),
+    ...(filters.branchId && { branchId: filters.branchId }),
+    ...(filters.departmentId && { departmentId: filters.departmentId }),
+    ...(filters.status && { status: filters.status }),
+  });
+
+  const response = await authFetch(
+    `${API_URL}/contracts/export?${queryParams.toString()}`,
+  );
+  if (!response.ok) {
+    throw new Error("Xuất file thất bại");
+  }
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Contracts_${new Date().getTime()}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+};
 
 const fetchContractsPage = async (
   query: Omit<ContractsQueryParams, 'contractTypeIds'> & { contractTypeId?: number },
@@ -266,119 +294,6 @@ const checkContractNumberExists = async (contractNumber: string, excludeId?: num
   );
 };
 
-const fetchContractsByEmployeeId = async (employeeId: number): Promise<ContractDto[]> => {
-  try {
-    return await requestJson<ContractDto[]>(
-      `${API_URL}/contracts/employee/${employeeId}`,
-      { method: "GET" },
-      "Không thể tải danh sách hợp đồng",
-    );
-  } catch (error) {
-    console.error(
-      `Failed to load contracts for employee ${employeeId}:`,
-      error,
-    );
-    return [];
-  }
-};
-
-const fetchContractsInBatches = async (employees: Employee[]) => {
-  const allContracts: ContractDto[] = [];
-
-  for (
-    let index = 0;
-    index < employees.length;
-    index += CONTRACT_REQUEST_BATCH_SIZE
-  ) {
-    const batch = employees.slice(index, index + CONTRACT_REQUEST_BATCH_SIZE);
-    const batchResults = await Promise.all(
-      batch.map((employee) => fetchContractsByEmployeeId(employee.id)),
-    );
-    batchResults.forEach((contracts) => {
-      allContracts.push(...contracts);
-    });
-  }
-
-  return allContracts;
-};
-
-const getDashboardData = async (
-  page = 1,
-  pageSize = 100,
-  search = "",
-  filters: { branchId?: string; departmentId?: string; status?: string } = {},
-): Promise<ContractsDashboardData> => {
-  const queryParams = new URLSearchParams({
-    pageNumber: String(page),
-    pageSize: String(pageSize),
-    search,
-    ...(filters.branchId && { branchId: filters.branchId }),
-    ...(filters.departmentId && { departmentId: filters.departmentId }),
-    ...(filters.status && { status: filters.status }),
-  });
-
-  const response = await authFetch(
-    `${API_URL}/contracts?${queryParams.toString()}`,
-  );
-  if (!response.ok) {
-    throw new Error("Không thể tải danh sách hợp đồng");
-  }
-
-  const data = await response.json();
-  const items = data.items as any[];
-
-  return {
-    contracts: items.map((item) => mapContractListItem(item)),
-    totalCount: data.totalCount,
-    totalPages: data.totalPages,
-  };
-};
-
-const getContractSummary = async (): Promise<ContractSummary> => {
-  const response = await authFetch(`${API_URL}/contracts/summary`);
-  if (!response.ok) {
-    throw new Error("Không thể tải thống kê hợp đồng");
-  }
-
-  const data = await response.json();
-  return {
-    effectiveCount: data.activeContracts,
-    pendingCount: data.pendingSignatureCount,
-    expiredCount: data.expiredContracts,
-  };
-};
-
-const exportContracts = async (filters: {
-  search?: string;
-  branchId?: string;
-  departmentId?: string;
-  status?: string;
-}) => {
-  const queryParams = new URLSearchParams({
-    ...(filters.search && { search: filters.search }),
-    ...(filters.branchId && { branchId: filters.branchId }),
-    ...(filters.departmentId && { departmentId: filters.departmentId }),
-    ...(filters.status && { status: filters.status }),
-  });
-
-  const response = await authFetch(
-    `${API_URL}/contracts/export?${queryParams.toString()}`,
-  );
-  if (!response.ok) {
-    throw new Error("Xuất file thất bại");
-  }
-
-  const blob = await response.blob();
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `Contracts_${new Date().getTime()}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  window.URL.revokeObjectURL(url);
-  document.body.removeChild(a);
-};
-
 const getFilterMetadata = async (): Promise<ContractFilterMetadata> => {
   const [branches, departments] = await Promise.all([
     employeeService.getBranchesMetadata(),
@@ -391,16 +306,12 @@ const getFilterMetadata = async (): Promise<ContractFilterMetadata> => {
   };
 };
 
-const uploadAttachment = async (employeeId: number, file: File) => {
+const uploadAttachment = async (file: File) => {
   const formData = new FormData();
-
-  formData.append("DocumentName", file.name);
-  formData.append("DocumentType", "Other");
-  formData.append("Note", "Contract attachment");
   formData.append("file", file);
 
   const response = await authFetch(
-    `${API_URL}/employee-documents/${employeeId}/upload`,
+    `${API_URL}/upload`,
     {
       method: "POST",
       body: formData,
@@ -408,9 +319,8 @@ const uploadAttachment = async (employeeId: number, file: File) => {
   );
 
   if (!response.ok) {
-    const message =
-      (await response.text()).trim() || "Tải tệp đính kèm thất bại.";
-    throw new Error(message);
+    const errorText = await response.text();
+    throw new Error(errorText || "Tải tệp đính kèm thất bại.");
   }
 
   const data = (await response.json()) as UploadedDocumentResponse;
@@ -438,9 +348,11 @@ const createElectronicContract = async (payload: ContractCreatePayload) =>
   );
 
 export const contractsService = {
-  getDashboardData,
-  getEmployeeDirectory,
   getContractsPage,
+  getDashboardData: (page: number, pageSize: number, search: string, filters: any) => 
+    getContractsPage({ pageNumber: page, pageSize, search, ...filters }),
+  exportContracts,
+  getEmployeeDirectory,
   getAllContracts,
   getContractsSummary,
   getFilterMetadata,
@@ -448,7 +360,7 @@ export const contractsService = {
   createEmployeeOptions,
   createSignerOptions,
   checkContractNumberExists,
-  uploadAttachment,
+  uploadAttachment: (file: File) => uploadAttachment(file),
   createRegularContract,
   createElectronicContract,
   deleteContract: (id: number) =>
