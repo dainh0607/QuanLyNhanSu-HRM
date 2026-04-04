@@ -107,5 +107,17 @@ namespace ERP.Services.Lookup
                 Name = x.name
             });
         }
+
+        public Task<IEnumerable<LookupDto>> GetTaxTypesAsync()
+        {
+            var data = new List<LookupDto>
+            {
+                new LookupDto { Code = "LUY_TIEN", Name = "Theo biểu thuế lũy tiến từng phần" },
+                new LookupDto { Code = "CO_DINH_10", Name = "Cố định 10% (Vãng lai > 2TR)" },
+                new LookupDto { Code = "CO_DINH_20", Name = "Cố định 20% (Không cư trú)" },
+                new LookupDto { Code = "MIEN_THUE", Name = "Miễn thuế / Không khấu trừ" }
+            };
+            return Task.FromResult<IEnumerable<LookupDto>>(data);
+        }
     }
 }

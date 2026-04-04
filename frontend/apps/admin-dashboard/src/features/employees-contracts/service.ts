@@ -13,19 +13,6 @@ import type {
   RegularContractFormValues,
 } from "./types";
 
-interface ContractCreatePayload {
-  EmployeeId: number;
-  ContractNumber: string;
-  ContractTypeId: number;
-  SignDate: string | null;
-  EffectiveDate: string | null;
-  ExpiryDate: string | null;
-  SignedBy: string;
-  TaxType: string;
-  Attachment: string | null;
-  Status: string;
-}
-
 interface UploadedDocumentResponse {
   fileUrl?: string;
   FileUrl?: string;
