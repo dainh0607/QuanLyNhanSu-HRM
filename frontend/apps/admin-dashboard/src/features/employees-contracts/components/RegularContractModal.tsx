@@ -6,6 +6,7 @@ import type { ContractListItem, SelectOption, ToastActionPayload } from '../type
 import { inferCreateContractStatus, isContractNumberDuplicate } from '../utils';
 import ModalShell from './ModalShell';
 import SearchableSelect from './SearchableSelect';
+import DatePickerInput from '../../../components/common/DatePickerInput';
 
 interface RegularContractModalProps {
   isOpen: boolean;
@@ -342,21 +343,21 @@ const RegularContractModal: React.FC<RegularContractModalProps> = ({
         </FieldShell>
 
         <FieldShell label="Ngày ký" required error={errors.signDate}>
-          <input
-            type="date"
+          <DatePickerInput
             value={formValues.signDate}
-            onChange={(event) => handleFieldChange('signDate', event.target.value)}
-            className={getFieldClassName(Boolean(errors.signDate))}
+            onChange={(value: string) => handleFieldChange('signDate', value)}
+            hasError={Boolean(errors.signDate)}
+            ariaLabel="Ngày ký"
           />
         </FieldShell>
 
         <FieldShell label="Ngày hết hạn" error={errors.expiryDate}>
-          <input
-            type="date"
+          <DatePickerInput
             value={formValues.expiryDate}
             min={formValues.signDate || undefined}
-            onChange={(event) => handleFieldChange('expiryDate', event.target.value)}
-            className={getFieldClassName(Boolean(errors.expiryDate))}
+            onChange={(value: string) => handleFieldChange('expiryDate', value)}
+            hasError={Boolean(errors.expiryDate)}
+            ariaLabel="Ngày hết hạn"
           />
         </FieldShell>
 

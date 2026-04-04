@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import type { EmployeeEditDependentsPayload } from '../../../../services/employeeService';
 import { FormHeading, FormRow } from '../components/FormPrimitives';
 import { getFieldClassName } from '../formStyles';
+import DatePickerInput, { 
+  DATE_DISPLAY_PLACEHOLDER, 
+  maskDisplayDate, 
+  formatDateForDisplay, 
+  parseDisplayDateToIso 
+} from '../../../../components/common/DatePickerInput';
 
 interface DependentsManagerFormProps {
   data: EmployeeEditDependentsPayload;
@@ -22,7 +28,6 @@ interface DependentDraft {
 }
 
 const EMPTY_VALUE = '-';
-const DATE_DISPLAY_PLACEHOLDER = 'dd/mm/yyyy';
 
 const createEmptyDraft = (): DependentDraft => ({
   fullName: '',
@@ -49,60 +54,6 @@ const getTextareaClassName = (hasError: boolean): string =>
 const buildDependentDuration = (startDate: string, endDate: string): string =>
   `${startDate.trim()} ~ ${endDate.trim()}`;
 
-const maskDisplayDate = (value: string): string => {
-  const digits = value.replace(/\D/g, '').slice(0, 8);
-
-  if (digits.length <= 2) {
-    return digits;
-  }
-
-  if (digits.length <= 4) {
-    return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-  }
-
-  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
-};
-
-const formatDateForDisplay = (value: string): string => {
-  const normalizedValue = value.trim();
-  if (!normalizedValue) {
-    return '';
-  }
-
-  const isoMatch = normalizedValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (isoMatch) {
-    return `${isoMatch[3]}/${isoMatch[2]}/${isoMatch[1]}`;
-  }
-
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(normalizedValue)) {
-    return normalizedValue;
-  }
-
-  return maskDisplayDate(normalizedValue);
-};
-
-const parseDisplayDateToIso = (value: string): string => {
-  const normalizedValue = formatDateForDisplay(value);
-  const match = normalizedValue.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (!match) {
-    return '';
-  }
-
-  const day = Number(match[1]);
-  const month = Number(match[2]);
-  const year = Number(match[3]);
-  const parsedDate = new Date(Date.UTC(year, month - 1, day));
-
-  if (
-    parsedDate.getUTCFullYear() !== year ||
-    parsedDate.getUTCMonth() !== month - 1 ||
-    parsedDate.getUTCDate() !== day
-  ) {
-    return '';
-  }
-
-  return `${match[3]}-${match[2]}-${match[1]}`;
-};
 
 const toErrorMessage = (error: unknown): string => {
   if (error instanceof Error && error.message.trim()) {
@@ -156,59 +107,6 @@ const displayCellValue = (value?: string): string => {
   return normalizedValue || EMPTY_VALUE;
 };
 
-const DatePickerInput: React.FC<{
-  value: string;
-  hasError: boolean;
-  onChange: (value: string) => void;
-  ariaLabel: string;
-}> = ({ value, hasError, onChange, ariaLabel }) => {
-  const nativeDateRef = React.useRef<HTMLInputElement>(null);
-
-  const openNativeDatePicker = () => {
-    const input = nativeDateRef.current;
-    if (!input) {
-      return;
-    }
-
-    if (typeof input.showPicker === 'function') {
-      input.showPicker();
-      return;
-    }
-
-    input.click();
-  };
-
-  return (
-    <div className="relative">
-      <input
-        type="text"
-        value={formatDateForDisplay(value)}
-        onChange={(event) => onChange(maskDisplayDate(event.target.value))}
-        className={`${getFieldClassName(hasError)} pr-14`}
-        placeholder={DATE_DISPLAY_PLACEHOLDER}
-        inputMode="numeric"
-        aria-label={ariaLabel}
-      />
-      <button
-        type="button"
-        onClick={openNativeDatePicker}
-        className="absolute right-3 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-emerald-600"
-        aria-label={`Chọn ${ariaLabel}`}
-      >
-        <span className="material-symbols-outlined text-[20px]">calendar_month</span>
-      </button>
-      <input
-        ref={nativeDateRef}
-        type="date"
-        value={parseDisplayDateToIso(value)}
-        onChange={(event) => onChange(formatDateForDisplay(event.target.value))}
-        className="pointer-events-none absolute bottom-0 right-0 h-0 w-0 opacity-0"
-        tabIndex={-1}
-        aria-hidden="true"
-      />
-    </div>
-  );
-};
 
 const buildDependentKey = (
   dependent: EmployeeEditDependentsPayload[number],
@@ -516,7 +414,7 @@ const DependentsManagerForm: React.FC<DependentsManagerFormProps> = ({
                 <FormRow label="Ngày tháng năm sinh" required error={errors.birthDate}>
                   <DatePickerInput
                     value={draft.birthDate}
-                    onChange={(value) => updateDraft('birthDate', value)}
+                    onChange={(value: string) => updateDraft('birthDate', value)}
                     hasError={Boolean(errors.birthDate)}
                     ariaLabel="ngày tháng năm sinh"
                   />
@@ -560,14 +458,14 @@ const DependentsManagerForm: React.FC<DependentsManagerFormProps> = ({
                   >
                     <DatePickerInput
                       value={draft.dependencyStartDate}
-                      onChange={(value) => updateDraft('dependencyStartDate', value)}
+                      onChange={(value: string) => updateDraft('dependencyStartDate', value)}
                       hasError={Boolean(errors.dependentDuration)}
                       ariaLabel="ngày bắt đầu phụ thuộc"
                     />
                     <span className="text-center text-lg font-bold text-slate-300">~</span>
                     <DatePickerInput
                       value={draft.dependencyEndDate}
-                      onChange={(value) => updateDraft('dependencyEndDate', value)}
+                      onChange={(value: string) => updateDraft('dependencyEndDate', value)}
                       hasError={Boolean(errors.dependentDuration)}
                       ariaLabel="ngày kết thúc phụ thuộc"
                     />
