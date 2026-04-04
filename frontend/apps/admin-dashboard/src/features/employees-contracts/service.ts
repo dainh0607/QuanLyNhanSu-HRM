@@ -74,8 +74,8 @@ const appendContractsQueryParams = (
   url: URL,
   query: Omit<ContractsQueryParams, 'contractTypeIds'> & { contractTypeId?: number },
 ) => {
-  url.searchParams.append('pageNumber', String(query.pageNumber));
-  url.searchParams.append('pageSize', String(query.pageSize));
+  url.searchParams.append('pageNumber', String(query.pageNumber || 1));
+  url.searchParams.append('pageSize', String(query.pageSize || 100));
 
   if (query.search?.trim()) {
     url.searchParams.append('search', query.search.trim());
@@ -349,8 +349,17 @@ const createElectronicContract = async (payload: ContractCreatePayload) =>
 
 export const contractsService = {
   getContractsPage,
-  getDashboardData: (page: number, pageSize: number, search: string, filters: any) => 
-    getContractsPage({ pageNumber: page, pageSize, search, ...filters }),
+  getDashboardData: async () => {
+    const [contracts, employees] = await Promise.all([
+      getAllContracts(),
+      fetchAllEmployees(),
+    ]);
+
+    return {
+      contracts,
+      employees,
+    };
+  },
   exportContracts,
   getEmployeeDirectory,
   getAllContracts,
