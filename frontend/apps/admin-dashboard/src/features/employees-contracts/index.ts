@@ -1,1 +1,2 @@
-export { default as ContractsManagementPage } from './components/ContractsManagementPageApi';
+export { default as ContractsManagementPage } from './components/ContractsManagementPage';
+

@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import type { Employee } from '../../employees/types';
+import type { PersonalTabKey } from '../../employee-detail/edit-modal/types';
 import Pagination from '../../employees/components/Pagination';
+import { useToast } from '../../../hooks/useToast';
 import { DEFAULT_CONTRACT_COLUMNS, PAGE_SIZE } from '../constants';
 import { contractsService } from '../service';
-import type { ContractFilterMetadata, ContractFilterState, ContractListItem } from '../types';
-import {
-  buildContractSummary,
-  createEmployeeMap,
-  downloadExcelCompatibleFile,
-  matchesContractFilters,
-  matchesContractSearch,
-} from '../utils';
-import { useToast } from '../../../hooks/useToast';
+import type {
+  ContractFilterMetadata,
+  ContractFilterState,
+  ContractListItem,
+  ContractSummary,
+} from '../types';
+import { downloadExcelCompatibleFile, getContractTypeIdsByCategory } from '../utils';
 import ContractPreviewModal from './ContractPreviewModal';
 import ContractsActionBar from './ContractsActionBar';
 import ContractsColumnConfigSidebar from './ContractsColumnConfigSidebar';
@@ -19,10 +21,14 @@ import ContractsFilterSidebar from './ContractsFilterSidebar';
 import ContractsPageToolbar from './ContractsPageToolbar';
 import ContractsSummaryCards from './ContractsSummaryCards';
 import CreateContractMethodModal from './CreateContractMethodModal';
-import ElectronicContractFlowModal from './ElectronicContractFlowModal';
+import ElectronicContractFlowWizard from './ElectronicContractFlowWizard';
 import RegularContractModal from './RegularContractModal';
-import { useNavigate } from 'react-router-dom';
-import type { Employee } from '../../employees/types';
+
+const EMPTY_SUMMARY: ContractSummary = {
+  effectiveCount: 0,
+  pendingCount: 0,
+  expiredCount: 0,
+};
 
 const ContractsManagementPage: React.FC = () => {
   const navigate = useNavigate();
@@ -33,6 +39,7 @@ const ContractsManagementPage: React.FC = () => {
     branches: [],
     departments: [],
   });
+  const [summary, setSummary] = useState<ContractSummary>(EMPTY_SUMMARY);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -40,6 +47,7 @@ const ContractsManagementPage: React.FC = () => {
   const [isPaginationEnabled, setIsPaginationEnabled] = useState(true);
   const [columns, setColumns] = useState(DEFAULT_CONTRACT_COLUMNS);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'official' | 'probation' | 'seasonal'>('all');
   const [activeFilters, setActiveFilters] = useState<ContractFilterState>({});
@@ -47,34 +55,12 @@ const ContractsManagementPage: React.FC = () => {
   const [isRegularModalOpen, setIsRegularModalOpen] = useState(false);
   const [isElectronicModalOpen, setIsElectronicModalOpen] = useState(false);
   const [previewContract, setPreviewContract] = useState<ContractListItem | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
-  const loadDashboard = useCallback(async () => {
-    setIsLoading(true);
-    setLoadError(null);
-
-    try {
-      const [dashboardData, filterMetadata] = await Promise.all([
-        contractsService.getDashboardData(),
-        contractsService.getFilterMetadata(),
-      ]);
-
-      setContracts(dashboardData.contracts);
-      setEmployees(dashboardData.employees);
-      setMetadata(filterMetadata);
-    } catch (error) {
-      console.error('Failed to load contracts dashboard:', error);
-      setLoadError('Không thể tải danh sách hợp đồng. Vui lòng thử lại.');
-      showToast('Không thể tải danh sách hợp đồng. Vui lòng thử lại.', 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [showToast]);
-
-  useEffect(() => {
-    void loadDashboard();
-  }, [loadDashboard]);
-
-  const employeeMap = useMemo(() => createEmployeeMap(employees), [employees]);
+  const contractTypeIds = useMemo(
+    () => getContractTypeIdsByCategory(selectedCategory),
+    [selectedCategory],
+  );
 
   const employeeOptions = useMemo(
     () => contractsService.createEmployeeOptions(employees),
@@ -86,48 +72,94 @@ const ContractsManagementPage: React.FC = () => {
     [employees],
   );
 
-  const filteredContracts = useMemo(
-    () =>
-      contracts.filter(
-        (contract) =>
-          matchesContractSearch(contract, searchKeyword) &&
-          matchesContractFilters(
-            contract,
-            {
-              branchId: activeFilters.branchId,
-              departmentId: activeFilters.departmentId,
-              category: selectedCategory,
-            },
-            employeeMap,
-          ),
-      ),
-    [activeFilters.branchId, activeFilters.departmentId, contracts, employeeMap, searchKeyword, selectedCategory],
-  );
-
-  const summary = useMemo(() => buildContractSummary(contracts), [contracts]);
-
-  const paginatedContracts = useMemo(() => {
-    if (!isPaginationEnabled) {
-      return filteredContracts;
-    }
-
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return filteredContracts.slice(start, start + PAGE_SIZE);
-  }, [currentPage, filteredContracts, isPaginationEnabled]);
-
   const activeFilterCount = [activeFilters.branchId, activeFilters.departmentId].filter(Boolean).length;
   const startIndex = isPaginationEnabled ? (currentPage - 1) * PAGE_SIZE : 0;
 
-  useEffect(() => {
-    if (!isPaginationEnabled) {
-      return;
-    }
+  const loadReferenceData = useCallback(async () => {
+    try {
+      const [employeeDirectory, filterMetadata] = await Promise.all([
+        contractsService.getEmployeeDirectory(),
+        contractsService.getFilterMetadata(),
+      ]);
 
-    const totalPages = Math.max(1, Math.ceil(filteredContracts.length / PAGE_SIZE));
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
+      setEmployees(employeeDirectory);
+      setMetadata(filterMetadata);
+    } catch (error) {
+      console.error('Failed to load contracts reference data:', error);
+      showToast('Không thể tải dữ liệu hỗ trợ của trang hợp đồng.', 'error');
     }
-  }, [currentPage, filteredContracts.length, isPaginationEnabled]);
+  }, [showToast]);
+
+  const loadSummary = useCallback(async () => {
+    try {
+      const nextSummary = await contractsService.getContractsSummary();
+      setSummary(nextSummary);
+    } catch (error) {
+      console.error('Failed to load contracts summary:', error);
+      showToast('Không thể tải tổng quan hợp đồng.', 'error');
+    }
+  }, [showToast]);
+
+  const loadContracts = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(null);
+
+    try {
+      if (isPaginationEnabled) {
+        const response = await contractsService.getContractsPage({
+          pageNumber: currentPage,
+          pageSize: PAGE_SIZE,
+          search: searchKeyword,
+          branchId: activeFilters.branchId,
+          departmentId: activeFilters.departmentId,
+          contractTypeIds,
+        });
+
+        setContracts(response.items);
+        setTotalRecords(response.totalCount);
+
+        if (response.pageNumber !== currentPage) {
+          setCurrentPage(response.pageNumber);
+        }
+      } else {
+        const items = await contractsService.getAllContracts({
+          search: searchKeyword,
+          branchId: activeFilters.branchId,
+          departmentId: activeFilters.departmentId,
+          contractTypeIds,
+        });
+
+        setContracts(items);
+        setTotalRecords(items.length);
+      }
+    } catch (error) {
+      console.error('Failed to load contracts list:', error);
+      setLoadError('Không thể tải danh sách hợp đồng. Vui lòng thử lại.');
+      showToast('Không thể tải danh sách hợp đồng. Vui lòng thử lại.', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [
+    activeFilters.branchId,
+    activeFilters.departmentId,
+    contractTypeIds,
+    currentPage,
+    isPaginationEnabled,
+    searchKeyword,
+    showToast,
+  ]);
+
+  const refreshContractsView = useCallback(async () => {
+    await Promise.all([loadContracts(), loadSummary()]);
+  }, [loadContracts, loadSummary]);
+
+  useEffect(() => {
+    void Promise.all([loadReferenceData(), loadSummary()]);
+  }, [loadReferenceData, loadSummary]);
+
+  useEffect(() => {
+    void loadContracts();
+  }, [loadContracts]);
 
   const handleDeleteContract = async (contract: ContractListItem) => {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa hợp đồng ${contract.contractNumber || ''}?`)) {
@@ -137,7 +169,7 @@ const ContractsManagementPage: React.FC = () => {
     try {
       await contractsService.deleteContract(contract.id);
       showToast('Đã xóa hợp đồng.', 'success');
-      await loadDashboard();
+      await refreshContractsView();
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Xóa hợp đồng thất bại. Vui lòng thử lại.';
@@ -145,53 +177,75 @@ const ContractsManagementPage: React.FC = () => {
     }
   };
 
-  const handleExport = () => {
-    if (filteredContracts.length === 0) {
-      showToast('Hiện chưa có dữ liệu hợp đồng để xuất file.', 'info');
-      return;
+  const handleExport = async () => {
+    setIsExporting(true);
+
+    try {
+      const exportContracts = await contractsService.getAllContracts({
+        search: searchKeyword,
+        branchId: activeFilters.branchId,
+        departmentId: activeFilters.departmentId,
+        contractTypeIds,
+      });
+
+      if (exportContracts.length === 0) {
+        showToast('Hiện chưa có dữ liệu hợp đồng để xuất file.', 'info');
+        return;
+      }
+
+      const today = new Date();
+      const filename = `Contracts_${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(
+        today.getDate(),
+      ).padStart(2, '0')}.xls`;
+
+      downloadExcelCompatibleFile(filename, [
+        [
+          'Mã nhân viên',
+          'Họ và tên',
+          'Số hợp đồng',
+          'Loại hợp đồng',
+          'Trạng thái',
+          'Ngày ký',
+          'Ngày hiệu lực',
+          'Ngày hết hạn',
+          'Chi nhánh',
+          'Phòng ban',
+          'Người ký',
+          'Loại thuế TNCN',
+          'Tệp đính kèm',
+        ],
+        ...exportContracts.map((contract) => [
+          contract.employeeCode,
+          contract.fullName,
+          contract.contractNumber || '',
+          contract.contractTypeName || '',
+          contract.statusLabel,
+          contract.signDateLabel,
+          contract.effectiveDateLabel,
+          contract.expiryDateLabel,
+          contract.branchName,
+          contract.departmentName,
+          contract.signedBy || '',
+          contract.taxType || '',
+          contract.attachment || '',
+        ]),
+      ]);
+
+      showToast('Đã xuất file hợp đồng theo bộ lọc hiện tại.', 'success');
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Xuất file hợp đồng thất bại. Vui lòng thử lại.';
+      showToast(message, 'error');
+    } finally {
+      setIsExporting(false);
     }
-
-    const today = new Date();
-    const filename = `Contracts_${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}.xls`;
-
-    downloadExcelCompatibleFile(filename, [
-      [
-        'Mã nhân viên',
-        'Họ và tên',
-        'Số hợp đồng',
-        'Loại hợp đồng',
-        'Trạng thái',
-        'Ngày ký',
-        'Ngày hiệu lực',
-        'Ngày hết hạn',
-        'Chi nhánh',
-        'Phòng ban',
-        'Người ký',
-        'Loại thuế TNCN',
-        'Tệp đính kèm',
-      ],
-      ...filteredContracts.map((contract) => [
-        contract.employeeCode,
-        contract.fullName,
-        contract.contractNumber || '',
-        contract.contractTypeName || '',
-        contract.statusLabel,
-        contract.signDateLabel,
-        contract.signDateLabel,
-        contract.expiryDateLabel,
-        contract.branchName,
-        contract.departmentName,
-        contract.signedBy || '',
-        contract.taxType || '',
-        contract.attachment || '',
-      ]),
-    ]);
-
-    showToast('Đã xuất file hợp đồng hiện tại.', 'success');
   };
 
-  const handleNavigateToEmployeeProfile = (employeeId: number) => {
-    navigate(`/personnel/employees/${employeeId}?edit=basicInfo&from=contracts`);
+  const handleNavigateToEmployeeProfile = (
+    employeeId: number,
+    editTab: PersonalTabKey = 'basicInfo',
+  ) => {
+    navigate(`/personnel/employees/${employeeId}?edit=${editTab}&from=contracts`);
   };
 
   return (
@@ -204,7 +258,11 @@ const ContractsManagementPage: React.FC = () => {
       <ContractsPageToolbar
         onBack={() => navigate('/personnel/employees')}
         onCreateNew={() => setIsCreateMethodOpen(true)}
-        onExport={handleExport}
+        onExport={() => {
+          if (!isExporting) {
+            void handleExport();
+          }
+        }}
       />
 
       <ContractsSummaryCards summary={summary} />
@@ -239,12 +297,10 @@ const ContractsManagementPage: React.FC = () => {
 
           <div className="mb-4 flex items-center justify-between gap-4">
             <p className="text-sm font-medium text-slate-500">
-              Đang hiển thị <span className="font-semibold text-slate-900">{paginatedContracts.length}</span>/
-              <span className="font-semibold text-slate-900">{filteredContracts.length}</span>
+              Đang hiển thị <span className="font-semibold text-slate-900">{contracts.length}</span>/
+              <span className="font-semibold text-slate-900">{totalRecords}</span>
             </p>
-            {loadError ? (
-              <p className="text-sm font-medium text-rose-500">{loadError}</p>
-            ) : null}
+            {loadError ? <p className="text-sm font-medium text-rose-500">{loadError}</p> : null}
           </div>
 
           <div
@@ -257,7 +313,7 @@ const ContractsManagementPage: React.FC = () => {
               </div>
             ) : (
               <ContractsDataTable
-                contracts={paginatedContracts}
+                contracts={contracts}
                 columns={columns}
                 startIndex={startIndex}
                 onView={setPreviewContract}
@@ -269,7 +325,7 @@ const ContractsManagementPage: React.FC = () => {
 
             {isPaginationEnabled && !isLoading ? (
               <Pagination
-                totalRecords={filteredContracts.length}
+                totalRecords={totalRecords}
                 currentPage={currentPage}
                 recordsPerPage={PAGE_SIZE}
                 onPageChange={setCurrentPage}
@@ -285,7 +341,10 @@ const ContractsManagementPage: React.FC = () => {
         isPaginationEnabled={isPaginationEnabled}
         onClose={() => setIsColumnConfigOpen(false)}
         onColumnsChange={setColumns}
-        onTogglePagination={setIsPaginationEnabled}
+        onTogglePagination={(enabled) => {
+          setIsPaginationEnabled(enabled);
+          setCurrentPage(1);
+        }}
       />
 
       <CreateContractMethodModal
@@ -306,19 +365,20 @@ const ContractsManagementPage: React.FC = () => {
         employees={employees}
         employeeOptions={employeeOptions}
         signerOptions={signerOptions}
-        existingContracts={contracts}
         onClose={() => setIsRegularModalOpen(false)}
-        onCreated={loadDashboard}
+        onCreated={refreshContractsView}
         onNavigateToEmployeeProfile={handleNavigateToEmployeeProfile}
         showToast={showToast}
       />
 
-      <ElectronicContractFlowModal
+      <ElectronicContractFlowWizard
         isOpen={isElectronicModalOpen}
+        employees={employees}
         employeeOptions={employeeOptions}
         signerOptions={signerOptions}
-        existingContracts={contracts}
         onClose={() => setIsElectronicModalOpen(false)}
+        onSubmitted={refreshContractsView}
+        onNavigateToEmployeeProfile={handleNavigateToEmployeeProfile}
         showToast={showToast}
       />
 

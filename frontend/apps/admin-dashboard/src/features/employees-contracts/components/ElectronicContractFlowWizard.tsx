@@ -1,20 +1,32 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import type { PersonalTabKey } from '../../employee-detail/edit-modal/types';
 import type { Employee } from '../../employees/types';
-import { ELECTRONIC_CONTRACT_TYPE_OPTIONS, TAX_TYPE_OPTIONS } from '../constants';
+import { ELECTRONIC_CONTRACT_TYPE_OPTIONS } from '../constants';
 import { contractsService } from '../service';
-import type { SelectOption, ToastActionPayload } from '../types';
+import type {
+  ElectronicContractFormValues,
+  ElectronicContractParticipant,
+  ElectronicContractSignatureField,
+  ElectronicSigningOrderMode,
+  SelectOption,
+  ToastActionPayload,
+} from '../types';
 import ContractTemplatePickerModal from './ContractTemplatePickerModal';
-import ElectronicContractCompletionStep from './ElectronicContractCompletionStep';
-import ElectronicContractRecipientsStep, {
-  type ElectronicRecipientsValues,
-} from './ElectronicContractRecipientsStep';
-import ElectronicContractReviewStep from './ElectronicContractReviewStep';
-import ElectronicContractSigningSetupStep, {
-  type ElectronicSigningSetupValues,
-} from './ElectronicContractSigningSetupStep';
+import ElectronicContractInfoStep from './ElectronicContractInfoStep';
+import ElectronicContractParticipantsStep from './ElectronicContractParticipantsStep';
+import ElectronicContractPdfReviewStep from './ElectronicContractPdfReviewStep';
+import ElectronicContractSignaturePlacementStep from './ElectronicContractSignaturePlacementStep';
+import ElectronicContractSummaryStep from './ElectronicContractSummaryStep';
 import ElectronicContractStepper from './ElectronicContractStepper';
 import ModalShell from './ModalShell';
-import SearchableSelect from './SearchableSelect';
+import { buildElectronicContractPreviewPdf, isPdfFile } from './electronicContractPdf';
+import {
+  createEmptyElectronicParticipant,
+  getEmployeeDirectoryMap,
+  getEmployeePrimaryEmail,
+  getParticipantErrorKey,
+  getSignatureFieldErrorKey,
+} from './electronicContractWorkflow';
 
 interface ElectronicContractFlowWizardProps {
   isOpen: boolean;
@@ -22,26 +34,13 @@ interface ElectronicContractFlowWizardProps {
   employeeOptions: SelectOption[];
   signerOptions: SelectOption[];
   onClose: () => void;
+  onSubmitted?: () => Promise<void> | void;
+  onNavigateToEmployeeProfile?: (employeeId: number, editTab?: PersonalTabKey) => void;
   showToast: (
     message: string,
     type?: 'success' | 'error' | 'info',
     options?: { action?: ToastActionPayload; duration?: number },
   ) => void;
-}
-
-interface ElectronicContractFormValues {
-  employeeId: string;
-  contractNumber: string;
-  templateId: string;
-  templateName: string;
-  contractTypeId: string;
-  signedBy: string;
-  signDate: string;
-  expiryDate: string;
-  taxType: string;
-  attachmentFile: File | null;
-  attachmentUrl: string;
-  attachmentName: string;
 }
 
 const DEFAULT_FORM_VALUES: ElectronicContractFormValues = {
@@ -59,63 +58,9 @@ const DEFAULT_FORM_VALUES: ElectronicContractFormValues = {
   attachmentName: '',
 };
 
-const DEFAULT_SIGNING_SETUP_VALUES: ElectronicSigningSetupValues = {
-  signingMethod: 'otp',
-  signingFlow: 'company-first',
-  deadlineDate: '',
-  reminderFrequency: '24h',
-  completionAction: 'email-copy',
-  internalNote: '',
-};
-
-const DEFAULT_RECIPIENT_VALUES: ElectronicRecipientsValues = {
-  employeeEmail: '',
-  employeePhone: '',
-  employeeRoleLabel: '',
-  signerEmail: '',
-  signerPhone: '',
-  signerRoleLabel: '',
-  notificationMessage: '',
-};
-
 const ACCEPTED_FILE_EXTENSIONS = ['pdf', 'doc', 'docx'];
-const STEPS = [
-  'Thông tin hợp đồng',
-  'Xem lại hợp đồng',
-  'Thiết lập ký',
-  'Người nhận ký',
-  'Hoàn tất',
-] as const;
-
+const STEPS = ['Thông tin hợp đồng', 'Xem trước PDF', 'Người tham gia', 'Vị trí ký', 'Tổng kết'] as const;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-const getFieldClassName = (hasError: boolean) =>
-  `min-h-12 w-full rounded-2xl border px-4 py-3 text-sm text-slate-900 outline-none transition-colors ${
-    hasError
-      ? 'border-rose-300 bg-rose-50/40'
-      : 'border-slate-200 bg-white focus:border-[#134BBA]'
-  }`;
-
-const FieldShell = ({
-  label,
-  required = false,
-  error,
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  error?: string;
-  children: React.ReactNode;
-}) => (
-  <label className="block">
-    <div className="mb-2 flex items-center gap-1 text-sm font-semibold text-slate-700">
-      <span>{label}</span>
-      {required ? <span className="text-rose-500">*</span> : null}
-    </div>
-    {children}
-    {error ? <p className="mt-2 text-xs font-medium text-rose-500">{error}</p> : null}
-  </label>
-);
 
 const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> = ({
   isOpen,
@@ -123,20 +68,31 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
   employeeOptions,
   signerOptions,
   onClose,
+  onSubmitted,
+  onNavigateToEmployeeProfile,
   showToast,
 }) => {
+  const employeeMap = useMemo(() => getEmployeeDirectoryMap(employees), [employees]);
   const [formValues, setFormValues] = useState<ElectronicContractFormValues>(DEFAULT_FORM_VALUES);
-  const [signingSetupValues, setSigningSetupValues] = useState<ElectronicSigningSetupValues>(
-    DEFAULT_SIGNING_SETUP_VALUES,
-  );
-  const [recipientValues, setRecipientValues] = useState<ElectronicRecipientsValues>(
-    DEFAULT_RECIPIENT_VALUES,
-  );
+  const [participants, setParticipants] = useState<ElectronicContractParticipant[]>([
+    createEmptyElectronicParticipant(),
+  ]);
+  const [orderMode, setOrderMode] = useState<ElectronicSigningOrderMode>('free');
+  const [signatureFields, setSignatureFields] = useState<ElectronicContractSignatureField[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
-  const [isContinuing, setIsContinuing] = useState(false);
+  const [isBusy, setIsBusy] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+  const [pdfSourceUrl, setPdfSourceUrl] = useState<string | null>(null);
+  const [pdfSourceLabel, setPdfSourceLabel] = useState('Hợp đồng điện tử.pdf');
+  const [stepTwoReady, setStepTwoReady] = useState(false);
+  const [stepFourReady, setStepFourReady] = useState(false);
+
+  const selectedEmployee = employeeMap.get(formValues.employeeId) ?? null;
+  const contractTypeLabel =
+    ELECTRONIC_CONTRACT_TYPE_OPTIONS.find((option) => option.value === formValues.contractTypeId)?.label || '';
 
   useEffect(() => {
     if (!isOpen) {
@@ -144,26 +100,79 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
     }
 
     setFormValues(DEFAULT_FORM_VALUES);
-    setSigningSetupValues(DEFAULT_SIGNING_SETUP_VALUES);
-    setRecipientValues(DEFAULT_RECIPIENT_VALUES);
+    setParticipants([createEmptyElectronicParticipant()]);
+    setOrderMode('free');
+    setSignatureFields([]);
     setErrors({});
     setCurrentStep(1);
     setIsTemplateModalOpen(false);
-    setIsContinuing(false);
+    setIsBusy(false);
+    setIsSubmitting(false);
+    setStepTwoReady(false);
+    setStepFourReady(false);
   }, [isOpen]);
 
-  const selectedEmployee = useMemo(
-    () => employees.find((employee) => String(employee.id) === formValues.employeeId) ?? null,
-    [employees, formValues.employeeId],
-  );
+  useEffect(() => {
+    if (!isOpen) {
+      setPdfSourceUrl(null);
+      return;
+    }
 
-  const selectedSigner = useMemo(
-    () => employees.find((employee) => employee.fullName === formValues.signedBy) ?? null,
-    [employees, formValues.signedBy],
-  );
+    let nextUrl: string | null = null;
+    const baseTitle = formValues.templateName || formValues.attachmentName || `Hợp đồng điện tử ${formValues.contractNumber || ''}`.trim();
 
-  const contractTypeLabel =
-    ELECTRONIC_CONTRACT_TYPE_OPTIONS.find((option) => option.value === formValues.contractTypeId)?.label || '';
+    if (formValues.attachmentFile && isPdfFile(formValues.attachmentFile.name, formValues.attachmentFile.type)) {
+      nextUrl = URL.createObjectURL(formValues.attachmentFile);
+      setPdfSourceLabel(formValues.attachmentFile.name);
+    } else {
+      nextUrl = URL.createObjectURL(
+        buildElectronicContractPreviewPdf({
+          contractNumber: formValues.contractNumber,
+          contractTypeLabel,
+          templateName: formValues.templateName,
+          attachmentName: formValues.attachmentName,
+          employeeName: selectedEmployee?.fullName || '',
+          employeeCode: selectedEmployee?.employeeCode || '',
+          signedBy: formValues.signedBy,
+          signDate: formValues.signDate,
+          expiryDate: formValues.expiryDate,
+          taxType: formValues.taxType,
+        }),
+      );
+      setPdfSourceLabel(
+        formValues.attachmentName && !isPdfFile(formValues.attachmentName)
+          ? `${formValues.attachmentName} - bản xem trước PDF`
+          : `${baseTitle || 'Hợp đồng điện tử'}.pdf`,
+      );
+    }
+
+    setPdfSourceUrl(nextUrl);
+    setStepTwoReady(false);
+    setStepFourReady(false);
+
+    return () => {
+      if (nextUrl) {
+        URL.revokeObjectURL(nextUrl);
+      }
+    };
+  }, [
+    contractTypeLabel,
+    formValues.attachmentFile,
+    formValues.attachmentName,
+    formValues.contractNumber,
+    formValues.expiryDate,
+    formValues.signDate,
+    formValues.signedBy,
+    formValues.taxType,
+    formValues.templateName,
+    isOpen,
+    selectedEmployee?.employeeCode,
+    selectedEmployee?.fullName,
+  ]);
+
+  const updateErrors = (updater: (previousErrors: Record<string, string>) => Record<string, string>) => {
+    setErrors((previousErrors) => updater(previousErrors));
+  };
 
   const handleFieldChange = <K extends keyof ElectronicContractFormValues>(
     field: K,
@@ -173,69 +182,51 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
       ...prev,
       [field]: value,
     }));
-    setErrors((prev) => {
+    updateErrors((prev) => {
       const nextErrors = { ...prev };
       delete nextErrors[field];
       return nextErrors;
     });
   };
 
-  const handleSigningSetupChange = <K extends keyof ElectronicSigningSetupValues>(
+  const handleParticipantChange = <K extends keyof ElectronicContractParticipant>(
+    participantId: string,
     field: K,
-    value: ElectronicSigningSetupValues[K],
+    value: ElectronicContractParticipant[K],
   ) => {
-    setSigningSetupValues((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-    setErrors((prev) => {
+    setParticipants((prev) =>
+      prev.map((participant) => {
+        if (participant.id !== participantId) {
+          return participant;
+        }
+
+        const nextParticipant = {
+          ...participant,
+          [field]: value,
+        } as ElectronicContractParticipant;
+
+        if (field === 'subjectType') {
+          if (value === 'internal') {
+            nextParticipant.partnerName = '';
+            nextParticipant.partnerEmail = '';
+          } else {
+            nextParticipant.employeeId = '';
+          }
+        }
+
+        return nextParticipant;
+      }),
+    );
+
+    updateErrors((prev) => {
       const nextErrors = { ...prev };
-      delete nextErrors[field];
+      Object.keys(nextErrors)
+        .filter((key) => key.startsWith(`participants.${participantId}.`) || key === 'participants.root')
+        .forEach((key) => {
+          delete nextErrors[key];
+        });
       return nextErrors;
     });
-  };
-
-  const handleRecipientChange = <K extends keyof ElectronicRecipientsValues>(
-    field: K,
-    value: ElectronicRecipientsValues[K],
-  ) => {
-    setRecipientValues((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-    setErrors((prev) => {
-      const nextErrors = { ...prev };
-      delete nextErrors[field];
-      return nextErrors;
-    });
-  };
-
-  const hydrateWorkflowDefaults = () => {
-    const nextDeadline = signingSetupValues.deadlineDate || formValues.expiryDate || formValues.signDate;
-    const signerEmail = selectedSigner?.workEmail || selectedSigner?.email || '';
-    const employeeEmail = selectedEmployee?.workEmail || selectedEmployee?.email || '';
-    const defaultMessage = [
-      `Anh/chị vui lòng kiểm tra và ký hợp đồng ${formValues.contractNumber.trim() || 'mới'}.`,
-      formValues.signDate ? `Ngày ký dự kiến: ${formValues.signDate}.` : '',
-      nextDeadline ? `Hạn hoàn tất: ${nextDeadline}.` : '',
-    ]
-      .filter(Boolean)
-      .join(' ');
-
-    setSigningSetupValues((prev) => ({
-      ...prev,
-      deadlineDate: nextDeadline,
-    }));
-
-    setRecipientValues((prev) => ({
-      employeeEmail: prev.employeeEmail || employeeEmail,
-      employeePhone: prev.employeePhone || selectedEmployee?.phone || '',
-      employeeRoleLabel: prev.employeeRoleLabel || selectedEmployee?.jobTitleName || 'Người lao động',
-      signerEmail: prev.signerEmail || signerEmail,
-      signerPhone: prev.signerPhone || selectedSigner?.phone || '',
-      signerRoleLabel: prev.signerRoleLabel || selectedSigner?.jobTitleName || 'Đại diện công ty',
-      notificationMessage: prev.notificationMessage || defaultMessage,
-    }));
   };
 
   const validateStepOne = async () => {
@@ -244,6 +235,18 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
 
     if (!formValues.employeeId) {
       nextErrors.employeeId = 'Vui lòng chọn nhân viên.';
+    }
+
+    if (selectedEmployee && !selectedEmployee.workType?.trim()) {
+      nextErrors.employeeId = 'Nhân viên được chọn đang thiếu Hình thức làm việc.';
+      showToast('Hồ sơ nhân viên bị thiếu Hình thức làm việc. Vui lòng cập nhật hồ sơ.', 'info', {
+        action: onNavigateToEmployeeProfile
+          ? {
+              label: 'Đi tới hồ sơ',
+              onClick: () => onNavigateToEmployeeProfile(selectedEmployee.id, 'basicInfo'),
+            }
+          : undefined,
+      });
     }
 
     if (!normalizedContractNumber) {
@@ -281,46 +284,94 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
     return nextErrors;
   };
 
-  const validateStepThree = () => {
+  const validateParticipants = () => {
     const nextErrors: Record<string, string> = {};
+    let hasSigner = false;
+    let missingIdentityEmployee: Employee | null = null;
 
-    if (!signingSetupValues.signingMethod) {
-      nextErrors.signingMethod = 'Vui lòng chọn phương thức ký.';
+    participants.forEach((participant) => {
+      if (participant.subjectType === 'internal') {
+        if (!participant.employeeId) {
+          nextErrors[getParticipantErrorKey(participant.id, 'employeeId')] = 'Vui lòng chọn nhân viên.';
+        } else {
+          const employee = employeeMap.get(participant.employeeId) ?? null;
+          const email = getEmployeePrimaryEmail(employee);
+
+          if (!employee) {
+            nextErrors[getParticipantErrorKey(participant.id, 'employeeId')] = 'Không tìm thấy nhân viên đã chọn.';
+          } else if (!employee.identityNumber?.trim()) {
+            nextErrors[getParticipantErrorKey(participant.id, 'employeeId')] = 'Nhân viên được chọn chưa có CCCD.';
+            missingIdentityEmployee = missingIdentityEmployee ?? employee;
+          } else if (!EMAIL_PATTERN.test(email)) {
+            nextErrors[getParticipantErrorKey(participant.id, 'employeeId')] = 'Nhân viên được chọn chưa có email hợp lệ.';
+          }
+        }
+      } else {
+        if (!participant.partnerName.trim()) {
+          nextErrors[getParticipantErrorKey(participant.id, 'partnerName')] = 'Vui lòng nhập tên đối tác.';
+        }
+
+        if (!participant.partnerEmail.trim()) {
+          nextErrors[getParticipantErrorKey(participant.id, 'partnerEmail')] = 'Vui lòng nhập email đối tác.';
+        } else if (!EMAIL_PATTERN.test(participant.partnerEmail.trim())) {
+          nextErrors[getParticipantErrorKey(participant.id, 'partnerEmail')] = 'Email đối tác không đúng định dạng.';
+        }
+      }
+
+      if (!participant.role) {
+        nextErrors[getParticipantErrorKey(participant.id, 'role')] = 'Vui lòng chọn vai trò.';
+      } else if (participant.role === 'signer') {
+        hasSigner = true;
+      }
+
+      if (!participant.authMethod) {
+        nextErrors[getParticipantErrorKey(participant.id, 'authMethod')] = 'Vui lòng chọn phương thức xác thực.';
+      }
+    });
+
+    if (!hasSigner) {
+      nextErrors['participants.root'] = 'Cần ít nhất 1 người có vai trò Người ký.';
     }
 
-    if (!signingSetupValues.deadlineDate) {
-      nextErrors.deadlineDate = 'Vui lòng chọn hạn hoàn tất ký.';
-    } else if (
-      formValues.signDate &&
-      new Date(signingSetupValues.deadlineDate) < new Date(formValues.signDate)
-    ) {
-      nextErrors.deadlineDate = 'Hạn hoàn tất phải lớn hơn hoặc bằng ngày ký.';
-    }
-
-    if (!signingSetupValues.reminderFrequency) {
-      nextErrors.reminderFrequency = 'Vui lòng chọn tần suất nhắc hạn.';
+    if (missingIdentityEmployee) {
+      const employeeNeedingIdentity = missingIdentityEmployee as Employee;
+      showToast('Nhân viên chưa có thông tin CCCD. Vui lòng bổ sung trong hồ sơ nhân viên.', 'error', {
+        action: onNavigateToEmployeeProfile
+          ? {
+              label: 'Đi tới hồ sơ',
+              onClick: () => onNavigateToEmployeeProfile(employeeNeedingIdentity.id, 'identity'),
+            }
+          : undefined,
+      });
     }
 
     return nextErrors;
   };
 
-  const validateStepFour = () => {
+  const validateSignatureFields = () => {
     const nextErrors: Record<string, string> = {};
+    const signerIds = participants.filter((participant) => participant.role === 'signer').map((participant) => participant.id);
 
-    if (!recipientValues.employeeEmail.trim()) {
-      nextErrors.employeeEmail = 'Vui lòng nhập email nhận ký của nhân viên.';
-    } else if (!EMAIL_PATTERN.test(recipientValues.employeeEmail.trim())) {
-      nextErrors.employeeEmail = 'Email nhân viên không đúng định dạng.';
+    if (!stepFourReady) {
+      nextErrors[getSignatureFieldErrorKey()] = 'Không thể tải tệp hợp đồng, vui lòng thử lại.';
+      return nextErrors;
     }
 
-    if (!recipientValues.signerEmail.trim()) {
-      nextErrors.signerEmail = 'Vui lòng nhập email nhận ký của người ký phía công ty.';
-    } else if (!EMAIL_PATTERN.test(recipientValues.signerEmail.trim())) {
-      nextErrors.signerEmail = 'Email người ký không đúng định dạng.';
+    if (signatureFields.length === 0) {
+      nextErrors[getSignatureFieldErrorKey()] = 'Vui lòng kéo thả ít nhất 1 ô chữ ký lên tài liệu.';
+      return nextErrors;
     }
 
-    if (!recipientValues.notificationMessage.trim()) {
-      nextErrors.notificationMessage = 'Vui lòng nhập thông điệp gửi cùng hợp đồng.';
+    if (signatureFields.some((field) => !field.participantId)) {
+      nextErrors[getSignatureFieldErrorKey()] = 'Vui lòng gán người ký cho tất cả các ô chữ ký.';
+      return nextErrors;
+    }
+
+    const mappedSignerIds = new Set(signatureFields.map((field) => field.participantId).filter(Boolean));
+    const hasMissingSigner = signerIds.some((participantId) => !mappedSignerIds.has(participantId));
+
+    if (hasMissingSigner) {
+      nextErrors[getSignatureFieldErrorKey()] = 'Tất cả người ký phải được gán ít nhất một vị trí ô chữ ký.';
     }
 
     return nextErrors;
@@ -362,45 +413,33 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
     }
   };
 
-  const handleStepOneContinue = async () => {
-    setIsContinuing(true);
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
 
     try {
-      const nextErrors = await validateStepOne();
-      if (Object.keys(nextErrors).length > 0) {
-        setErrors(nextErrors);
-        return;
-      }
+      await contractsService.createElectronicContract({
+        EmployeeId: Number(formValues.employeeId),
+        ContractNumber: formValues.contractNumber.trim(),
+        ContractTypeId: Number(formValues.contractTypeId),
+        SignDate: formValues.signDate || null,
+        EffectiveDate: formValues.signDate || null,
+        ExpiryDate: formValues.expiryDate || null,
+        SignedBy: formValues.signedBy,
+        TaxType: formValues.taxType,
+        Attachment: formValues.attachmentUrl || null,
+        Status: 'Draft',
+      });
 
-      setErrors({});
-      hydrateWorkflowDefaults();
-      setCurrentStep(2);
+      await onSubmitted?.();
+      onClose();
+      showToast('Tạo và gửi hợp đồng thành công', 'success');
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Tạo hợp đồng điện tử thất bại. Vui lòng thử lại.';
+      showToast(message, 'error');
     } finally {
-      setIsContinuing(false);
+      setIsSubmitting(false);
     }
-  };
-
-  const handleStepThreeContinue = () => {
-    const nextErrors = validateStepThree();
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors);
-      return;
-    }
-
-    setErrors({});
-    hydrateWorkflowDefaults();
-    setCurrentStep(4);
-  };
-
-  const handleStepFourContinue = () => {
-    const nextErrors = validateStepFour();
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors);
-      return;
-    }
-
-    setErrors({});
-    setCurrentStep(5);
   };
 
   return (
@@ -408,200 +447,109 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
       <ModalShell
         isOpen={isOpen}
         onClose={() => {
-          if (!isUploadingAttachment) {
+          if (!isUploadingAttachment && !isSubmitting) {
             onClose();
           }
         }}
         title="Tạo hợp đồng điện tử"
-        description="Hoàn thiện các bước giao diện để HR chuẩn bị thông tin, cấu hình ký và người nhận ký cho hợp đồng điện tử."
-        maxWidthClassName="max-w-6xl"
+        description="Hoàn thiện 5 bước để chuẩn bị thông tin hợp đồng, kiểm tra PDF, thiết lập người tham gia và cấu hình vị trí ký."
+        maxWidthClassName="max-w-[1440px]"
       >
         <ElectronicContractStepper currentStep={currentStep} steps={STEPS} />
 
         {currentStep === 1 ? (
-          <div className="grid gap-5 p-6 lg:grid-cols-2 lg:p-8">
-            <FieldShell label="Nhân viên" required error={errors.employeeId}>
-              <SearchableSelect
-                value={formValues.employeeId}
-                options={employeeOptions}
-                placeholder="Chọn nhân viên"
-                searchPlaceholder="Tìm theo tên hoặc mã nhân viên"
-                onChange={(value) => handleFieldChange('employeeId', value)}
-                error={errors.employeeId}
-              />
-            </FieldShell>
-
-            <FieldShell label="Số hợp đồng" required error={errors.contractNumber}>
-              <input
-                type="text"
-                value={formValues.contractNumber}
-                onChange={(event) => handleFieldChange('contractNumber', event.target.value)}
-                className={getFieldClassName(Boolean(errors.contractNumber))}
-                placeholder="Nhập số hợp đồng"
-              />
-            </FieldShell>
-
-            <FieldShell label="Hợp đồng mẫu" required error={errors.templateId}>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800">
-                      {formValues.templateName || 'Chưa chọn mẫu hợp đồng'}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      Chọn mẫu có sẵn hoặc tải lên tệp đính kèm nếu cần.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsTemplateModalOpen(true)}
-                    className="inline-flex items-center rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-slate-50"
-                  >
-                    <span className="material-symbols-outlined mr-2 text-[18px]">add</span>
-                    Chọn mẫu hợp đồng
-                  </button>
-                </div>
-              </div>
-            </FieldShell>
-
-            <FieldShell label="Tệp đính kèm">
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800">
-                      {formValues.attachmentName || 'Chưa có tệp nào được tải lên'}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">Chấp nhận PDF, DOC, DOCX.</p>
-                  </div>
-                  <label className="inline-flex cursor-pointer items-center rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-slate-50">
-                    <span className="material-symbols-outlined mr-2 text-[18px]">upload_file</span>
-                    {isUploadingAttachment ? 'Đang tải lên...' : 'Tải tệp'}
-                    <input
-                      type="file"
-                      accept=".pdf,.doc,.docx"
-                      className="hidden"
-                      disabled={isUploadingAttachment}
-                      onChange={(event) => {
-                        const file = event.target.files?.[0] ?? null;
-                        void handleAttachmentChange(file);
-                        event.target.value = '';
-                      }}
-                    />
-                  </label>
-                </div>
-              </div>
-            </FieldShell>
-
-            <FieldShell label="Loại hợp đồng" required error={errors.contractTypeId}>
-              <select
-                value={formValues.contractTypeId}
-                onChange={(event) => handleFieldChange('contractTypeId', event.target.value)}
-                className={getFieldClassName(Boolean(errors.contractTypeId))}
-              >
-                <option value="">Chọn loại hợp đồng</option>
-                {ELECTRONIC_CONTRACT_TYPE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </FieldShell>
-
-            <FieldShell label="Người ký" required error={errors.signedBy}>
-              <SearchableSelect
-                value={formValues.signedBy}
-                options={signerOptions}
-                placeholder="Chọn người ký"
-                searchPlaceholder="Tìm theo tên người ký"
-                onChange={(value) => handleFieldChange('signedBy', value)}
-                error={errors.signedBy}
-              />
-            </FieldShell>
-
-            <FieldShell label="Ngày ký" required error={errors.signDate}>
-              <input
-                type="date"
-                value={formValues.signDate}
-                onChange={(event) => handleFieldChange('signDate', event.target.value)}
-                className={getFieldClassName(Boolean(errors.signDate))}
-              />
-            </FieldShell>
-
-            <FieldShell label="Ngày hết hạn" required error={errors.expiryDate}>
-              <input
-                type="date"
-                value={formValues.expiryDate}
-                min={formValues.signDate || undefined}
-                onChange={(event) => handleFieldChange('expiryDate', event.target.value)}
-                className={getFieldClassName(Boolean(errors.expiryDate))}
-              />
-            </FieldShell>
-
-            <FieldShell label="Loại thuế TNCN" required error={errors.taxType}>
-              <select
-                value={formValues.taxType}
-                onChange={(event) => handleFieldChange('taxType', event.target.value)}
-                className={getFieldClassName(Boolean(errors.taxType))}
-              >
-                <option value="">Chọn loại thuế</option>
-                {TAX_TYPE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </FieldShell>
-          </div>
+          <ElectronicContractInfoStep
+            values={formValues}
+            errors={errors}
+            isUploadingAttachment={isUploadingAttachment}
+            employeeOptions={employeeOptions}
+            signerOptions={signerOptions}
+            onFieldChange={handleFieldChange}
+            onAttachmentChange={handleAttachmentChange}
+            onOpenTemplatePicker={() => setIsTemplateModalOpen(true)}
+          />
         ) : null}
 
         {currentStep === 2 ? (
-          <ElectronicContractReviewStep
-            contractNumber={formValues.contractNumber}
-            contractTypeLabel={contractTypeLabel}
-            templateName={formValues.templateName}
-            attachmentName={formValues.attachmentName}
-            signedBy={formValues.signedBy}
-            signDate={formValues.signDate}
-            expiryDate={formValues.expiryDate}
-            taxType={formValues.taxType}
-            employee={selectedEmployee}
+          <ElectronicContractPdfReviewStep
+            sourceUrl={pdfSourceUrl}
+            sourceLabel={pdfSourceLabel}
+            onAvailabilityChange={setStepTwoReady}
           />
         ) : null}
 
         {currentStep === 3 ? (
-          <ElectronicContractSigningSetupStep
-            values={signingSetupValues}
+          <ElectronicContractParticipantsStep
+            orderMode={orderMode}
+            participants={participants}
+            employees={employees}
             errors={errors}
-            onFieldChange={handleSigningSetupChange}
-            minDeadlineDate={formValues.signDate || undefined}
+            onOrderModeChange={setOrderMode}
+            onParticipantChange={handleParticipantChange}
+            onAddParticipant={() => {
+              setParticipants((prev) => [...prev, createEmptyElectronicParticipant()]);
+              updateErrors((prev) => {
+                const nextErrors = { ...prev };
+                delete nextErrors['participants.root'];
+                return nextErrors;
+              });
+            }}
+            onRemoveParticipant={(participantId) => {
+              if (participants.length === 1) {
+                return;
+              }
+
+              setParticipants((prev) => prev.filter((participant) => participant.id !== participantId));
+              setSignatureFields((prev) => prev.filter((field) => field.participantId !== participantId));
+              updateErrors((prev) =>
+                Object.fromEntries(Object.entries(prev).filter(([key]) => !key.startsWith(`participants.${participantId}.`))),
+              );
+            }}
+            onReorderParticipant={(draggedParticipantId, targetParticipantId) => {
+              setParticipants((prev) => {
+                const draggedIndex = prev.findIndex((participant) => participant.id === draggedParticipantId);
+                const targetIndex = prev.findIndex((participant) => participant.id === targetParticipantId);
+                if (draggedIndex < 0 || targetIndex < 0) {
+                  return prev;
+                }
+
+                const nextParticipants = [...prev];
+                const [draggedParticipant] = nextParticipants.splice(draggedIndex, 1);
+                nextParticipants.splice(targetIndex, 0, draggedParticipant);
+                return nextParticipants;
+              });
+            }}
           />
         ) : null}
 
         {currentStep === 4 ? (
-          <ElectronicContractRecipientsStep
-            values={recipientValues}
+          <ElectronicContractSignaturePlacementStep
+            sourceUrl={pdfSourceUrl}
+            sourceLabel={pdfSourceLabel}
+            employees={employees}
+            participants={participants}
+            signatureFields={signatureFields}
             errors={errors}
-            employee={selectedEmployee}
-            signer={selectedSigner}
-            signerName={formValues.signedBy}
-            signingSetup={signingSetupValues}
-            onFieldChange={handleRecipientChange}
+            onSignatureFieldsChange={(nextFields) => {
+              setSignatureFields(nextFields);
+              updateErrors((prev) => {
+                const nextErrors = { ...prev };
+                delete nextErrors[getSignatureFieldErrorKey()];
+                return nextErrors;
+              });
+            }}
+            onAvailabilityChange={setStepFourReady}
           />
         ) : null}
 
         {currentStep === 5 ? (
-          <ElectronicContractCompletionStep
-            contractNumber={formValues.contractNumber}
+          <ElectronicContractSummaryStep
+            formValues={formValues}
             contractTypeLabel={contractTypeLabel}
-            templateName={formValues.templateName}
-            attachmentName={formValues.attachmentName}
-            signDate={formValues.signDate}
-            expiryDate={formValues.expiryDate}
-            employee={selectedEmployee}
-            signer={selectedSigner}
-            signerName={formValues.signedBy}
-            signingSetup={signingSetupValues}
-            recipients={recipientValues}
+            employees={employees}
+            participants={participants}
+            signatureFields={signatureFields}
+            sourceLabel={pdfSourceLabel}
           />
         ) : null}
 
@@ -611,20 +559,26 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
               <button
                 type="button"
                 onClick={onClose}
-                disabled={isUploadingAttachment}
+                disabled={isUploadingAttachment || isSubmitting}
                 className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Hủy
               </button>
               <button
                 type="button"
-                onClick={() => void handleStepOneContinue()}
-                disabled={isContinuing}
+                onClick={async () => {
+                  setIsBusy(true);
+                  const nextErrors = await validateStepOne();
+                  setErrors(nextErrors);
+                  if (Object.keys(nextErrors).length === 0) {
+                    setCurrentStep(2);
+                  }
+                  setIsBusy(false);
+                }}
+                disabled={isBusy}
                 className="inline-flex items-center rounded-xl bg-[#134BBA] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0e378c] disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                {isContinuing ? (
-                  <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
-                ) : null}
+                {isBusy ? <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> : null}
                 Tiếp tục
               </button>
             </>
@@ -634,24 +588,18 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
             <>
               <button
                 type="button"
-                onClick={() => {
-                  setErrors({});
-                  setCurrentStep(1);
-                }}
+                onClick={() => setCurrentStep(1)}
                 className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
               >
-                Quay lại bước 1
+                Quay lại
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setErrors({});
-                  hydrateWorkflowDefaults();
-                  setCurrentStep(3);
-                }}
-                className="inline-flex items-center rounded-xl bg-[#134BBA] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0e378c]"
+                onClick={() => setCurrentStep(3)}
+                disabled={!stepTwoReady}
+                className="inline-flex items-center rounded-xl bg-[#134BBA] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0e378c] disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                Tiếp tục bước 3
+                Tiếp tục
               </button>
             </>
           ) : null}
@@ -660,20 +608,23 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
             <>
               <button
                 type="button"
-                onClick={() => {
-                  setErrors({});
-                  setCurrentStep(2);
-                }}
+                onClick={() => setCurrentStep(2)}
                 className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
               >
-                Quay lại bước 2
+                Quay lại
               </button>
               <button
                 type="button"
-                onClick={handleStepThreeContinue}
+                onClick={() => {
+                  const nextErrors = validateParticipants();
+                  setErrors(nextErrors);
+                  if (Object.keys(nextErrors).length === 0) {
+                    setCurrentStep(4);
+                  }
+                }}
                 className="inline-flex items-center rounded-xl bg-[#134BBA] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0e378c]"
               >
-                Tiếp tục bước 4
+                Tiếp tục
               </button>
             </>
           ) : null}
@@ -682,20 +633,24 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
             <>
               <button
                 type="button"
-                onClick={() => {
-                  setErrors({});
-                  setCurrentStep(3);
-                }}
+                onClick={() => setCurrentStep(3)}
                 className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
               >
-                Quay lại bước 3
+                Quay lại
               </button>
               <button
                 type="button"
-                onClick={handleStepFourContinue}
-                className="inline-flex items-center rounded-xl bg-[#134BBA] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0e378c]"
+                onClick={() => {
+                  const nextErrors = validateSignatureFields();
+                  setErrors(nextErrors);
+                  if (Object.keys(nextErrors).length === 0) {
+                    setCurrentStep(5);
+                  }
+                }}
+                disabled={!stepFourReady}
+                className="inline-flex items-center rounded-xl bg-[#134BBA] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0e378c] disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                Đi tới hoàn tất
+                Tiếp tục
               </button>
             </>
           ) : null}
@@ -705,16 +660,19 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
               <button
                 type="button"
                 onClick={() => setCurrentStep(4)}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+                disabled={isSubmitting}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Quay lại bước 4
+                Quay lại
               </button>
               <button
                 type="button"
-                onClick={onClose}
-                className="inline-flex items-center rounded-xl bg-[#134BBA] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0e378c]"
+                onClick={() => void handleSubmit()}
+                disabled={isSubmitting}
+                className="inline-flex items-center rounded-xl bg-[#134BBA] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0e378c] disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                Đóng
+                {isSubmitting ? <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> : null}
+                Hoàn thành
               </button>
             </>
           ) : null}
