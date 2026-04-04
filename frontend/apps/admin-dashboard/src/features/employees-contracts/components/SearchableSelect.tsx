@@ -102,9 +102,9 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
 
           <div className="max-h-64 overflow-y-auto p-2">
             {filteredOptions.length > 0 ? (
-              filteredOptions.map((option) => (
+              filteredOptions.map((option, index) => (
                 <button
-                  key={option.value}
+                  key={`${option.value}-${index}`}
                   type="button"
                   onClick={() => {
                     onChange(option.value);

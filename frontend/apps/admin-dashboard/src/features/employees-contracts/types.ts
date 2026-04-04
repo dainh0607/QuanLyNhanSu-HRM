@@ -7,6 +7,15 @@ import type { Employee } from "../employees/types";
 export type ContractStatusKey = "effective" | "pending" | "expired";
 export type ContractCategoryKey = "all" | "official" | "probation" | "seasonal";
 
+export interface PaginatedResponse<T> {
+  items: T[];
+  pageNumber: number;
+  totalPages: number;
+  totalCount: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+}
+
 export interface ContractDto {
   id: number;
   employeeId: number;
@@ -23,11 +32,22 @@ export interface ContractDto {
   status?: string | null;
 }
 
+export interface ContractListItemDto extends ContractDto {
+  employeeCode?: string | null;
+  fullName?: string | null;
+  branchName?: string | null;
+  departmentName?: string | null;
+  jobTitleName?: string | null;
+  statusLabel?: string | null;
+  statusColor?: string | null;
+}
+
 export interface ContractListItem extends ContractDto {
   employeeCode: string;
   fullName: string;
   branchName: string;
   departmentName: string;
+  jobTitleName?: string | null;
   avatar?: string;
   employeeWorkType?: string;
   category: Exclude<ContractCategoryKey, "all">;
@@ -36,11 +56,24 @@ export interface ContractListItem extends ContractDto {
   statusColorClassName: string;
   expiryDateLabel: string;
   signDateLabel: string;
+  effectiveDateLabel: string;
 }
+
+export interface ContractsPagedResponse extends PaginatedResponse<ContractListItem> {}
 
 export interface ContractsDashboardData {
   employees: Employee[];
   contracts: ContractListItem[];
+}
+
+export interface ContractSummaryDto {
+  totalContracts: number;
+  activeContracts: number;
+  expiringSoon: number;
+  expiredContracts: number;
+  draftContracts: number;
+  probationContracts: number;
+  officialContracts: number;
 }
 
 export interface ContractSummary {
@@ -48,6 +81,20 @@ export interface ContractSummary {
   pendingCount: number;
   expiredCount: number;
 }
+
+export interface ContractsQueryParams {
+  pageNumber: number;
+  pageSize: number;
+  search?: string;
+  status?: string;
+  branchId?: string;
+  departmentId?: string;
+  fromDate?: string;
+  toDate?: string;
+  contractTypeIds?: number[];
+}
+
+export type ContractsCollectionQuery = Omit<ContractsQueryParams, 'pageNumber' | 'pageSize'>;
 
 export interface ContractFilterState {
   branchId?: string;
@@ -113,6 +160,32 @@ export interface ElectronicContractFormValues {
   attachmentFile: File | null;
   attachmentUrl: string;
   attachmentName: string;
+}
+
+export type ElectronicParticipantSubjectType = 'internal' | 'partner';
+export type ElectronicParticipantRole = 'signer' | 'viewer';
+export type ElectronicParticipantAuthMethod = 'digital-signature' | 'image-otp';
+export type ElectronicSigningOrderMode = 'free' | 'ordered';
+
+export interface ElectronicContractParticipant {
+  id: string;
+  subjectType: ElectronicParticipantSubjectType;
+  employeeId: string;
+  partnerName: string;
+  partnerEmail: string;
+  role: ElectronicParticipantRole;
+  authMethod: ElectronicParticipantAuthMethod;
+}
+
+export interface ElectronicContractSignatureField {
+  id: string;
+  participantId: string;
+  pageNumber: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  type: 'image-signature';
 }
 
 export interface ToastActionPayload {

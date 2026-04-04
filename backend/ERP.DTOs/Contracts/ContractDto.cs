@@ -29,8 +29,8 @@ namespace ERP.DTOs.Contracts
         public DateTime? ExpiryDate { get; set; }
         public string SignedBy { get; set; }
         public string TaxType { get; set; }
-        public string Attachment { get; set; }
-        public string Status { get; set; } = "Draft";
+        public string? Attachment { get; set; }
+        public string? Status { get; set; } = "Draft";
     }
 
     public class ContractUpdateDto
@@ -42,7 +42,7 @@ namespace ERP.DTOs.Contracts
         public DateTime? ExpiryDate { get; set; }
         public string SignedBy { get; set; }
         public string TaxType { get; set; }
-        public string Attachment { get; set; }
-        public string Status { get; set; }
+        public string? Attachment { get; set; }
+        public string? Status { get; set; }
     }
 }
