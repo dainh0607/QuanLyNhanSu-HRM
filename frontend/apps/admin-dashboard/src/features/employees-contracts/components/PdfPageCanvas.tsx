@@ -23,13 +23,16 @@ const PdfPageCanvas: React.FC<PdfPageCanvasProps> = ({
 
   useEffect(() => {
     let isMounted = true;
-    let renderTask: { cancel: () => void; promise: Promise<void> } | null = null;
+    const renderTaskRef = { current: null as any };
 
     setIsRendered(false);
 
     const renderPage = async () => {
       try {
         const page = await pdfDocument.getPage(pageNumber);
+        
+        if (!isMounted) return;
+
         const viewport = page.getViewport({ scale });
         const canvas = canvasRef.current;
         const context = canvas?.getContext('2d');
@@ -43,22 +46,29 @@ const PdfPageCanvas: React.FC<PdfPageCanvasProps> = ({
         canvas.style.width = `${viewport.width}px`;
         canvas.style.height = `${viewport.height}px`;
 
-        renderTask = page.render({
+        const currentRenderTask = page.render({
           canvas,
           canvasContext: context,
           viewport,
         });
+        
+        renderTaskRef.current = currentRenderTask;
 
-        await renderTask.promise;
+        await currentRenderTask.promise;
 
         if (isMounted) {
           setIsRendered(true);
         }
-      } catch (error) {
+      } catch (error: any) {
+        // Chi bo qua error neu la do cancel
+        if (error?.name === 'RenderingCancelledException') {
+          return;
+        }
+        
         console.error(`Failed to render PDF page ${pageNumber}:`, error);
         if (isMounted) {
           setIsRendered(false);
-          onRenderError?.('Không thể tải tệp hợp đồng, vui lòng thử lại');
+          onRenderError?.('Không thể tải tệp hợp đồng. Vui lòng thử lại.');
         }
       }
     };
@@ -67,7 +77,9 @@ const PdfPageCanvas: React.FC<PdfPageCanvasProps> = ({
 
     return () => {
       isMounted = false;
-      renderTask?.cancel();
+      if (renderTaskRef.current) {
+        renderTaskRef.current.cancel();
+      }
     };
   }, [onRenderError, pageNumber, pdfDocument, scale]);
 

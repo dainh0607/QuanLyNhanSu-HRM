@@ -2,6 +2,7 @@ import React from 'react';
 import { ELECTRONIC_CONTRACT_TYPE_OPTIONS, TAX_TYPE_OPTIONS } from '../constants';
 import type { ElectronicContractFormValues, SelectOption } from '../types';
 import SearchableSelect from './SearchableSelect';
+import DatePickerInput from '../../../components/common/DatePickerInput';
 
 interface ElectronicContractInfoStepProps {
   values: ElectronicContractFormValues;
@@ -156,21 +157,21 @@ const ElectronicContractInfoStep: React.FC<ElectronicContractInfoStepProps> = ({
       </FieldShell>
 
       <FieldShell label="Ngày ký" required error={errors.signDate}>
-        <input
-          type="date"
+        <DatePickerInput
           value={values.signDate}
-          onChange={(event) => onFieldChange('signDate', event.target.value)}
-          className={getFieldClassName(Boolean(errors.signDate))}
+          onChange={(value: string) => onFieldChange('signDate', value)}
+          hasError={Boolean(errors.signDate)}
+          ariaLabel="Ngày ký"
         />
       </FieldShell>
 
       <FieldShell label="Ngày hết hạn" required error={errors.expiryDate}>
-        <input
-          type="date"
+        <DatePickerInput
           value={values.expiryDate}
           min={values.signDate || undefined}
-          onChange={(event) => onFieldChange('expiryDate', event.target.value)}
-          className={getFieldClassName(Boolean(errors.expiryDate))}
+          onChange={(value: string) => onFieldChange('expiryDate', value)}
+          hasError={Boolean(errors.expiryDate)}
+          ariaLabel="Ngày hết hạn"
         />
       </FieldShell>
 

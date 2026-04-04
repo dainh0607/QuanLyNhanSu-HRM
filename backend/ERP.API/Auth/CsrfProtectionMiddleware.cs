@@ -21,7 +21,8 @@ namespace ERP.API.Auth
         {
             "/api/auth/login",
             "/api/auth/sign-up",
-            "/api/auth/verify-token"
+            "/api/auth/verify-token",
+            "/api/auth/refresh"
         };
 
         private readonly RequestDelegate _next;

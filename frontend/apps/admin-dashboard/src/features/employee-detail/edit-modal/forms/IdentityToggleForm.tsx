@@ -2,6 +2,7 @@ import React from 'react';
 import type { EmployeeEditIdentityPayload } from '../../../../services/employeeService';
 import { FormHeading, FormRow } from '../components/FormPrimitives';
 import { getFieldClassName } from '../formStyles';
+import DatePickerInput from '../../../../components/common/DatePickerInput';
 
 interface IdentityToggleFormProps {
   data: EmployeeEditIdentityPayload;
@@ -80,11 +81,10 @@ const IdentityToggleForm: React.FC<IdentityToggleFormProps> = ({ data, onFieldCh
           </FormRow>
 
           <FormRow label="Ngày cấp">
-            <input
-              type="date"
+            <DatePickerInput
               value={data.identityIssueDate}
-              onChange={(event) => onFieldChange('identityIssueDate', event.target.value)}
-              className={getFieldClassName(false)}
+              onChange={(value: string) => onFieldChange('identityIssueDate', value)}
+              ariaLabel="Ngày cấp CMND/CCCD"
             />
           </FormRow>
 

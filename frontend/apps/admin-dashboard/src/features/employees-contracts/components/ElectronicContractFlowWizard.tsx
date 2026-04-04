@@ -237,6 +237,7 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
       nextErrors.employeeId = 'Vui lòng chọn nhân viên.';
     }
 
+    /*
     if (selectedEmployee && !selectedEmployee.workType?.trim()) {
       nextErrors.employeeId = 'Nhân viên được chọn đang thiếu Hình thức làm việc.';
       showToast('Hồ sơ nhân viên bị thiếu Hình thức làm việc. Vui lòng cập nhật hồ sơ.', 'info', {
@@ -248,6 +249,7 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
           : undefined,
       });
     }
+    */
 
     if (!normalizedContractNumber) {
       nextErrors.contractNumber = 'Số hợp đồng là bắt buộc.';
