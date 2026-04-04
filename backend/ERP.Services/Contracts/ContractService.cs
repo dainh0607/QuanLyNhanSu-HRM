@@ -298,10 +298,27 @@ namespace ERP.Services.Contracts
 
         public async Task<bool> CreateAsync(ContractCreateDto dto)
         {
-            // 1. Validation: Overlapping dates
-            if (await CheckOverlappingContractAsync(dto.EmployeeId, dto.EffectiveDate ?? DateTime.UtcNow, dto.ExpiryDate))
+            // 1. Validation: Unitque Contract Number
+            var existingContract = await _unitOfWork.Repository<Entities.Models.Contracts>()
+                .AsQueryable()
+                .FirstOrDefaultAsync(c => c.contract_number == dto.ContractNumber);
+            if (existingContract != null)
             {
-                throw new Exception("Nhân viên này đã có hợp đồng khác hiệu lực trong khoảng thời gian này.");
+                throw new System.Exception($"Số hợp đồng '{dto.ContractNumber}' đã tồn tại trên hệ thống.");
+            }
+
+            // 2. Validation: Expiry Date >= Sign Date (AC 3)
+            if (dto.SignDate.HasValue && dto.ExpiryDate.HasValue && dto.ExpiryDate < dto.SignDate)
+            {
+                throw new System.Exception("Ngày hết hạn không được nhỏ hơn ngày ký.");
+            }
+
+            // 3. Validation: Overlapping dates (Existing logic)
+            // Note: If SignDate is used for AC 2, we use EffectiveDate (often same) for overlap check.
+            var startDate = dto.EffectiveDate ?? dto.SignDate ?? DateTime.UtcNow;
+            if (await CheckOverlappingContractAsync(dto.EmployeeId, startDate, dto.ExpiryDate))
+            {
+                throw new System.Exception("Nhân viên này đã có hợp đồng khác hiệu lực trong khoảng thời gian này.");
             }
 
             var contract = new Entities.Models.Contracts
@@ -310,7 +327,7 @@ namespace ERP.Services.Contracts
                 contract_number = dto.ContractNumber,
                 contract_type_id = dto.ContractTypeId,
                 sign_date = dto.SignDate,
-                effective_date = dto.EffectiveDate,
+                effective_date = dto.EffectiveDate ?? dto.SignDate, // Fallback if not provided
                 expiry_date = dto.ExpiryDate,
                 signed_by = dto.SignedBy,
                 tax_type = dto.TaxType,

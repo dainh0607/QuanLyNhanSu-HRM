@@ -56,6 +56,15 @@ namespace ERP.API.Controllers
             return Ok(new { Message = "Contract created successfully" });
         }
 
+        [HttpPost("manual")]
+        [Authorize(Roles = "Manager,Admin")]
+        public async Task<IActionResult> CreateManual([FromBody] ContractCreateDto dto)
+        {
+            var success = await _contractService.CreateAsync(dto);
+            if (!success) return BadRequest();
+            return Ok(new { Message = "Contract created successfully" });
+        }
+
         [HttpPut("{id}")]
         [Authorize(Roles = "Manager,Admin")]
         public async Task<IActionResult> Update(int id, [FromBody] ContractUpdateDto dto)
