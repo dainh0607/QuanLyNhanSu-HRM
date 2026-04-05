@@ -44,6 +44,20 @@ namespace ERP.Entities.Models
         [StringLength(500)]
         public string attachment { get; set; }
 
+        [Column("is_electronic")]
+        public bool is_electronic { get; set; } = false;
+
+        [Column("note")]
+        public string note { get; set; } = string.Empty;
+
+        [Column("template_id")]
+        public int? template_id { get; set; }
+
+        [ForeignKey("template_id")]
+        public virtual ContractTemplates? Template { get; set; }
+
+        public virtual ICollection<ContractSigners> Signers { get; set; } = new List<ContractSigners>();
+
         [Column("status")]
         [StringLength(50)]
         public string status { get; set; }

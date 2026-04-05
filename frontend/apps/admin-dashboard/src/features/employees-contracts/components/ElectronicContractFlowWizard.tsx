@@ -260,7 +260,6 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
           : undefined,
       });
     }
-    */
 
     if (!normalizedContractNumber) {
       nextErrors.contractNumber = 'Số hợp đồng là bắt buộc.';

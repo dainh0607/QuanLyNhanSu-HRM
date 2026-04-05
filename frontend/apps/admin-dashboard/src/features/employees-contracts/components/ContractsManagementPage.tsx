@@ -19,7 +19,7 @@ import ContractsFilterSidebar from './ContractsFilterSidebar';
 import ContractsPageToolbar from './ContractsPageToolbar';
 import ContractsSummaryCards from './ContractsSummaryCards';
 import CreateContractMethodModal from './CreateContractMethodModal';
-import ElectronicContractFlowWizard from './ElectronicContractFlowWizard';
+import ElectronicContractFlowModal from './ElectronicContractFlowModal';
 import RegularContractModal from './RegularContractModal';
 import { useNavigate } from 'react-router-dom';
 import type { Employee } from '../../employees/types';
@@ -313,11 +313,11 @@ const ContractsManagementPage: React.FC = () => {
         showToast={showToast}
       />
 
-      <ElectronicContractFlowWizard
+      <ElectronicContractFlowModal
         isOpen={isElectronicModalOpen}
-        employees={employees}
         employeeOptions={employeeOptions}
         signerOptions={signerOptions}
+        existingContracts={contracts}
         onClose={() => setIsElectronicModalOpen(false)}
         onSubmitted={loadDashboard}
         onNavigateToEmployeeProfile={handleNavigateToEmployeeProfile}

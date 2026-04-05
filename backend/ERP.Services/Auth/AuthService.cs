@@ -130,7 +130,7 @@ namespace ERP.Services.Auth
                     var user = await _userService.CreateLocalUserAsync(existingEmployee.Id, dto.Email, firebaseUser.Uid);
 
                     // Assign Roles
-                    int assignedRoleId = 3; // Default User
+                    int assignedRoleId = 2; // Default Manager (Changed from 3 per user request)
                     string masterEmail = _configuration["AdminSettings:MasterEmail"];
 
                     if (!string.IsNullOrEmpty(masterEmail) &&
@@ -671,7 +671,7 @@ namespace ERP.Services.Auth
             var userRole = new UserRoles
             {
                 user_id = user.Id,
-                role_id = 3,
+                role_id = 2, // Default Manager (Changed from 3)
                 is_active = true,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow

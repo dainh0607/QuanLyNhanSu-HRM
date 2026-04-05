@@ -1,0 +1,129 @@
+### Variables
+@baseUrl = http://localhost:5122/api
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNCIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWVpZGVudGlmaWVyIjoiMTQiLCJlbWFpbCI6Imtmcm9nMTIzM0BnbWFpbC5jb20iLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9lbWFpbGFkZHJlc3MiOiJrZnJvZzEyMzNAZ21haWwuY29tIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZSI6IkjDuW5nIFN1cGVyIEFkbWluIiwianRpIjoiMmMwODViMWEtZGFlOC00YWIyLTgyZmYtMmVmNDdlZGE4YzJlIiwiU2Vzc2lvbklkIjoiYjVmYWU2YzdmZWU4NGE0MTk3ZTk2NTAzNjIxNDkyNGQiLCJUb2tlblR5cGUiOiJBY2Nlc3MiLCJFbXBsb3llZUlkIjoiMTQiLCJFbXBsb3llZUNvZGUiOiJBRE0wMTEiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOlsiTWFuYWdlciIsIlVzZXIiXSwiZXhwIjoxNzc1MzE0ODQyLCJpc3MiOiJOZXhhSFJNIiwiYXVkIjoiTmV4YUhSTV9DbGllbnQifQ.HzvqVQU_I5mj6OJPw2XVaZmHT2ovxmiotmelz2KkJNE
+Authorization: Bearer {{token}}
+
+### 2. Get Specific Contract Template by ID
+GET {{baseUrl}}/ContractTemplates/1
+Authorization: Bearer {{token}}
+
+### 3. Create Electronic Contract Draft (Step 1)
+POST {{baseUrl}}/Contracts/electronic/draft
+Authorization: Bearer {{token}}
+X-Bypass-CSRF: true
+Content-Type: application/json
+
+{
+    "employeeId": 1,
+    "contractTypeId": 1,
+    "templateId": 1,
+    "note": "Draft created from Step 1 for test",
+    "effectiveDate": "2026-05-01T00:00:00Z"
+}
+
+### 4. Create Normal Contract (For comparison)
+POST {{baseUrl}}/Contracts/manual
+Authorization: Bearer {{token}}
+X-Bypass-CSRF: true
+Content-Type: application/json
+
+{
+    "employeeId": 1,
+    "contractNumber": "HD-2026-001",
+    "contractTypeId": 1,
+    "signDate": "2026-04-01T00:00:00Z",
+    "effectiveDate": "2026-04-15T00:00:00Z",
+    "expiryDate": "2027-04-15T00:00:00Z",
+    "signedBy": "Manager Name",
+    "taxType": "Standard",
+    "status": "Draft"
+}
+
+### 5. Preview Contract (Electronic or Manual)
+GET {{baseUrl}}/Contracts/preview/1
+Authorization: Bearer {{token}}
+
+### 6. Save Contract Signers (Step 3)
+POST {{baseUrl}}/Contracts/electronic/step3
+Authorization: Bearer {{token}}
+X-Bypass-CSRF: true
+Content-Type: application/json
+
+{
+    "contractId": 13,
+    "signers": [
+        {
+            "email": "kfrog1233@gmail.com",
+            "fullName": "Hùng Super Admin",
+            "signOrder": 1,
+            "status": "Pending",
+            "userId": 14
+        },
+        {
+            "email": "partner@external.com",
+            "fullName": "John Doe (Partner)",
+            "signOrder": 2,
+            "status": "Pending"
+        }
+    ]
+}
+
+### 7. Save Signature Coordinates (Step 4)
+POST {{baseUrl}}/Contracts/electronic/step4
+Authorization: Bearer {{token}}
+X-Bypass-CSRF: true
+Content-Type: application/json
+
+{
+    "contractId": 13,
+    "positions": [
+        {
+            "signerId": 1,
+            "type": "signature",
+            "pageNumber": 1,
+            "xPos": 150.5,
+            "yPos": 200.0,
+            "width": 100,
+            "height": 50
+        },
+        {
+            "signerId": 2,
+            "type": "signature",
+            "pageNumber": 1,
+            "xPos": 350.5,
+            "yPos": 200.0,
+            "width": 100,
+            "height": 50
+        }
+    ]
+}
+
+### 8. Finalize & Submit Contract (Step 5)
+POST {{baseUrl}}/Contracts/electronic/submit
+Authorization: Bearer {{token}}
+X-Bypass-CSRF: true
+Content-Type: application/json
+
+{
+    "contractId": 13
+}
+
+### 9. Generate Signer OTP
+POST {{baseUrl}}/Signers/generate-otp
+Content-Type: application/json
+X-Bypass-CSRF: true
+
+{
+    "signatureToken": "5f3a..." 
+}
+
+### 10. Verify Signer OTP
+POST {{baseUrl}}/Signers/verify-otp
+Content-Type: application/json
+X-Bypass-CSRF: true
+
+
+{
+    "signatureToken": "5f3a...",
+    "otp": "123456"
+}

@@ -8,7 +8,8 @@ namespace ERP.DTOs.Auth
         public const string CsrfHeaderName = "X-CSRF-Token";
         public const string SessionIdClaimType = "SessionId";
         public const string TokenTypeClaimType = "TokenType";
-        public const string AccessTokenType = "access";
-        public const string RefreshTokenType = "refresh";
+        public const string AccessTokenType = "Access";
+        public const string RefreshTokenType = "Refresh";
+        public const string SignerTokenType = "Signer";
     }
 }

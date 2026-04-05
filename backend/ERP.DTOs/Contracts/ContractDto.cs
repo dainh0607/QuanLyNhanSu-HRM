@@ -31,6 +31,60 @@ namespace ERP.DTOs.Contracts
         public string TaxType { get; set; }
         public string? Attachment { get; set; }
         public string? Status { get; set; } = "Draft";
+        public bool IsElectronic { get; set; } = false;
+        public string? Note { get; set; }
+        public int? TemplateId { get; set; }
+    }
+
+    public class ElectronicContractDraftDto
+    {
+        public int EmployeeId { get; set; }
+        public string? ContractNumber { get; set; } // May be generated later
+        public int? ContractTypeId { get; set; }
+        public int? TemplateId { get; set; }
+        public string? Note { get; set; }
+        public DateTime? EffectiveDate { get; set; }
+    }
+
+    public class ContractSignerDto
+    {
+        public int? Id { get; set; }
+        public string Email { get; set; }
+        public string FullName { get; set; }
+        public int SignOrder { get; set; }
+        public string? Status { get; set; } = "Pending";
+        public DateTime? SignedAt { get; set; }
+        public string? SignatureToken { get; set; }
+        public string? Note { get; set; }
+        public int? UserId { get; set; } // Optional: for internal users
+    }
+
+    public class ContractStep3Dto
+    {
+        public int ContractId { get; set; }
+        public List<ContractSignerDto> Signers { get; set; }
+    }
+
+    public class ContractSignerPositionDto
+    {
+        public int SignerId { get; set; }
+        public string Type { get; set; }
+        public int PageNumber { get; set; }
+        public float XPos { get; set; }
+        public float YPos { get; set; }
+        public float? Width { get; set; }
+        public float? Height { get; set; }
+    }
+
+    public class ContractStep4Dto
+    {
+        public int ContractId { get; set; }
+        public List<ContractSignerPositionDto> Positions { get; set; }
+    }
+
+    public class ContractSubmitDto
+    {
+        public int ContractId { get; set; }
     }
 
     public class ContractUpdateDto
@@ -44,5 +98,8 @@ namespace ERP.DTOs.Contracts
         public string TaxType { get; set; }
         public string? Attachment { get; set; }
         public string? Status { get; set; }
+        public bool? IsElectronic { get; set; }
+        public string? Note { get; set; }
+        public int? TemplateId { get; set; }
     }
 }
