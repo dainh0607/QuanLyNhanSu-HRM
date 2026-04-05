@@ -15,6 +15,7 @@ using ERP.Services.Organization;
 using ERP.Services.Lookup;
 using ERP.Services.Contracts;
 using ERP.Services.Common;
+using ERP.DTOs.Common;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
@@ -70,10 +71,20 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 var sessionId = principal?.FindFirst(AuthSecurityConstants.SessionIdClaimType)?.Value;
                 var userIdValue = principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
+                // Handle Signer Token
+                if (string.Equals(tokenType, AuthSecurityConstants.SignerTokenType, StringComparison.Ordinal))
+                {
+                    // Signer tokens don't have sessions or users in the DB
+                    return;
+                }
+
+                // Handle Regular Access Token
+                var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
                 if (!string.Equals(tokenType, AuthSecurityConstants.AccessTokenType, StringComparison.Ordinal) ||
                     string.IsNullOrWhiteSpace(sessionId) ||
                     !int.TryParse(userIdValue, out var userId))
                 {
+                    logger.LogWarning("[Auth] Invalid token structure.");
                     context.Fail("Access token khong hop le.");
                     return;
                 }
@@ -86,6 +97,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
                 if (authSession == null || !authSession.is_active || authSession.revoked_at.HasValue || authSession.expires_at <= DateTime.UtcNow)
                 {
+                    logger.LogWarning("[Auth] Session check failed for user {UserId}.", userId);
                     context.Fail("Session da het han hoac bi thu hoi.");
                 }
             }
@@ -128,39 +140,91 @@ builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IEmployeeProfileService, EmployeeProfileService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 builder.Services.AddScoped<ILookupService, LookupService>();
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddScoped<IContractService, ContractService>();
+builder.Services.AddScoped<IContractTemplateService, ContractTemplateService>();
+builder.Services.AddScoped<IPdfService, PdfService>();
 builder.Services.AddScoped<IEmployeeLifecycleService, EmployeeLifecycleService>();
 builder.Services.AddScoped<IStorageService, LocalStorageService>();
 builder.Services.AddScoped<IEmployeeDocumentService, EmployeeDocumentService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<ISignerService, SignerService>();
+builder.Services.AddScoped<IContractNotificationService, ContractNotificationService>();
 builder.Services.AddHostedService<EmployeeStatusWorker>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
-// Automatic Database Migration and Firebase User Sync for Development
+
+// Database initialization and seeding (Development only)
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+    var db = services.GetRequiredService<AppDbContext>();
+
     try
     {
-        var context = services.GetRequiredService<AppDbContext>();
-        var userService = services.GetRequiredService<IUserService>();
-        var logger = services.GetRequiredService<ILogger<Program>>();
-
         if (app.Environment.IsDevelopment())
         {
-            logger.LogInformation("Development mode: Ensuring database is migrated and synced...");
-            context.Database.Migrate();
-            await userService.SyncWithFirebaseAsync();
-            logger.LogInformation("Database initialization and sync complete.");
-        }
+            logger.LogInformation("[STARTUP] Ensuring database is migrated and seeded...");
+            db.Database.Migrate();
 
+            // Sync with Firebase
+            var userService = services.GetRequiredService<IUserService>();
+            await userService.SyncWithFirebaseAsync();
+
+            // Seed User Elevation
+            var testEmail = "kfrog1233@gmail.com";
+            var user = db.Users.Include(u => u.Employee).FirstOrDefault(u => u.Employee.email == testEmail);
+            if (user != null)
+            {
+                var managerRoleId = 2; // Manager
+                var hasRole = db.UserRoles.Any(ur => ur.user_id == user.Id && (ur.role_id == 1 || ur.role_id == 2));
+                if (!hasRole)
+                {
+                    db.UserRoles.Add(new ERP.Entities.Models.UserRoles { 
+                        user_id = user.Id, 
+                        role_id = managerRoleId, 
+                        is_active = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                    db.SaveChanges();
+                    logger.LogInformation("[SEED] Elevated {Email} to Manager role.", testEmail);
+                }
+            }
+
+            // 2. Seed Contract Types
+            if (!db.ContractTypes.Any())
+            {
+                db.ContractTypes.Add(new ERP.Entities.Models.ContractTypes {
+                    name = "Hợp đồng thử việc"
+                });
+                db.SaveChanges();
+                logger.LogInformation("[SEED] Default ContractType created.");
+            }
+
+            // 3. Seed Contract Templates
+            if (!db.ContractTemplates.Any())
+            {
+                db.ContractTemplates.Add(new ERP.Entities.Models.ContractTemplates {
+                    name = "Mẫu hợp đồng thử việc chuẩn",
+                    content = @"<div style='text-align: center;'><h2>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</h2><h3>Độc lập - Tự do - Hạnh phúc</h3></div><br/><p>Chào ông/bà: <b>{{FullName}}</b> (Mã NV: <b>{{EmployeeCode}}</b>),</p><p>Chào mừng bạn gia nhập NexaHRM. Dưới đây là các điều khoản thử việc...</p><p>Ngày ký: {{SignDate}}</p><br/><br/><div style='display: flex; justify-content: space-between;'><div>Đại diện công ty</div><div>Người lao động</div></div>",
+                    category = "Electronic", // Added required field
+                    is_active = true,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                });
+                db.SaveChanges();
+                logger.LogInformation("[SEED] Default ContractTemplate created.");
+            }
+        }
     }
     catch (Exception ex)
     {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while migrating or syncing the database.");
+        logger.LogError(ex, "An error occurred during startup initialization.");
     }
 }
 

@@ -3,7 +3,7 @@
 ## Project: QuanLyNhanSu-HRM (Human Resource Management System)
 
 **Status**: Phase 2 - Employee Management ✅ (100% Complete)
-**Target**: Complete ERP system for employee management
+**Target**: Phase 3 - Attendance System (Next)
 
 ---
 
@@ -89,7 +89,7 @@
 
 ### 2.4 Employee Documents
 
-- [x] Contracts management - CRUD operations
+- [x] Contracts management - CRUD operations & File Upload
 - [x] Certificate tracking
 - [x] Education records
 - [x] Skills inventory
@@ -378,7 +378,8 @@
 ### Admin Dashboard (0% Complete)
 
 - [x] Login/Authentication UI
-- [ ] Employee management interface
+- [x] Employee management interface
+- [x] Contracts management dashboard & modals
 - [ ] Attendance dashboard
 - [ ] Leave request management
 - [ ] Payroll management interface
@@ -544,17 +545,17 @@
 
 ### Previously Completed (Last 2 Weeks)
 
-1. [x] Implement advanced employee code generation (gap-filling)
-2. [x] Complete Employee Profile APIs (Addresses, Bank, Health, etc.)
+1. [x] Implement Contracts management (CRUD, Summary, Export & File upload)
+2. [x] Implement Advanced Employee Profile APIs (Addresses, Bank, Health, etc.)
 3. [x] Implement Education, Skills, and Certificates services
 4. [x] Seed master data for Vietnamese HR standards
 
 ### Next Immediate Actions
 
-1. [ ] Implement Contracts management (CRUD & File upload)
-2. [ ] Add Work History tracking logic
-3. [ ] Start Phase 3 - Attendance System core services
-4. [ ] Implement Shift Management & Shift Types
+1. [ ] Start Phase 3 - Attendance System core services
+2. [ ] Implement Shift Management & Shift Types
+3. [ ] Design Attendance Check-in API (GPS/Biometric)
+4. [ ] Implement Work History tracking logic
 
 ---
 

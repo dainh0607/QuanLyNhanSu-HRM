@@ -1,0 +1,28 @@
+using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace ERP.Entities.Models
+{
+    [Table("ContractSignerPositions")]
+    public class ContractSignerPositions : AuditableEntity
+    {
+        [Column("signer_id")]
+        public int signer_id { get; set; }
+
+        [ForeignKey("signer_id")]
+        public virtual ContractSigners Signer { get; set; }
+
+        [Required]
+        [StringLength(50)]
+        public string type { get; set; } // signature, fullname, date
+
+        public int page_number { get; set; }
+
+        public float x_pos { get; set; }
+        public float y_pos { get; set; }
+        
+        public float? width { get; set; }
+        public float? height { get; set; }
+    }
+}

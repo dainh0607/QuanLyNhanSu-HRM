@@ -65,6 +65,63 @@ namespace ERP.API.Controllers
             return Ok(new { Message = "Contract created successfully" });
         }
 
+        [HttpPost("electronic/draft")]
+        [Authorize(Roles = "User,Manager,Admin")]
+        public async Task<IActionResult> CreateElectronicDraft([FromBody] ElectronicContractDraftDto dto)
+        {
+            var id = await _contractService.CreateElectronicDraftAsync(dto);
+            if (id <= 0) return BadRequest();
+            return Ok(new { Id = id, Message = "Electronic contract draft created successfully" });
+        }
+
+        [HttpPost("electronic/step3")]
+        [Authorize(Roles = "Manager,Admin")]
+        public async Task<IActionResult> SaveStep3Signers([FromBody] ContractStep3Dto dto)
+        {
+            try
+            {
+                var success = await _contractService.SaveElectronicSignersAsync(dto);
+                if (!success) return BadRequest();
+                return Ok(new { Message = "Signers saved successfully for Step 3" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpPost("electronic/step4")]
+        [Authorize(Roles = "Manager,Admin")]
+        public async Task<IActionResult> SaveStep4Positions([FromBody] ContractStep4Dto dto)
+        {
+            try
+            {
+                var success = await _contractService.SaveElectronicPositionsAsync(dto);
+                if (!success) return BadRequest();
+                return Ok(new { Message = "Signature positions saved successfully for Step 4" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpPost("electronic/submit")]
+        [Authorize(Roles = "Manager,Admin")]
+        public async Task<IActionResult> SubmitElectronicContract([FromBody] ContractSubmitDto dto)
+        {
+            try
+            {
+                var success = await _contractService.SubmitElectronicContractAsync(dto.ContractId);
+                if (!success) return BadRequest();
+                return Ok(new { Message = "Hợp đồng đã được gửi và bắt đầu quy trình ký duyệt." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
         [HttpPut("{id}")]
         [Authorize(Roles = "Manager,Admin")]
         public async Task<IActionResult> Update(int id, [FromBody] ContractUpdateDto dto)
@@ -97,6 +154,20 @@ namespace ERP.API.Controllers
         {
             var count = await _contractService.DeleteMultipleAsync(ids);
             return Ok(new { Message = $"{count} contracts deleted successfully", Count = count });
+        }
+
+        [HttpGet("preview/{id}")]
+        public async Task<IActionResult> Preview(int id)
+        {
+            try
+            {
+                var (content, contentType, fileName) = await _contractService.GetContractPreviewAsync(id);
+                return File(content, contentType, fileName);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
         }
     }
 }

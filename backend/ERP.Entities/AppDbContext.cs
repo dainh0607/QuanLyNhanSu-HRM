@@ -107,6 +107,9 @@ namespace ERP.Entities
         public DbSet<UserRoles> UserRoles { get; set; }
         public DbSet<Users> Users { get; set; }
         public DbSet<VehicleTypes> VehicleTypes { get; set; }
+        public DbSet<ContractSigners> ContractSigners { get; set; }
+        public DbSet<ContractTemplates> ContractTemplates { get; set; }
+        public DbSet<ContractSignerPositions> ContractSignerPositions { get; set; }
         public DbSet<WorkHistory> WorkHistory { get; set; }
         public DbSet<InvitationTokens> InvitationTokens { get; set; }
         public DbSet<EmployeeDocuments> EmployeeDocuments { get; set; }

@@ -7,16 +7,36 @@ using ERP.DTOs.Contracts;
 using ERP.Entities.Models;
 using ERP.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using ERP.Services.Common;
 
 namespace ERP.Services.Contracts
 {
     public class ContractService : IContractService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IPdfService _pdfService;
+        private readonly Microsoft.AspNetCore.Hosting.IWebHostEnvironment _environment;
+        private readonly IStorageService _storageService;
+        private readonly IEmailService _emailService;
+        private readonly IContractNotificationService _notificationService;
+        private readonly Microsoft.Extensions.Configuration.IConfiguration _configuration;
 
-        public ContractService(IUnitOfWork unitOfWork)
+        public ContractService(
+            IUnitOfWork unitOfWork, 
+            IPdfService pdfService, 
+            Microsoft.AspNetCore.Hosting.IWebHostEnvironment environment,
+            IStorageService storageService,
+            IEmailService emailService,
+            IContractNotificationService notificationService,
+            Microsoft.Extensions.Configuration.IConfiguration configuration)
         {
             _unitOfWork = unitOfWork;
+            _pdfService = pdfService;
+            _environment = environment;
+            _storageService = storageService;
+            _emailService = emailService;
+            _notificationService = notificationService;
+            _configuration = configuration;
         }
 
         public async Task<PaginatedListDto<ContractListItemDto>> GetPagedListAsync(ContractFilterDto filter)
@@ -332,11 +352,36 @@ namespace ERP.Services.Contracts
                 signed_by = dto.SignedBy,
                 tax_type = dto.TaxType,
                 attachment = dto.Attachment,
-                status = dto.Status ?? "Draft"
+                status = dto.Status ?? "Draft",
+                is_electronic = dto.IsElectronic,
+                note = dto.Note ?? "",
+                template_id = dto.TemplateId
             };
 
             await _unitOfWork.Repository<Entities.Models.Contracts>().AddAsync(contract);
             return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+
+        public async Task<int> CreateElectronicDraftAsync(ElectronicContractDraftDto dto)
+        {
+            var contract = new Entities.Models.Contracts
+            {
+                employee_id = dto.EmployeeId,
+                contract_number = dto.ContractNumber ?? $"DRAFT-{Guid.NewGuid().ToString().Substring(0, 8)}",
+                contract_type_id = dto.ContractTypeId,
+                effective_date = dto.EffectiveDate ?? DateTime.UtcNow,
+                status = "Draft",
+                is_electronic = true,
+                note = dto.Note ?? "",
+                template_id = dto.TemplateId,
+                attachment = "", // Required field, set to empty for draft
+                signed_by = "",  // Required field
+                tax_type = ""    // Required field
+            };
+
+            await _unitOfWork.Repository<Entities.Models.Contracts>().AddAsync(contract);
+            await _unitOfWork.SaveChangesAsync();
+            return contract.Id;
         }
 
         private async Task<bool> CheckOverlappingContractAsync(int employeeId, DateTime startDate, DateTime? endDate, int? excludeContractId = null)
@@ -386,6 +431,15 @@ namespace ERP.Services.Contracts
             contract.tax_type = dto.TaxType;
             contract.attachment = dto.Attachment;
             contract.status = dto.Status;
+            
+            if (dto.IsElectronic.HasValue)
+                contract.is_electronic = dto.IsElectronic.Value;
+            
+            if (dto.Note != null)
+                contract.note = dto.Note;
+            
+            if (dto.TemplateId.HasValue)
+                contract.template_id = dto.TemplateId;
 
             _unitOfWork.Repository<Entities.Models.Contracts>().Update(contract);
             return await _unitOfWork.SaveChangesAsync() > 0;
@@ -398,6 +452,176 @@ namespace ERP.Services.Contracts
 
             _unitOfWork.Repository<Entities.Models.Contracts>().Remove(contract);
             return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+
+        public async Task<(byte[] content, string contentType, string fileName)> GetContractPreviewAsync(int id)
+        {
+            var contract = await _unitOfWork.Repository<Entities.Models.Contracts>()
+                .AsQueryable()
+                .Include(c => c.Employee)
+                    .ThenInclude(e => e.Department)
+                .Include(c => c.Employee)
+                    .ThenInclude(e => e.JobTitle)
+                .Include(c => c.Template)
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (contract == null) throw new Exception("Không tìm thấy hợp đồng.");
+
+            if (contract.is_electronic)
+            {
+                // Generate PDF from Template
+                var content = await _pdfService.GenerateContractPdfAsync(contract);
+                return (content, "application/pdf", $"Preview_{contract.contract_number}.pdf");
+            }
+            else
+            {
+                // Return Physical File
+                if (string.IsNullOrEmpty(contract.attachment))
+                {
+                    throw new Exception("Hợp đồng này không có tệp đính kèm để xem trước.");
+                }
+
+                // Extract relative path from URL
+                // Example: https://localhost:5001/uploads/guid_filename.pdf -> uploads/guid_filename.pdf
+                var uri = new Uri(contract.attachment);
+                var fileName = Path.GetFileName(uri.LocalPath);
+                
+                var webRoot = string.IsNullOrEmpty(_environment.WebRootPath) 
+                    ? Path.Combine(_environment.ContentRootPath, "wwwroot") 
+                    : _environment.WebRootPath;
+                
+                var filePath = Path.Combine(webRoot, "uploads", fileName);
+
+                if (!File.Exists(filePath))
+                {
+                    throw new Exception("Tệp đính kèm không tồn tại trên hệ thống.");
+                }
+
+                var content = await File.ReadAllBytesAsync(filePath);
+                return (content, "application/pdf", fileName);
+            }
+        }
+
+        public async Task<bool> SaveElectronicSignersAsync(ContractStep3Dto dto)
+        {
+            var contract = await _unitOfWork.Repository<Entities.Models.Contracts>()
+                .AsQueryable()
+                .Include(c => c.Signers)
+                .FirstOrDefaultAsync(c => c.Id == dto.ContractId);
+
+            if (contract == null) throw new Exception("Không tìm thấy hợp đồng.");
+            if (!contract.is_electronic) throw new Exception("Hợp đồng này không phải là hợp đồng điện tử.");
+
+            // 1. Remove existing signers
+            var signerRepo = _unitOfWork.Repository<ContractSigners>();
+            foreach (var existingSigner in contract.Signers.ToList())
+            {
+                signerRepo.Remove(existingSigner);
+            }
+
+            // 2. Add new signers
+            foreach (var signerDto in dto.Signers)
+            {
+                var newSigner = new ContractSigners
+                {
+                    contract_id = dto.ContractId,
+                    email = signerDto.Email,
+                    full_name = signerDto.FullName,
+                    sign_order = signerDto.SignOrder,
+                    status = signerDto.Status ?? "Pending",
+                    note = signerDto.Note ?? "",
+                    signature_token = Guid.NewGuid().ToString("N") // Required field
+                };
+
+                await signerRepo.AddAsync(newSigner);
+            }
+
+            contract.UpdatedAt = DateTime.UtcNow;
+            _unitOfWork.Repository<Entities.Models.Contracts>().Update(contract);
+
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> SaveElectronicPositionsAsync(ContractStep4Dto dto)
+        {
+            var signerIds = await _unitOfWork.Repository<ContractSigners>()
+                .AsQueryable()
+                .Where(s => s.contract_id == dto.ContractId)
+                .Select(s => s.Id)
+                .ToListAsync();
+
+            if (signerIds == null || !signerIds.Any()) 
+                throw new Exception("Không tìm thấy danh sách người ký cho hợp đồng này.");
+
+            var positionRepo = _unitOfWork.Repository<ContractSignerPositions>();
+
+            // 1. Remove existing positions for these signers
+            var existingPositions = await positionRepo.AsQueryable()
+                .Where(p => signerIds.Contains(p.signer_id))
+                .ToListAsync();
+
+            foreach (var pos in existingPositions)
+            {
+                positionRepo.Remove(pos);
+            }
+
+            // 2. Add new positions
+            foreach (var posDto in dto.Positions)
+            {
+                if (!signerIds.Contains(posDto.SignerId))
+                    throw new Exception($"Người ký (ID: {posDto.SignerId}) không thuộc hợp đồng này.");
+
+                var newPos = new ContractSignerPositions
+                {
+                    signer_id = posDto.SignerId,
+                    type = posDto.Type,
+                    page_number = posDto.PageNumber,
+                    x_pos = posDto.XPos,
+                    y_pos = posDto.YPos,
+                    width = posDto.Width,
+                    height = posDto.Height
+                };
+
+                await positionRepo.AddAsync(newPos);
+            }
+
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> SubmitElectronicContractAsync(int contractId)
+        {
+            var contract = await _unitOfWork.Repository<Entities.Models.Contracts>()
+                .AsQueryable()
+                .Include(c => c.Employee)
+                .Include(c => c.Template)
+                .Include(c => c.Signers)
+                .FirstOrDefaultAsync(c => c.Id == contractId);
+
+            if (contract == null) throw new Exception("Không tìm thấy hợp đồng.");
+            if (!contract.is_electronic) throw new Exception("Hợp đồng này không phải là hợp đồng điện tử.");
+            
+            // 1. Generate final PDF
+            var pdfBytes = await _pdfService.GenerateContractPdfAsync(contract);
+            
+            // 2. Upload to storage
+            using (var ms = new System.IO.MemoryStream(pdfBytes))
+            {
+                var fileName = $"{contract.contract_number}_{Guid.NewGuid().ToString().Substring(0, 8)}.pdf";
+                var fileUrl = await _storageService.UploadFileAsync(ms, fileName, "application/pdf");
+                contract.attachment = fileUrl;
+            }
+
+            // 3. Update Status
+            contract.status = "PendingSignature";
+            contract.UpdatedAt = DateTime.UtcNow;
+
+            _unitOfWork.Repository<Entities.Models.Contracts>().Update(contract);
+            await _unitOfWork.SaveChangesAsync();
+
+            // 4. Handle first signer notification via NotificationService
+            await _notificationService.NotifyNextSignerAsync(contract.Id);
+
+            return true;
         }
     }
 }

@@ -14,7 +14,12 @@ namespace ERP.Services.Contracts
         Task<IEnumerable<ContractDto>> GetByEmployeeIdAsync(int employeeId);
         Task<ContractDto> GetByIdAsync(int id);
         Task<bool> CreateAsync(ContractCreateDto dto);
+        Task<int> CreateElectronicDraftAsync(ElectronicContractDraftDto dto);
         Task<bool> UpdateAsync(int id, ContractUpdateDto dto);
         Task<bool> DeleteAsync(int id);
+        Task<(byte[] content, string contentType, string fileName)> GetContractPreviewAsync(int id);
+        Task<bool> SaveElectronicSignersAsync(ContractStep3Dto dto);
+        Task<bool> SaveElectronicPositionsAsync(ContractStep4Dto dto);
+        Task<bool> SubmitElectronicContractAsync(int contractId);
     }
 }

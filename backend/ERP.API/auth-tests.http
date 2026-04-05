@@ -13,12 +13,12 @@ POST {{baseUrl}}/api/auth/sign-up
 Content-Type: {{contentType}}
 
 {
-  "email": "manager.test2@company.com",
-  "password": "ManagerPassword123",
-  "confirmPassword": "ManagerPassword123",
-  "fullName": "Nguyễn Quản Lý 2",
-  "employeeCode": "MGR_002",
-  "phoneNumber": "+84900000002"
+  "email": "kfrog1233@gmail.com",
+  "password": "MailTest123",
+  "confirmPassword": "MailTest123",
+  "fullName": "Hùng Super Admin",
+  "employeeCode": "ADM011",
+  "phoneNumber": "+84232323232"
 }
 
 ###
@@ -29,8 +29,8 @@ POST {{baseUrl}}/api/auth/login
 Content-Type: {{contentType}}
 
 {
-  "email": "manager.test@company.com",
-  "password": "ManagerPassword123"
+  "email": "kfrog1233@gmail.com",
+  "password": "MailTest123"
 }
 
 ###

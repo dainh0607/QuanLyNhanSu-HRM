@@ -40,21 +40,39 @@ namespace ERP.API.Auth
 
         public async Task InvokeAsync(HttpContext context, AppDbContext dbContext)
         {
+            var path = context.Request.Path;
+            var method = context.Request.Method;
+
             if (!RequiresCsrfValidation(context))
             {
+                _logger.LogInformation("[CSRF] Skip validation for {Method} {Path}", method, path);
                 await _next(context);
                 return;
             }
 
+            _logger.LogInformation("[CSRF] Validating {Method} {Path}", method, path);
+
             if (!IsAllowedOrigin(context))
             {
+                var origin = context.Request.Headers.Origin.ToString();
+                _logger.LogWarning("[CSRF] Origin rejected: {Origin}", origin);
                 await RejectAsync(context, "Origin khong hop le.");
                 return;
             }
 
             var csrfToken = context.Request.Headers[AuthSecurityConstants.CsrfHeaderName].ToString();
+            var bypassHeader = context.Request.Headers["X-Bypass-CSRF"].ToString();
+
+            if (_env.IsDevelopment() && !string.IsNullOrEmpty(bypassHeader))
+            {
+                _logger.LogInformation("[CSRF] Bypassed by header.");
+                await _next(context);
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(csrfToken))
             {
+                _logger.LogWarning("[CSRF] Missing CSRF Token Header.");
                 await RejectAsync(context, "Thieu CSRF token.");
                 return;
             }
@@ -62,16 +80,19 @@ namespace ERP.API.Auth
             var authSession = await ResolveSessionAsync(context, dbContext);
             if (authSession == null || !authSession.is_active || authSession.revoked_at.HasValue || authSession.expires_at <= DateTime.UtcNow)
             {
+                _logger.LogWarning("[CSRF] Session invalid or expired.");
                 await RejectAsync(context, "Phien dang nhap khong hop le.");
                 return;
             }
 
             if (!string.Equals(authSession.csrf_token_hash, AuthTokenSecurity.ComputeHash(csrfToken), StringComparison.Ordinal))
             {
+                _logger.LogWarning("[CSRF] Token hash mismatch.");
                 await RejectAsync(context, "CSRF token khong hop le.");
                 return;
             }
 
+            _logger.LogInformation("[CSRF] Validation successful.");
             await _next(context);
         }
 
@@ -88,8 +109,18 @@ namespace ERP.API.Auth
                 return false;
             }
 
-            return context.Request.Cookies.ContainsKey(AuthSecurityConstants.AccessTokenCookieName)
-                || context.Request.Cookies.ContainsKey(AuthSecurityConstants.RefreshTokenCookieName);
+            // 1. Bypass if a special header is present (For Development Testing Tools)
+            if (_env.IsDevelopment() && context.Request.Headers.ContainsKey("X-Bypass-CSRF"))
+            {
+                return false;
+            }
+
+            // 2. Only require CSRF if cookies are present (CSRF is primarily a Cookie-based attack)
+            // If the client is using pure Authorization: Bearer token (no cookies), it's safe to skip CSRF.
+            var hasAuthCookie = context.Request.Cookies.ContainsKey(AuthSecurityConstants.AccessTokenCookieName)
+                             || context.Request.Cookies.ContainsKey(AuthSecurityConstants.RefreshTokenCookieName);
+
+            return hasAuthCookie;
         }
 
         private bool IsAllowedOrigin(HttpContext context)

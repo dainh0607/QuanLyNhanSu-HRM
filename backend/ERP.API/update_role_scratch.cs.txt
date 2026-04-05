@@ -1,0 +1,30 @@
+using System;
+using System.Linq;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using ERP.Entities;
+
+var configuration = new ConfigurationBuilder()
+    .SetBasePath("e:\\NexaHR_2026\\QuanLyNhanSu-HRM\\backend\\ERP.API")
+    .AddJsonFile("appsettings.json")
+    .Build();
+
+var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
+optionsBuilder.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
+
+using (var db = new AppDbContext(optionsBuilder.Options))
+{
+    var user = db.Users.FirstOrDefault(u => u.email == "kfrog1233@gmail.com");
+    if (user != null)
+    {
+        user.role = "Admin";
+        db.SaveChanges();
+        Console.WriteLine("SUCCESS: Updated user kfrog1233@gmail.com to Admin.");
+    }
+    else
+    {
+        Console.WriteLine("ERROR: User kfrog1233@gmail.com not found in database.");
+    }
+}
