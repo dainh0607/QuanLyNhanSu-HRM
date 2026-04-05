@@ -3,7 +3,7 @@ import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 're
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import { EmployeeList } from './features/employees';
-import { ContractsManagementPage } from './features/employees-contracts';
+import { ContractsManagementPage, SigningPortalPage } from './features/employees-contracts';
 import { EmployeeDetail } from './features/employee-detail/EmployeeDetailViewIntegrated';
 import type { PersonalTabKey } from './features/employee-detail/edit-modal/types';
 import type { Employee } from './features/employees/types';
@@ -621,8 +621,10 @@ function RoutedApp() {
             )
           }
         />
-        <Route path="/employees" element={<LegacyEmployeesRedirect />} />
-        <Route path="/employees/:employeeId" element={<LegacyEmployeeDetailRedirect />} />
+        <Route
+          path="/contracts/signing/:token"
+          element={<SigningPortalPage />}
+        />
         <Route path="*" element={<Navigate to={defaultRoute} replace />} />
       </Routes>
     </div>
