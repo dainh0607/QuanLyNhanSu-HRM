@@ -18,7 +18,7 @@ namespace ERP.Services.Contracts
         Task<bool> UpdateAsync(int id, ContractUpdateDto dto);
         Task<bool> DeleteAsync(int id);
         Task<(byte[] content, string contentType, string fileName)> GetContractPreviewAsync(int id);
-        Task<bool> SaveElectronicSignersAsync(ContractStep3Dto dto);
+        Task<List<ContractSignerDto>> SaveElectronicSignersAsync(ContractStep3Dto dto);
         Task<bool> SaveElectronicPositionsAsync(ContractStep4Dto dto);
         Task<bool> SubmitElectronicContractAsync(int contractId);
     }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import SigningOtpStep from './SigningOtpStep';
 import SigningDocumentStep from './SigningDocumentStep';
+import type { SignerAuthResponseDto } from '../signersService';
 
 type SigningStep = 'otp' | 'view' | 'success';
 
@@ -9,7 +10,7 @@ const SigningPortalPage: React.FC = () => {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<SigningStep>('otp');
-  const [isVerifying, setIsVerifying] = useState(false);
+  const [signerInfo, setSignerInfo] = useState<SignerAuthResponseDto | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // In a real app, we would fetch contract metadata based on token here
@@ -19,13 +20,9 @@ const SigningPortalPage: React.FC = () => {
     }
   }, [token]);
 
-  const handleOtpSuccess = () => {
-    setIsVerifying(true);
-    // Simulate API delay
-    setTimeout(() => {
-      setIsVerifying(false);
-      setCurrentStep('view');
-    }, 1000);
+  const handleOtpSuccess = (info: SignerAuthResponseDto) => {
+    setSignerInfo(info);
+    setCurrentStep('view');
   };
 
   const handleSigningComplete = () => {
@@ -54,15 +51,16 @@ const SigningPortalPage: React.FC = () => {
 
   return (
     <main className="min-h-screen bg-slate-50 font-sans text-slate-900">
-      {currentStep === 'otp' && (
+      {currentStep === 'otp' && token && (
         <SigningOtpStep 
+          token={token}
           onSuccess={handleOtpSuccess} 
-          isVerifying={isVerifying} 
         />
       )}
 
-      {currentStep === 'view' && (
+      {currentStep === 'view' && signerInfo && (
         <SigningDocumentStep 
+          signerInfo={signerInfo}
           onComplete={handleSigningComplete} 
         />
       )}

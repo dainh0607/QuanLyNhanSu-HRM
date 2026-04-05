@@ -1,5 +1,4 @@
 import React from 'react';
-import { ELECTRONIC_CONTRACT_TYPE_OPTIONS, TAX_TYPE_OPTIONS } from '../constants';
 import type { ElectronicContractFormValues, SelectOption } from '../types';
 import SearchableSelect from './SearchableSelect';
 
@@ -9,6 +8,8 @@ interface ElectronicContractInfoStepProps {
   isUploadingAttachment: boolean;
   employeeOptions: SelectOption[];
   signerOptions: SelectOption[];
+  contractTypeOptions: SelectOption[];
+  taxTypeOptions: SelectOption[];
   onFieldChange: <K extends keyof ElectronicContractFormValues>(
     field: K,
     value: ElectronicContractFormValues[K],
@@ -51,6 +52,8 @@ const ElectronicContractInfoStep: React.FC<ElectronicContractInfoStepProps> = ({
   isUploadingAttachment,
   employeeOptions,
   signerOptions,
+  contractTypeOptions,
+  taxTypeOptions,
   onFieldChange,
   onAttachmentChange,
   onOpenTemplatePicker,
@@ -136,7 +139,7 @@ const ElectronicContractInfoStep: React.FC<ElectronicContractInfoStepProps> = ({
           className={getFieldClassName(Boolean(errors.contractTypeId))}
         >
           <option value="">Chọn loại hợp đồng</option>
-          {ELECTRONIC_CONTRACT_TYPE_OPTIONS.map((option) => (
+          {contractTypeOptions.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
@@ -181,7 +184,7 @@ const ElectronicContractInfoStep: React.FC<ElectronicContractInfoStepProps> = ({
           className={getFieldClassName(Boolean(errors.taxType))}
         >
           <option value="">Chọn loại thuế</option>
-          {TAX_TYPE_OPTIONS.map((option) => (
+          {taxTypeOptions.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>

@@ -1,15 +1,33 @@
 import React, { useState, useEffect, useRef } from 'react';
+import type { SignerAuthResponseDto } from '../signersService';
+import { signersService } from '../signersService';
 
 interface SigningOtpStepProps {
-  onSuccess: () => void;
-  isVerifying: boolean;
+  token: string;
+  onSuccess: (info: SignerAuthResponseDto) => void;
 }
 
-const SigningOtpStep: React.FC<SigningOtpStepProps> = ({ onSuccess, isVerifying }) => {
+const SigningOtpStep: React.FC<SigningOtpStepProps> = ({ token, onSuccess }) => {
   const [otp, setOtp] = useState<string[]>(new Array(6).fill(''));
   const [countdown, setCountdown] = useState(60);
+  const [error, setError] = useState<string | null>(null);
   const [isResending, setIsResending] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Send OTP on mount
+  useEffect(() => {
+    const initOtp = async () => {
+      setError(null);
+      try {
+        await signersService.generateOtp({ SignatureToken: token });
+      } catch (err) {
+        console.error('Failed to send initial OTP:', err);
+        setError('Không thể gửi mã xác thực. Vui lòng tải lại trang.');
+      }
+    };
+    initOtp();
+  }, [token]);
 
   useEffect(() => {
     if (countdown > 0) {
@@ -37,22 +55,42 @@ const SigningOtpStep: React.FC<SigningOtpStepProps> = ({ onSuccess, isVerifying 
     }
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
     setIsResending(true);
-    // Simulate resend
-    setTimeout(() => {
-      setIsResending(false);
+    setError(null);
+    try {
+      await signersService.generateOtp({ SignatureToken: token });
       setCountdown(60);
       setOtp(new Array(6).fill(''));
       inputRefs.current[0]?.focus();
-    }, 800);
+    } catch (err) {
+      setError('Gửi lại mã thất bại. Vui lòng thử lại.');
+    } finally {
+      setIsResending(false);
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const code = otp.join('');
     if (code.length === 6) {
-      onSuccess();
+      setIsVerifying(true);
+      setError(null);
+      try {
+        const response = await signersService.verifyOtp({
+          SignatureToken: token,
+          Otp: code,
+        });
+        onSuccess(response);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Xác thực mã OTP thất bại.';
+        setError(message);
+        // Clear OTP on failure
+        setOtp(new Array(6).fill(''));
+        inputRefs.current[0]?.focus();
+      } finally {
+        setIsVerifying(false);
+      }
     }
   };
 
@@ -71,6 +109,12 @@ const SigningOtpStep: React.FC<SigningOtpStepProps> = ({ onSuccess, isVerifying 
         <p className="mt-2 text-center text-sm leading-relaxed text-slate-500">
           Mã xác thực đã được gửi tới email của bạn. Vui lòng nhập mã 6 chữ số để tiếp tục xem và ký hợp đồng.
         </p>
+
+        {error && (
+          <div className="mt-4 rounded-xl bg-rose-50 p-3 text-center text-xs font-medium text-rose-600 animate-shake">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="mt-10">
           <div className="flex justify-between gap-3">

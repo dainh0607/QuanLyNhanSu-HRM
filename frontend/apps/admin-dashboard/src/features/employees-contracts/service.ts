@@ -20,6 +20,12 @@ import type {
   ContractsQueryParams,
   RegularContractFormValues,
   PaginatedResponse,
+  LookupItem,
+  ContractTemplateOption,
+  ElectronicContractDraftDto,
+  ContractStep3Dto,
+  ContractStep4Dto,
+  ContractSignerDto,
 } from './types';
 
 interface UploadedDocumentResponse {
@@ -392,6 +398,60 @@ export const contractsService = {
       `${API_URL}/contracts/${id}`,
       { method: "GET" },
       "Không thể tải chi tiết hợp đồng",
+    ),
+  getContractTypes: () =>
+    requestJson<LookupItem[]>(
+      `${API_URL}/lookups/contract-types`,
+      { method: "GET" },
+      "Không thể tải danh sách loại hợp đồng",
+    ),
+  getTaxTypes: () =>
+    requestJson<LookupItem[]>(
+      `${API_URL}/lookups/tax-types`,
+      { method: "GET" },
+      "Không thể tải danh sách loại thuế",
+    ),
+  getTemplates: () =>
+    requestJson<ContractTemplateOption[]>(
+      `${API_URL}/contracttemplates`,
+      { method: "GET" },
+      "Không thể tải danh sách mẫu hợp đồng",
+    ),
+  createElectronicDraft: (payload: ElectronicContractDraftDto) =>
+    requestJson<{ id: number; message?: string }>(
+      `${API_URL}/contracts/electronic/draft`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+      'Lưu bản nháp thất bại',
+    ),
+  saveStep3Signers: (payload: ContractStep3Dto) =>
+    requestJson<{ Signers: ContractSignerDto[]; message?: string }>(
+      `${API_URL}/contracts/electronic/step3`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+      'Lưu danh sách người ký thất bại',
+    ),
+  saveStep4Positions: (payload: ContractStep4Dto) =>
+    requestJson<{ message?: string }>(
+      `${API_URL}/contracts/electronic/step4`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+      'Lưu vị trí chữ ký thất bại',
+    ),
+  submitElectronicContract: (id: number) =>
+    requestJson<{ message?: string }>(
+      `${API_URL}/contracts/electronic/submit`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ contractId: id }),
+      },
+      'Gửi hợp đồng thất bại',
     ),
 };
 

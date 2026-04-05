@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PersonalTabKey } from '../../employee-detail/edit-modal/types';
 import type { Employee } from '../../employees/types';
-import { ELECTRONIC_CONTRACT_TYPE_OPTIONS } from '../constants';
 import { contractsService } from '../service';
 import type {
   ContractCreatePayload,
@@ -11,6 +10,7 @@ import type {
   ElectronicSigningOrderMode,
   SelectOption,
   ToastActionPayload,
+  ContractSignerDto,
 } from '../types';
 import ContractTemplatePickerModal from './ContractTemplatePickerModal';
 import ElectronicContractInfoStep from './ElectronicContractInfoStep';
@@ -92,10 +92,39 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
   const [stepFourReady, setStepFourReady] = useState(false);
 
   const pdfUrlRef = useRef<string | null>(null);
+  const [contractId, setContractId] = useState<number | null>(null);
+  const [contractSigners, setContractSigners] = useState<ContractSignerDto[]>([]);
+  const [contractTypeOptions, setContractTypeOptions] = useState<SelectOption[]>([]);
+  const [taxTypeOptions, setTaxTypeOptions] = useState<SelectOption[]>([]);
 
   const selectedEmployee = employeeMap.get(formValues.employeeId) ?? null;
   const contractTypeLabel =
-    ELECTRONIC_CONTRACT_TYPE_OPTIONS.find((option) => option.value === formValues.contractTypeId)?.label || '';
+    contractTypeOptions.find((option) => option.value === formValues.contractTypeId)?.label || '';
+
+  useEffect(() => {
+    let isMounted = true;
+    
+    // Fetch lookup data
+    const loadLookups = async () => {
+      try {
+        const [types, taxes] = await Promise.all([
+          contractsService.getContractTypes(),
+          contractsService.getTaxTypes(),
+        ]);
+        
+        if (isMounted) {
+          setContractTypeOptions(types.map(t => ({ value: String(t.id), label: t.name })));
+          setTaxTypeOptions(taxes.map(t => ({ value: String(t.id), label: t.name })));
+        }
+      } catch (error) {
+        console.error('Failed to load electronic contract lookups:', error);
+      }
+    };
+
+    void loadLookups();
+
+    return () => { isMounted = false; };
+  }, []);
 
   useEffect(() => {
     if (!isOpen) {
@@ -426,38 +455,23 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
   };
 
   const handleSubmit = async () => {
+    if (!contractId) {
+      showToast('Lỗi: Không tìm thấy ID hợp đồng. Vui lòng bắt đầu lại.', 'error');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      const payload: ContractCreatePayload = {
-        EmployeeId: Number(formValues.employeeId),
-        ContractNumber: formValues.contractNumber.trim(),
-        ContractTypeId: Number(formValues.contractTypeId),
-        SignDate: formValues.signDate || null,
-        EffectiveDate: formValues.signDate || null,
-        ExpiryDate: formValues.expiryDate || null,
-        SignedBy: formValues.signedBy || "",
-        TaxType: formValues.taxType || "",
-        Attachment: formValues.attachmentUrl || null,
-        Status: 'Draft',
-      };
-
-      // Defensive check for IDs
-      if (!payload.EmployeeId || !payload.ContractTypeId) {
-        throw new Error("Dữ liệu Nhân viên hoặc Loại hợp đồng không hợp lệ. Vui lòng kiểm tra lại Bước 1.");
-      }
-
-      console.log('Submitting Electronic Contract Payload:', payload);
-      
-      await contractsService.createElectronicContract(payload);
+      await contractsService.submitElectronicContract(contractId);
 
       await onSubmitted?.();
       onClose();
-      showToast('Tạo và gửi hợp đồng thành công', 'success');
+      showToast('Hợp đồng đã được gửi và bắt đầu quy trình ký duyệt.', 'success');
     } catch (error) {
-      console.error('Electronic Contract Submission Error:', error);
+      console.error('Electronic Contract Finalization Error:', error);
       const message =
-        error instanceof Error ? error.message : 'Tạo hợp đồng điện tử thất bại. Vui lòng thử lại.';
+        error instanceof Error ? error.message : 'Gửi hợp đồng điện tử thất bại. Vui lòng thử lại.';
       showToast(message, 'error');
     } finally {
       setIsSubmitting(false);
@@ -486,6 +500,8 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
             isUploadingAttachment={isUploadingAttachment}
             employeeOptions={employeeOptions}
             signerOptions={signerOptions}
+            contractTypeOptions={contractTypeOptions}
+            taxTypeOptions={taxTypeOptions}
             onFieldChange={handleFieldChange}
             onAttachmentChange={handleAttachmentChange}
             onOpenTemplatePicker={() => setIsTemplateModalOpen(true)}
@@ -589,14 +605,31 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
               <button
                 type="button"
                 onClick={async () => {
-                  setIsBusy(true);
-                  const nextErrors = await validateStepOne();
-                  setErrors(nextErrors);
-                  if (Object.keys(nextErrors).length === 0) {
-                    buildPdfSnapshot();
-                    setCurrentStep(2);
+                  try {
+                    setIsBusy(true);
+                    const nextErrors = await validateStepOne();
+                    setErrors(nextErrors);
+                    
+                    if (Object.keys(nextErrors).length === 0) {
+                      // Call Step 1 API
+                      const response = await contractsService.createElectronicDraft({
+                        EmployeeId: Number(formValues.employeeId),
+                        ContractNumber: formValues.contractNumber,
+                        ContractTypeId: Number(formValues.contractTypeId),
+                        TemplateId: formValues.templateId ? Number(formValues.templateId) : undefined,
+                        Note: `Tạo từ trình thuật thuật ký điện tử - Mẫu: ${formValues.templateName || 'Tệp tải lên'}`,
+                      });
+                      
+                      setContractId(response.id);
+                      buildPdfSnapshot();
+                      setCurrentStep(2);
+                    }
+                  } catch (error) {
+                    console.error('Failed to create electronic contract draft:', error);
+                    showToast('Không thể lưu bản nháp hợp đồng. Vui lòng thử lại.', 'error');
+                  } finally {
+                    setIsBusy(false);
                   }
-                  setIsBusy(false);
                 }}
                 disabled={isBusy}
                 className="inline-flex items-center rounded-xl bg-[#134BBA] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0e378c] disabled:cursor-not-allowed disabled:bg-slate-300"
@@ -638,15 +671,58 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  const nextErrors = validateParticipants();
-                  setErrors(nextErrors);
-                  if (Object.keys(nextErrors).length === 0) {
-                    setCurrentStep(4);
+                onClick={async () => {
+                  if (!contractId) {
+                    showToast('Lỗi: Không tìm thấy ID hợp đồng. Vui lòng quay lại Bước 1.', 'error');
+                    return;
+                  }
+
+                  try {
+                    setIsBusy(true);
+                    const nextErrors = validateParticipants();
+                    setErrors(nextErrors);
+                    
+                    if (Object.keys(nextErrors).length === 0) {
+                      // Map FE participants to BE Signer DTOs
+                      const signers: ContractSignerDto[] = participants.map((p, index) => {
+                        if (p.subjectType === 'internal') {
+                          const emp = employeeMap.get(p.employeeId);
+                          return {
+                            FullName: emp?.fullName || 'Nhân viên',
+                            Email: getEmployeePrimaryEmail(emp),
+                            SignOrder: index + 1,
+                            UserId: Number(p.employeeId),
+                            Note: p.role,
+                          };
+                        } else {
+                          return {
+                            FullName: p.partnerName,
+                            Email: p.partnerEmail,
+                            SignOrder: index + 1,
+                            Note: p.role,
+                          };
+                        }
+                      });
+
+                      const response = await contractsService.saveStep3Signers({
+                        ContractId: contractId,
+                        Signers: signers,
+                      });
+
+                      setContractSigners(response.Signers);
+                      setCurrentStep(4);
+                    }
+                  } catch (error) {
+                    console.error('Failed to save electronic contract signers:', error);
+                    showToast('Không thể lưu danh sách người ký. Vui lòng thử lại.', 'error');
+                  } finally {
+                    setIsBusy(false);
                   }
                 }}
-                className="inline-flex items-center rounded-xl bg-[#134BBA] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0e378c]"
+                disabled={isBusy}
+                className="inline-flex items-center rounded-xl bg-[#134BBA] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0e378c] disabled:cursor-not-allowed disabled:bg-slate-300"
               >
+                {isBusy ? <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> : null}
                 Tiếp tục
               </button>
             </>
@@ -663,16 +739,62 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  const nextErrors = validateSignatureFields();
-                  setErrors(nextErrors);
-                  if (Object.keys(nextErrors).length === 0) {
-                    setCurrentStep(5);
+                onClick={async () => {
+                  if (!contractId) {
+                    showToast('Lỗi: Không tìm thấy ID hợp đồng. Vui lòng quay lại Bước 1.', 'error');
+                    return;
+                  }
+
+                  try {
+                    setIsBusy(true);
+                    const nextErrors = validateSignatureFields();
+                    setErrors(nextErrors);
+                    
+                    if (Object.keys(nextErrors).length === 0) {
+                      // Map FE signature fields to BE Position DTOs
+                      // We must find the real Signer ID from contractSigners by email match
+                      const positions: ContractSignerPositionDto[] = signatureFields.map(field => {
+                        const participant = participants.find(p => p.id === field.participantId);
+                        const participantEmail = participant?.subjectType === 'internal' 
+                          ? getEmployeePrimaryEmail(employeeMap.get(participant.employeeId))
+                          : participant?.partnerEmail;
+                          
+                        const signer = contractSigners.find(s => s.Email === participantEmail);
+                        
+                        if (!signer?.Id) {
+                          throw new Error(`Không tìm thấy thông tin người ký '${participantEmail}' trên hệ thống.`);
+                        }
+
+                        return {
+                          SignerId: signer.Id,
+                          Type: field.type,
+                          PageNumber: field.pageNumber,
+                          XPos: field.x,
+                          YPos: field.y,
+                          Width: field.width,
+                          Height: field.height
+                        };
+                      });
+
+                      await contractsService.saveStep4Positions({
+                        ContractId: contractId,
+                        Positions: positions,
+                      });
+
+                      setCurrentStep(5);
+                    }
+                  } catch (error) {
+                    console.error('Failed to save electronic contract positions:', error);
+                    const message = error instanceof Error ? error.message : 'Không thể lưu vị trí chữ ký. Vui lòng thử lại.';
+                    showToast(message, 'error');
+                  } finally {
+                    setIsBusy(false);
                   }
                 }}
-                disabled={!stepFourReady}
+                disabled={isBusy || !stepFourReady}
                 className="inline-flex items-center rounded-xl bg-[#134BBA] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0e378c] disabled:cursor-not-allowed disabled:bg-slate-300"
               >
+                {isBusy ? <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> : null}
                 Tiếp tục
               </button>
             </>

@@ -502,7 +502,7 @@ namespace ERP.Services.Contracts
             }
         }
 
-        public async Task<bool> SaveElectronicSignersAsync(ContractStep3Dto dto)
+        public async Task<List<ContractSignerDto>> SaveElectronicSignersAsync(ContractStep3Dto dto)
         {
             var contract = await _unitOfWork.Repository<Entities.Models.Contracts>()
                 .AsQueryable()
@@ -539,7 +539,25 @@ namespace ERP.Services.Contracts
             contract.UpdatedAt = DateTime.UtcNow;
             _unitOfWork.Repository<Entities.Models.Contracts>().Update(contract);
 
-            return await _unitOfWork.SaveChangesAsync() > 0;
+            await _unitOfWork.SaveChangesAsync();
+
+            // Return the signers with their new IDs
+            var updatedSigners = await _unitOfWork.Repository<ContractSigners>()
+                .AsQueryable()
+                .Where(s => s.contract_id == dto.ContractId)
+                .OrderBy(s => s.sign_order)
+                .Select(s => new ContractSignerDto
+                {
+                    Id = s.Id,
+                    Email = s.email,
+                    FullName = s.full_name,
+                    SignOrder = s.sign_order,
+                    Status = s.status,
+                    Note = s.note
+                })
+                .ToListAsync();
+
+            return updatedSigners;
         }
 
         public async Task<bool> SaveElectronicPositionsAsync(ContractStep4Dto dto)

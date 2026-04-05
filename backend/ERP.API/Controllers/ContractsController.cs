@@ -80,9 +80,8 @@ namespace ERP.API.Controllers
         {
             try
             {
-                var success = await _contractService.SaveElectronicSignersAsync(dto);
-                if (!success) return BadRequest();
-                return Ok(new { Message = "Signers saved successfully for Step 3" });
+                var signers = await _contractService.SaveElectronicSignersAsync(dto);
+                return Ok(new { Signers = signers, Message = "Signers saved successfully for Step 3" });
             }
             catch (Exception ex)
             {

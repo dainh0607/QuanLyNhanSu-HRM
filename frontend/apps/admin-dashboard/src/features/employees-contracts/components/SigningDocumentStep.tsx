@@ -1,23 +1,26 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import usePdfDocument from './usePdfDocument';
 import PdfPageCanvas from './PdfPageCanvas';
 import SignatureCreationModal from './SignatureCreationModal';
+import type { SignerAuthResponseDto } from '../signersService';
+import { API_URL } from '../../../services/employee/core';
 
 interface SigningDocumentStepProps {
+  signerInfo: SignerAuthResponseDto;
   onComplete: () => void;
 }
 
-const SigningDocumentStep: React.FC<SigningDocumentStepProps> = ({ onComplete }) => {
-  const [scale, setScale] = useState(1.0);
+const SigningDocumentStep: React.FC<SigningDocumentStepProps> = ({ signerInfo, onComplete }) => {
+  const [scale] = useState(1.0);
   const [signedFields, setSignedFields] = useState<Record<string, string>>({}); // ID -> base64 signature
   const [activeFieldId, setActiveFieldId] = useState<string | null>(null);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Mock data for the demonstration
-  const mockDocumentUrl = 'https://raw.githubusercontent.com/mozilla/pdf.js/ba0edeae/web/compressed.tracemonkey-pldi-09.pdf';
-  const { pdfDocument, isLoading, error } = usePdfDocument(mockDocumentUrl);
+  // Real document URL from Backend
+  const pdfApiUrl = `${API_URL}/contracts/preview/${signerInfo.ContractId}`;
+  const { pdfDocument, isLoading, error } = usePdfDocument(pdfApiUrl);
 
   const signatureFields = useMemo(() => [
     { id: 'sig-1', pageNumber: 1, x: 450, y: 700, width: 140, height: 60, label: 'Ký tại đây' },
@@ -88,8 +91,8 @@ const SigningDocumentStep: React.FC<SigningDocumentStepProps> = ({ onComplete })
             <span className="material-symbols-outlined">description</span>
           </div>
           <div>
-            <h1 className="text-sm font-bold text-slate-900 line-clamp-1">Hợp đồng lao động - Nguyễn Văn A.pdf</h1>
-            <p className="text-xs text-slate-500">Người ký: Bạn (nguyen@example.com)</p>
+            <h1 className="text-sm font-bold text-slate-900 line-clamp-1">Xem và ký hợp đồng #{signerInfo.ContractId}</h1>
+            <p className="text-xs text-slate-500">Người ký: {signerInfo.FullName} ({signerInfo.Email})</p>
           </div>
         </div>
 

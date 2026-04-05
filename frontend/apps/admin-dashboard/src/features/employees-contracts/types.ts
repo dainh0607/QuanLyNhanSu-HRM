@@ -7,6 +7,11 @@ import type { Employee } from "../employees/types";
 export type ContractStatusKey = "effective" | "pending" | "expired";
 export type ContractCategoryKey = "all" | "official" | "probation" | "seasonal";
 
+export interface LookupItem {
+  id: number;
+  name: string;
+}
+
 export interface PaginatedResponse<T> {
   items: T[];
   pageNumber: number;
@@ -204,4 +209,46 @@ export interface ElectronicContractSignatureField {
 export interface ToastActionPayload {
   label: string;
   onClick: () => void;
+}
+
+// Backend DTOs for Electronic Contract Steps
+export interface ElectronicContractDraftDto {
+  EmployeeId: number;
+  ContractNumber?: string;
+  ContractTypeId?: number;
+  TemplateId?: number;
+  Note?: string;
+  EffectiveDate?: string;
+}
+
+export interface ContractSignerDto {
+  Id?: number;
+  Email: string;
+  FullName: string;
+  SignOrder: number;
+  Status?: string;
+  SignedAt?: string;
+  SignatureToken?: string;
+  Note?: string;
+  UserId?: number;
+}
+
+export interface ContractStep3Dto {
+  ContractId: number;
+  Signers: ContractSignerDto[];
+}
+
+export interface ContractSignerPositionDto {
+  SignerId: number;
+  Type: string;
+  PageNumber: number;
+  XPos: number;
+  YPos: number;
+  Width?: number;
+  Height?: number;
+}
+
+export interface ContractStep4Dto {
+  ContractId: number;
+  Positions: ContractSignerPositionDto[];
 }
