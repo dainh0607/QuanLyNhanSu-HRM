@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PersonalTabKey } from '../../employee-detail/edit-modal/types';
 import type { Employee } from '../../employees/types';
 import { ELECTRONIC_CONTRACT_TYPE_OPTIONS } from '../constants';
 import { contractsService } from '../service';
 import type {
+  ContractCreatePayload,
   ElectronicContractFormValues,
   ElectronicContractParticipant,
   ElectronicContractSignatureField,
@@ -90,6 +91,8 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
   const [stepTwoReady, setStepTwoReady] = useState(false);
   const [stepFourReady, setStepFourReady] = useState(false);
 
+  const pdfUrlRef = useRef<string | null>(null);
+
   const selectedEmployee = employeeMap.get(formValues.employeeId) ?? null;
   const contractTypeLabel =
     ELECTRONIC_CONTRACT_TYPE_OPTIONS.find((option) => option.value === formValues.contractTypeId)?.label || '';
@@ -110,16 +113,42 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
     setIsSubmitting(false);
     setStepTwoReady(false);
     setStepFourReady(false);
+
+    if (pdfUrlRef.current) {
+      URL.revokeObjectURL(pdfUrlRef.current);
+      pdfUrlRef.current = null;
+    }
+    setPdfSourceUrl(null);
   }, [isOpen]);
 
+  // Revoke PDF URL on unmount
   useEffect(() => {
-    if (!isOpen) {
-      setPdfSourceUrl(null);
-      return;
+    return () => {
+      if (pdfUrlRef.current) {
+        URL.revokeObjectURL(pdfUrlRef.current);
+        pdfUrlRef.current = null;
+      }
+    };
+  }, []);
+
+  /**
+   * Build or refresh the preview PDF blob URL from current form state.
+   * Called once when transitioning away from step 1, so the blob is stable
+   * and the PDF viewer does not re-load on every keystroke.
+   */
+  const buildPdfSnapshot = useCallback(() => {
+    // Revoke previous URL
+    if (pdfUrlRef.current) {
+      URL.revokeObjectURL(pdfUrlRef.current);
+      pdfUrlRef.current = null;
     }
 
-    let nextUrl: string | null = null;
-    const baseTitle = formValues.templateName || formValues.attachmentName || `Hợp đồng điện tử ${formValues.contractNumber || ''}`.trim();
+    const baseTitle =
+      formValues.templateName ||
+      formValues.attachmentName ||
+      `Hợp đồng điện tử ${formValues.contractNumber || ''}`.trim();
+
+    let nextUrl: string;
 
     if (formValues.attachmentFile && isPdfFile(formValues.attachmentFile.name, formValues.attachmentFile.type)) {
       nextUrl = URL.createObjectURL(formValues.attachmentFile);
@@ -146,29 +175,11 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
       );
     }
 
+    pdfUrlRef.current = nextUrl;
     setPdfSourceUrl(nextUrl);
     setStepTwoReady(false);
     setStepFourReady(false);
-
-    return () => {
-      if (nextUrl) {
-        URL.revokeObjectURL(nextUrl);
-      }
-    };
-  }, [
-    contractTypeLabel,
-    formValues.attachmentFile,
-    formValues.attachmentName,
-    formValues.contractNumber,
-    formValues.expiryDate,
-    formValues.signDate,
-    formValues.signedBy,
-    formValues.taxType,
-    formValues.templateName,
-    isOpen,
-    selectedEmployee?.employeeCode,
-    selectedEmployee?.fullName,
-  ]);
+  }, [contractTypeLabel, formValues, selectedEmployee]);
 
   const updateErrors = (updater: (previousErrors: Record<string, string>) => Record<string, string>) => {
     setErrors((previousErrors) => updater(previousErrors));
@@ -237,7 +248,7 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
       nextErrors.employeeId = 'Vui lòng chọn nhân viên.';
     }
 
-    /*
+    /* 
     if (selectedEmployee && !selectedEmployee.workType?.trim()) {
       nextErrors.employeeId = 'Nhân viên được chọn đang thiếu Hình thức làm việc.';
       showToast('Hồ sơ nhân viên bị thiếu Hình thức làm việc. Vui lòng cập nhật hồ sơ.', 'info', {
@@ -398,7 +409,7 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
     setIsUploadingAttachment(true);
 
     try {
-      const uploadedUrl = await contractsService.uploadAttachment(Number(formValues.employeeId), file);
+      const uploadedUrl = await contractsService.uploadAttachment(file);
       setFormValues((prev) => ({
         ...prev,
         attachmentFile: file,
@@ -419,23 +430,33 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
     setIsSubmitting(true);
 
     try {
-      await contractsService.createElectronicContract({
+      const payload: ContractCreatePayload = {
         EmployeeId: Number(formValues.employeeId),
         ContractNumber: formValues.contractNumber.trim(),
         ContractTypeId: Number(formValues.contractTypeId),
         SignDate: formValues.signDate || null,
         EffectiveDate: formValues.signDate || null,
         ExpiryDate: formValues.expiryDate || null,
-        SignedBy: formValues.signedBy,
-        TaxType: formValues.taxType,
+        SignedBy: formValues.signedBy || "",
+        TaxType: formValues.taxType || "",
         Attachment: formValues.attachmentUrl || null,
         Status: 'Draft',
-      });
+      };
+
+      // Defensive check for IDs
+      if (!payload.EmployeeId || !payload.ContractTypeId) {
+        throw new Error("Dữ liệu Nhân viên hoặc Loại hợp đồng không hợp lệ. Vui lòng kiểm tra lại Bước 1.");
+      }
+
+      console.log('Submitting Electronic Contract Payload:', payload);
+      
+      await contractsService.createElectronicContract(payload);
 
       await onSubmitted?.();
       onClose();
       showToast('Tạo và gửi hợp đồng thành công', 'success');
     } catch (error) {
+      console.error('Electronic Contract Submission Error:', error);
       const message =
         error instanceof Error ? error.message : 'Tạo hợp đồng điện tử thất bại. Vui lòng thử lại.';
       showToast(message, 'error');
@@ -573,6 +594,7 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
                   const nextErrors = await validateStepOne();
                   setErrors(nextErrors);
                   if (Object.keys(nextErrors).length === 0) {
+                    buildPdfSnapshot();
                     setCurrentStep(2);
                   }
                   setIsBusy(false);

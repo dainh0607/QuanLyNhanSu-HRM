@@ -693,6 +693,115 @@ namespace ERP.Entities.Migrations
                     b.ToTable("Certificates", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.ContractSigners", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("contract_id")
+                        .HasColumnType("int")
+                        .HasColumnName("contract_id");
+
+                    b.Property<string>("email")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("email");
+
+                    b.Property<string>("full_name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("full_name");
+
+                    b.Property<string>("note")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("note");
+
+                    b.Property<int>("sign_order")
+                        .HasColumnType("int")
+                        .HasColumnName("sign_order");
+
+                    b.Property<string>("signature_token")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("signature_token");
+
+                    b.Property<DateTime?>("signed_at")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("signed_at");
+
+                    b.Property<string>("status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("contract_id");
+
+                    b.ToTable("ContractSigners");
+                });
+
+            modelBuilder.Entity("ERP.Entities.Models.ContractTemplates", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("category")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("category");
+
+                    b.Property<string>("content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("content");
+
+                    b.Property<bool>("is_active")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ContractTemplates");
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.ContractTypes", b =>
                 {
                     b.Property<int>("Id")
@@ -785,6 +894,15 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("expiry_date");
 
+                    b.Property<bool>("is_electronic")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_electronic");
+
+                    b.Property<string>("note")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("note");
+
                     b.Property<DateTime?>("sign_date")
                         .HasColumnType("datetime2")
                         .HasColumnName("sign_date");
@@ -807,11 +925,17 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("tax_type");
 
+                    b.Property<int?>("template_id")
+                        .HasColumnType("int")
+                        .HasColumnName("template_id");
+
                     b.HasKey("Id");
 
                     b.HasIndex("contract_type_id");
 
                     b.HasIndex("employee_id");
+
+                    b.HasIndex("template_id");
 
                     b.ToTable("Contracts", (string)null);
                 });
@@ -5203,6 +5327,17 @@ namespace ERP.Entities.Migrations
                     b.Navigation("Employee");
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.ContractSigners", b =>
+                {
+                    b.HasOne("ERP.Entities.Models.Contracts", "Contract")
+                        .WithMany()
+                        .HasForeignKey("contract_id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Contract");
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.Contracts", b =>
                 {
                     b.HasOne("ERP.Entities.Models.ContractTypes", "ContractType")
@@ -5216,9 +5351,16 @@ namespace ERP.Entities.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ERP.Entities.Models.ContractTemplates", "Template")
+                        .WithMany()
+                        .HasForeignKey("template_id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("ContractType");
 
                     b.Navigation("Employee");
+
+                    b.Navigation("Template");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.Dependents", b =>

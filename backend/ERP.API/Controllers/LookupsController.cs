@@ -40,5 +40,8 @@ namespace ERP.API.Controllers
 
         [HttpGet("contract-types")]
         public async Task<IActionResult> GetContractTypes() => Ok(await _lookupService.GetContractTypesAsync());
+
+        [HttpGet("tax-types")]
+        public async Task<IActionResult> GetTaxTypes() => Ok(await _lookupService.GetTaxTypesAsync());
     }
 }

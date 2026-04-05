@@ -99,98 +99,10 @@ AC 3: Validation & Chuyển bước:
 Bắt buộc người dùng phải điền đủ các trường có dấu (*) và phải chọn ít nhất 1 Mẫu hợp đồng hoặc Tải lên Tệp đính kèm.
 Khi bấm nút "Tiếp tục", hệ thống kiểm tra hợp lệ và chuyển sang UI Bước 2 (Xem lại hợp đồng).
 
-- Các task cần làm:s
+- Các task cần làm:
 + Code FE: Dựng layout Hợp đồng điện tử với Stepper 5 bước (hiển thị UI Bước 1).
 + Code FE: Dựng form Bước 1 và xử lý validation.
 + Code FE: Dựng UI Modal "Chọn mẫu hợp đồng" (Grid layout các thẻ card).
 + Code FE: Xử lý sự kiện click chọn Mẫu hợp đồng, đóng Modal và gán dữ liệu vào form Bước 1.
 + Code FE: Xử lý logic hiển thị thông báo lỗi khi người dùng cố gắng tạo hợp đồng với số hợp đồng đã tồn tại.
 
-# Yêu cầu 4: Tạo Hợp đồng điện tử (Bước 2)
-- UserStory
-Là một Quản lý Nhân sự Tôi muốn xem trước nội dung file hợp đồng dưới dạng PDF Để đảm bảo các thông tin (từ mẫu hợp đồng hoặc file đính kèm ở Bước 1) đã chính xác trước khi thiết lập luồng trình ký.
-- Acceptance Criteria(AC)
-AC 1: Hiển thị trình xem PDF (PDF Viewer):
-Giao diện hiển thị Stepper đang active ở Bước 2.
-Ở vùng nội dung chính, hiển thị component đọc file PDF của hợp đồng đã được tạo/tải lên từ Bước 1.
-Có thanh công cụ cơ bản cho PDF: Phóng to (+), Thu nhỏ (-) hiển thị % tỷ lệ, cuộn trang.
-AC 2: Điều hướng:
-Nút "Quay lại": Trở về Bước 1, giữ nguyên các dữ liệu đã nhập ở Bước 1.
-Nút "Tiếp tục": Chuyển sang UI Bước 3.
-AC 3: Xử lý ngoại lệ:
-Nếu file lỗi hoặc không thể render, hiển thị thông báo lỗi rõ ràng ("Không thể tải tệp hợp đồng, vui lòng thử lại") và disable nút "Tiếp tục".
-
-- Các task cần làm:
-+ Code FE: Tích hợp thư viện đọc PDF (ví dụ: pdf.js hoặc react-pdf) vào Bước 2.
-+ Code FE: Xử lý logic các nút Zoom In (+), Zoom Out (-) và hiển thị phần trăm (%).
-+ Code FE: Xử lý state điều hướng (Quay lại Bước 1, Tiếp tục sang Bước 3).
-
-# Yêu cầu 5: Tạo Hợp đồng điện tử (Bước 3)
-- UserStory
-Là một Quản lý Nhân sự Tôi muốn thiết lập danh sách những người tham gia, phân quyền vai trò và thứ tự ký của họ Để hệ thống có thể điều phối luồng trình ký đến đúng đối tượng với đúng phương thức xác thực.
-- Acceptance Criteria(AC)
-AC 1: Cấu hình Thứ tự ký:
-Hiển thị Radio box chọn 1 trong 2: Tự do hoặc Theo thứ tự.
-Nếu chọn Theo thứ tự: Hiển thị icon kéo thả (Drag & Drop) ở mỗi block người tham gia để người dùng có thể sắp xếp lại thứ tự trước sau.
-AC 2: Form thông tin người tham gia (Block):
-Mặc định có 1 block. Có nút "+ Thêm" để tạo thêm các block mới.
-Mỗi block có Radio box chọn Đối tượng ký: Tổ chức của tôi hoặc Đối tác.
-Nếu chọn Tổ chức của tôi: Hiển thị input "Nhân viên". Click vào sẽ mở Modal danh sách nhân viên nội bộ để chọn (tự động lấy Email của nhân viên đó để dùng ngầm bên dưới).
-Nếu chọn Đối tác: Giao diện thay đổi, hiển thị 2 input nhập tay là "Tên" và "Email".
-Cả 2 trường hợp đều có chung 2 Dropdown bắt buộc: Vai trò (Người ký, Người xem) và Ký / Xác thực (Chữ ký số, Ký ảnh (Xác thực OTP Email)).
-AC 3: Thao tác và Validation:
-Có thể xóa block (hiển thị icon xóa), nhưng phải giữ lại ít nhất 1 block.
-Bắt buộc phải có ít nhất 1 người được gán vai trò là "Người ký".
-Bắt buộc điền đủ các trường có dấu (*) và Email đối tác phải đúng định dạng trước khi bấm nút "Tiếp tục".
-Bắt buộc nhân viên phải có thông tin CCCD, nếu không có hiển thị toast thông báo ”Nhân viên chưa có thông tin CCCD. Vui lòng bổ sung trong hồ sơ nhân viên.”, có nút chuyển hướng đến trang sửa thông tin CCCD của nhân viên đó.
-
-- Các task cần làm:
-+ Code FE: Xây dựng component danh sách block người ký có hỗ trợ Drag & Drop (khi bật chế độ Theo thứ tự).
-+ Code FE: Xử lý state động (Dynamic Form): Ẩn/hiện input Nhân viên hoặc Tên + Email dựa trên loại Đối tượng ký.
-+ Code FE: Xử lý logic validation form (định dạng email, bắt buộc có "Người ký", không bỏ trống field).
-+ Code FE: Xử lý validation và điều hướng sang Bước 4.
-
-# Yêu cầu 4: Tạo Hợp đồng điện tử (Bước 4)
-- UserStory
-Là một Quản lý Nhân sự Tôi muốn kéo thả các ô chữ ký vào đúng vị trí trên tài liệu PDF và gán nó cho người ký cụ thể Để khi đối tác hoặc nhân viên mở hợp đồng ra, họ biết chính xác chỗ cần ký.
-- Acceptance Criteria(AC)
-AC 1: Giao diện vùng làm việc (Canvas):
-Hiển thị 3 cột: Cột trái chứa công cụ & thuộc tính, Cột giữa hiển thị file PDF, Cột phải là danh sách Thumbnail các trang để cuộn/nhảy trang nhanh.
-AC 2: Thao tác Kéo thả & Gán thuộc tính:
-Người dùng có thể kéo block "Chữ ký ảnh" từ cột trái thả vào vị trí bất kỳ trên mặt trang PDF ở cột giữa.
-Khi click chọn 1 block chữ ký đã nằm trên PDF, cột bên trái hiển thị phần "Thuộc tính".
-Tại phần Thuộc tính, có Dropdown "Người ký". Dropdown này xổ ra danh sách chỉ những người có vai trò "Người ký" đã được thiết lập ở Bước 3. Người dùng chọn tên để gán block chữ ký này thuộc về ai.
-AC 3: Chỉnh sửa và Xóa:
-Các block trên PDF có thể kéo để di chuyển lại tọa độ.
-Có nút "Xóa" (xóa block đang được chọn) và "Xóa tất cả" (xóa mọi block trên mọi trang, cần popup xác nhận).
-AC 4: Validation chuyển bước:
-Tất cả những người có vai trò "Người ký" (từ Bước 3) ĐỀU PHẢI được gán vào ít nhất một vị trí ô chữ ký trên văn bản mới cho phép bấm "Tiếp tục".
-
-- Các task cần làm:
-+ Code FE: Tích hợp thư viện PDF Viewer hỗ trợ Canvas và render Thumbnail cột phải.
-+ Code FE: Xử lý logic Drag & Drop block từ Toolbar vào vùng PDF và tính toán tọa độ (x, y, trang).
-+ Code FE: Xử lý state hiển thị panel "Thuộc tính" khi select block trên PDF, lấy danh sách "Người ký" từ Bước 3 đổ vào Dropdown.
-+ Code FE: Cài đặt chức năng Xóa 1 block và Xóa tất cả.
-+ Code FE: Viết hàm validation kiểm tra xem tất cả Người ký đã được mapping với tọa độ chưa.
-
-# Yêu cầu 5: Tạo Hợp đồng điện tử (Bước 5)
-- UserStory
-Là một Quản lý Nhân sự Tôi muốn xem lại bản tóm tắt toàn bộ cấu hình trước khi xác nhận Để đảm bảo không có sai sót nào trước khi chính thức phát hành hợp đồng đến các bên.
-- Acceptance Criteria(AC)
-AC 1: Hiển thị tóm tắt thông tin (Read-only):
-Giao diện chỉ để xem, không cho chỉnh sửa trực tiếp tại bước này.
-Hiển thị các trường Thông tin hợp đồng: Tên hợp đồng, Số hợp đồng, File hợp đồng (hiển thị tên file và icon PDF), Ngày hết hạn.
-Hiển thị danh sách Người ký với các trường: Đối tượng ký, Nhân viên/Tên đối tác, Email, Vai trò, Ký/Xác thực.
-AC 2: Thao tác hoàn thành:
-Nút "Quay lại": Trở về Bước 4.
-Nút "Hoàn thành":
-Hiển thị trạng thái loading khi đang xử lý.
-Gọi API lưu toàn bộ luồng. Nếu thành công: Đóng giao diện tạo, hiển thị Toast "Tạo và gửi hợp đồng thành công", chuyển hướng về trang Danh sách hợp đồng.
-
-- Các task cần làm:
-+ Code FE: Dựng UI trang tổng kết (form read-only).
-+ Code FE: Lấy toàn bộ data từ state của Bước 1, 2, 3, 4 map vào UI của Bước 5.
-+ Code FE: Xử lý sự kiện click "Hoàn thành", gom toàn bộ payload và gọi API Submit cuối cùng.
-+ Code FE: Xử lý UI Loading, Toast message và điều hướng sau khi API trả về kết quả.
-
-## Lư ý từ bước 2 cho đến bước 5, thì ở các bước đều phải có button "Quay lại" để quay về bước trước đó và button "Tiếp tục" để tiếp tục sang bước tiếp theo.

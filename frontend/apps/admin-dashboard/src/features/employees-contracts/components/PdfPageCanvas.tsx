@@ -23,21 +23,28 @@ const PdfPageCanvas: React.FC<PdfPageCanvasProps> = ({
 
   useEffect(() => {
     let isMounted = true;
-    const renderTaskRef = { current: null as any };
+    let cancelled = false;
 
     setIsRendered(false);
 
     const renderPage = async () => {
       try {
         const page = await pdfDocument.getPage(pageNumber);
-        
-        if (!isMounted) return;
+
+        if (cancelled) {
+          return;
+        }
 
         const viewport = page.getViewport({ scale });
         const canvas = canvasRef.current;
-        const context = canvas?.getContext('2d');
 
-        if (!canvas || !context) {
+        if (!canvas) {
+          return;
+        }
+
+        const context = canvas.getContext('2d');
+
+        if (!context) {
           return;
         }
 
@@ -46,29 +53,33 @@ const PdfPageCanvas: React.FC<PdfPageCanvasProps> = ({
         canvas.style.width = `${viewport.width}px`;
         canvas.style.height = `${viewport.height}px`;
 
-        const currentRenderTask = page.render({
+        // pdfjs v5: 'canvas' is the primary param, 'canvasContext' is for
+        // backwards compatibility — pass both for maximum compat.
+        const renderTask = page.render({
           canvas,
           canvasContext: context,
           viewport,
-        });
-        
-        renderTaskRef.current = currentRenderTask;
+        } as any);
 
-        await currentRenderTask.promise;
+        await renderTask.promise;
 
         if (isMounted) {
           setIsRendered(true);
         }
-      } catch (error: any) {
-        // Chi bo qua error neu la do cancel
-        if (error?.name === 'RenderingCancelledException') {
+      } catch (error: unknown) {
+        // Swallow cancellation errors silently
+        if (
+          error instanceof Error &&
+          (error.name === 'RenderingCancelledException' || error.message === 'Rendering cancelled')
+        ) {
           return;
         }
-        
+
         console.error(`Failed to render PDF page ${pageNumber}:`, error);
+
         if (isMounted) {
           setIsRendered(false);
-          onRenderError?.('Không thể tải tệp hợp đồng. Vui lòng thử lại.');
+          onRenderError?.('Không thể tải tệp hợp đồng, vui lòng thử lại');
         }
       }
     };
@@ -77,9 +88,7 @@ const PdfPageCanvas: React.FC<PdfPageCanvasProps> = ({
 
     return () => {
       isMounted = false;
-      if (renderTaskRef.current) {
-        renderTaskRef.current.cancel();
-      }
+      cancelled = true;
     };
   }, [onRenderError, pageNumber, pdfDocument, scale]);
 

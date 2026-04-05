@@ -25,18 +25,20 @@ export const usePdfDocument = (sourceUrl: string | null | undefined): UsePdfDocu
     }
 
     let isMounted = true;
-    let loadedDocument: PDFDocumentProxy | null = null;
 
     setPdfDocument(null);
     setIsLoading(true);
     setError(null);
 
-    const loadingTask = getDocument(sourceUrl);
+    const loadingTask = getDocument({
+      url: sourceUrl,
+      // Disable range/stream for blob URLs to avoid issues
+      disableRange: true,
+      disableStream: true,
+    });
 
-    void loadingTask.promise
+    loadingTask.promise
       .then((documentProxy) => {
-        loadedDocument = documentProxy;
-
         if (!isMounted) {
           void documentProxy.destroy();
           return;
@@ -45,7 +47,16 @@ export const usePdfDocument = (sourceUrl: string | null | undefined): UsePdfDocu
         setPdfDocument(documentProxy);
       })
       .catch((loadError: unknown) => {
+        // Ignore cancellation errors
+        if (
+          loadError instanceof Error &&
+          (loadError.name === 'AbortException' || loadError.message?.includes('destroy'))
+        ) {
+          return;
+        }
+
         console.error('Failed to load PDF document:', loadError);
+
         if (isMounted) {
           setPdfDocument(null);
           setError('Không thể tải tệp hợp đồng, vui lòng thử lại');
@@ -59,9 +70,11 @@ export const usePdfDocument = (sourceUrl: string | null | undefined): UsePdfDocu
 
     return () => {
       isMounted = false;
-      void loadingTask.destroy();
-      if (loadedDocument) {
-        void loadedDocument.destroy();
+      // In pdfjs v5, destroy() on the loading task is the proper cleanup
+      try {
+        void loadingTask.destroy();
+      } catch {
+        // Silently ignore if already destroyed
       }
     };
   }, [sourceUrl]);
@@ -74,4 +87,3 @@ export const usePdfDocument = (sourceUrl: string | null | undefined): UsePdfDocu
 };
 
 export default usePdfDocument;
-

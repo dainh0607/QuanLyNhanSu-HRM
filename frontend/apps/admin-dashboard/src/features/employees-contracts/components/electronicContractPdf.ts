@@ -21,7 +21,7 @@ const sanitizePdfText = (value: string) =>
     .replace(/\s+/g, ' ')
     .trim();
 
-const escapePdfText = (value: string) =>
+const escapePdfLiteral = (value: string) =>
   sanitizePdfText(value)
     .replace(/\\/g, '\\\\')
     .replace(/\(/g, '\\(')
@@ -57,54 +57,86 @@ const wrapPdfLine = (text: string, maxLength: number) => {
   return lines;
 };
 
+/**
+ * Creates a minimal valid PDF blob using byte-accurate offsets.
+ * Uses TextEncoder to ensure xref table offsets match actual byte positions.
+ */
 const createSimplePdfBlob = (pages: string[][]) => {
-  const fontId = 1;
-  const pagesId = 2 + pages.length * 2;
-  const catalogId = pagesId + 1;
-  const objectBodies: string[] = [];
+  const encoder = new TextEncoder();
+  const fontObjId = 1;
+  const pagesObjId = 2 + pages.length * 2;
+  const catalogObjId = pagesObjId + 1;
 
-  objectBodies[fontId] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>';
+  const objects: Array<{ id: number; body: string }> = [];
+
+  objects.push({
+    id: fontObjId,
+    body: '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+  });
 
   pages.forEach((pageLines, index) => {
-    const contentId = 2 + index * 2;
-    const pageId = 3 + index * 2;
-    const contentStream = [
+    const contentObjId = 2 + index * 2;
+    const pageObjId = 3 + index * 2;
+
+    const streamLines = [
       'BT',
       '/F1 12 Tf',
       '14 TL',
       '48 790 Td',
-      ...pageLines.map((line) => `(${escapePdfText(line)}) Tj\nT*`),
+      ...pageLines.map((line) => `(${escapePdfLiteral(line)}) Tj T*`),
       'ET',
-    ].join('\n');
+    ];
+    const streamBody = streamLines.join('\n');
+    const streamByteLength = encoder.encode(streamBody).byteLength;
 
-    objectBodies[contentId] = `<< /Length ${contentStream.length} >>\nstream\n${contentStream}\nendstream`;
-    objectBodies[pageId] =
-      `<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 595 842] ` +
-      `/Resources << /Font << /F1 ${fontId} 0 R >> >> /Contents ${contentId} 0 R >>`;
+    objects.push({
+      id: contentObjId,
+      body: `<< /Length ${streamByteLength} >>\nstream\n${streamBody}\nendstream`,
+    });
+
+    objects.push({
+      id: pageObjId,
+      body:
+        `<< /Type /Page /Parent ${pagesObjId} 0 R /MediaBox [0 0 595 842] ` +
+        `/Resources << /Font << /F1 ${fontObjId} 0 R >> >> /Contents ${contentObjId} 0 R >>`,
+    });
   });
 
-  const pageReferences = pages.map((_, index) => `${3 + index * 2} 0 R`).join(' ');
-  objectBodies[pagesId] = `<< /Type /Pages /Count ${pages.length} /Kids [${pageReferences}] >>`;
-  objectBodies[catalogId] = `<< /Type /Catalog /Pages ${pagesId} 0 R >>`;
+  const pageKids = pages.map((_, index) => `${3 + index * 2} 0 R`).join(' ');
+
+  objects.push({
+    id: pagesObjId,
+    body: `<< /Type /Pages /Count ${pages.length} /Kids [${pageKids}] >>`,
+  });
+
+  objects.push({
+    id: catalogObjId,
+    body: `<< /Type /Catalog /Pages ${pagesObjId} 0 R >>`,
+  });
+
+  objects.sort((a, b) => a.id - b.id);
 
   let pdf = '%PDF-1.4\n';
-  const offsets: number[] = [0];
+  const byteOffsets = new Map<number, number>();
 
-  for (let objectId = 1; objectId <= catalogId; objectId += 1) {
-    offsets[objectId] = pdf.length;
-    pdf += `${objectId} 0 obj\n${objectBodies[objectId]}\nendobj\n`;
+  objects.forEach((obj) => {
+    byteOffsets.set(obj.id, encoder.encode(pdf).byteLength);
+    pdf += `${obj.id} 0 obj\n${obj.body}\nendobj\n`;
+  });
+
+  const xrefByteOffset = encoder.encode(pdf).byteLength;
+  const totalObjects = catalogObjId + 1;
+
+  pdf += `xref\n0 ${totalObjects}\n0000000000 65535 f \n`;
+
+  for (let objectId = 1; objectId <= catalogObjId; objectId += 1) {
+    const offset = byteOffsets.get(objectId) ?? 0;
+    pdf += `${String(offset).padStart(10, '0')} 00000 n \n`;
   }
 
-  const xrefOffset = pdf.length;
-  pdf += `xref\n0 ${catalogId + 1}\n0000000000 65535 f \n`;
+  pdf += `trailer\n<< /Size ${totalObjects} /Root ${catalogObjId} 0 R >>\nstartxref\n${xrefByteOffset}\n%%EOF`;
 
-  for (let objectId = 1; objectId <= catalogId; objectId += 1) {
-    pdf += `${String(offsets[objectId]).padStart(10, '0')} 00000 n \n`;
-  }
-
-  pdf += `trailer\n<< /Size ${catalogId + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
-
-  return new Blob([pdf], { type: 'application/pdf' });
+  return new Blob([encoder.encode(pdf)], { type: 'application/pdf' });
 };
 
 export const isPdfFile = (fileName: string, fileType?: string) =>

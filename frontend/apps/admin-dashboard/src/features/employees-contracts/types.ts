@@ -59,6 +59,19 @@ export interface ContractListItem extends ContractDto {
   effectiveDateLabel: string;
 }
 
+export interface ContractCreatePayload {
+  EmployeeId: number;
+  ContractNumber: string;
+  ContractTypeId: number;
+  SignDate: string | null;
+  EffectiveDate: string | null;
+  ExpiryDate: string | null;
+  SignedBy: string;
+  TaxType: string;
+  Attachment: string | null;
+  Status: string;
+}
+
 export interface ContractsPagedResponse extends PaginatedResponse<ContractListItem> {}
 
 export interface ContractsDashboardData {

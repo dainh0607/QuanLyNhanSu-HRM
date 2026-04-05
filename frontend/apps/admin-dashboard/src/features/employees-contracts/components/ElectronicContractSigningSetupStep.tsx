@@ -1,5 +1,4 @@
 import React from 'react';
-import DatePickerInput from '../../../components/common/DatePickerInput';
 
 export interface ElectronicSigningSetupValues {
   signingMethod: 'otp' | 'usb-token' | 'hybrid';
@@ -148,12 +147,14 @@ const ElectronicContractSigningSetupStep: React.FC<ElectronicContractSigningSetu
         <div className="grid gap-5 lg:grid-cols-3">
           <label className="block">
             <span className="mb-2 block text-sm font-semibold text-slate-700">Hạn hoàn tất ký</span>
-            <DatePickerInput
+            <input
+              type="date"
               value={values.deadlineDate}
               min={minDeadlineDate}
-              onChange={(value: string) => onFieldChange('deadlineDate', value)}
-              hasError={Boolean(errors.deadlineDate)}
-              ariaLabel="Hạn hoàn tất ký"
+              onChange={(event) => onFieldChange('deadlineDate', event.target.value)}
+              className={`min-h-12 w-full rounded-2xl border px-4 py-3 text-sm text-slate-900 outline-none transition-colors ${
+                errors.deadlineDate ? 'border-rose-300 bg-rose-50/40' : 'border-slate-200 bg-white focus:border-[#134BBA]'
+              }`}
             />
             {errors.deadlineDate ? <p className="mt-2 text-xs font-medium text-rose-500">{errors.deadlineDate}</p> : null}
           </label>
