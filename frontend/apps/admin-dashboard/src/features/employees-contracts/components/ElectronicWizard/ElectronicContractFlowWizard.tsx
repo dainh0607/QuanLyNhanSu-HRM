@@ -1,9 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { PersonalTabKey } from '../../employee-detail/edit-modal/types';
-import type { Employee } from '../../employees/types';
-import { contractsService } from '../service';
+import type { PersonalTabKey } from '../../../employee-detail/edit-modal/types';
+import type { Employee } from '../../../employees/types';
+import { contractsService } from '../../service';
 import type {
-  ContractCreatePayload,
   ElectronicContractFormValues,
   ElectronicContractParticipant,
   ElectronicContractSignatureField,
@@ -11,23 +10,24 @@ import type {
   SelectOption,
   ToastActionPayload,
   ContractSignerDto,
-} from '../types';
-import ContractTemplatePickerModal from './ContractTemplatePickerModal';
+  ContractSignerPositionDto,
+} from '../../types';
+import ContractTemplatePickerModal from '../Shared/ContractTemplatePickerModal';
 import ElectronicContractInfoStep from './ElectronicContractInfoStep';
 import ElectronicContractParticipantsStep from './ElectronicContractParticipantsStep';
 import ElectronicContractPdfReviewStep from './ElectronicContractPdfReviewStep';
 import ElectronicContractSignaturePlacementStep from './ElectronicContractSignaturePlacementStep';
 import ElectronicContractSummaryStep from './ElectronicContractSummaryStep';
 import ElectronicContractStepper from './ElectronicContractStepper';
-import ModalShell from './ModalShell';
-import { buildElectronicContractPreviewPdf, isPdfFile } from './electronicContractPdf';
+import ModalShell from '../Shared/ModalShell';
+import { buildElectronicContractPreviewPdf, isPdfFile } from '../PDF/electronicContractPdf';
 import {
   createEmptyElectronicParticipant,
   getEmployeeDirectoryMap,
   getEmployeePrimaryEmail,
   getParticipantErrorKey,
   getSignatureFieldErrorKey,
-} from './electronicContractWorkflow';
+} from '../PDF/electronicContractWorkflow';
 
 interface ElectronicContractFlowWizardProps {
   isOpen: boolean;
@@ -289,6 +289,7 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
           : undefined,
       });
     }
+    */
 
     if (!normalizedContractNumber) {
       nextErrors.contractNumber = 'Số hợp đồng là bắt buộc.';

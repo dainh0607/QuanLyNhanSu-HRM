@@ -180,7 +180,7 @@ export const authService = {
       clearAuthSession();
       return {
         success: false,
-        message: data.message || "Email hoac mat khau khong chinh xac.",
+        message: data.message || "Tài khoản hoặc mật khẩu không chính xác.",
       };
     } catch {
       clearAuthSession();

@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
-import type { Employee } from '../../employees/types';
+import type { Employee } from '../../../employees/types';
 import type {
   ElectronicContractFormValues,
   ElectronicContractParticipant,
   ElectronicContractSignatureField,
-} from '../types';
+} from '../../types';
 import {
   getEmployeeDirectoryMap,
   getParticipantAuthMethodLabel,
@@ -12,8 +12,8 @@ import {
   getParticipantEmail,
   getParticipantRoleLabel,
   getParticipantSubjectLabel,
-} from './electronicContractWorkflow';
-import { formatDisplayDate } from '../utils';
+} from '../PDF/electronicContractWorkflow';
+import { formatDisplayDate } from '../../utils';
 
 interface ElectronicContractSummaryStepProps {
   formValues: ElectronicContractFormValues;

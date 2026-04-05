@@ -1,28 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import Pagination from '../../employees/components/Pagination';
-import { DEFAULT_CONTRACT_COLUMNS, PAGE_SIZE } from '../constants';
-import { contractsService } from '../service';
-import type { ContractFilterMetadata, ContractFilterState, ContractListItem } from '../types';
-import {
-  buildContractSummary,
-  createEmployeeMap,
-  downloadExcelCompatibleFile,
-  matchesContractFilters,
-  matchesContractSearch,
-} from '../utils';
-import { useToast } from '../../../hooks/useToast';
-import ContractPreviewModal from './ContractPreviewModal';
+import Pagination from '../../../employees/components/Pagination';
+import { buildContractSummary, createEmployeeMap, downloadExcelCompatibleFile, matchesContractFilters, matchesContractSearch } from '../../utils';
+import { DEFAULT_CONTRACT_COLUMNS, PAGE_SIZE } from '../../constants';
+import { contractsService } from '../../service';
+import type { ContractFilterMetadata, ContractFilterState, ContractListItem } from '../../types';
+import { useToast } from '../../../../hooks/useToast';
+import ContractPreviewModal from '../Shared/ContractPreviewModal';
 import ContractsActionBar from './ContractsActionBar';
 import ContractsColumnConfigSidebar from './ContractsColumnConfigSidebar';
 import ContractsDataTable from './ContractsDataTable';
 import ContractsFilterSidebar from './ContractsFilterSidebar';
 import ContractsPageToolbar from './ContractsPageToolbar';
 import ContractsSummaryCards from './ContractsSummaryCards';
-import CreateContractMethodModal from './CreateContractMethodModal';
-import ElectronicContractFlowModal from './ElectronicContractFlowModal';
-import RegularContractModal from './RegularContractModal';
+import CreateContractMethodModal from '../Shared/CreateContractMethodModal';
+import ElectronicContractFlowWizard from '../ElectronicWizard/ElectronicContractFlowWizard';
+import RegularContractModal from '../Shared/RegularContractModal';
 import { useNavigate } from 'react-router-dom';
-import type { Employee } from '../../employees/types';
+import type { Employee } from '../../../employees/types';
 
 const ContractsManagementPage: React.FC = () => {
   const navigate = useNavigate();
@@ -313,11 +307,11 @@ const ContractsManagementPage: React.FC = () => {
         showToast={showToast}
       />
 
-      <ElectronicContractFlowModal
+      <ElectronicContractFlowWizard
         isOpen={isElectronicModalOpen}
+        employees={employees}
         employeeOptions={employeeOptions}
         signerOptions={signerOptions}
-        existingContracts={contracts}
         onClose={() => setIsElectronicModalOpen(false)}
         onSubmitted={loadDashboard}
         onNavigateToEmployeeProfile={handleNavigateToEmployeeProfile}

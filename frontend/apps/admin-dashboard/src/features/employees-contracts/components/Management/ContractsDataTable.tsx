@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { ContractColumnConfig, ContractListItem } from '../types';
-import { getNameInitials } from '../utils';
+import type { ContractColumnConfig, ContractListItem } from '../../types';
+import { getNameInitials } from '../../utils';
 
 interface ContractsDataTableProps {
   contracts: ContractListItem[];

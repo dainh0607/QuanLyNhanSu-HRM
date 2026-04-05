@@ -1,17 +1,17 @@
 import React, { useMemo, useState } from 'react';
-import type { Employee } from '../../employees/types';
+import type { Employee } from '../../../employees/types';
 import type {
   ElectronicContractParticipant,
   ElectronicParticipantAuthMethod,
   ElectronicParticipantRole,
   ElectronicParticipantSubjectType,
   ElectronicSigningOrderMode,
-} from '../types';
+} from '../../types';
 import {
   getEmployeeDirectoryMap,
   getEmployeePrimaryEmail,
   getParticipantErrorKey,
-} from './electronicContractWorkflow';
+} from '../PDF/electronicContractWorkflow';
 import ElectronicContractEmployeePickerModal from './ElectronicContractEmployeePickerModal';
 
 interface ElectronicContractParticipantsStepProps {

@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import type { Employee } from '../../employees/types';
-import { REGULAR_CONTRACT_TYPE_OPTIONS, TAX_TYPE_OPTIONS } from '../constants';
-import { contractsService } from '../service';
-import type { ContractListItem, SelectOption, ToastActionPayload } from '../types';
-import { inferCreateContractStatus, isContractNumberDuplicate } from '../utils';
+import type { Employee } from '../../../employees/types';
+import { REGULAR_CONTRACT_TYPE_OPTIONS, TAX_TYPE_OPTIONS } from '../../constants';
+import { contractsService } from '../../service';
+import type { ContractListItem, SelectOption, ToastActionPayload } from '../../types';
+import { inferCreateContractStatus, isContractNumberDuplicate } from '../../utils';
 import ModalShell from './ModalShell';
 import SearchableSelect from './SearchableSelect';
-import DatePickerInput from '../../../components/common/DatePickerInput';
+import DatePickerInput from '../../../../components/common/DatePickerInput';
 
 interface RegularContractModalProps {
   isOpen: boolean;

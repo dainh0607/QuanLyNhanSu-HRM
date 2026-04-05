@@ -1,11 +1,11 @@
-import type { Employee } from '../../employees/types';
+import type { Employee } from '../../../employees/types';
 import type {
   ElectronicContractParticipant,
   ElectronicContractSignatureField,
   ElectronicParticipantAuthMethod,
   ElectronicParticipantRole,
   ElectronicParticipantSubjectType,
-} from '../types';
+} from '../../types';
 
 const createClientId = (prefix: string) =>
   `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;

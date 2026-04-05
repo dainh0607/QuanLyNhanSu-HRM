@@ -38,6 +38,9 @@ import {
   isSkypeValid,
   mergeFormData,
   resolveSectionKey,
+  containsSpecialChars,
+  isDateNotFuture,
+  isBankAccountValid,
 } from './utils';
 
 const PERSONAL_TAB_LOADERS: {
@@ -258,10 +261,14 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
 
     if (!data.fullName.trim()) {
       nextErrors.fullName = 'Họ tên là bắt buộc.';
+    } else if (containsSpecialChars(data.fullName.trim())) {
+      nextErrors.fullName = 'Họ tên không được chứa ký tự đặc biệt.';
     }
 
     if (!employeeCode) {
       nextErrors.employeeCode = 'Mã nhân viên là bắt buộc.';
+    } else if (containsSpecialChars(employeeCode)) {
+      nextErrors.employeeCode = 'Mã nhân viên không được chứa ký tự đặc biệt.';
     }
 
     if (!data.birthDate) {
@@ -366,8 +373,8 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
   ): Record<string, string> => {
     const nextErrors: Record<string, string> = {};
 
-    if (data.accountNumber.trim() && !/^\d+$/.test(data.accountNumber.trim())) {
-      nextErrors.accountNumber = 'Số tài khoản chỉ được nhập số.';
+    if (data.accountNumber.trim() && !isBankAccountValid(data.accountNumber)) {
+      nextErrors.accountNumber = 'Số tài khoản không đúng định dạng (9-16 chữ số).';
     }
 
     return nextErrors;
@@ -375,14 +382,23 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
 
   const validateHealth = (data: EmployeeEditHealthPayload): Record<string, string> => {
     const nextErrors: Record<string, string> = {};
-    const numericValueRegex = /^\d+(\.\d+)?$/;
 
-    if (data.height.trim() && !numericValueRegex.test(data.height.trim())) {
-      nextErrors.height = 'Chiều cao phải là số hợp lệ.';
+    if (data.height.trim()) {
+      const height = parseFloat(data.height.trim());
+      if (isNaN(height) || height < 50 || height > 250) {
+        nextErrors.height = 'Dữ liệu đã vượt ngưỡng cho phép (phi thực tế).';
+      }
     }
 
-    if (data.weight.trim() && !numericValueRegex.test(data.weight.trim())) {
-      nextErrors.weight = 'Cân nặng phải là số hợp lệ.';
+    if (data.weight.trim()) {
+      const weight = parseFloat(data.weight.trim());
+      if (isNaN(weight) || weight < 2 || weight > 500) {
+        nextErrors.weight = 'Dữ liệu đã vượt ngưỡng cho phép (phi thực tế).';
+      }
+    }
+
+    if (data.checkDate && !isDateNotFuture(data.checkDate)) {
+      nextErrors.checkDate = 'Ngày không được lớn hơn ngày hiện tại.';
     }
 
     return nextErrors;

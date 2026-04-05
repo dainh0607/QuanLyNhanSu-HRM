@@ -1,5 +1,5 @@
 import React from 'react';
-import type { ContractSummary } from '../types';
+import type { ContractSummary } from '../../types';
 
 interface ContractsSummaryCardsProps {
   summary: ContractSummary;

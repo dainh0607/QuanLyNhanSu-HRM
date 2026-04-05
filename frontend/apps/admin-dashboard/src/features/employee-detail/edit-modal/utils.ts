@@ -360,3 +360,34 @@ export const isSkypeValid = (value: string): boolean => /^[a-zA-Z0-9._-]{3,50}$/
 export const isFacebookValid = (value: string): boolean =>
   /^(https?:\/\/)?(www\.)?facebook\.com\/[A-Za-z0-9.]+\/?$/.test(value) ||
   /^[A-Za-z0-9.]{5,50}$/.test(value);
+
+/**
+ * Checks if a string contains any special characters.
+ * Allows letters (including Vietnamese), numbers, spaces, dots, and hyphens.
+ */
+export const containsSpecialChars = (value: string): boolean => {
+  // Regex matches common symbols and special characters that are usually not part of names or codes
+  const specialCharsRegex = /[!@#$%^&*()_+=[\]{};':"\\|,<>/?]/;
+  return specialCharsRegex.test(value);
+};
+
+/**
+ * Checks if a date string is in the future compared to the current system date.
+ */
+export const isDateNotFuture = (dateString: string): boolean => {
+  if (!dateString) return true;
+  const dateValue = new Date(dateString);
+  const now = new Date();
+  // Clear time for comparison
+  dateValue.setHours(0, 0, 0, 0);
+  now.setHours(0, 0, 0, 0);
+  return dateValue <= now;
+};
+
+/**
+ * Validates a bank account number (numeric only, 9-16 digits).
+ */
+export const isBankAccountValid = (value: string): boolean => {
+  const numericOnly = value.trim();
+  return /^\d{9,16}$/.test(numericOnly);
+};

@@ -1,16 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import type { Employee } from '../../employees/types';
-import type { ElectronicContractParticipant, ElectronicContractSignatureField } from '../types';
+import type { Employee } from '../../../employees/types';
+import type { ElectronicContractParticipant, ElectronicContractSignatureField } from '../../types';
 import {
   clampPercent,
   createElectronicSignatureField,
   getEmployeeDirectoryMap,
   getParticipantDisplayName,
   getSignatureFieldErrorKey,
-} from './electronicContractWorkflow';
-import PdfPageCanvas from './PdfPageCanvas';
-import PdfViewerToolbar from './PdfViewerToolbar';
-import usePdfDocument from './usePdfDocument';
+} from '../PDF/electronicContractWorkflow';
+import PdfPageCanvas from '../PDF/PdfPageCanvas';
+import PdfViewerToolbar from '../PDF/PdfViewerToolbar';
+import usePdfDocument from '../PDF/usePdfDocument';
 
 interface ElectronicContractSignaturePlacementStepProps {
   sourceUrl: string | null;

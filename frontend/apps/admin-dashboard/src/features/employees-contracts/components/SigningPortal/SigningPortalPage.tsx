@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import SigningOtpStep from './SigningOtpStep';
 import SigningDocumentStep from './SigningDocumentStep';
-import type { SignerAuthResponseDto } from '../signersService';
+import type { SignerAuthResponseDto } from '../../signersService';
 
 type SigningStep = 'otp' | 'view' | 'success';
 

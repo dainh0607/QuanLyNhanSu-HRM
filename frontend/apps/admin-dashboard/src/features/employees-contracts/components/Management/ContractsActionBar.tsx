@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { CONTRACT_CATEGORY_OPTIONS } from '../constants';
-import type { ContractCategoryKey } from '../types';
+import { CONTRACT_CATEGORY_OPTIONS } from '../../constants';
+import type { ContractCategoryKey } from '../../types';
 
 interface ContractsActionBarProps {
   selectedCategory: ContractCategoryKey;

@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import type { Employee } from '../../employees/types';
-import { getNameInitials, normalizeText } from '../utils';
-import ModalShell from './ModalShell';
+import type { Employee } from '../../../employees/types';
+import { getNameInitials, normalizeText } from '../../utils';
+import ModalShell from '../Shared/ModalShell';
 
 interface ElectronicContractEmployeePickerModalProps {
   isOpen: boolean;

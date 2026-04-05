@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import type { ContractFilterMetadata, ContractFilterState } from '../types';
+import type { ContractFilterMetadata, ContractFilterState } from '../../types';
 
 interface ContractsFilterSidebarProps {
   isOpen: boolean;

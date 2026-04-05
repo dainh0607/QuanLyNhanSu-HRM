@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { SignerAuthResponseDto } from '../signersService';
-import { signersService } from '../signersService';
+import type { SignerAuthResponseDto } from '../../signersService';
+import { signersService } from '../../signersService';
 
 interface SigningOtpStepProps {
   token: string;

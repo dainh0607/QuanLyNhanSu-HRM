@@ -1,6 +1,6 @@
 import React from 'react';
-import type { ElectronicContractFormValues, SelectOption } from '../types';
-import SearchableSelect from './SearchableSelect';
+import type { ElectronicContractFormValues, SelectOption } from '../../types';
+import SearchableSelect from '../Shared/SearchableSelect';
 
 interface ElectronicContractInfoStepProps {
   values: ElectronicContractFormValues;

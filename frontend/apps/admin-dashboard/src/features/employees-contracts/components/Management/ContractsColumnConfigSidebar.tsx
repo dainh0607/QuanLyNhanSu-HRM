@@ -1,5 +1,5 @@
 import React from 'react';
-import type { ContractColumnConfig } from '../types';
+import type { ContractColumnConfig } from '../../types';
 
 interface ContractsColumnConfigSidebarProps {
   isOpen: boolean;

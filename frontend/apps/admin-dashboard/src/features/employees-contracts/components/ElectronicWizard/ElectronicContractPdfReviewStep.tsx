@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import PdfPageCanvas from './PdfPageCanvas';
-import PdfViewerToolbar from './PdfViewerToolbar';
-import usePdfDocument from './usePdfDocument';
+import PdfPageCanvas from '../PDF/PdfPageCanvas';
+import PdfViewerToolbar from '../PDF/PdfViewerToolbar';
+import { usePdfDocument } from '../PDF/usePdfDocument';
 
 interface ElectronicContractPdfReviewStepProps {
   sourceUrl: string | null;

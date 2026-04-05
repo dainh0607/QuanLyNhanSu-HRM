@@ -1,5 +1,5 @@
 import React from 'react';
-import type { ContractListItem } from '../types';
+import type { ContractListItem } from '../../types';
 import ModalShell from './ModalShell';
 
 interface ContractPreviewModalProps {

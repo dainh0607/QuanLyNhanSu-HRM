@@ -1,9 +1,9 @@
 import React, { useState, useRef, useMemo } from 'react';
-import usePdfDocument from './usePdfDocument';
-import PdfPageCanvas from './PdfPageCanvas';
-import SignatureCreationModal from './SignatureCreationModal';
-import type { SignerAuthResponseDto } from '../signersService';
-import { API_URL } from '../../../services/employee/core';
+import { usePdfDocument } from '../PDF/usePdfDocument';
+import PdfPageCanvas from '../PDF/PdfPageCanvas';
+import SignatureCreationModal from '../Shared/SignatureCreationModal';
+import type { SignerAuthResponseDto } from '../../signersService';
+import { API_URL } from '../../../../services/employee/core';
 
 interface SigningDocumentStepProps {
   signerInfo: SignerAuthResponseDto;

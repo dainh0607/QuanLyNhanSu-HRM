@@ -1,5 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { useRef } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { employeeService, type EmployeeCreatePayload } from '../../../services/employeeService';
 import { useToast } from '../../../hooks/useToast';
 import {
@@ -91,6 +90,7 @@ const ACCESS_GROUP_PRESETS = [
     aliases: [...DEFAULT_ACCESS_GROUP_KEYS],
   },
 ] as const;
+
 const MIN_PASSWORD_LENGTH = 7;
 const CONFIGURED_COMPANY_EMAIL_DOMAIN = (import.meta.env.VITE_COMPANY_EMAIL_DOMAIN ?? '')
   .trim()
@@ -112,6 +112,8 @@ const EMAIL_REGEX = new RegExp(
 const EMAIL_ERROR_MESSAGE = CONFIGURED_COMPANY_EMAIL_DOMAIN
   ? `Email phải đúng định dạng và kết thúc bằng @${CONFIGURED_COMPANY_EMAIL_DOMAIN}, @gmail.com hoặc @outlook.com.vn`
   : 'Email phải đúng định dạng và dùng domain công ty hợp lệ, @gmail.com hoặc @outlook.com.vn';
+
+const SPECIAL_CHARS_REGEX = /[!@#$%^&*()_+=[\]{};':"\\|,<>/?]/;
 
 const INVITE_LINK = 'https://nexa-hr.com/invite/69c62e9908f09CbYE...';
 
@@ -416,18 +418,36 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
 
     if (!formData.employeeCode.trim()) {
       newErrors.employeeCode = 'Mã nhân viên là bắt buộc';
+    } else if (SPECIAL_CHARS_REGEX.test(formData.employeeCode)) {
+      newErrors.employeeCode = 'Mã nhân viên không được chứa ký tự đặc biệt';
     }
     
     // Họ tên
     if (!formData.fullName.trim()) {
       newErrors.fullName = 'Họ tên là bắt buộc';
+    } else if (SPECIAL_CHARS_REGEX.test(formData.fullName)) {
+      newErrors.fullName = 'Họ tên không được chứa ký tự đặc biệt';
     }
     
-    // Email (nếu nhập thì phải đúng định dạng)
-    if (!trimmedEmail) {
-      newErrors.email = 'Email là bắt buộc';
-    } else if (!EMAIL_REGEX.test(trimmedEmail)) {
-      newErrors.email = EMAIL_ERROR_MESSAGE;
+    // Email và Mật khẩu không được để trống
+    const isEmailEmpty = !trimmedEmail;
+    const isPasswordEmpty = !formData.password;
+
+    if (isEmailEmpty && isPasswordEmpty) {
+      newErrors.email = 'Email và mật khẩu không được để trống';
+      newErrors.password = 'Email và mật khẩu không được để trống';
+    } else {
+      if (isEmailEmpty) {
+        newErrors.email = 'Email và mật khẩu không được để trống';
+      } else if (!EMAIL_REGEX.test(trimmedEmail)) {
+        newErrors.email = EMAIL_ERROR_MESSAGE;
+      }
+      
+      if (isPasswordEmpty) {
+        newErrors.password = 'Email và mật khẩu không được để trống';
+      } else if (formData.password.length < MIN_PASSWORD_LENGTH) {
+        newErrors.password = `Mật khẩu phải dài hơn ${MIN_PASSWORD_LENGTH} ký tự`;
+      }
     }
 
     const phoneError = validatePhoneNumberByCountryValue(formData.countryCode, formData.phone);
@@ -437,12 +457,6 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
 
     if (!formData.accessGroupId) {
       newErrors.accessGroupId = 'Vui lòng chọn nhóm truy cập';
-    }
-
-    if (!formData.password) {
-      newErrors.password = 'Mật khẩu là bắt buộc';
-    } else if (formData.password.length < MIN_PASSWORD_LENGTH) {
-      newErrors.password = 'Mật khẩu phải dài hơn 6 ký tự';
     }
 
     if (newErrors.employeeCode) {
@@ -543,13 +557,11 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
         onClose();
         if (onSuccess) onSuccess();
       }, 1000);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error('Submit error:', error);
       showToast(error.Message || 'Có lỗi xảy ra khi tạo nhân viên', 'error');
       
       if (error?.errors && typeof error.errors === 'object') {
-        // Map backend validation errors if any
         const backendErrors: Record<string, string> = {};
         Object.entries(error.errors as Record<string, unknown>).forEach(([key, value]) => {
           const firstMessage = getBackendErrorMessage(value);
@@ -573,7 +585,6 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
     if (e.target === e.currentTarget) onClose();
   };
 
-  // Filtering dependent data
   const shouldFilterBranchesByRegion = metadata.branches.some((branch) => branch.regionId !== null);
   const filteredBranches = shouldFilterBranchesByRegion && formData.regionId
     ? metadata.branches.filter((branch) => branch.regionId === getOptionalNumber(formData.regionId))
@@ -621,7 +632,6 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
                 <button 
                   type="button"
                   onClick={handleCopyInviteLink}
-
                   className="px-4 h-10 bg-[#192841] text-white text-xs font-bold rounded-xl hover:bg-[#253a5c] transition-all shadow-sm active:scale-95"
                 >
                   Sao chép link
@@ -817,7 +827,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
                       value={formData.departmentId}
                       onChange={(e) => handleInputChange('departmentId', e.target.value)}
                       disabled={metadataLoading.departments}
-                      className="w-full h-11 px-4 border border-gray-200 rounded-xl text-sm appearance-none bg-white focus:outline-none focus:border-[#192841] focus:ring-4 focus:ring-[#192841]/5 transition-all pr-10 cursor-pointer disabled:bg-gray-50/50 disabled:text-gray-400 disabled:cursor-not-allowed"
+                      className="w-full h-11 px-4 border border-gray-200 rounded-xl text-sm appearance-none bg-white focus:outline-none focus:ring-4 transition-all pr-10 cursor-pointer disabled:bg-gray-50/50 disabled:text-gray-400 disabled:cursor-not-allowed"
                     >
                       <option value="">{metadataLoading.departments ? 'Đang tải...' : 'Chọn phòng ban'}</option>
                       {metadata.departments.map(d => (
@@ -838,7 +848,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
                       value={formData.jobTitleId}
                       onChange={(e) => handleInputChange('jobTitleId', e.target.value)}
                       disabled={metadataLoading.jobTitles}
-                      className="w-full h-11 px-4 border border-gray-200 rounded-xl text-sm appearance-none bg-white focus:outline-none focus:border-[#192841] focus:ring-4 focus:ring-[#192841]/5 transition-all pr-10 cursor-pointer disabled:bg-gray-50/50 disabled:text-gray-400 disabled:cursor-not-allowed"
+                      className="w-full h-11 px-4 border border-gray-200 rounded-xl text-sm appearance-none bg-white focus:outline-none focus:ring-4 transition-all pr-10 cursor-pointer disabled:bg-gray-50/50 disabled:text-gray-400 disabled:cursor-not-allowed"
                     >
                       <option value="">{metadataLoading.jobTitles ? 'Đang tải...' : 'Chọn chức danh'}</option>
                       {metadata.jobTitles.map(j => (
@@ -898,4 +908,3 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
 };
 
 export default AddEmployeeModal;
-

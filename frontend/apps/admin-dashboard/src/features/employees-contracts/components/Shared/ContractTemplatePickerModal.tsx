@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { contractsService } from '../service';
-import type { ContractTemplateOption } from '../types';
+import { contractsService } from '../../service';
+import type { ContractTemplateOption } from '../../types';
 import ModalShell from './ModalShell';
 
 interface ContractTemplatePickerModalProps {
