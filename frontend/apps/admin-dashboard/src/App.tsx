@@ -8,6 +8,8 @@ import { EmployeeDetail } from './features/employee-detail/EmployeeDetailViewInt
 import type { PersonalTabKey } from './features/employee-detail/edit-modal/types';
 import type { Employee } from './features/employees/types';
 import { authService } from './services/authService';
+import AuthLandingPage from './pages/AuthLandingPage';
+import UnauthorizedPage from './pages/UnauthorizedPage';
 import type { User } from './services/authService';
 import { employeeService } from './services/employeeService';
 import './index.css';
@@ -540,7 +542,7 @@ function RoutedApp() {
     const redirectPath =
       redirectState?.from && redirectState.from !== '/login' && redirectState.from !== '/register'
         ? redirectState.from
-        : '/personnel/employees';
+        : '/auth/landing';
 
     setIsAuthenticated(true);
     setUser(currentUser);
@@ -558,18 +560,20 @@ function RoutedApp() {
     return <LoadingScreen message="Hệ thống đang khởi động..." />;
   }
 
-  const defaultRoute = isAuthenticated ? '/personnel/employees' : '/login';
+  const defaultRoute = isAuthenticated ? '/auth/landing' : '/login';
   const loginRedirectPath = `${location.pathname}${location.search}${location.hash}`;
 
   return (
     <div id="app-root-container">
       <Routes>
         <Route path="/" element={<Navigate to={defaultRoute} replace />} />
+        <Route path="/auth/landing" element={<AuthLandingPage />} />
+        <Route path="/unauthorized" element={<UnauthorizedPage />} />
         <Route
           path="/login"
           element={
             isAuthenticated ? (
-              <Navigate to="/personnel/employees" replace />
+              <Navigate to="/auth/landing" replace />
             ) : (
               <LoginPage
                 onNavigateToRegister={() => navigate('/register')}
@@ -582,7 +586,7 @@ function RoutedApp() {
           path="/register"
           element={
             isAuthenticated ? (
-              <Navigate to="/personnel/employees" replace />
+              <Navigate to="/auth/landing" replace />
             ) : (
               <RegisterPage
                 onNavigateToLogin={() => navigate('/login')}
