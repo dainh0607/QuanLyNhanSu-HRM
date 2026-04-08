@@ -16,6 +16,8 @@ export const createEmptyElectronicParticipant = (): ElectronicContractParticipan
   employeeId: '',
   partnerName: '',
   partnerEmail: '',
+  fullName: '',
+  email: '',
   role: 'signer',
   authMethod: 'image-otp',
 });
@@ -46,24 +48,31 @@ export const getEmployeePrimaryEmail = (employee: Employee | null | undefined) =
 
 export const getParticipantDisplayName = (
   participant: ElectronicContractParticipant,
-  employeeMap: Map<string, Employee>,
+  employeeMap?: Map<string, Employee>,
 ) => {
   if (participant.subjectType === 'partner') {
     return participant.partnerName.trim() || 'Đối tác chưa đặt tên';
   }
 
-  return employeeMap.get(participant.employeeId)?.fullName || 'Chưa chọn nhân viên';
+  return (
+    participant.fullName?.trim() ||
+    employeeMap?.get(participant.employeeId)?.fullName ||
+    'Chưa chọn nhân viên'
+  );
 };
 
 export const getParticipantEmail = (
   participant: ElectronicContractParticipant,
-  employeeMap: Map<string, Employee>,
+  employeeMap?: Map<string, Employee>,
 ) => {
   if (participant.subjectType === 'partner') {
     return participant.partnerEmail.trim();
   }
 
-  return getEmployeePrimaryEmail(employeeMap.get(participant.employeeId) ?? null);
+  return (
+    participant.email?.trim() ||
+    getEmployeePrimaryEmail(employeeMap?.get(participant.employeeId) ?? null)
+  );
 };
 
 export const getParticipantSubjectLabel = (subjectType: ElectronicParticipantSubjectType) =>

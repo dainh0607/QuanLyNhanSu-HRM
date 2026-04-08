@@ -20,10 +20,9 @@ interface ElectronicContractParticipantsStepProps {
   employees: Employee[];
   errors: Record<string, string>;
   onOrderModeChange: (mode: ElectronicSigningOrderMode) => void;
-  onParticipantChange: <K extends keyof ElectronicContractParticipant>(
+  onParticipantChange: (
     participantId: string,
-    field: K,
-    value: ElectronicContractParticipant[K],
+    changes: Partial<ElectronicContractParticipant>,
   ) => void;
   onAddParticipant: () => void;
   onRemoveParticipant: (participantId: string) => void;
@@ -130,7 +129,6 @@ const ElectronicContractParticipantsStep: React.FC<ElectronicContractParticipant
         <div className="space-y-4">
           {participants.map((participant, index) => {
             const selectedEmployee = employeeMap.get(participant.employeeId) ?? null;
-            const employeeEmail = getEmployeePrimaryEmail(selectedEmployee);
             const subjectTypeError = errors[getParticipantErrorKey(participant.id, 'employeeId')];
             const partnerNameError = errors[getParticipantErrorKey(participant.id, 'partnerName')];
             const partnerEmailError = errors[getParticipantErrorKey(participant.id, 'partnerEmail')];
@@ -215,8 +213,7 @@ const ElectronicContractParticipantsStep: React.FC<ElectronicContractParticipant
                               onChange={() =>
                                 onParticipantChange(
                                   participant.id,
-                                  'subjectType',
-                                  option.value as ElectronicParticipantSubjectType,
+                                  { subjectType: option.value as ElectronicParticipantSubjectType },
                                 )
                               }
                               className="h-4 w-4 accent-[#134BBA]"
@@ -238,8 +235,8 @@ const ElectronicContractParticipantsStep: React.FC<ElectronicContractParticipant
                             onClick={() => setPickerParticipantId(participant.id)}
                             className={`${getInputClassName(Boolean(subjectTypeError))} flex items-center justify-between text-left`}
                           >
-                            <span className={selectedEmployee ? 'font-medium text-slate-900' : 'text-slate-400'}>
-                              {selectedEmployee?.fullName || 'Chọn nhân viên nội bộ'}
+                            <span className={participant.fullName ? 'font-medium text-slate-900' : 'text-slate-400'}>
+                              {participant.fullName || 'Chọn nhân viên nội bộ'}
                             </span>
                             <span className="material-symbols-outlined text-[20px] text-slate-400">search</span>
                           </button>
@@ -251,7 +248,7 @@ const ElectronicContractParticipantsStep: React.FC<ElectronicContractParticipant
                         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                           <p>
                             Email dùng cho luồng ký:{' '}
-                            <span className="font-semibold text-slate-900">{employeeEmail || 'Chưa có email'}</span>
+                            <span className="font-semibold text-slate-900">{participant.email || 'Chưa có email'}</span>
                           </p>
                           <p className="mt-1">
                             CCCD:{' '}
@@ -270,7 +267,7 @@ const ElectronicContractParticipantsStep: React.FC<ElectronicContractParticipant
                           <input
                             type="text"
                             value={participant.partnerName}
-                            onChange={(event) => onParticipantChange(participant.id, 'partnerName', event.target.value)}
+                            onChange={(event) => onParticipantChange(participant.id, { partnerName: event.target.value })}
                             className={getInputClassName(Boolean(partnerNameError))}
                             placeholder="Nhập tên đối tác"
                           />
@@ -286,7 +283,7 @@ const ElectronicContractParticipantsStep: React.FC<ElectronicContractParticipant
                           <input
                             type="email"
                             value={participant.partnerEmail}
-                            onChange={(event) => onParticipantChange(participant.id, 'partnerEmail', event.target.value)}
+                            onChange={(event) => onParticipantChange(participant.id, { partnerEmail: event.target.value })}
                             className={getInputClassName(Boolean(partnerEmailError))}
                             placeholder="partner@company.com"
                           />
@@ -306,7 +303,7 @@ const ElectronicContractParticipantsStep: React.FC<ElectronicContractParticipant
                       <select
                         value={participant.role}
                         onChange={(event) =>
-                          onParticipantChange(participant.id, 'role', event.target.value as ElectronicParticipantRole)
+                          onParticipantChange(participant.id, { role: event.target.value as ElectronicParticipantRole })
                         }
                         className={getInputClassName(Boolean(roleError))}
                       >
@@ -325,8 +322,7 @@ const ElectronicContractParticipantsStep: React.FC<ElectronicContractParticipant
                         onChange={(event) =>
                           onParticipantChange(
                             participant.id,
-                            'authMethod',
-                            event.target.value as ElectronicParticipantAuthMethod,
+                            { authMethod: event.target.value as ElectronicParticipantAuthMethod },
                           )
                         }
                         className={getInputClassName(Boolean(authMethodError))}
@@ -358,7 +354,12 @@ const ElectronicContractParticipantsStep: React.FC<ElectronicContractParticipant
             return;
           }
 
-          onParticipantChange(pickerParticipantId, 'employeeId', employeeId);
+          const emp = employees.find((e) => String(e.id) === employeeId);
+          onParticipantChange(pickerParticipantId, {
+            employeeId,
+            fullName: emp?.fullName || '',
+            email: getEmployeePrimaryEmail(emp),
+          });
         }}
       />
     </>

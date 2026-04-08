@@ -338,24 +338,27 @@ namespace ERP.Services.Auth
 
                 try
                 {
-                    var firebaseUser = await FirebaseAuth.DefaultInstance.GetUserAsync(uid);
-
-                    if (!string.IsNullOrWhiteSpace(firebaseUser.Email))
+                    if (FirebaseAdmin.FirebaseApp.DefaultInstance != null)
                     {
-                        userInfo.Email = firebaseUser.Email;
-                    }
+                        var firebaseUser = await FirebaseAuth.DefaultInstance.GetUserAsync(uid);
 
-                    if (!string.IsNullOrWhiteSpace(firebaseUser.DisplayName))
-                    {
-                        userInfo.FullName = firebaseUser.DisplayName;
-                    }
+                        if (!string.IsNullOrWhiteSpace(firebaseUser.Email))
+                        {
+                            userInfo.Email = firebaseUser.Email;
+                        }
 
-                    if (!string.IsNullOrWhiteSpace(firebaseUser.PhoneNumber))
-                    {
-                        userInfo.PhoneNumber = firebaseUser.PhoneNumber;
-                    }
+                        if (!string.IsNullOrWhiteSpace(firebaseUser.DisplayName))
+                        {
+                            userInfo.FullName = firebaseUser.DisplayName;
+                        }
 
-                    userInfo.PhotoUrl = firebaseUser.PhotoUrl;
+                        if (!string.IsNullOrWhiteSpace(firebaseUser.PhoneNumber))
+                        {
+                            userInfo.PhoneNumber = firebaseUser.PhoneNumber;
+                        }
+
+                        userInfo.PhotoUrl = firebaseUser.PhotoUrl;
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -390,6 +393,12 @@ namespace ERP.Services.Auth
 
         public async Task<string?> VerifyTokenAsync(string idToken)
         {
+            if (FirebaseAdmin.FirebaseApp.DefaultInstance == null)
+            {
+                _logger.LogWarning("Firebase App not initialized. Skipping VerifyTokenAsync.");
+                return null;
+            }
+
             try
             {
                 var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(idToken);
@@ -404,6 +413,12 @@ namespace ERP.Services.Auth
 
         public async Task<int> SyncFirebaseUsersAsync()
         {
+            if (FirebaseAdmin.FirebaseApp.DefaultInstance == null)
+            {
+                _logger.LogWarning("Firebase App not initialized. Skipping SyncFirebaseUsersAsync.");
+                return 0;
+            }
+
             var syncCount = 0;
 
             try
@@ -640,6 +655,12 @@ namespace ERP.Services.Auth
 
         public async Task<string> CreateFirebaseUserAsync(string email, string password, string displayName, int employeeId)
         {
+            if (FirebaseAdmin.FirebaseApp.DefaultInstance == null)
+            {
+                _logger.LogWarning("Firebase App not initialized. Skipping CreateFirebaseUserAsync.");
+                return "bypass-uid-" + Guid.NewGuid().ToString("N")[..8];
+            }
+
             var userArgs = new UserRecordArgs
             {
                 Email = email,

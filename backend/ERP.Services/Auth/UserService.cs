@@ -82,6 +82,12 @@ namespace ERP.Services.Auth
 
         public async Task<int> SyncWithFirebaseAsync()
         {
+            if (FirebaseAdmin.FirebaseApp.DefaultInstance == null)
+            {
+                _logger.LogWarning("Firebase App not initialized. Skipping SyncWithFirebaseAsync.");
+                return 0;
+            }
+
             int syncCount = 0;
             try
             {

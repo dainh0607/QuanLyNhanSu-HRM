@@ -24,7 +24,6 @@ import { buildElectronicContractPreviewPdf, isPdfFile } from '../PDF/electronicC
 import {
   createEmptyElectronicParticipant,
   getEmployeeDirectoryMap,
-  getEmployeePrimaryEmail,
   getParticipantErrorKey,
   getSignatureFieldErrorKey,
 } from '../PDF/electronicContractWorkflow';
@@ -229,10 +228,9 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
     });
   };
 
-  const handleParticipantChange = <K extends keyof ElectronicContractParticipant>(
+  const handleParticipantChange = (
     participantId: string,
-    field: K,
-    value: ElectronicContractParticipant[K],
+    changes: Partial<ElectronicContractParticipant>,
   ) => {
     setParticipants((prev) =>
       prev.map((participant) => {
@@ -242,15 +240,17 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
 
         const nextParticipant = {
           ...participant,
-          [field]: value,
-        } as ElectronicContractParticipant;
+          ...changes,
+        };
 
-        if (field === 'subjectType') {
-          if (value === 'internal') {
+        if (changes.subjectType) {
+          if (changes.subjectType === 'internal') {
             nextParticipant.partnerName = '';
             nextParticipant.partnerEmail = '';
           } else {
             nextParticipant.employeeId = '';
+            nextParticipant.fullName = '';
+            nextParticipant.email = '';
           }
         }
 
@@ -337,14 +337,13 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
           nextErrors[getParticipantErrorKey(participant.id, 'employeeId')] = 'Vui lòng chọn nhân viên.';
         } else {
           const employee = employeeMap.get(participant.employeeId) ?? null;
-          const email = getEmployeePrimaryEmail(employee);
 
           if (!employee) {
             nextErrors[getParticipantErrorKey(participant.id, 'employeeId')] = 'Không tìm thấy nhân viên đã chọn.';
           } else if (!employee.identityNumber?.trim()) {
             nextErrors[getParticipantErrorKey(participant.id, 'employeeId')] = 'Nhân viên được chọn chưa có CCCD.';
             missingIdentityEmployee = missingIdentityEmployee ?? employee;
-          } else if (!EMAIL_PATTERN.test(email)) {
+          } else if (!EMAIL_PATTERN.test(participant.email)) {
             nextErrors[getParticipantErrorKey(participant.id, 'employeeId')] = 'Nhân viên được chọn chưa có email hợp lệ.';
           }
         }
@@ -686,23 +685,13 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
                     if (Object.keys(nextErrors).length === 0) {
                       // Map FE participants to BE Signer DTOs
                       const signers: ContractSignerDto[] = participants.map((p, index) => {
-                        if (p.subjectType === 'internal') {
-                          const emp = employeeMap.get(p.employeeId);
-                          return {
-                            FullName: emp?.fullName || 'Nhân viên',
-                            Email: getEmployeePrimaryEmail(emp),
-                            SignOrder: index + 1,
-                            UserId: Number(p.employeeId),
-                            Note: p.role,
-                          };
-                        } else {
-                          return {
-                            FullName: p.partnerName,
-                            Email: p.partnerEmail,
-                            SignOrder: index + 1,
-                            Note: p.role,
-                          };
-                        }
+                        return {
+                          FullName: p.subjectType === 'internal' ? p.fullName : p.partnerName,
+                          Email: p.subjectType === 'internal' ? p.email : p.partnerEmail,
+                          SignOrder: index + 1,
+                          UserId: p.subjectType === 'internal' ? Number(p.employeeId) : undefined,
+                          Note: p.role,
+                        };
                       });
 
                       const response = await contractsService.saveStep3Signers({
@@ -757,7 +746,7 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
                       const positions: ContractSignerPositionDto[] = signatureFields.map(field => {
                         const participant = participants.find(p => p.id === field.participantId);
                         const participantEmail = participant?.subjectType === 'internal' 
-                          ? getEmployeePrimaryEmail(employeeMap.get(participant.employeeId))
+                          ? participant.email
                           : participant?.partnerEmail;
                           
                         const signer = contractSigners.find(s => s.Email === participantEmail);

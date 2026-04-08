@@ -191,6 +191,8 @@ export interface ElectronicContractParticipant {
   employeeId: string;
   partnerName: string;
   partnerEmail: string;
+  fullName: string;
+  email: string;
   role: ElectronicParticipantRole;
   authMethod: ElectronicParticipantAuthMethod;
 }

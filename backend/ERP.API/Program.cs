@@ -36,6 +36,10 @@ if (File.Exists(serviceAccountPath))
         Credential = GoogleCredential.FromFile(serviceAccountPath)
     });
 }
+else
+{
+    Console.WriteLine(" [WARNING] firebase-config.json not found. Firebase Admin SDK not initialized.");
+}
 
 // Authentication & Authorization Configuration
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -234,7 +238,10 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 app.UseCors("AllowFrontend");
 
 app.UseAuthentication();

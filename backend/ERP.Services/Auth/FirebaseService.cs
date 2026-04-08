@@ -5,7 +5,9 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
 using FirebaseAdmin.Auth;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace ERP.Services.Auth
@@ -15,21 +17,41 @@ namespace ERP.Services.Auth
         private readonly IConfiguration _configuration;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<FirebaseService> _logger;
+        private readonly IWebHostEnvironment _env;
 
-        public FirebaseService(IConfiguration configuration, IHttpClientFactory httpClientFactory, ILogger<FirebaseService> logger)
+        public FirebaseService(IConfiguration configuration, IHttpClientFactory httpClientFactory, ILogger<FirebaseService> logger, IWebHostEnvironment env)
         {
             _configuration = configuration;
             _httpClientFactory = httpClientFactory;
             _logger = logger;
+            _env = env;
         }
+
+        private bool IsBypassAuth => _env.IsDevelopment() && _configuration.GetValue<bool>("Firebase:BypassAuth");
+        private bool IsFirebaseInitialized => FirebaseAdmin.FirebaseApp.DefaultInstance != null;
 
         public async Task<UserRecord> CreateUserAsync(UserRecordArgs args)
         {
+            if (IsBypassAuth && !IsFirebaseInitialized)
+            {
+                // Return a mock user record or throw a descriptive error if bypass is on but sync is needed
+                throw new InvalidOperationException("Firebase not initialized. Cannot create user in BypassAuth mode.");
+            }
             return await FirebaseAuth.DefaultInstance.CreateUserAsync(args);
         }
 
         public async Task<string?> VerifyIdTokenAsync(string idToken)
         {
+            if (IsBypassAuth && (string.IsNullOrEmpty(idToken) || idToken == "bypass-token"))
+            {
+                return "bypass-uid";
+            }
+
+            if (!IsFirebaseInitialized)
+            {
+                return IsBypassAuth ? "bypass-uid" : null;
+            }
+
             try
             {
                 var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(idToken);
@@ -44,6 +66,12 @@ namespace ERP.Services.Auth
 
         public async Task<IEnumerable<UserRecord>> ListAllUsersAsync()
         {
+            if (!IsFirebaseInitialized)
+            {
+                _logger.LogWarning("Firebase not initialized. Skipping user listing.");
+                return new List<UserRecord>();
+            }
+
             var userRecords = new List<UserRecord>();
             var pagedEnumerable = FirebaseAuth.DefaultInstance.ListUsersAsync(null);
             var enumerator = pagedEnumerable.GetAsyncEnumerator();
@@ -58,11 +86,18 @@ namespace ERP.Services.Auth
 
         public async Task DeleteUserAsync(string uid)
         {
+            if (!IsFirebaseInitialized) return;
             await FirebaseAuth.DefaultInstance.DeleteUserAsync(uid);
         }
 
         public async Task<(bool Success, string? IdToken, string? RefreshToken, int? ExpiresIn, string? Message)> SignInWithPasswordAsync(string email, string password)
         {
+            if (IsBypassAuth)
+            {
+                _logger.LogInformation("Bypassing Firebase authentication for {Email}", email);
+                return (true, "bypass-token", "bypass-refresh-token", 3600, "Login successful (Bypass Mode)");
+            }
+
             try
             {
                 var apiKey = _configuration["Firebase:apiKey"];
@@ -104,6 +139,7 @@ namespace ERP.Services.Auth
 
         public async Task UpdateUserPasswordAsync(string uid, string newPassword)
         {
+            if (!IsFirebaseInitialized) return;
             var args = new UserRecordArgs
             {
                 Uid = uid,
