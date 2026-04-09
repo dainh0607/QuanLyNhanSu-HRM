@@ -7,10 +7,6 @@ namespace ERP.Services.Contracts
     {
         Task<bool> GenerateOtpAsync(GenerateOtpDto dto);
         Task<SignerAuthResponseDto> VerifyOtpAsync(VerifyOtpDto dto);
-        
-        /// <summary>
-        /// Signs/stamps a PDF document with a signature image at specified coordinates
-        /// </summary>
-        Task<SignDocumentResponseDto> SignDocumentAsync(SignDocumentDto dto);
+        Task<CompleteSigningResponseDto> CompleteSigningAsync(int signerId, CompleteSigningDto dto);
     }
 }

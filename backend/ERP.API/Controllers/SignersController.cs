@@ -1,5 +1,7 @@
 using System;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using ERP.DTOs.Auth;
 using ERP.DTOs.Contracts;
 using ERP.Services.Contracts;
 using Microsoft.AspNetCore.Authorization;
@@ -56,54 +58,30 @@ namespace ERP.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Signs/stamps a PDF document with a signature image at specified coordinates
-        /// </summary>
-        /// <remarks>
-        /// This endpoint accepts a signature image and embeds it into a PDF at the specified position.
-        /// 
-        /// Example request body:
-        /// {
-        ///   "signerId": 1,
-        ///   "signatureImageBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
-        ///   "pageNumber": 1,
-        ///   "x": 100,
-        ///   "y": 100,
-        ///   "width": 100,
-        ///   "height": 50,
-        ///   "note": "Signed on 27/04/2026"
-        /// }
-        /// </remarks>
-        [HttpPost("sign-document")]
+        [HttpPost("complete-signing")]
         [Authorize]
-        public async Task<IActionResult> SignDocument([FromBody] SignDocumentDto dto)
+        public async Task<IActionResult> CompleteSigning([FromBody] CompleteSigningDto dto)
         {
             try
             {
-                if (dto == null)
-                    return BadRequest(new { Message = "Request body is required" });
-
-                if (string.IsNullOrWhiteSpace(dto.SignatureImageBase64))
-                    return BadRequest(new { Message = "Signature image is required" });
-
-                var result = await _signerService.SignDocumentAsync(dto);
-
-                if (result.Success)
+                var tokenType = User.FindFirst(AuthSecurityConstants.TokenTypeClaimType)?.Value;
+                if (!string.Equals(tokenType, AuthSecurityConstants.SignerTokenType, StringComparison.Ordinal))
                 {
-                    return Ok(result);
+                    return Unauthorized(new { Message = "Chi signer token moi duoc phep hoan tat ky." });
                 }
 
-                return BadRequest(result);
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning($"Validation error in SignDocument: {ex.Message}");
-                return BadRequest(new { Message = ex.Message });
+                var signerIdValue = User.FindFirst("SignerId")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (!int.TryParse(signerIdValue, out var signerId))
+                {
+                    return Unauthorized(new { Message = "Khong xac dinh duoc nguoi ky hien tai." });
+                }
+
+                var response = await _signerService.CompleteSigningAsync(signerId, dto);
+                return Ok(response);
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error in SignDocument: {ex.Message}\n{ex.StackTrace}");
-                return StatusCode(500, new { Message = "An error occurred while signing the document", Error = ex.Message });
+                return BadRequest(new { Message = ex.Message });
             }
         }
     }

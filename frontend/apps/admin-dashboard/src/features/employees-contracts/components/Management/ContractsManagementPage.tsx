@@ -5,6 +5,7 @@ import { DEFAULT_CONTRACT_COLUMNS, PAGE_SIZE } from '../../constants';
 import { contractsService } from '../../service';
 import type { ContractFilterMetadata, ContractFilterState, ContractListItem } from '../../types';
 import { useToast } from '../../../../hooks/useToast';
+import PersonnelWorkspaceTabs from '../../../personnel/components/PersonnelWorkspaceTabs';
 import ContractPreviewModal from '../Shared/ContractPreviewModal';
 import ContractsActionBar from './ContractsActionBar';
 import ContractsColumnConfigSidebar from './ContractsColumnConfigSidebar';
@@ -195,6 +196,8 @@ const ContractsManagementPage: React.FC = () => {
       }`}
       id="main-content-container"
     >
+      <PersonnelWorkspaceTabs />
+
       <ContractsPageToolbar
         onBack={() => navigate('/personnel/employees')}
         onCreateNew={() => setIsCreateMethodOpen(true)}

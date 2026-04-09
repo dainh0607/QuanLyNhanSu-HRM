@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PersonalTabKey } from '../../../employee-detail/edit-modal/types';
 import type { Employee } from '../../../employees/types';
-import { contractsService } from '../../service';
+import { contractsService, saveElectronicContractStep3Signers } from '../../service';
 import type {
   ElectronicContractFormValues,
   ElectronicContractParticipant,
@@ -9,6 +9,7 @@ import type {
   ElectronicSigningOrderMode,
   SelectOption,
   ToastActionPayload,
+  ContractSigner,
   ContractSignerDto,
   ContractSignerPositionDto,
 } from '../../types';
@@ -61,6 +62,7 @@ const DEFAULT_FORM_VALUES: ElectronicContractFormValues = {
 const ACCEPTED_FILE_EXTENSIONS = ['pdf', 'doc', 'docx'];
 const STEPS = ['Thông tin hợp đồng', 'Xem trước PDF', 'Người tham gia', 'Vị trí ký', 'Tổng kết'] as const;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const normalizeEmail = (value?: string | null) => value?.trim().toLowerCase() ?? '';
 
 const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> = ({
   isOpen,
@@ -92,7 +94,7 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
 
   const pdfUrlRef = useRef<string | null>(null);
   const [contractId, setContractId] = useState<number | null>(null);
-  const [contractSigners, setContractSigners] = useState<ContractSignerDto[]>([]);
+  const [contractSigners, setContractSigners] = useState<ContractSigner[]>([]);
   const [contractTypeOptions, setContractTypeOptions] = useState<SelectOption[]>([]);
   const [taxTypeOptions, setTaxTypeOptions] = useState<SelectOption[]>([]);
 
@@ -684,7 +686,9 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
                     
                     if (Object.keys(nextErrors).length === 0) {
                       // Map FE participants to BE Signer DTOs
-                      const signers: ContractSignerDto[] = participants.map((p, index) => {
+                      const signers: ContractSignerDto[] = participants
+                        .filter((participant) => participant.role === 'signer')
+                        .map((p, index) => {
                         return {
                           FullName: p.subjectType === 'internal' ? p.fullName : p.partnerName,
                           Email: p.subjectType === 'internal' ? p.email : p.partnerEmail,
@@ -694,12 +698,12 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
                         };
                       });
 
-                      const response = await contractsService.saveStep3Signers({
+                      const response = await saveElectronicContractStep3Signers({
                         ContractId: contractId,
                         Signers: signers,
                       });
 
-                      setContractSigners(response.Signers);
+                      setContractSigners(response.signers);
                       setCurrentStep(4);
                     }
                   } catch (error) {
@@ -743,26 +747,28 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
                     if (Object.keys(nextErrors).length === 0) {
                       // Map FE signature fields to BE Position DTOs
                       // We must find the real Signer ID from contractSigners by email match
-                      const positions: ContractSignerPositionDto[] = signatureFields.map(field => {
-                        const participant = participants.find(p => p.id === field.participantId);
-                        const participantEmail = participant?.subjectType === 'internal' 
-                          ? participant.email
-                          : participant?.partnerEmail;
-                          
-                        const signer = contractSigners.find(s => s.Email === participantEmail);
+                      const positions: ContractSignerPositionDto[] = signatureFields.map((field) => {
+                        const participant = participants.find((p) => p.id === field.participantId);
+                        const participantEmail = normalizeEmail(
+                          participant?.subjectType === 'internal' ? participant.email : participant?.partnerEmail,
+                        );
+
+                        const signer = contractSigners.find(
+                          (item) => normalizeEmail(item.email) === participantEmail,
+                        );
                         
-                        if (!signer?.Id) {
+                        if (!signer?.id) {
                           throw new Error(`Không tìm thấy thông tin người ký '${participantEmail}' trên hệ thống.`);
                         }
 
                         return {
-                          SignerId: signer.Id,
+                          SignerId: signer.id,
                           Type: field.type,
                           PageNumber: field.pageNumber,
                           XPos: field.x,
                           YPos: field.y,
                           Width: field.width,
-                          Height: field.height
+                          Height: field.height,
                         };
                       });
 

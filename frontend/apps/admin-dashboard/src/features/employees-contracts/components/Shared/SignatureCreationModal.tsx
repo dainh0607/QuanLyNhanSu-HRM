@@ -1,20 +1,38 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
 import ModalShell from './ModalShell';
+import type { SignatureMethod } from '../../signersService';
 
 interface SignatureCreationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (signatureData: string) => void;
+  onSubmit: (payload: SignaturePayload) => void;
 }
 
 type TabKey = 'draw' | 'type' | 'upload';
 
+export interface SignaturePayload {
+  dataUrl: string;
+  method: SignatureMethod;
+}
+
 const SIGNATURE_FONTS = [
-  'font-family: "Dancing Script", cursive;',
-  'font-family: "Great Vibes", cursive;',
-  'font-family: "Homemade Apple", cursive;',
-  'font-family: "Sacramento", cursive;',
+  {
+    label: 'Mau 1',
+    fontFamily: "'Brush Script MT', 'Segoe Script', cursive",
+  },
+  {
+    label: 'Mau 2',
+    fontFamily: "'Lucida Handwriting', 'Brush Script MT', cursive",
+  },
+  {
+    label: 'Mau 3',
+    fontFamily: "'Segoe Print', 'Comic Sans MS', cursive",
+  },
+  {
+    label: 'Mau 4',
+    fontFamily: "'Snell Roundhand', 'Brush Script MT', cursive",
+  },
 ];
 
 const SignatureCreationModal: React.FC<SignatureCreationModalProps> = ({ isOpen, onClose, onSubmit }) => {
@@ -22,19 +40,78 @@ const SignatureCreationModal: React.FC<SignatureCreationModalProps> = ({ isOpen,
   const [typedName, setTypedName] = useState('');
   const [selectedFont, setSelectedFont] = useState(0);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const sigCanvas = useRef<SignatureCanvas | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    setActiveTab('draw');
+    setTypedName('');
+    setSelectedFont(0);
+    setUploadedImage(null);
+    setUploadError(null);
+    sigCanvas.current?.clear();
+  }, [isOpen]);
+
+  const renderTypedSignature = () => {
+    const value = typedName.trim();
+    if (!value) {
+      return null;
+    }
+
+    const fontFamily = SIGNATURE_FONTS[selectedFont]?.fontFamily ?? SIGNATURE_FONTS[0].fontFamily;
+    const canvas = document.createElement('canvas');
+    canvas.width = 640;
+    canvas.height = 180;
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) {
+      return null;
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#0f172a';
+    ctx.font = `64px ${fontFamily}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(value, canvas.width / 2, canvas.height / 2);
+
+    return canvas.toDataURL('image/png');
+  };
+
+  const canSubmit =
+    (activeTab === 'draw' && (sigCanvas.current ? !sigCanvas.current.isEmpty() : false)) ||
+    (activeTab === 'type' && typedName.trim().length > 0) ||
+    (activeTab === 'upload' && Boolean(uploadedImage));
+
   const handleClear = () => {
     if (activeTab === 'draw') sigCanvas.current?.clear();
     if (activeTab === 'type') setTypedName('');
-    if (activeTab === 'upload') setUploadedImage(null);
+    if (activeTab === 'upload') {
+      setUploadedImage(null);
+      setUploadError(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      const allowedTypes = new Set(['image/png', 'image/jpeg', 'image/jpg']);
+      if (!allowedTypes.has(file.type)) {
+        setUploadedImage(null);
+        setUploadError('Chi ho tro dinh dang PNG hoac JPG.');
+        return;
+      }
+
+      setUploadError(null);
       const reader = new FileReader();
       reader.onloadend = () => {
         setUploadedImage(reader.result as string);
@@ -44,39 +121,37 @@ const SignatureCreationModal: React.FC<SignatureCreationModalProps> = ({ isOpen,
   };
 
   const handleConfirm = () => {
-    let result: string | undefined;
+    let result: string | null = null;
+    let method: SignatureMethod | null = null;
 
     if (activeTab === 'draw') {
       if (sigCanvas.current?.isEmpty()) return;
-      result = sigCanvas.current?.getTrimmedCanvas().toDataURL('image/png');
+      result = sigCanvas.current?.getTrimmedCanvas().toDataURL('image/png') ?? null;
+      method = 'draw';
     } else if (activeTab === 'type') {
-      if (!typedName.trim()) return;
-      // In a real app, we would render this text to a canvas to get a data URL
-      // For now, we'll use a placeholder or simplified approach
-      const canvas = document.createElement('canvas');
-      canvas.width = 400;
-      canvas.height = 100;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.fillStyle = 'black';
-        ctx.font = `italic 48px cursive`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(typedName, 200, 50);
-        result = canvas.toDataURL('image/png');
-      }
+      result = renderTypedSignature();
+      method = 'type';
     } else if (activeTab === 'upload') {
       if (!uploadedImage) return;
       result = uploadedImage;
+      method = 'upload';
     }
 
-    if (result) {
-      onSubmit(result);
+    if (result && method) {
+      onSubmit({
+        dataUrl: result,
+        method,
+      });
     }
   };
 
   return (
-    <ModalShell isOpen={isOpen} onClose={onClose} title="Tạo chữ ký của bạn" maxWidth="max-w-2xl">
+    <ModalShell
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Tao chu ky cua ban"
+      maxWidthClassName="max-w-2xl"
+    >
       <div className="flex flex-col gap-6">
         {/* Tabs */}
         <div className="flex rounded-xl bg-slate-100 p-1">
@@ -113,20 +188,23 @@ const SignatureCreationModal: React.FC<SignatureCreationModalProps> = ({ isOpen,
                 type="text"
                 value={typedName}
                 onChange={(e) => setTypedName(e.target.value)}
-                placeholder="Nhập tên của bạn tại đây..."
+                placeholder="Nhap ten cua ban tai day..."
                 className="w-full bg-transparent text-center text-4xl font-medium focus:outline-none placeholder:text-slate-200"
-                style={{ fontFamily: 'cursive' }}
+                style={{
+                  fontFamily: SIGNATURE_FONTS[selectedFont]?.fontFamily ?? SIGNATURE_FONTS[0].fontFamily,
+                }}
               />
-              <div className="mt-8 flex gap-3 overflow-x-auto pb-2 w-full justify-center">
-                {[1, 2, 3, 4].map((_, i) => (
+              <div className="mt-8 flex w-full gap-3 overflow-x-auto pb-2">
+                {SIGNATURE_FONTS.map((fontOption, i) => (
                   <button
-                    key={i}
+                    key={fontOption.label}
                     onClick={() => setSelectedFont(i)}
-                    className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg border-2 transition-all ${
+                    className={`flex min-w-[120px] flex-shrink-0 items-center justify-center rounded-2xl border-2 px-4 py-3 transition-all ${
                       selectedFont === i ? 'border-[#134BBA] bg-white text-[#134BBA]' : 'border-transparent bg-slate-200 text-slate-400'
                     }`}
+                    style={{ fontFamily: fontOption.fontFamily }}
                   >
-                    <span className="text-xl">Ag</span>
+                    <span className="text-lg">{typedName.trim() || fontOption.label}</span>
                   </button>
                 ))}
               </div>
@@ -154,10 +232,16 @@ const SignatureCreationModal: React.FC<SignatureCreationModalProps> = ({ isOpen,
                 ref={fileInputRef} 
                 onChange={handleFileChange} 
                 className="hidden" 
-                accept="image/*"
+                accept="image/png,image/jpeg"
               />
             </div>
           )}
+
+          {uploadError ? (
+            <div className="absolute inset-x-4 bottom-16 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-600">
+              {uploadError}
+            </div>
+          ) : null}
 
           {/* Action Buttons in Drawing Area */}
           <button
@@ -179,7 +263,8 @@ const SignatureCreationModal: React.FC<SignatureCreationModalProps> = ({ isOpen,
           </button>
           <button
             onClick={handleConfirm}
-            className="rounded-xl bg-[#134BBA] px-8 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#0e378c] active:scale-95"
+            disabled={!canSubmit}
+            className="rounded-xl bg-[#134BBA] px-8 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#0e378c] disabled:cursor-not-allowed disabled:bg-slate-300 active:scale-95"
           >
             Xác nhận chữ ký
           </button>

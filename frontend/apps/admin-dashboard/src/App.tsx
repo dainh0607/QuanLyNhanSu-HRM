@@ -1,28 +1,19 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import {
-  Navigate,
-  Route,
-  Routes,
-  useLocation,
-  useNavigate,
-  useParams,
-} from "react-router-dom";
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
-import { EmployeeList } from "./features/employees";
-import {
-  ContractsManagementPage,
-  SigningPortalPage,
-} from "./features/employees-contracts";
-import { EmployeeDetail } from "./features/employee-detail/EmployeeDetailViewIntegrated";
-import type { PersonalTabKey } from "./features/employee-detail/edit-modal/types";
-import type { Employee } from "./features/employees/types";
-import { authService } from "./services/authService";
-import AuthLandingPage from "./pages/AuthLandingPage";
-import UnauthorizedPage from "./pages/UnauthorizedPage";
-import type { User } from "./services/authService";
-import { employeeService } from "./services/employeeService";
-import "./index.css";
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import { EmployeeList } from './features/employees';
+import { ContractsManagementPage, SigningPortalPage } from './features/employees-contracts';
+import { WeeklyShiftSchedulePage } from './features/shift-scheduling';
+import { EmployeeDetail } from './features/employee-detail/EmployeeDetailViewIntegrated';
+import type { PersonalTabKey } from './features/employee-detail/edit-modal/types';
+import type { Employee } from './features/employees/types';
+import { authService } from './services/authService';
+import AuthLandingPage from './pages/AuthLandingPage';
+import UnauthorizedPage from './pages/UnauthorizedPage';
+import type { User } from './services/authService';
+import { employeeService } from './services/employeeService';
+import './index.css';
 
 // Mock data mẫu để test khi chưa đăng nhập (user === null)
 const MOCK_USER: User = {
@@ -552,19 +543,23 @@ const ContractsRoute = ({
   );
 };
 
-const LegacyEmployeesRedirect = () => (
-  <Navigate to="/personnel/employees" replace />
-);
-
-const LegacyEmployeeDetailRedirect = () => {
-  const { employeeId } = useParams();
-  const location = useLocation();
-
+const WeeklyShiftSchedulingRoute = ({
+  user,
+  onLogout,
+}: {
+  user: User | null;
+  onLogout: () => Promise<void>;
+}) => {
   return (
-    <Navigate
-      to={`/personnel/employees/${employeeId ?? ""}${location.search}${location.hash}`}
-      replace
-    />
+    <div className="min-h-screen bg-[#f8fafc]">
+      <Header
+        user={user}
+        onLogout={() => {
+          void onLogout();
+        }}
+      />
+      <WeeklyShiftSchedulePage />
+    </div>
   );
 };
 
@@ -681,6 +676,16 @@ function RoutedApp() {
           }
         />
         <Route
+          path="/personnel/shift-scheduling"
+          element={
+            isAuthenticated ? (
+              <WeeklyShiftSchedulingRoute user={user} onLogout={handleLogout} />
+            ) : (
+              <Navigate to="/login" replace state={{ from: loginRedirectPath }} />
+            )
+          }
+        />
+        <Route
           path="/personnel/employees/:employeeId"
           element={
             isAuthenticated ? (
@@ -698,6 +703,7 @@ function RoutedApp() {
           path="/contracts/signing/:token"
           element={<SigningPortalPage />}
         />
+        <Route path="/sign" element={<SigningPortalPage />} />
         <Route path="*" element={<Navigate to={defaultRoute} replace />} />
       </Routes>
     </div>

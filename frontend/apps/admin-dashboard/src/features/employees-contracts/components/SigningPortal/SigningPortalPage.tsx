@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import SigningOtpStep from './SigningOtpStep';
 import SigningDocumentStep from './SigningDocumentStep';
 import type { SignerAuthResponseDto } from '../../signersService';
@@ -7,8 +7,16 @@ import type { SignerAuthResponseDto } from '../../signersService';
 type SigningStep = 'otp' | 'view' | 'success';
 
 const SigningPortalPage: React.FC = () => {
-  const { token } = useParams<{ token: string }>();
+  const { token: routeToken } = useParams<{ token: string }>();
+  const location = useLocation();
   const navigate = useNavigate();
+  const token = useMemo(() => {
+    if (routeToken) {
+      return routeToken;
+    }
+
+    return new URLSearchParams(location.search).get('token') ?? '';
+  }, [location.search, routeToken]);
   const [currentStep, setCurrentStep] = useState<SigningStep>('otp');
   const [signerInfo, setSignerInfo] = useState<SignerAuthResponseDto | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -16,13 +24,13 @@ const SigningPortalPage: React.FC = () => {
   // In a real app, we would fetch contract metadata based on token here
   useEffect(() => {
     if (!token) {
-      setError('Liên kết không hợp lệ hoặc đã hết hạn.');
+      setError('Lien ket khong hop le hoac da het han.');
     }
   }, [token]);
 
   const handleOtpSuccess = (info: SignerAuthResponseDto) => {
     setSignerInfo(info);
-    setCurrentStep('view');
+    setCurrentStep(info.status === 'Signed' ? 'success' : 'view');
   };
 
   const handleSigningComplete = () => {
@@ -70,9 +78,9 @@ const SigningPortalPage: React.FC = () => {
           <div className="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-emerald-500">
             <span className="material-symbols-outlined text-4xl">check_circle</span>
           </div>
-          <h1 className="text-3xl font-bold text-slate-900">Hoàn tất ký hợp đồng</h1>
+          <h1 className="text-3xl font-bold text-slate-900">Cam on ban da hoan tat ky Hop dong</h1>
           <p className="mt-4 max-w-md text-lg text-slate-600">
-            Cảm ơn bạn đã hoàn thành việc ký kết hợp đồng điện tử. Một bản sao của hợp đồng sẽ được gửi đến email của bạn sau khi tất cả các bên hoàn tất.
+            Chu ky cua ban da duoc he thong ghi nhan. Mot ban sao hop dong se duoc gui den email cua ban sau khi tat ca cac ben hoan tat.
           </p>
           <div className="mt-10 flex flex-col gap-3 min-w-[240px]">
             <button
