@@ -66,6 +66,12 @@ namespace ERP.Services.Auth
 
         public async Task<IEnumerable<UserRecord>> ListAllUsersAsync()
         {
+            if (IsBypassAuth)
+            {
+                _logger.LogInformation("Firebase authentication bypass is active. Skipping ListAllUsersAsync.");
+                return new List<UserRecord>();
+            }
+
             if (!IsFirebaseInitialized)
             {
                 _logger.LogWarning("Firebase not initialized. Skipping user listing.");
@@ -86,7 +92,7 @@ namespace ERP.Services.Auth
 
         public async Task DeleteUserAsync(string uid)
         {
-            if (!IsFirebaseInitialized) return;
+            if (IsBypassAuth || !IsFirebaseInitialized) return;
             await FirebaseAuth.DefaultInstance.DeleteUserAsync(uid);
         }
 
@@ -139,7 +145,7 @@ namespace ERP.Services.Auth
 
         public async Task UpdateUserPasswordAsync(string uid, string newPassword)
         {
-            if (!IsFirebaseInitialized) return;
+            if (IsBypassAuth || !IsFirebaseInitialized) return;
             var args = new UserRecordArgs
             {
                 Uid = uid,
