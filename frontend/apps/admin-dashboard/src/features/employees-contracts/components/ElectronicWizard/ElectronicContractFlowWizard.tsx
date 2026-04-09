@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PersonalTabKey } from '../../../employee-detail/edit-modal/types';
 import type { Employee } from '../../../employees/types';
-import { contractsService, saveElectronicContractStep3Signers } from '../../service';
+import { contractsService, saveElectronicContractStep3Signers } from '../../services/contractsService';
 import type {
   ElectronicContractFormValues,
   ElectronicContractParticipant,

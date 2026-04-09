@@ -619,7 +619,16 @@ function RoutedApp() {
     <div id="app-root-container">
       <Routes>
         <Route path="/" element={<Navigate to={defaultRoute} replace />} />
-        <Route path="/auth/landing" element={<AuthLandingPage />} />
+        <Route
+          path="/auth/landing"
+          element={
+            isAuthenticated ? (
+              <AuthLandingPage />
+            ) : (
+              <Navigate to="/login" replace state={{ from: loginRedirectPath }} />
+            )
+          }
+        />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
         <Route
           path="/login"

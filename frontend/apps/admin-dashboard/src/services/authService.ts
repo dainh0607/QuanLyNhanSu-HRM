@@ -1,3 +1,5 @@
+import { API_URL } from "./apiConfig";
+
 export interface User {
   userId: number;
   employeeId: number;
@@ -26,13 +28,17 @@ export interface ChangePasswordPayload {
   confirmPassword: string;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5122/api";
 const CSRF_COOKIE_NAME = "hrm_csrf_token";
 const CSRF_HEADER_NAME = "X-CSRF-Token";
+const SESSION_MARKER_KEY = "hrm_has_session";
+const AUTH_CHECK_COOLDOWN_MS = 1500;
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS", "TRACE"]);
 
 let authToken: string | null = null;
 let currentUser: User | null = null;
+let pendingAuthCheck: Promise<User | null> | null = null;
+let lastAuthCheckAt = 0;
+let lastAuthCheckResult: User | null | undefined;
 
 const normalizeUser = (user?: User | null): User | null => {
   if (!user) {
@@ -45,14 +51,42 @@ const normalizeUser = (user?: User | null): User | null => {
   };
 };
 
-const setAuthSession = (user?: User | null, token?: string | null) => {
-  currentUser = normalizeUser(user);
-  authToken = token ?? null;
+const setSessionMarker = (hasSession: boolean) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    if (hasSession) {
+      window.localStorage.setItem(SESSION_MARKER_KEY, "1");
+    } else {
+      window.localStorage.removeItem(SESSION_MARKER_KEY);
+    }
+  } catch {
+    // Ignore storage failures and keep auth flow running.
+  }
 };
 
-const clearAuthSession = () => {
+const hasSessionMarker = (): boolean => {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    return window.localStorage.getItem(SESSION_MARKER_KEY) === "1";
+  } catch {
+    return false;
+  }
+};
+
+const clearInMemorySession = () => {
   currentUser = null;
   authToken = null;
+};
+
+const rememberAuthCheck = (user: User | null) => {
+  lastAuthCheckAt = Date.now();
+  lastAuthCheckResult = user;
 };
 
 const getCookieValue = (name: string): string | null => {
@@ -71,6 +105,33 @@ const getCookieValue = (name: string): string | null => {
   }
 
   return decodeURIComponent(cookie.slice(cookiePrefix.length));
+};
+
+const hasSessionHint = (): boolean =>
+  Boolean(authToken || getCookieValue(CSRF_COOKIE_NAME) || hasSessionMarker());
+
+const setAuthSession = (user?: User | null, token?: string | null) => {
+  currentUser = normalizeUser(user);
+  authToken = token ?? null;
+  setSessionMarker(Boolean(currentUser || authToken));
+};
+
+const clearAuthSession = () => {
+  clearInMemorySession();
+  setSessionMarker(false);
+};
+
+const readJsonSafely = async <T>(response: Response): Promise<T | null> => {
+  const rawText = await response.text();
+  if (!rawText.trim()) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(rawText) as T;
+  } catch {
+    return null;
+  }
 };
 
 const createHeaders = (
@@ -108,6 +169,7 @@ const withSession = (options: RequestInit = {}): RequestInit => ({
 const applyAuthResponse = (data?: Partial<AuthResponse> | null): User | null => {
   const user = normalizeUser(data?.user ?? null);
   setAuthSession(user, data?.idToken ?? null);
+  rememberAuthCheck(user);
   return user;
 };
 
@@ -120,19 +182,21 @@ const refreshSessionInternal = async (): Promise<boolean> => {
 
     if (!response.ok) {
       clearAuthSession();
+      rememberAuthCheck(null);
       return false;
     }
 
-    const data = (await response.json()) as AuthResponse;
-    if (!data.success) {
+    const data = await readJsonSafely<AuthResponse>(response);
+    if (!data?.success) {
       clearAuthSession();
+      rememberAuthCheck(null);
       return false;
     }
 
     applyAuthResponse(data);
     return true;
   } catch {
-    clearAuthSession();
+    clearInMemorySession();
     return false;
   }
 };
@@ -164,9 +228,9 @@ export const authService = {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = (await response.json()) as AuthResponse;
+      const data = await readJsonSafely<AuthResponse>(response);
 
-      if (response.ok && data.success) {
+      if (response.ok && data?.success) {
         const user = applyAuthResponse(data);
 
         return {
@@ -180,10 +244,10 @@ export const authService = {
       clearAuthSession();
       return {
         success: false,
-        message: data.message || "Tài khoản hoặc mật khẩu không chính xác.",
+        message: data?.message || "Tài khoản hoặc mật khẩu không chính xác.",
       };
     } catch {
-      clearAuthSession();
+      clearInMemorySession();
       return {
         success: false,
         message: "Khong the ket noi toi may chu. Vui long thu lai sau.",
@@ -200,9 +264,9 @@ export const authService = {
         body: JSON.stringify(userData),
       });
 
-      const data = (await response.json()) as AuthResponse;
+      const data = await readJsonSafely<AuthResponse>(response);
 
-      if (response.ok && data.success) {
+      if (response.ok && data?.success) {
         return {
           success: true,
           message: data.message || "Dang ky tai khoan thanh cong!",
@@ -211,7 +275,7 @@ export const authService = {
 
       return {
         success: false,
-        message: data.message || "Dang ky that bai.",
+        message: data?.message || "Dang ky that bai.",
       };
     } catch {
       return {
@@ -228,9 +292,9 @@ export const authService = {
         body: JSON.stringify(payload),
       });
 
-      const data = (await response.json()) as AuthResponse;
+      const data = await readJsonSafely<AuthResponse>(response);
 
-      if (response.ok && data.success) {
+      if (response.ok && data?.success) {
         return {
           success: true,
           message: data.message || "Doi mat khau thanh cong.",
@@ -239,7 +303,7 @@ export const authService = {
 
       return {
         success: false,
-        message: data.message || "Khong the doi mat khau.",
+        message: data?.message || "Khong the doi mat khau.",
       };
     } catch {
       return {
@@ -250,22 +314,55 @@ export const authService = {
   },
 
   checkAuth: async (): Promise<User | null> => {
-    try {
-      const response = await authFetch(`${API_URL}/auth/me`, { method: "GET" });
+    if (pendingAuthCheck) {
+      return pendingAuthCheck;
+    }
 
-      if (!response.ok) {
-        clearAuthSession();
-        return null;
-      }
+    if (
+      lastAuthCheckResult !== undefined &&
+      Date.now() - lastAuthCheckAt < AUTH_CHECK_COOLDOWN_MS
+    ) {
+      return lastAuthCheckResult;
+    }
 
-      const data = (await response.json()) as User;
-      const user = normalizeUser(data);
-      currentUser = user;
-      return user;
-    } catch {
-      clearAuthSession();
+    if (!hasSessionHint()) {
+      clearInMemorySession();
+      rememberAuthCheck(null);
       return null;
     }
+
+    pendingAuthCheck = (async () => {
+      try {
+        const response = await authFetch(`${API_URL}/auth/me`, { method: "GET" });
+
+        if (!response.ok) {
+          clearAuthSession();
+          rememberAuthCheck(null);
+          return null;
+        }
+
+        const data = await readJsonSafely<User>(response);
+        const user = normalizeUser(data);
+
+        if (!user) {
+          clearInMemorySession();
+          rememberAuthCheck(null);
+          return null;
+        }
+
+        setAuthSession(user, authToken);
+        rememberAuthCheck(user);
+        return user;
+      } catch {
+        clearInMemorySession();
+        rememberAuthCheck(null);
+        return null;
+      } finally {
+        pendingAuthCheck = null;
+      }
+    })();
+
+    return pendingAuthCheck;
   },
 
   refreshSession: refreshSessionInternal,
@@ -285,6 +382,7 @@ export const authService = {
       // Ignore logout request failures and still clear the local session.
     } finally {
       clearAuthSession();
+      rememberAuthCheck(null);
     }
   },
 };

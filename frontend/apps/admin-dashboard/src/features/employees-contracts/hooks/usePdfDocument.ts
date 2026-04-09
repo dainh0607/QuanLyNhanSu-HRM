@@ -5,11 +5,11 @@ import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
 GlobalWorkerOptions.workerSrc = pdfWorker;
 
-interface UsePdfDocumentResult {
+type UsePdfDocumentResult = {
   pdfDocument: PDFDocumentProxy | null;
   isLoading: boolean;
   error: string | null;
-}
+};
 
 export const usePdfDocument = (
   sourceUrl: string | null | undefined,
@@ -23,7 +23,7 @@ export const usePdfDocument = (
     if (!sourceUrl) {
       setPdfDocument(null);
       setIsLoading(false);
-      setError('Không thể tải tệp hợp đồng, vui lòng thử lại');
+      setError('KhĂ´ng thá»ƒ táº£i tá»‡p há»£p Ä‘á»“ng, vui lĂ²ng thá»­ láº¡i');
       return;
     }
 
@@ -35,7 +35,6 @@ export const usePdfDocument = (
 
     const loadingTask = getDocument({
       url: sourceUrl,
-      // Disable range/stream for blob URLs to avoid issues
       disableRange: true,
       disableStream: true,
       httpHeaders: accessToken
@@ -55,7 +54,6 @@ export const usePdfDocument = (
         setPdfDocument(documentProxy);
       })
       .catch((loadError: unknown) => {
-        // Ignore cancellation errors
         if (
           loadError instanceof Error &&
           (loadError.name === 'AbortException' || loadError.message?.includes('destroy'))
@@ -67,7 +65,7 @@ export const usePdfDocument = (
 
         if (isMounted) {
           setPdfDocument(null);
-          setError('Không thể tải tệp hợp đồng, vui lòng thử lại');
+          setError('KhĂ´ng thá»ƒ táº£i tá»‡p há»£p Ä‘á»“ng, vui lĂ²ng thá»­ láº¡i');
         }
       })
       .finally(() => {
@@ -78,7 +76,6 @@ export const usePdfDocument = (
 
     return () => {
       isMounted = false;
-      // In pdfjs v5, destroy() on the loading task is the proper cleanup
       try {
         void loadingTask.destroy();
       } catch {

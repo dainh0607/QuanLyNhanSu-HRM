@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Pagination from '../../../employees/components/Pagination';
 import { buildContractSummary, createEmployeeMap, downloadExcelCompatibleFile, matchesContractFilters, matchesContractSearch } from '../../utils';
 import { DEFAULT_CONTRACT_COLUMNS, PAGE_SIZE } from '../../constants';
-import { contractsService } from '../../service';
+import { contractsService } from '../../services/contractsService';
 import type { ContractFilterMetadata, ContractFilterState, ContractListItem } from '../../types';
 import { useToast } from '../../../../hooks/useToast';
 import PersonnelWorkspaceTabs from '../../../personnel/components/PersonnelWorkspaceTabs';

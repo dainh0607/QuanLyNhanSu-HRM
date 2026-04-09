@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { contractsService } from '../../service';
+import { contractsService } from '../../services/contractsService';
 import type { ContractTemplateOption } from '../../types';
 import ModalShell from './ModalShell';
 

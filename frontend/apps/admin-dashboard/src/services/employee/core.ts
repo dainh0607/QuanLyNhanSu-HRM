@@ -1,6 +1,12 @@
 import { authFetch } from "../authService";
+import { API_URL } from "../apiConfig";
 
-export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5122/api";
+export { API_URL };
+
+type HttpError = Error & {
+  status?: number;
+  cause?: unknown;
+};
 
 const parseJsonSafely = async <T>(response: Response): Promise<T | null> => {
   try {
@@ -10,12 +16,33 @@ const parseJsonSafely = async <T>(response: Response): Promise<T | null> => {
   }
 };
 
+const createHttpError = (
+  message: string,
+  status?: number,
+  cause?: unknown,
+): HttpError => {
+  const error = new Error(message) as HttpError;
+  error.status = status;
+  error.cause = cause;
+  return error;
+};
+
 export const requestJson = async <T>(
   input: string,
   init: RequestInit,
   fallbackMessage: string,
 ): Promise<T> => {
-  const response = await authFetch(input, init);
+  let response: Response;
+
+  try {
+    response = await authFetch(input, init);
+  } catch (error) {
+    throw createHttpError(
+      `${fallbackMessage}. Khong the ket noi toi may chu API.`,
+      0,
+      error,
+    );
+  }
 
   if (!response.ok) {
     const clonedResponse = response.clone();
@@ -25,11 +52,10 @@ export const requestJson = async <T>(
     }
 
     const errorText = (await clonedResponse.text()).trim();
-    const error = new Error(errorText || `${fallbackMessage}: ${response.statusText}`) as Error & {
-      status?: number;
-    };
-    error.status = response.status;
-    throw error;
+    throw createHttpError(
+      errorText || `${fallbackMessage}: ${response.statusText}`,
+      response.status,
+    );
   }
 
   if (response.status === 204) {
@@ -44,7 +70,17 @@ export const requestBlob = async (
   init: RequestInit,
   fallbackMessage: string,
 ): Promise<{ blob: Blob; headers: Headers }> => {
-  const response = await authFetch(input, init);
+  let response: Response;
+
+  try {
+    response = await authFetch(input, init);
+  } catch (error) {
+    throw createHttpError(
+      `${fallbackMessage}. Khong the ket noi toi may chu API.`,
+      0,
+      error,
+    );
+  }
 
   if (!response.ok) {
     const clonedResponse = response.clone();
@@ -54,11 +90,10 @@ export const requestBlob = async (
     }
 
     const errorText = (await clonedResponse.text()).trim();
-    const error = new Error(errorText || `${fallbackMessage}: ${response.statusText}`) as Error & {
-      status?: number;
-    };
-    error.status = response.status;
-    throw error;
+    throw createHttpError(
+      errorText || `${fallbackMessage}: ${response.statusText}`,
+      response.status,
+    );
   }
 
   return {

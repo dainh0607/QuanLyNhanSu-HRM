@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { Employee } from '../../../employees/types';
 import { REGULAR_CONTRACT_TYPE_OPTIONS, TAX_TYPE_OPTIONS } from '../../constants';
-import { contractsService } from '../../service';
+import { contractsService } from '../../services/contractsService';
 import type { ContractListItem, SelectOption, ToastActionPayload } from '../../types';
 import { inferCreateContractStatus, isContractNumberDuplicate } from '../../utils';
 import ModalShell from './ModalShell';

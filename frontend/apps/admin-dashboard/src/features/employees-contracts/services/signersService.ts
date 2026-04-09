@@ -1,4 +1,4 @@
-import { API_URL, requestJson } from '../../services/employee/core';
+import { API_URL, requestJson } from '../../../services/employee/core';
 
 export interface GenerateOtpDto {
   signatureToken: string;
@@ -107,7 +107,7 @@ const generateOtp = async (dto: GenerateOtpDto) =>
       method: 'POST',
       body: JSON.stringify(dto),
     },
-    "Không thể gửi mã xác thực",
+    "KhĂ´ng thá»ƒ gá»­i mĂ£ xĂ¡c thá»±c",
   );
 
 const verifyOtpRaw = async (dto: VerifyOtpDto) =>
@@ -117,7 +117,7 @@ const verifyOtpRaw = async (dto: VerifyOtpDto) =>
       method: 'POST',
       body: JSON.stringify(dto),
     },
-    "Xác thực mã OTP thất bại",
+    "XĂ¡c thá»±c mĂ£ OTP tháº¥t báº¡i",
   );
 
 const verifyOtp = async (dto: VerifyOtpDto) => normalizeSignerAuthResponse(await verifyOtpRaw(dto));
