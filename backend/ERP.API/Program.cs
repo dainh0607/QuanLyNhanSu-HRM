@@ -14,6 +14,7 @@ using ERP.Services.Employees;
 using ERP.Services.Organization;
 using ERP.Services.Lookup;
 using ERP.Services.Contracts;
+using ERP.Services.Attendance;
 using ERP.Services.Common;
 using ERP.DTOs.Common;
 using System.Text;
@@ -154,6 +155,7 @@ builder.Services.AddScoped<IEmployeeDocumentService, EmployeeDocumentService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<ISignerService, SignerService>();
 builder.Services.AddScoped<IContractNotificationService, ContractNotificationService>();
+builder.Services.AddScoped<IAttendanceService, AttendanceService>();
 builder.Services.AddHostedService<EmployeeStatusWorker>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -250,28 +252,5 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

@@ -21,12 +21,21 @@ namespace ERP.Services.Contracts
         private readonly IUnitOfWork _unitOfWork;
         private readonly IEmailService _emailService;
         private readonly IConfiguration _configuration;
+        private readonly IPdfService _pdfService;
+        private readonly IStorageService _storageService;
 
-        public SignerService(IUnitOfWork unitOfWork, IEmailService emailService, IConfiguration configuration)
+        public SignerService(
+            IUnitOfWork unitOfWork,
+            IEmailService emailService,
+            IConfiguration configuration,
+            IPdfService pdfService,
+            IStorageService storageService)
         {
             _unitOfWork = unitOfWork;
             _emailService = emailService;
             _configuration = configuration;
+            _pdfService = pdfService;
+            _storageService = storageService;
         }
 
         public async Task<bool> GenerateOtpAsync(GenerateOtpDto dto)
@@ -85,6 +94,133 @@ namespace ERP.Services.Contracts
                 Email = signer.email,
                 ContractId = signer.contract_id
             };
+        }
+
+        public async Task<SignDocumentResponseDto> SignDocumentAsync(SignDocumentDto dto)
+        {
+            try
+            {
+                // Validate input
+                if (dto == null)
+                    throw new ArgumentNullException(nameof(dto));
+
+                if (string.IsNullOrWhiteSpace(dto.SignatureImageBase64))
+                    throw new ArgumentException("Signature image is required", nameof(dto.SignatureImageBase64));
+
+                // Get signer
+                var signer = await _unitOfWork.Repository<ContractSigners>()
+                    .GetByIdAsync(dto.SignerId);
+
+                if (signer == null)
+                    throw new Exception($"Signer with ID {dto.SignerId} not found");
+
+                // Get contract
+                var contract = await _unitOfWork.Repository<ERP.Entities.Models.Contracts>()
+                    .AsQueryable()
+                    .Include(c => c.Employee)
+                    .FirstOrDefaultAsync(c => c.Id == signer.contract_id);
+
+                if (contract == null)
+                    throw new Exception("Contract not found");
+
+                // Get the original PDF file
+                byte[] pdfBytes;
+                if (!string.IsNullOrWhiteSpace(contract.attachment))
+                {
+                    // Load from storage
+                    pdfBytes = await _storageService.GetFileAsync(contract.attachment);
+                }
+                else
+                {
+                    // Generate PDF if not exists
+                    pdfBytes = await _pdfService.GenerateContractPdfAsync(contract);
+                }
+
+                // Decode signature image from base64
+                byte[] signatureImageBytes;
+                try
+                {
+                    signatureImageBytes = Convert.FromBase64String(dto.SignatureImageBase64);
+                }
+                catch
+                {
+                    throw new ArgumentException("Signature image is not valid base64 format", nameof(dto.SignatureImageBase64));
+                }
+
+                // Stamp signature onto PDF
+                byte[] signedPdfBytes = await _pdfService.StampSignatureAsync(
+                    pdfBytes,
+                    signatureImageBytes,
+                    dto.PageNumber,
+                    dto.X,
+                    dto.Y,
+                    dto.Width,
+                    dto.Height);
+
+                // Save signed PDF to storage
+                string signedFileName = $"signed_{contract.Id}_{signer.Id}_{DateTime.UtcNow:yyyyMMddHHmmss}.pdf";
+                string signedFilePath = await _storageService.SaveFileAsync(signedPdfBytes, signedFileName, "application/pdf");
+
+                // Update signer record
+                signer.status = "SIGNED";
+                signer.signed_at = DateTime.UtcNow;
+                if (!string.IsNullOrWhiteSpace(dto.Note))
+                {
+                    signer.note = dto.Note;
+                }
+
+                _unitOfWork.Repository<ContractSigners>().Update(signer);
+                await _unitOfWork.SaveChangesAsync();
+
+                // Create response with signed PDF as base64 for download
+                string signedPdfBase64 = Convert.ToBase64String(signedPdfBytes);
+
+                var response = new SignDocumentResponseDto
+                {
+                    Success = true,
+                    Message = "Document signed successfully",
+                    SignedPdfBase64 = signedPdfBase64,
+                    DownloadUrl = $"/api/contracts/{contract.Id}/signed-pdf/{signer.Id}",
+                    SignedAt = signer.signed_at.Value,
+                    SignatureCount = 1
+                };
+
+                // Send confirmation email
+                await SendSigningConfirmationEmail(signer, contract);
+
+                return response;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error signing document: {ex.Message}", ex);
+            }
+        }
+
+        private async Task SendSigningConfirmationEmail(ContractSigners signer, ERP.Entities.Models.Contracts contract)
+        {
+            try
+            {
+                var subject = "Xác nhận ký hợp đồng - NexaHRM";
+                var body = $@"
+                    <p>Chào {signer.full_name},</p>
+                    <p>Chúng tôi xác nhận rằng bạn đã ký thành công hợp đồng số <strong>{contract.contract_number}</strong>.</p>
+                    <p><strong>Chi tiết hợp đồng:</strong></p>
+                    <ul>
+                        <li>Số hợp đồng: {contract.contract_number}</li>
+                        <li>Nhân viên: {contract.Employee?.full_name}</li>
+                        <li>Ngày ký: {DateTime.UtcNow:dd/MM/yyyy HH:mm:ss}</li>
+                    </ul>
+                    <p>Tệp PDF đã ký đã được lưu trong hệ thống.</p>
+                    <p>Trân trọng,<br/>Đội ngũ NexaHRM</p>
+                ";
+
+                await _emailService.SendEmailAsync(signer.email, subject, body);
+            }
+            catch (Exception ex)
+            {
+                // Log error but don't fail the signing process
+                System.Diagnostics.Debug.WriteLine($"Failed to send confirmation email: {ex.Message}");
+            }
         }
 
         private string GenerateSignerToken(ContractSigners signer)

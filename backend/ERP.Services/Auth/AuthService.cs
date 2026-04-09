@@ -208,6 +208,16 @@ namespace ERP.Services.Auth
                     return new AuthResponseDto { Success = false, Message = "Khong the tai thong tin nguoi dung" };
                 }
 
+                // Chặn nhân viên đăng nhập vào hệ thống quản trị
+                if (userInfo.Roles == null || !userInfo.Roles.Any(r => r == "Admin" || r == "Manager"))
+                {
+                    return new AuthResponseDto 
+                    { 
+                        Success = false, 
+                        Message = "Tài khoản nhân viên không có quyền truy cập vào hệ thống này." 
+                    };
+                }
+
                 return await CreateSessionResponseAsync(localUser.Id, userInfo, sessionContext, "Dang nhap thanh cong");
             }
             catch (Exception ex)
@@ -435,14 +445,10 @@ namespace ERP.Services.Auth
                         .Include(u => u.Employee)
                         .FirstOrDefaultAsync(u => u.firebase_uid == fbUser.Uid || u.Employee.email == fbUser.Email);
 
-                    var targetRoleId = 3;
+                    var targetRoleId = 2; // Default Manager (Changed from 3)
                     if (fbUser.Email?.ToLower().Contains("admin") == true)
                     {
                         targetRoleId = 1;
-                    }
-                    else if (fbUser.Email?.ToLower().Contains("manager") == true)
-                    {
-                        targetRoleId = 2;
                     }
 
                     if (localUser == null)

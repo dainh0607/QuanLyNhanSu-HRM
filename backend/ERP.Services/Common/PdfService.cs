@@ -6,6 +6,9 @@ using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using QuestPDF.Previewer;
+using iText.Kernel.Pdf;
+using iText.Kernel.Pdf.Canvas;
+using iText.IO.Image;
 
 namespace ERP.Services.Common
 {
@@ -69,6 +72,91 @@ namespace ERP.Services.Common
             {
                 document.GeneratePdf(ms);
                 return Task.FromResult(ms.ToArray());
+            }
+        }
+
+        /// <summary>
+        /// Stamps a signature image onto a PDF at specified coordinates
+        /// </summary>
+        public async Task<byte[]> StampSignatureAsync(
+            byte[] pdfBytes,
+            byte[] signatureImageBytes,
+            int pageNumber,
+            float xCoordinate,
+            float yCoordinate,
+            float? width = null,
+            float? height = null)
+        {
+            try
+            {
+                // Validate inputs
+                if (pdfBytes == null || pdfBytes.Length == 0)
+                    throw new ArgumentException("PDF bytes cannot be empty", nameof(pdfBytes));
+                
+                if (signatureImageBytes == null || signatureImageBytes.Length == 0)
+                    throw new ArgumentException("Signature image bytes cannot be empty", nameof(signatureImageBytes));
+
+                if (pageNumber < 1)
+                    throw new ArgumentException("Page number must be greater than 0", nameof(pageNumber));
+
+                // Read PDF and add signature
+                using (var inputStream = new MemoryStream(pdfBytes))
+                using (var outputStream = new MemoryStream())
+                {
+                    // Open PDF for reading and writing
+                    PdfReader reader = new PdfReader(inputStream);
+                    PdfWriter writer = new PdfWriter(outputStream);
+                    PdfDocument pdfDoc = new PdfDocument(reader, writer);
+
+                    // Check if page exists
+                    if (pageNumber > pdfDoc.GetNumberOfPages())
+                        throw new ArgumentException($"Page {pageNumber} does not exist in PDF", nameof(pageNumber));
+
+                    // Get the specified page
+                    PdfPage page = pdfDoc.GetPage(pageNumber);
+                    
+                    // Create image from signature bytes
+                    ImageData imageData = ImageDataFactory.Create(signatureImageBytes);
+                    iText.Layout.Element.Image signatureImage = new iText.Layout.Element.Image(imageData);
+
+                    // Set dimensions
+                    float imageWidth = width ?? 100; // Default width 100 points
+                    float imageHeight = height ?? 50; // Default height 50 points
+                    
+                    // If only width is provided, scale height proportionally
+                    if (width.HasValue && !height.HasValue)
+                    {
+                        float aspectRatio = imageData.GetHeight() / imageData.GetWidth();
+                        imageHeight = imageWidth * aspectRatio;
+                    }
+                    // If only height is provided, scale width proportionally
+                    else if (height.HasValue && !width.HasValue)
+                    {
+                        float aspectRatio = imageData.GetWidth() / imageData.GetHeight();
+                        imageWidth = imageHeight * aspectRatio;
+                    }
+
+                    signatureImage.SetWidth(imageWidth);
+                    signatureImage.SetHeight(imageHeight);
+
+                    // Create layout document for adding the image
+                    using iText.Layout.Document document = new iText.Layout.Document(pdfDoc, 
+                        new iText.Kernel.Geom.PageSize(page.GetPageSize().GetWidth(), page.GetPageSize().GetHeight()));
+
+                    // Add the image at the specified coordinates
+                    // Note: PDF coordinates originate from bottom-left corner
+                    signatureImage.SetFixedPosition(pageNumber, xCoordinate, yCoordinate, imageWidth);
+                    document.Add(signatureImage);
+
+                    document.Close();
+                    pdfDoc.Close();
+
+                    return await Task.FromResult(outputStream.ToArray());
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error stamping signature on PDF: {ex.Message}", ex);
             }
         }
 

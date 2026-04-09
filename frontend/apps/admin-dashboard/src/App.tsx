@@ -1,48 +1,66 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import { EmployeeList } from './features/employees';
-import { ContractsManagementPage, SigningPortalPage } from './features/employees-contracts';
-import { EmployeeDetail } from './features/employee-detail/EmployeeDetailViewIntegrated';
-import type { PersonalTabKey } from './features/employee-detail/edit-modal/types';
-import type { Employee } from './features/employees/types';
-import { authService } from './services/authService';
-import AuthLandingPage from './pages/AuthLandingPage';
-import UnauthorizedPage from './pages/UnauthorizedPage';
-import type { User } from './services/authService';
-import { employeeService } from './services/employeeService';
-import './index.css';
+import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import { EmployeeList } from "./features/employees";
+import {
+  ContractsManagementPage,
+  SigningPortalPage,
+} from "./features/employees-contracts";
+import { EmployeeDetail } from "./features/employee-detail/EmployeeDetailViewIntegrated";
+import type { PersonalTabKey } from "./features/employee-detail/edit-modal/types";
+import type { Employee } from "./features/employees/types";
+import { authService } from "./services/authService";
+import AuthLandingPage from "./pages/AuthLandingPage";
+import UnauthorizedPage from "./pages/UnauthorizedPage";
+import type { User } from "./services/authService";
+import { employeeService } from "./services/employeeService";
+import "./index.css";
 
 // Mock data mẫu để test khi chưa đăng nhập (user === null)
 const MOCK_USER: User = {
   userId: 1,
   employeeId: 101,
-  email: 'nguyendinh@nexahr.vn',
-  fullName: 'Nguyễn Đình',
-  employeeCode: 'NV-001',
-  phoneNumber: '0912 345 678',
+  email: "nguyendinh@nexahr.vn",
+  fullName: "Nguyễn Đình",
+  employeeCode: "NV-001",
+  phoneNumber: "0912 345 678",
   isActive: true,
-  roles: ['Admin'],
-  role: 'admin',
+  roles: ["Admin"],
+  role: "admin",
 };
 
 const getInitials = (fullName: string | undefined) => {
-  if (!fullName) return 'NĐ';
-  const names = fullName.trim().split(' ');
+  if (!fullName) return "NĐ";
+  const names = fullName.trim().split(" ");
   if (names.length >= 2) {
-    return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
+    return (
+      names[0].charAt(0) + names[names.length - 1].charAt(0)
+    ).toUpperCase();
   }
   return names[0].charAt(0).toUpperCase();
 };
 
 const getRoleLabel = (user: User) => {
-  if (user.roles?.includes('Admin')) return 'Quản trị viên';
-  if (user.roles?.includes('Manager')) return 'Quản lý';
-  return 'Nhân viên';
+  if (user.roles?.includes("Admin")) return "Quản trị viên";
+  if (user.roles?.includes("Manager")) return "Quản lý";
+  return "Nhân viên";
 };
 
-const Header = ({ user, onLogout }: { user: User | null; onLogout: () => void }) => {
+const Header = ({
+  user,
+  onLogout,
+}: {
+  user: User | null;
+  onLogout: () => void;
+}) => {
   // Sử dụng mock data nếu user chưa đăng nhập
   const displayUser = user ?? MOCK_USER;
 
@@ -58,28 +76,28 @@ const Header = ({ user, onLogout }: { user: User | null; onLogout: () => void })
 
   useEffect(() => {
     if (isProfileOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isProfileOpen, handleClickOutside]);
 
   const navItems = [
-    { name: 'Lịch', active: false },
-    { name: 'Tuyển dụng', active: false },
-    { name: 'Nhân sự', active: true },
-    { name: 'Chấm công', active: false },
-    { name: 'Yêu cầu', active: false },
-    { name: 'Tiền lương', active: false },
-    { name: 'Đào tạo', active: false },
-    { name: 'Giao việc', active: false },
-    { name: 'Thêm', active: false, hasDropdown: true },
+    { name: "Lịch", active: false },
+    { name: "Tuyển dụng", active: false },
+    { name: "Nhân sự", active: true },
+    { name: "Chấm công", active: false },
+    { name: "Yêu cầu", active: false },
+    { name: "Tiền lương", active: false },
+    { name: "Đào tạo", active: false },
+    { name: "Giao việc", active: false },
+    { name: "Thêm", active: false, hasDropdown: true },
   ];
 
   const profileMenuItems = [
-    { label: 'Tài khoản', icon: 'person' },
-    { label: 'Tích hợp', icon: 'widgets' },
-    { label: 'Cài đặt', icon: 'settings' },
-    { label: 'Trung tâm bảo mật', icon: 'shield' },
+    { label: "Tài khoản", icon: "person" },
+    { label: "Tích hợp", icon: "widgets" },
+    { label: "Cài đặt", icon: "settings" },
+    { label: "Trung tâm bảo mật", icon: "shield" },
   ];
 
   return (
@@ -88,13 +106,15 @@ const Header = ({ user, onLogout }: { user: User | null; onLogout: () => void })
         {/* Logo Section */}
         <div className="flex items-center gap-2.5 group cursor-pointer">
           <div className="w-12 h-12 bg-gray-200 rounded-xl overflow-hidden flex items-center justify-center">
-            <img 
-              src="/LogoNexaHRNoText.png" 
-              alt="Logo NexaHR" 
+            <img
+              src="/LogoNexaHRNoText.png"
+              alt="Logo NexaHR"
               className="w-full h-full object-contain scale-[2]"
             />
           </div>
-          <span className="text-[#192841] font-bold text-2xl tracking-tighter">NexaHR</span>
+          <span className="text-[#192841] font-bold text-2xl tracking-tighter">
+            NexaHR
+          </span>
         </div>
 
         {/* Navigation Menu */}
@@ -103,20 +123,22 @@ const Header = ({ user, onLogout }: { user: User | null; onLogout: () => void })
             <button
               key={item.name}
               className={`h-16 flex items-center gap-1 text-sm font-medium transition-colors relative ${
-                item.active 
-                  ? 'text-[#134BBA] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#134BBA]' 
-                  : 'text-[#64748b] hover:text-[#111827]'
+                item.active
+                  ? "text-[#134BBA] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#134BBA]"
+                  : "text-[#64748b] hover:text-[#111827]"
               }`}
             >
               {item.name}
               {item.hasDropdown && (
-                <span className="material-symbols-outlined text-lg leading-none">expand_more</span>
+                <span className="material-symbols-outlined text-lg leading-none">
+                  expand_more
+                </span>
               )}
             </button>
           ))}
         </nav>
       </div>
-      
+
       <div className="flex items-center gap-5">
         {/* Language & Actions */}
         <div className="flex items-center gap-4 border-r border-gray-100 pr-5">
@@ -124,13 +146,18 @@ const Header = ({ user, onLogout }: { user: User | null; onLogout: () => void })
             VI
           </button>
           <button className="relative p-1 text-[#64748b] hover:text-[#111827] transition-colors">
-            <span className="material-symbols-outlined text-[24px]">notifications</span>
+            <span className="material-symbols-outlined text-[24px]">
+              notifications
+            </span>
             <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
           </button>
         </div>
 
         {/* Profile Section with Dropdown */}
-        <div className={`relative ${isProfileOpen ? 'z-[210]' : ''}`} ref={profileRef}>
+        <div
+          className={`relative ${isProfileOpen ? "z-[210]" : ""}`}
+          ref={profileRef}
+        >
           {/* Trigger: Avatar + Chevron */}
           <button
             id="profile-trigger"
@@ -140,7 +167,9 @@ const Header = ({ user, onLogout }: { user: User | null; onLogout: () => void })
             <div className="w-9 h-9 rounded-full bg-[#f97316] flex items-center justify-center text-white text-sm font-bold group-hover:opacity-90 transition-opacity">
               {getInitials(displayUser.fullName)}
             </div>
-            <span className={`material-symbols-outlined text-xl text-[#111827] transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`}>
+            <span
+              className={`material-symbols-outlined text-xl text-[#111827] transition-transform duration-200 ${isProfileOpen ? "rotate-180" : ""}`}
+            >
               expand_more
             </span>
           </button>
@@ -157,7 +186,9 @@ const Header = ({ user, onLogout }: { user: User | null; onLogout: () => void })
                   {getInitials(displayUser.fullName)}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[#1e293b] text-sm font-semibold truncate">{displayUser.fullName}</p>
+                  <p className="text-[#1e293b] text-sm font-semibold truncate">
+                    {displayUser.fullName}
+                  </p>
                   <p className="text-[#94a3b8] text-xs truncate">
                     {getRoleLabel(displayUser)} · {displayUser.phoneNumber}
                   </p>
@@ -174,7 +205,9 @@ const Header = ({ user, onLogout }: { user: User | null; onLogout: () => void })
                     key={item.label}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#475569] hover:bg-[#f1f5f9] hover:text-[#1e293b] transition-colors text-sm font-medium"
                   >
-                    <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
+                    <span className="material-symbols-outlined text-[20px]">
+                      {item.icon}
+                    </span>
                     {item.label}
                   </button>
                 ))}
@@ -206,12 +239,14 @@ const Header = ({ user, onLogout }: { user: User | null; onLogout: () => void })
 function LegacyStateApp() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [user, setUser] = useState<User | null>(null);
-  const [currentPage, setCurrentPage] = useState<'login' | 'register'>('login');
+  const [currentPage, setCurrentPage] = useState<"login" | "register">("login");
   const [isInitializing, setIsInitializing] = useState<boolean>(true);
-  
+
   // Navigation state
-  const [currentView, setCurrentView] = useState<'list' | 'detail'>('list');
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [currentView, setCurrentView] = useState<"list" | "detail">("list");
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
+    null,
+  );
 
   useEffect(() => {
     const initAuth = async () => {
@@ -225,7 +260,7 @@ function LegacyStateApp() {
         setIsInitializing(false);
       }
     };
-    
+
     initAuth();
   }, []);
 
@@ -238,13 +273,13 @@ function LegacyStateApp() {
     await authService.logout();
     setIsAuthenticated(false);
     setUser(null);
-    setCurrentPage('login');
-    setCurrentView('list');
+    setCurrentPage("login");
+    setCurrentView("list");
   };
 
   const handleSelectEmployee = (emp: Employee) => {
     setSelectedEmployee(emp);
-    setCurrentView('detail');
+    setCurrentView("detail");
   };
 
   // Màn hình loading khi khởi tạo ứng dụng (kiểm tra session)
@@ -253,7 +288,9 @@ function LegacyStateApp() {
       <div className="min-h-screen bg-[#0a0f23] flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-white/60 text-sm font-medium">Đang khởi động hệ thống...</p>
+          <p className="text-white/60 text-sm font-medium">
+            Đang khởi động hệ thống...
+          </p>
         </div>
       </div>
     );
@@ -264,31 +301,31 @@ function LegacyStateApp() {
       {isAuthenticated ? (
         <div className="min-h-screen bg-[#f8fafc]">
           {/* Ẩn Header nếu đang ở trang Detail */}
-          {currentView === 'list' && <Header user={user} onLogout={handleLogout} />}
-          
-          {currentView === 'list' ? (
+          {currentView === "list" && (
+            <Header user={user} onLogout={handleLogout} />
+          )}
+
+          {currentView === "list" ? (
             <EmployeeList onSelectEmployee={handleSelectEmployee} />
           ) : (
             selectedEmployee && (
-              <EmployeeDetail 
-                employee={selectedEmployee} 
-                onBack={() => setCurrentView('list')} 
+              <EmployeeDetail
+                employee={selectedEmployee}
+                onBack={() => setCurrentView("list")}
               />
             )
           )}
         </div>
+      ) : currentPage === "login" ? (
+        <LoginPage
+          onNavigateToRegister={() => setCurrentPage("register")}
+          onLoginSuccess={handleLoginSuccess}
+        />
       ) : (
-        currentPage === 'login' ? (
-          <LoginPage 
-            onNavigateToRegister={() => setCurrentPage('register')} 
-            onLoginSuccess={handleLoginSuccess}
-          />
-        ) : (
-          <RegisterPage 
-            onNavigateToLogin={() => setCurrentPage('login')} 
-            onRegisterSuccess={() => setCurrentPage('login')}
-          />
-        )
+        <RegisterPage
+          onNavigateToLogin={() => setCurrentPage("login")}
+          onRegisterSuccess={() => setCurrentPage("login")}
+        />
       )}
     </div>
   );
@@ -349,25 +386,29 @@ const EmployeeDetailRoute = () => {
   const routeState = location.state as EmployeeRouteState | null;
   const employeeFromRouteState = routeState?.employee ?? null;
   const parsedEmployeeId = Number(employeeId);
-  const isValidEmployeeId = Number.isInteger(parsedEmployeeId) && parsedEmployeeId > 0;
+  const isValidEmployeeId =
+    Number.isInteger(parsedEmployeeId) && parsedEmployeeId > 0;
   const returnPath =
-    searchParams.get('from') === 'contracts' ? '/personnel/contracts' : '/personnel/employees';
-  const editTabQuery = searchParams.get('edit');
+    searchParams.get("from") === "contracts"
+      ? "/personnel/contracts"
+      : "/personnel/employees";
+  const editTabQuery = searchParams.get("edit");
   const initialEditPersonalTab: PersonalTabKey =
-    editTabQuery === 'contact' ||
-    editTabQuery === 'emergencyContact' ||
-    editTabQuery === 'permanentAddress' ||
-    editTabQuery === 'education' ||
-    editTabQuery === 'identity' ||
-    editTabQuery === 'bankAccount' ||
-    editTabQuery === 'health' ||
-    editTabQuery === 'dependents' ||
-    editTabQuery === 'additionalInfo'
+    editTabQuery === "contact" ||
+    editTabQuery === "emergencyContact" ||
+    editTabQuery === "permanentAddress" ||
+    editTabQuery === "education" ||
+    editTabQuery === "identity" ||
+    editTabQuery === "bankAccount" ||
+    editTabQuery === "health" ||
+    editTabQuery === "dependents" ||
+    editTabQuery === "additionalInfo"
       ? editTabQuery
-      : 'basicInfo';
-  const openEditOnLoad = searchParams.has('edit');
+      : "basicInfo";
+  const openEditOnLoad = searchParams.has("edit");
   const hasStateEmployee =
-    employeeFromRouteState !== null && employeeFromRouteState.id === parsedEmployeeId;
+    employeeFromRouteState !== null &&
+    employeeFromRouteState.id === parsedEmployeeId;
   const [employee, setEmployee] = useState<Employee | null>(
     hasStateEmployee ? employeeFromRouteState : null,
   );
@@ -378,12 +419,15 @@ const EmployeeDetailRoute = () => {
   useEffect(() => {
     if (!isValidEmployeeId) {
       setEmployee(null);
-      setLoadError('Employee id is invalid.');
+      setLoadError("Employee id is invalid.");
       setIsLoading(false);
       return;
     }
 
-    if (employeeFromRouteState && employeeFromRouteState.id === parsedEmployeeId) {
+    if (
+      employeeFromRouteState &&
+      employeeFromRouteState.id === parsedEmployeeId
+    ) {
       setEmployee(employeeFromRouteState);
       setLoadError(null);
       setIsLoading(false);
@@ -405,7 +449,7 @@ const EmployeeDetailRoute = () => {
         console.error(`Failed to load employee ${parsedEmployeeId}:`, error);
         if (isMounted) {
           setEmployee(null);
-          setLoadError('Khong the tai thong tin nhan su. Vui long thu lai.');
+          setLoadError("Khong the tai thong tin nhan su. Vui long thu lai.");
         }
       } finally {
         if (isMounted) {
@@ -419,7 +463,12 @@ const EmployeeDetailRoute = () => {
     return () => {
       isMounted = false;
     };
-  }, [employeeFromRouteState, isValidEmployeeId, parsedEmployeeId, reloadToken]);
+  }, [
+    employeeFromRouteState,
+    isValidEmployeeId,
+    parsedEmployeeId,
+    reloadToken,
+  ]);
 
   if (!isValidEmployeeId) {
     return <Navigate to="/personnel/employees" replace />;
@@ -438,13 +487,17 @@ const EmployeeDetailRoute = () => {
             onClick={() => navigate(returnPath)}
             className="mb-6 inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
           >
-            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+            <span className="material-symbols-outlined text-[18px]">
+              arrow_back
+            </span>
             Quay lai danh sach
           </button>
 
-          <h1 className="text-xl font-semibold text-slate-900">Khong mo duoc ho so nhan su</h1>
+          <h1 className="text-xl font-semibold text-slate-900">
+            Khong mo duoc ho so nhan su
+          </h1>
           <p className="mt-3 text-sm leading-6 text-slate-600">
-            {loadError ?? 'Khong the tai du lieu cho trang chi tiet nay.'}
+            {loadError ?? "Khong the tai du lieu cho trang chi tiet nay."}
           </p>
 
           <div className="mt-6 flex gap-3">
@@ -474,7 +527,7 @@ const EmployeeDetailRoute = () => {
       onBack={() => navigate(returnPath)}
       openEditOnLoad={openEditOnLoad}
       initialEditPersonalTab={initialEditPersonalTab}
-      highlightWorkTypeNotice={searchParams.get('from') === 'contracts'}
+      highlightWorkTypeNotice={searchParams.get("from") === "contracts"}
     />
   );
 };
@@ -499,7 +552,9 @@ const ContractsRoute = ({
   );
 };
 
-const LegacyEmployeesRedirect = () => <Navigate to="/personnel/employees" replace />;
+const LegacyEmployeesRedirect = () => (
+  <Navigate to="/personnel/employees" replace />
+);
 
 const LegacyEmployeeDetailRedirect = () => {
   const { employeeId } = useParams();
@@ -507,7 +562,7 @@ const LegacyEmployeeDetailRedirect = () => {
 
   return (
     <Navigate
-      to={`/personnel/employees/${employeeId ?? ''}${location.search}${location.hash}`}
+      to={`/personnel/employees/${employeeId ?? ""}${location.search}${location.hash}`}
       replace
     />
   );
@@ -540,9 +595,11 @@ function RoutedApp() {
     const currentUser = authService.getCurrentUser();
     const redirectState = location.state as AuthRedirectState | null;
     const redirectPath =
-      redirectState?.from && redirectState.from !== '/login' && redirectState.from !== '/register'
+      redirectState?.from &&
+      redirectState.from !== "/login" &&
+      redirectState.from !== "/register"
         ? redirectState.from
-        : '/auth/landing';
+        : "/auth/landing";
 
     setIsAuthenticated(true);
     setUser(currentUser);
@@ -553,14 +610,14 @@ function RoutedApp() {
     await authService.logout();
     setIsAuthenticated(false);
     setUser(null);
-    navigate('/login', { replace: true });
+    navigate("/login", { replace: true });
   };
 
   if (isInitializing) {
     return <LoadingScreen message="Hệ thống đang khởi động..." />;
   }
 
-  const defaultRoute = isAuthenticated ? '/auth/landing' : '/login';
+  const defaultRoute = isAuthenticated ? "/auth/landing" : "/login";
   const loginRedirectPath = `${location.pathname}${location.search}${location.hash}`;
 
   return (
@@ -576,7 +633,7 @@ function RoutedApp() {
               <Navigate to="/auth/landing" replace />
             ) : (
               <LoginPage
-                onNavigateToRegister={() => navigate('/register')}
+                onNavigateToRegister={() => navigate("/register")}
                 onLoginSuccess={handleLoginSuccess}
               />
             )
@@ -589,8 +646,8 @@ function RoutedApp() {
               <Navigate to="/auth/landing" replace />
             ) : (
               <RegisterPage
-                onNavigateToLogin={() => navigate('/login')}
-                onRegisterSuccess={() => navigate('/login')}
+                onNavigateToLogin={() => navigate("/login")}
+                onRegisterSuccess={() => navigate("/login")}
               />
             )
           }
@@ -601,7 +658,11 @@ function RoutedApp() {
             isAuthenticated ? (
               <EmployeeListRoute user={user} onLogout={handleLogout} />
             ) : (
-              <Navigate to="/login" replace state={{ from: loginRedirectPath }} />
+              <Navigate
+                to="/login"
+                replace
+                state={{ from: loginRedirectPath }}
+              />
             )
           }
         />
@@ -611,7 +672,11 @@ function RoutedApp() {
             isAuthenticated ? (
               <ContractsRoute user={user} onLogout={handleLogout} />
             ) : (
-              <Navigate to="/login" replace state={{ from: loginRedirectPath }} />
+              <Navigate
+                to="/login"
+                replace
+                state={{ from: loginRedirectPath }}
+              />
             )
           }
         />
@@ -621,7 +686,11 @@ function RoutedApp() {
             isAuthenticated ? (
               <EmployeeDetailRoute />
             ) : (
-              <Navigate to="/login" replace state={{ from: loginRedirectPath }} />
+              <Navigate
+                to="/login"
+                replace
+                state={{ from: loginRedirectPath }}
+              />
             )
           }
         />
