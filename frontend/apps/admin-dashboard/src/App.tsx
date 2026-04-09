@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import { EmployeeList } from './features/employees';
 import { ContractsManagementPage, SigningPortalPage } from './features/employees-contracts';
+import { WeeklyShiftSchedulePage } from './features/shift-scheduling';
 import { EmployeeDetail } from './features/employee-detail/EmployeeDetailViewIntegrated';
 import type { PersonalTabKey } from './features/employee-detail/edit-modal/types';
 import type { Employee } from './features/employees/types';
@@ -499,17 +500,23 @@ const ContractsRoute = ({
   );
 };
 
-const LegacyEmployeesRedirect = () => <Navigate to="/personnel/employees" replace />;
-
-const LegacyEmployeeDetailRedirect = () => {
-  const { employeeId } = useParams();
-  const location = useLocation();
-
+const WeeklyShiftSchedulingRoute = ({
+  user,
+  onLogout,
+}: {
+  user: User | null;
+  onLogout: () => Promise<void>;
+}) => {
   return (
-    <Navigate
-      to={`/personnel/employees/${employeeId ?? ''}${location.search}${location.hash}`}
-      replace
-    />
+    <div className="min-h-screen bg-[#f8fafc]">
+      <Header
+        user={user}
+        onLogout={() => {
+          void onLogout();
+        }}
+      />
+      <WeeklyShiftSchedulePage />
+    </div>
   );
 };
 
@@ -616,6 +623,16 @@ function RoutedApp() {
           }
         />
         <Route
+          path="/personnel/shift-scheduling"
+          element={
+            isAuthenticated ? (
+              <WeeklyShiftSchedulingRoute user={user} onLogout={handleLogout} />
+            ) : (
+              <Navigate to="/login" replace state={{ from: loginRedirectPath }} />
+            )
+          }
+        />
+        <Route
           path="/personnel/employees/:employeeId"
           element={
             isAuthenticated ? (
@@ -629,6 +646,7 @@ function RoutedApp() {
           path="/contracts/signing/:token"
           element={<SigningPortalPage />}
         />
+        <Route path="/sign" element={<SigningPortalPage />} />
         <Route path="*" element={<Navigate to={defaultRoute} replace />} />
       </Routes>
     </div>

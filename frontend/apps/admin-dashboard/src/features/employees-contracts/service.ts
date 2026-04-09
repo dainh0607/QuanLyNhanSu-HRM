@@ -23,6 +23,7 @@ import type {
   LookupItem,
   ContractTemplateOption,
   ElectronicContractDraftDto,
+  ContractSigner,
   ContractStep3Dto,
   ContractStep4Dto,
   ContractSignerDto,
@@ -33,8 +34,48 @@ interface UploadedDocumentResponse {
   FileUrl?: string;
 }
 
+interface ContractSignerApiResponse {
+  id?: number;
+  Id?: number;
+  email?: string | null;
+  Email?: string | null;
+  fullName?: string | null;
+  FullName?: string | null;
+  signOrder?: number;
+  SignOrder?: number;
+  status?: string | null;
+  Status?: string | null;
+  signedAt?: string | null;
+  SignedAt?: string | null;
+  signatureToken?: string | null;
+  SignatureToken?: string | null;
+  note?: string | null;
+  Note?: string | null;
+  userId?: number | null;
+  UserId?: number | null;
+}
+
+interface SaveStep3SignersResponse {
+  signers?: ContractSignerApiResponse[];
+  Signers?: ContractSignerApiResponse[];
+  message?: string;
+  Message?: string;
+}
+
 const EMPLOYEE_PAGE_SIZE = 100;
 const CONTRACT_COLLECTION_PAGE_SIZE = 100;
+
+const normalizeContractSigner = (signer: ContractSignerApiResponse): ContractSigner => ({
+  id: signer.id ?? signer.Id,
+  email: signer.email ?? signer.Email ?? '',
+  fullName: signer.fullName ?? signer.FullName ?? '',
+  signOrder: signer.signOrder ?? signer.SignOrder ?? 0,
+  status: signer.status ?? signer.Status ?? undefined,
+  signedAt: signer.signedAt ?? signer.SignedAt ?? undefined,
+  signatureToken: signer.signatureToken ?? signer.SignatureToken ?? undefined,
+  note: signer.note ?? signer.Note ?? undefined,
+  userId: signer.userId ?? signer.UserId ?? undefined,
+});
 
 const createEmployeeOptions = (employees: Employee[]) =>
   employees.map((employee) => ({
@@ -453,6 +494,22 @@ export const contractsService = {
       },
       'Gửi hợp đồng thất bại',
     ),
+};
+
+export const saveElectronicContractStep3Signers = async (payload: ContractStep3Dto) => {
+  const response = await requestJson<SaveStep3SignersResponse>(
+    `${API_URL}/contracts/electronic/step3`,
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    },
+    'LÆ°u danh sĂ¡ch ngÆ°á»i kĂ½ tháº¥t báº¡i',
+  );
+
+  return {
+    signers: (response.signers ?? response.Signers ?? []).map(normalizeContractSigner),
+    message: response.message ?? response.Message,
+  };
 };
 
 export type { ContractCreatePayload, RegularContractFormValues };

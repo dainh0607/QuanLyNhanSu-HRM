@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import type { SelectOption } from '../types';
+import type { SelectOption } from '../../types';
 
 interface SearchableSelectProps {
   value: string;

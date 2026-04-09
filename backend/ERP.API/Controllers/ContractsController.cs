@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using ERP.DTOs.Auth;
 using ERP.DTOs.Contracts;
 using ERP.Services.Contracts;
 using Microsoft.AspNetCore.Authorization;
@@ -160,6 +161,16 @@ namespace ERP.API.Controllers
         {
             try
             {
+                var tokenType = User.FindFirst(AuthSecurityConstants.TokenTypeClaimType)?.Value;
+                if (string.Equals(tokenType, AuthSecurityConstants.SignerTokenType, System.StringComparison.Ordinal))
+                {
+                    var contractIdClaim = User.FindFirst("ContractId")?.Value;
+                    if (!int.TryParse(contractIdClaim, out var signerContractId) || signerContractId != id)
+                    {
+                        return StatusCode(403, new { Message = "Ban khong co quyen xem tai lieu nay." });
+                    }
+                }
+
                 var (content, contentType, fileName) = await _contractService.GetContractPreviewAsync(id);
                 return File(content, contentType, fileName);
             }

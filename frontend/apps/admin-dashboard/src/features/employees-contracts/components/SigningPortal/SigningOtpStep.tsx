@@ -7,6 +7,23 @@ interface SigningOtpStepProps {
   onSuccess: (info: SignerAuthResponseDto) => void;
 }
 
+const getErrorMessage = (error: unknown, fallbackMessage: string) => {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (typeof error === 'object' && error !== null) {
+    const message =
+      (error as { message?: string; Message?: string }).message ??
+      (error as { message?: string; Message?: string }).Message;
+    if (typeof message === 'string' && message.trim()) {
+      return message;
+    }
+  }
+
+  return fallbackMessage;
+};
+
 const SigningOtpStep: React.FC<SigningOtpStepProps> = ({ token, onSuccess }) => {
   const [otp, setOtp] = useState<string[]>(new Array(6).fill(''));
   const [countdown, setCountdown] = useState(60);
@@ -20,10 +37,10 @@ const SigningOtpStep: React.FC<SigningOtpStepProps> = ({ token, onSuccess }) => 
     const initOtp = async () => {
       setError(null);
       try {
-        await signersService.generateOtp({ SignatureToken: token });
+        await signersService.generateOtp({ signatureToken: token });
       } catch (err) {
         console.error('Failed to send initial OTP:', err);
-        setError('Không thể gửi mã xác thực. Vui lòng tải lại trang.');
+        setError(getErrorMessage(err, 'Khong the gui ma xac thuc. Vui long tai lai trang.'));
       }
     };
     initOtp();
@@ -59,12 +76,12 @@ const SigningOtpStep: React.FC<SigningOtpStepProps> = ({ token, onSuccess }) => 
     setIsResending(true);
     setError(null);
     try {
-      await signersService.generateOtp({ SignatureToken: token });
+      await signersService.generateOtp({ signatureToken: token });
       setCountdown(60);
       setOtp(new Array(6).fill(''));
       inputRefs.current[0]?.focus();
     } catch (err) {
-      setError('Gửi lại mã thất bại. Vui lòng thử lại.');
+      setError(getErrorMessage(err, 'Gui lai ma that bai. Vui long thu lai.'));
     } finally {
       setIsResending(false);
     }
@@ -78,12 +95,12 @@ const SigningOtpStep: React.FC<SigningOtpStepProps> = ({ token, onSuccess }) => 
       setError(null);
       try {
         const response = await signersService.verifyOtp({
-          SignatureToken: token,
-          Otp: code,
+          signatureToken: token,
+          otp: code,
         });
         onSuccess(response);
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Xác thực mã OTP thất bại.';
+        const message = getErrorMessage(err, 'Xac thuc ma OTP that bai.');
         setError(message);
         // Clear OTP on failure
         setOtp(new Array(6).fill(''));

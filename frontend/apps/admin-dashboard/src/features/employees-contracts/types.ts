@@ -223,6 +223,18 @@ export interface ElectronicContractDraftDto {
   EffectiveDate?: string;
 }
 
+export interface ContractSigner {
+  id?: number;
+  email: string;
+  fullName: string;
+  signOrder: number;
+  status?: string;
+  signedAt?: string;
+  signatureToken?: string;
+  note?: string;
+  userId?: number;
+}
+
 export interface ContractSignerDto {
   Id?: number;
   Email: string;

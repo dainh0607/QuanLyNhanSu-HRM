@@ -1,5 +1,7 @@
 using System;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using ERP.DTOs.Auth;
 using ERP.DTOs.Contracts;
 using ERP.Services.Contracts;
 using Microsoft.AspNetCore.Authorization;
@@ -44,6 +46,33 @@ namespace ERP.API.Controllers
             try
             {
                 var response = await _signerService.VerifyOtpAsync(dto);
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpPost("complete-signing")]
+        [Authorize]
+        public async Task<IActionResult> CompleteSigning([FromBody] CompleteSigningDto dto)
+        {
+            try
+            {
+                var tokenType = User.FindFirst(AuthSecurityConstants.TokenTypeClaimType)?.Value;
+                if (!string.Equals(tokenType, AuthSecurityConstants.SignerTokenType, StringComparison.Ordinal))
+                {
+                    return Unauthorized(new { Message = "Chi signer token moi duoc phep hoan tat ky." });
+                }
+
+                var signerIdValue = User.FindFirst("SignerId")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (!int.TryParse(signerIdValue, out var signerId))
+                {
+                    return Unauthorized(new { Message = "Khong xac dinh duoc nguoi ky hien tai." });
+                }
+
+                var response = await _signerService.CompleteSigningAsync(signerId, dto);
                 return Ok(response);
             }
             catch (Exception ex)

@@ -7,5 +7,6 @@ namespace ERP.Services.Contracts
     {
         Task<bool> GenerateOtpAsync(GenerateOtpDto dto);
         Task<SignerAuthResponseDto> VerifyOtpAsync(VerifyOtpDto dto);
+        Task<CompleteSigningResponseDto> CompleteSigningAsync(int signerId, CompleteSigningDto dto);
     }
 }

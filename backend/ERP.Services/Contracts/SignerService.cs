@@ -13,6 +13,7 @@ using ERP.Services.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using ContractEntity = ERP.Entities.Models.Contracts;
 
 namespace ERP.Services.Contracts
 {
@@ -21,12 +22,18 @@ namespace ERP.Services.Contracts
         private readonly IUnitOfWork _unitOfWork;
         private readonly IEmailService _emailService;
         private readonly IConfiguration _configuration;
+        private readonly IContractNotificationService _notificationService;
 
-        public SignerService(IUnitOfWork unitOfWork, IEmailService emailService, IConfiguration configuration)
+        public SignerService(
+            IUnitOfWork unitOfWork,
+            IEmailService emailService,
+            IConfiguration configuration,
+            IContractNotificationService notificationService)
         {
             _unitOfWork = unitOfWork;
             _emailService = emailService;
             _configuration = configuration;
+            _notificationService = notificationService;
         }
 
         public async Task<bool> GenerateOtpAsync(GenerateOtpDto dto)
@@ -63,6 +70,7 @@ namespace ERP.Services.Contracts
         {
             var signer = await _unitOfWork.Repository<ContractSigners>()
                 .AsQueryable()
+                .Include(s => s.Contract)
                 .FirstOrDefaultAsync(s => s.signature_token == dto.SignatureToken);
 
             if (signer == null) throw new Exception("Mã truy cập không hợp lệ.");
@@ -77,13 +85,126 @@ namespace ERP.Services.Contracts
 
             // Generate JWT Token for Signer
             var token = GenerateSignerToken(signer);
+            var assignedFields = await _unitOfWork.Repository<ContractSignerPositions>()
+                .AsQueryable()
+                .Where(position => position.signer_id == signer.Id)
+                .OrderBy(position => position.page_number)
+                .ThenBy(position => position.y_pos)
+                .ThenBy(position => position.x_pos)
+                .Select(position => new SignerAssignedFieldDto
+                {
+                    Id = position.Id,
+                    Type = position.type,
+                    PageNumber = position.page_number,
+                    XPos = position.x_pos,
+                    YPos = position.y_pos,
+                    Width = position.width ?? 0.24f,
+                    Height = position.height ?? 0.08f
+                })
+                .ToListAsync();
 
             return new SignerAuthResponseDto
             {
                 AccessToken = token,
+                SignerId = signer.Id,
                 FullName = signer.full_name,
                 Email = signer.email,
-                ContractId = signer.contract_id
+                ContractId = signer.contract_id,
+                ContractNumber = signer.Contract?.contract_number ?? string.Empty,
+                Status = signer.status,
+                AssignedFields = assignedFields
+            };
+        }
+
+        public async Task<CompleteSigningResponseDto> CompleteSigningAsync(int signerId, CompleteSigningDto dto)
+        {
+            if (dto == null) throw new Exception("Du lieu ky khong hop le.");
+            if (!dto.AcceptedAgreement) throw new Exception("Vui long xac nhan dong y ky dien tu truoc khi hoan tat.");
+
+            var signer = await _unitOfWork.Repository<ContractSigners>()
+                .AsQueryable()
+                .Include(item => item.Contract)
+                .FirstOrDefaultAsync(item => item.Id == signerId);
+
+            if (signer == null) throw new Exception("Khong tim thay nguoi ky.");
+            if (string.Equals(signer.status, "Signed", StringComparison.OrdinalIgnoreCase))
+            {
+                return new CompleteSigningResponseDto
+                {
+                    IsCompleted = true,
+                    ContractFullySigned = true,
+                    NotifiedNextSigner = false
+                };
+            }
+
+            var assignedPositionIds = await _unitOfWork.Repository<ContractSignerPositions>()
+                .AsQueryable()
+                .Where(position => position.signer_id == signerId)
+                .Select(position => position.Id)
+                .ToListAsync();
+
+            if (assignedPositionIds.Count == 0)
+            {
+                throw new Exception("Khong tim thay vi tri ky duoc gan cho ban.");
+            }
+
+            var submittedFieldMap = (dto.Fields ?? new List<CompleteSigningFieldDto>())
+                .Where(field =>
+                    field.PositionId > 0 &&
+                    !string.IsNullOrWhiteSpace(field.SignatureDataUrl) &&
+                    !string.IsNullOrWhiteSpace(field.SignatureMethod))
+                .GroupBy(field => field.PositionId)
+                .ToDictionary(group => group.Key, group => group.First());
+
+            var invalidPositionIds = submittedFieldMap.Keys.Except(assignedPositionIds).ToList();
+            if (invalidPositionIds.Count > 0)
+            {
+                throw new Exception("Phat hien vi tri ky khong thuoc nguoi ky hien tai.");
+            }
+
+            var missingPositionIds = assignedPositionIds.Except(submittedFieldMap.Keys).ToList();
+            if (missingPositionIds.Count > 0)
+            {
+                throw new Exception("Ban can hoan tat tat ca vi tri ky duoc gan truoc khi gui.");
+            }
+
+            signer.status = "Signed";
+            signer.signed_at = DateTime.UtcNow;
+            signer.UpdatedAt = DateTime.UtcNow;
+
+            _unitOfWork.Repository<ContractSigners>().Update(signer);
+            await _unitOfWork.SaveChangesAsync();
+
+            var hasPendingSigner = await _unitOfWork.Repository<ContractSigners>()
+                .AsQueryable()
+                .AnyAsync(item =>
+                    item.contract_id == signer.contract_id &&
+                    item.Id != signer.Id &&
+                    !string.Equals(item.status, "Signed", StringComparison.OrdinalIgnoreCase));
+
+            var notifiedNextSigner = false;
+            if (hasPendingSigner)
+            {
+                signer.Contract.status = "PendingSignature";
+                signer.Contract.UpdatedAt = DateTime.UtcNow;
+                _unitOfWork.Repository<ContractEntity>().Update(signer.Contract);
+                await _unitOfWork.SaveChangesAsync();
+
+                notifiedNextSigner = await _notificationService.NotifyNextSignerAsync(signer.contract_id);
+            }
+            else
+            {
+                signer.Contract.status = "Active";
+                signer.Contract.UpdatedAt = DateTime.UtcNow;
+                _unitOfWork.Repository<ContractEntity>().Update(signer.Contract);
+                await _unitOfWork.SaveChangesAsync();
+            }
+
+            return new CompleteSigningResponseDto
+            {
+                IsCompleted = true,
+                ContractFullySigned = !hasPendingSigner,
+                NotifiedNextSigner = notifiedNextSigner
             };
         }
 

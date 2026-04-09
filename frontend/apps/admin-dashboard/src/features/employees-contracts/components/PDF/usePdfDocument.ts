@@ -11,7 +11,10 @@ interface UsePdfDocumentResult {
   error: string | null;
 }
 
-export const usePdfDocument = (sourceUrl: string | null | undefined): UsePdfDocumentResult => {
+export const usePdfDocument = (
+  sourceUrl: string | null | undefined,
+  accessToken?: string | null,
+): UsePdfDocumentResult => {
   const [pdfDocument, setPdfDocument] = useState<PDFDocumentProxy | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +38,11 @@ export const usePdfDocument = (sourceUrl: string | null | undefined): UsePdfDocu
       // Disable range/stream for blob URLs to avoid issues
       disableRange: true,
       disableStream: true,
+      httpHeaders: accessToken
+        ? {
+            Authorization: `Bearer ${accessToken}`,
+          }
+        : undefined,
     });
 
     loadingTask.promise
@@ -77,7 +85,7 @@ export const usePdfDocument = (sourceUrl: string | null | undefined): UsePdfDocu
         // Silently ignore if already destroyed
       }
     };
-  }, [sourceUrl]);
+  }, [accessToken, sourceUrl]);
 
   return {
     pdfDocument,

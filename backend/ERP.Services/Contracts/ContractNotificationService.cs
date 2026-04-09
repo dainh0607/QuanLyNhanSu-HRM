@@ -39,8 +39,8 @@ namespace ERP.Services.Contracts
 
             signer.status = "Sending";
 
-            var frontendUrl = _configuration["Frontend:BaseUrl"] ?? "http://localhost:5173";
-            var signUrl = $"{frontendUrl}/sign?token={signer.signature_token}";
+            var frontendUrl = (_configuration["Frontend:BaseUrl"] ?? "http://localhost:5173").TrimEnd('/');
+            var signUrl = $"{frontendUrl}/contracts/signing/{signer.signature_token}";
 
             var subject = $"Yêu cầu ký hợp đồng: {signer.Contract?.contract_number}";
             var body = $@"

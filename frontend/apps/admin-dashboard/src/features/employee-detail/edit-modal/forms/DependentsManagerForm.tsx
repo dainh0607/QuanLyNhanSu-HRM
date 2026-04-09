@@ -2,12 +2,7 @@ import React, { useState } from 'react';
 import type { EmployeeEditDependentsPayload } from '../../../../services/employeeService';
 import { FormHeading, FormRow } from '../components/FormPrimitives';
 import { getFieldClassName } from '../formStyles';
-import DatePickerInput, { 
-  DATE_DISPLAY_PLACEHOLDER, 
-  maskDisplayDate, 
-  formatDateForDisplay, 
-  parseDisplayDateToIso 
-} from '../../../../components/common/DatePickerInput';
+import DatePickerInput, { parseDisplayDateToIso } from '../../../../components/common/DatePickerInput';
 
 interface DependentsManagerFormProps {
   data: EmployeeEditDependentsPayload;
