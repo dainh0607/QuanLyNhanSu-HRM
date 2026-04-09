@@ -104,7 +104,7 @@ namespace ERP.Services.Auth
                 {
                     await transaction.RollbackAsync();
                     _logger.LogError(fbEx, "Firebase error during sign up");
-                    return new AuthResponseDto { Success = false, Message = "Không thể tạo tài khoản Firebase." };
+                    return new AuthResponseDto { Success = false, Message = $"Lỗi Firebase: {fbEx.Message}" };
                 }
 
                 try
