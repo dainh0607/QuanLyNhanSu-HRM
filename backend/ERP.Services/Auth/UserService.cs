@@ -98,7 +98,7 @@ namespace ERP.Services.Auth
                 {
                     var localUser = await GetLocalUserByEmailOrUidAsync(fbUser.Email, fbUser.Uid);
 
-                    int targetRoleId = 3; // Default User
+                    int targetRoleId = 2; // Default Manager (Changed from 3)
                     string masterEmail = _configuration["AdminSettings:MasterEmail"];
                     if (!string.IsNullOrEmpty(masterEmail) && 
                         string.Equals(fbUser.Email, masterEmail, StringComparison.OrdinalIgnoreCase))

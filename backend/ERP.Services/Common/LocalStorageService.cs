@@ -39,6 +39,24 @@ namespace ERP.Services.Common
             return $"{baseUrl}/{UploadFolder}/{uniqueFileName}";
         }
 
+        public async Task<string> SaveFileAsync(byte[] fileBytes, string fileName, string contentType)
+        {
+            var webRoot = string.IsNullOrEmpty(_environment.WebRootPath) ? Path.Combine(_environment.ContentRootPath, "wwwroot") : _environment.WebRootPath;
+            var folderPath = Path.Combine(webRoot, UploadFolder);
+            if (!Directory.Exists(folderPath))
+            {
+                Directory.CreateDirectory(folderPath);
+            }
+
+            var uniqueFileName = $"{Guid.NewGuid()}_{fileName}";
+            var filePath = Path.Combine(folderPath, uniqueFileName);
+
+            await File.WriteAllBytesAsync(filePath, fileBytes);
+
+            var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "https://localhost:5001";
+            return $"{baseUrl}/{UploadFolder}/{uniqueFileName}";
+        }
+
         public Task<bool> DeleteFileAsync(string fileUrl)
         {
             try
@@ -57,6 +75,37 @@ namespace ERP.Services.Common
             catch
             {
                 return Task.FromResult(false);
+            }
+        }
+
+        public async Task<byte[]> GetFileAsync(string filePath)
+        {
+            try
+            {
+                // If filePath is a URL, extract the file name
+                string actualPath;
+                if (filePath.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || 
+                    filePath.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                {
+                    var fileName = Path.GetFileName(new Uri(filePath).LocalPath);
+                    var webRoot = string.IsNullOrEmpty(_environment.WebRootPath) ? Path.Combine(_environment.ContentRootPath, "wwwroot") : _environment.WebRootPath;
+                    actualPath = Path.Combine(webRoot, UploadFolder, fileName);
+                }
+                else
+                {
+                    actualPath = filePath;
+                }
+
+                if (!File.Exists(actualPath))
+                {
+                    throw new FileNotFoundException($"File not found: {actualPath}");
+                }
+
+                return await File.ReadAllBytesAsync(actualPath);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error reading file: {ex.Message}", ex);
             }
         }
     }

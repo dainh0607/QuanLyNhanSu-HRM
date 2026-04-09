@@ -14,10 +14,12 @@ namespace ERP.API.Controllers
     public class SignersController : ControllerBase
     {
         private readonly ISignerService _signerService;
+        private readonly ILogger<SignersController> _logger;
 
-        public SignersController(ISignerService signerService)
+        public SignersController(ISignerService signerService, ILogger<SignersController> logger)
         {
             _signerService = signerService;
+            _logger = logger;
         }
 
         [HttpPost("generate-otp")]
@@ -35,6 +37,7 @@ namespace ERP.API.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError($"Error in GenerateOtp: {ex.Message}");
                 return BadRequest(new { Message = ex.Message });
             }
         }
@@ -50,6 +53,7 @@ namespace ERP.API.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError($"Error in VerifyOtp: {ex.Message}");
                 return BadRequest(new { Message = ex.Message });
             }
         }

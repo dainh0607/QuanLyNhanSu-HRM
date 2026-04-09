@@ -15,9 +15,21 @@ namespace ERP.Services.Common
         Task<string> UploadFileAsync(Stream fileStream, string fileName, string contentType);
 
         /// <summary>
+        /// Lưu file từ byte array và trả về URL
+        /// </summary>
+        Task<string> SaveFileAsync(byte[] fileBytes, string fileName, string contentType);
+
+        /// <summary>
         /// Xóa file khỏi bộ lưu trữ
         /// </summary>
         /// <param name="fileUrl">URL của file cần xóa</param>
         Task<bool> DeleteFileAsync(string fileUrl);
+
+        /// <summary>
+        /// Tải file từ bộ lưu trữ
+        /// </summary>
+        /// <param name="filePath">Đường dẫn/URL của file</param>
+        /// <returns>Nội dung file dưới dạng byte array</returns>
+        Task<byte[]> GetFileAsync(string filePath);
     }
 }

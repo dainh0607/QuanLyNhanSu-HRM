@@ -46,24 +46,18 @@ namespace ERP.Services.Common
 
                 if (!string.IsNullOrEmpty(_emailSettings.Username))
                 {
-                    // Clean password from any accidental spaces (common with App Passwords)
-                    var cleanPassword = _emailSettings.Password?.Trim().Replace(" ", "") ?? "";
-                    
-                    _logger.LogInformation("[Email] Attempting authentication for {0} (Password length: {1})", 
-                        _emailSettings.Username, cleanPassword.Length);
-                        
-                    await client.AuthenticateAsync(_emailSettings.Username, cleanPassword);
+                    await client.AuthenticateAsync(_emailSettings.Username, _emailSettings.Password);
                 }
 
                 await client.SendAsync(message);
                 await client.DisconnectAsync(true);
 
-                _logger.LogInformation("[Email] SENT successfully to {0}", toEmail);
+                _logger.LogInformation("[Email] Sent successfully to {0}", toEmail);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[Email] SEND FAILED to {0}. Check details in appsettings.json.", toEmail);
-                throw;
+                _logger.LogError(ex, "[Email] FAILED to send email to {0}", toEmail);
+                throw; // Re-throw to inform the caller (and the API)
             }
         }
     }
