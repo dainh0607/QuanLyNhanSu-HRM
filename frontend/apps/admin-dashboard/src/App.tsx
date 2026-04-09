@@ -54,9 +54,15 @@ const Header = ({
 }) => {
   // Sử dụng mock data nếu user chưa đăng nhập
   const displayUser = user ?? MOCK_USER;
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const isShiftSchedulingActive = location.pathname.startsWith("/working-day/timekeeping");
+  const isPersonnelSectionActive =
+    location.pathname.startsWith("/personnel/employees") ||
+    location.pathname.startsWith("/personnel/contracts");
 
   // Click outside → đóng dropdown
   const handleClickOutside = useCallback((e: MouseEvent) => {
@@ -72,16 +78,25 @@ const Header = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isProfileOpen, handleClickOutside]);
 
-  const navItems = [
+  const navItems: Array<{
+    name: string;
+    active: boolean;
+    to?: string;
+    hasDropdown?: boolean;
+    menuKey?: "more";
+  }> = [
     { name: "Lịch", active: false },
-    { name: "Tuyển dụng", active: false },
-    { name: "Nhân sự", active: true },
-    { name: "Chấm công", active: false },
+    { name: "Nhân sự", active: isPersonnelSectionActive, to: "/personnel/employees" },
+    { name: "Chấm công", active: isShiftSchedulingActive, to: "/working-day/timekeeping" },
     { name: "Yêu cầu", active: false },
     { name: "Tiền lương", active: false },
-    { name: "Đào tạo", active: false },
-    { name: "Giao việc", active: false },
-    { name: "Thêm", active: false, hasDropdown: true },
+    { name: "Thêm", active: false, hasDropdown: true, menuKey: "more" },
+  ];
+
+  const moreMenuItems = [
+    { label: "Tuyển dụng", icon: "person_search", note: "Sắp mở" },
+    { label: "Đào tạo", icon: "school", note: "Sắp mở" },
+    { label: "Giao việc", icon: "task", note: "Sắp mở" },
   ];
 
   const profileMenuItems = [
@@ -110,23 +125,68 @@ const Header = ({
 
         {/* Navigation Menu */}
         <nav className="hidden lg:flex items-center gap-6">
-          {navItems.map((item) => (
-            <button
-              key={item.name}
-              className={`h-16 flex items-center gap-1 text-sm font-medium transition-colors relative ${
-                item.active
-                  ? "text-[#134BBA] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#134BBA]"
-                  : "text-[#64748b] hover:text-[#111827]"
-              }`}
-            >
-              {item.name}
-              {item.hasDropdown && (
-                <span className="material-symbols-outlined text-lg leading-none">
-                  expand_more
-                </span>
-              )}
-            </button>
-          ))}
+          {navItems.map((item) => {
+            const buttonClassName = `h-16 flex items-center gap-1 text-sm font-medium transition-colors relative ${
+              item.active
+                ? "text-[#134BBA] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#134BBA]"
+                : "text-[#64748b] hover:text-[#111827]"
+            }`;
+
+            if (item.menuKey === "more") {
+              return (
+                <div key={item.name} className="group relative flex h-16 items-center">
+                  <button
+                    type="button"
+                    className={buttonClassName}
+                  >
+                    {item.name}
+                    <span className="material-symbols-outlined text-lg leading-none">
+                      expand_more
+                    </span>
+                  </button>
+
+                  <div className="pointer-events-none invisible absolute left-1/2 top-full z-[210] w-[240px] -translate-x-1/2 translate-y-2 pt-3 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+                    <div className="overflow-hidden rounded-[22px] border border-slate-200 bg-white p-2 shadow-[0_18px_45px_rgba(15,23,42,0.14)] animate-[fadeSlideDown_0.2s_ease-out]">
+                      {moreMenuItems.map((menuItem) => (
+                        <button
+                          key={menuItem.label}
+                          type="button"
+                          className="flex w-full items-center justify-between rounded-2xl px-3 py-3 text-left transition-colors hover:bg-slate-50"
+                        >
+                          <span className="flex items-center gap-3">
+                            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
+                              <span className="material-symbols-outlined text-[19px]">{menuItem.icon}</span>
+                            </span>
+                            <span className="text-sm font-medium text-slate-700">{menuItem.label}</span>
+                          </span>
+
+                          <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                            {menuItem.note}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <button
+                key={item.name}
+                type="button"
+                onClick={() => item.to && navigate(item.to)}
+                className={buttonClassName}
+              >
+                {item.name}
+                {item.hasDropdown && (
+                  <span className="material-symbols-outlined text-lg leading-none">
+                    expand_more
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </nav>
       </div>
 
@@ -638,6 +698,7 @@ function RoutedApp() {
             ) : (
               <LoginPage
                 onNavigateToRegister={() => navigate("/register")}
+
                 onLoginSuccess={handleLoginSuccess}
               />
             )
@@ -685,7 +746,7 @@ function RoutedApp() {
           }
         />
         <Route
-          path="/personnel/shift-scheduling"
+          path="/working-day/timekeeping"
           element={
             isAuthenticated ? (
               <WeeklyShiftSchedulingRoute user={user} onLogout={handleLogout} />

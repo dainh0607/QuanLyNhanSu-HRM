@@ -1,289 +1,229 @@
-export type WeeklyShiftViewScope =
-  | 'branch'
-  | 'attendance'
-  | 'project'
-  | 'job'
-  | 'working-hours'
-  | 'working-days'
-  | 'timekeeping-hours';
+export type ScheduleViewMode =
+  | "branch"
+  | "attendance"
+  | "project"
+  | "jobTitle"
+  | "workingHours"
+  | "workingDays"
+  | "workedHours";
 
-export type WeeklyShiftAttendanceStatus =
-  | 'no-attendance'
-  | 'upcoming'
-  | 'on-time'
-  | 'late-early'
-  | 'missing-check'
-  | 'paid-leave'
-  | 'unpaid-leave'
-  | 'business-trip'
-  | 'locked';
+export type AttendanceStatus =
+  | "untracked"
+  | "upcoming"
+  | "onTime"
+  | "lateEarly"
+  | "missingCheck"
+  | "paidLeave"
+  | "unpaidLeave"
+  | "businessTrip"
+  | "locked";
 
-export interface WeeklyShiftOption {
+export type AttendanceStatusFilter = AttendanceStatus | "all";
+export type EmployeeStatusFilter = "active" | "all";
+export type ScheduleDataSource = "api" | "mock";
+
+export interface SelectOption {
   value: string;
   label: string;
+  description?: string;
 }
 
-export interface WeeklyShiftDay {
-  date: string;
-  shortLabel: string;
-  dateLabel: string;
-  isToday: boolean;
-}
-
-export interface WeeklyShiftEmployeeSummary {
-  id: number;
-  employeeCode: string;
-  fullName: string;
-  avatar?: string;
-  branchId?: number;
-  branchName?: string;
-  departmentId?: number;
-  departmentName?: string;
-  jobTitleId?: number;
-  jobTitleName?: string;
-  isActive: boolean;
-  isResigned: boolean;
-}
-
-export interface WeeklyShiftCardData {
-  id: string;
-  assignmentId?: number;
-  shiftId?: number;
-  shiftName: string;
-  startTime: string;
-  endTime: string;
-  attendanceStatus: WeeklyShiftAttendanceStatus;
-  note?: string;
-  color?: string;
-  requiredQuantity?: number;
-  filledQuantity?: number;
-}
-
-export interface WeeklyShiftCell {
-  date: string;
-  shifts: WeeklyShiftCardData[];
-}
-
-export interface WeeklyShiftEmployeeRow {
-  employee: WeeklyShiftEmployeeSummary;
-  cells: WeeklyShiftCell[];
-  totalHours: number;
-}
-
-export interface WeeklyOpenShiftRow {
-  label: string;
-  cells: WeeklyShiftCell[];
-}
-
-export interface WeeklyShiftBoardSummary {
-  totalEmployees: number;
-  totalAssignedShifts: number;
-  totalOpenShifts: number;
-  totalEmptyCells: number;
-}
-
-export interface WeeklyShiftBoardData {
-  weekLabel: string;
-  weekNumber: number;
-  weekYear: number;
-  weekKey: string;
+export interface ShiftScheduleFilters {
+  viewMode: ScheduleViewMode;
   weekStartDate: string;
-  days: WeeklyShiftDay[];
-  openShiftRow: WeeklyOpenShiftRow;
-  employeeRows: WeeklyShiftEmployeeRow[];
-  availableEmployees: WeeklyShiftEmployeeSummary[];
-  summary: WeeklyShiftBoardSummary;
-  dataSource: 'api' | 'mock';
-}
-
-export interface WeeklyShiftFilterState {
-  scope: WeeklyShiftViewScope;
-  week: string;
+  regionId: string;
   branchId: string;
+  departmentId: string;
   projectId: string;
   jobTitleId: string;
-  workingHourType: string;
-  workingDayType: string;
-  timekeepingHourType: string;
-  attendanceStatus: string;
-  employeeStatus: 'active' | 'all';
+  accessGroupId: string;
+  genderCode: string;
+  workingHoursBucket: string;
+  workingDaysBucket: string;
+  workedHoursBucket: string;
+  attendanceStatus: AttendanceStatusFilter;
+  employeeStatus: EmployeeStatusFilter;
+  searchTerm: string;
 }
 
-export interface WeeklyShiftFilterOptions {
-  branchOptions: WeeklyShiftOption[];
-  projectOptions: WeeklyShiftOption[];
-  jobOptions: WeeklyShiftOption[];
-  workingHourOptions: WeeklyShiftOption[];
-  workingDayOptions: WeeklyShiftOption[];
-  timekeepingHourOptions: WeeklyShiftOption[];
-  attendanceStatusOptions: WeeklyShiftOption[];
-  employeeStatusOptions: WeeklyShiftOption[];
-}
-
-export interface WeeklyShiftSettings {
-  autoRefresh: boolean;
-  highlightShortage: boolean;
-  showEmployeeAvatar: boolean;
-  compactCards: boolean;
-}
-
-export interface WeeklyShiftDashboardResult {
-  board: WeeklyShiftBoardData;
-  filterOptions: WeeklyShiftFilterOptions;
-}
-
-export interface OpenShiftTagOption {
+export interface WeeklyScheduleEmployee {
   id: number;
-  label: string;
-  helperText?: string;
-}
-
-export interface OpenShiftTemplate {
-  id: number;
-  shiftCode: string;
-  shiftName: string;
-  startTime: string;
-  endTime: string;
-  color?: string;
-  shiftTypeId?: number;
-  shiftTypeName?: string;
-  note?: string;
-  defaultBranchIds: number[];
-  defaultDepartmentIds: number[];
-  defaultJobTitleIds: number[];
-}
-
-export interface OpenShiftComposerData {
-  shiftTemplates: OpenShiftTemplate[];
-  branchOptions: OpenShiftTagOption[];
-  departmentOptions: OpenShiftTagOption[];
-  jobTitleOptions: OpenShiftTagOption[];
-}
-
-export interface OpenShiftFormState {
-  shiftId: number | null;
-  branchIds: number[];
-  departmentIds: number[];
-  jobTitleIds: number[];
-  requiredQuantity: string;
-  autoPublish: boolean;
-  note: string;
-}
-
-export interface OpenShiftCreateRequest {
-  open_date: string;
-  shift_id: number;
-  branch_ids: number[];
-  department_ids: number[];
-  job_title_ids: number[];
-  required_quantity: number;
-  auto_publish: boolean;
-  note?: string;
-  close_date?: string | null;
-  status?: string;
-}
-
-export interface OpenShiftCreatedRecord {
-  id: string;
-  openDate: string;
-  shiftId: number;
-  shiftName: string;
-  startTime: string;
-  endTime: string;
-  color?: string;
-  branchId: number;
-  branchName?: string;
-  departmentId: number;
-  departmentName?: string;
-  jobTitleId: number;
-  jobTitleName?: string;
-  requiredQuantity: number;
-  autoPublish: boolean;
-  status: string;
-  note?: string;
-}
-
-export interface OpenShiftCreateResult {
-  records: OpenShiftCreatedRecord[];
-  source: 'api' | 'local';
-}
-
-export type ShiftTemplateWeekday =
-  | 'monday'
-  | 'tuesday'
-  | 'wednesday'
-  | 'thursday'
-  | 'friday'
-  | 'saturday'
-  | 'sunday';
-
-export interface ShiftTemplateLibraryItem {
-  id: number;
-  shiftCode: string;
-  shiftName: string;
-  startTime: string;
-  endTime: string;
-  isCrossNight: boolean;
-  color?: string;
-  shiftTypeId: number;
-  shiftTypeName: string;
-  branchIds: number[];
-  departmentIds: number[];
-  jobTitleIds: number[];
-  repeatDays: ShiftTemplateWeekday[];
-  breakMinutes?: number;
-  lateCheckInGraceMinutes?: number;
-  earlyCheckOutGraceMinutes?: number;
-  note?: string;
+  fullName: string;
+  avatar?: string | null;
+  employeeCode?: string | null;
+  regionId?: number | null;
+  regionName?: string | null;
+  branchId?: number | null;
+  branchName?: string | null;
+  departmentId?: number | null;
+  departmentName?: string | null;
+  jobTitleId?: number | null;
+  jobTitleName?: string | null;
+  accessGroupId?: number | null;
+  accessGroupName?: string | null;
+  genderCode?: string | null;
   isActive: boolean;
-  source: 'api' | 'local';
 }
 
-export interface ShiftTemplateLibraryData {
-  templates: ShiftTemplateLibraryItem[];
-  branchOptions: OpenShiftTagOption[];
-  departmentOptions: OpenShiftTagOption[];
-  jobTitleOptions: OpenShiftTagOption[];
-  branchDepartmentMap: Record<number, number[]>;
-  branchJobTitleMap: Record<number, number[]>;
-}
-
-export interface ShiftTemplateFormState {
+export interface WeeklyScheduleShift {
+  id: string;
+  sourceId?: number;
+  shiftId?: number | null;
   shiftName: string;
-  startHour: string;
-  startMinute: string;
-  endHour: string;
-  endMinute: string;
-  branchIds: number[];
-  departmentIds: number[];
-  jobTitleIds: number[];
-  repeatDays: ShiftTemplateWeekday[];
-  breakMinutes: string;
-  lateCheckInGraceMinutes: string;
-  earlyCheckOutGraceMinutes: string;
-  note: string;
+  startTime: string;
+  endTime: string;
+  date: string;
+  attendanceStatus: AttendanceStatus;
+  note?: string | null;
+  color?: string | null;
+  isPublished?: boolean;
+  isOpenShift?: boolean;
+  requiredQuantity?: number;
+  assignedQuantity?: number;
+  branchId?: number | null;
+  branchName?: string | null;
+  departmentId?: number | null;
+  jobTitleId?: number | null;
+  jobTitleName?: string | null;
+  projectId?: string | null;
+  projectName?: string | null;
+  statusLabel?: string;
 }
 
-export interface ShiftTemplateCreateRequest {
-  shift_name: string;
-  shift_code: string;
-  start_time: string;
-  end_time: string;
-  shift_type_id: number;
-  color?: string;
-  note?: string;
-  is_active: boolean;
-  branch_ids: number[];
-  department_ids: number[];
-  job_title_ids: number[];
-  repeat_days: ShiftTemplateWeekday[];
-  break_minutes?: number;
-  late_check_in_grace_minutes?: number;
-  early_check_out_grace_minutes?: number;
-  is_cross_night: boolean;
+export interface WeeklyScheduleCell {
+  date: string;
+  shifts: WeeklyScheduleShift[];
 }
 
-export interface ShiftTemplateCreateResult {
-  template: ShiftTemplateLibraryItem;
-  source: 'api' | 'local';
+export interface WeeklyScheduleRow {
+  employee: WeeklyScheduleEmployee;
+  cells: Record<string, WeeklyScheduleCell>;
+}
+
+export interface WeeklyScheduleGridData {
+  weekStartDate: string;
+  employees: WeeklyScheduleEmployee[];
+  rows: WeeklyScheduleRow[];
+  openShiftCells: Record<string, WeeklyScheduleCell>;
+  totalEmployees: number;
+  totalOpenShifts: number;
+  dataSource: ScheduleDataSource;
+  lastUpdatedAt: string;
+}
+
+export type ShiftScheduleGridData = WeeklyScheduleGridData;
+
+export interface ShiftScheduleLookups {
+  branches: SelectOption[];
+  projects: SelectOption[];
+  jobTitles: SelectOption[];
+  workingHours: SelectOption[];
+  workingDays: SelectOption[];
+  workedHours: SelectOption[];
+}
+
+export interface ShiftScheduleSettings {
+  autoRefreshMinutes: number;
+  graceMinutes: number;
+  showOnlyPublished: boolean;
+  highlightShortage: boolean;
+}
+
+export interface MetadataOptionApiItem {
+  id: number;
+  name: string;
+  code?: string | null;
+}
+
+export interface EmployeeListApiItem {
+  id: number;
+  employeeCode?: string | null;
+  fullName?: string | null;
+  avatar?: string | null;
+  regionId?: number | null;
+  regionName?: string | null;
+  branchId?: number | null;
+  branchName?: string | null;
+  departmentId?: number | null;
+  departmentName?: string | null;
+  jobTitleId?: number | null;
+  jobTitleName?: string | null;
+  accessGroupId?: number | null;
+  accessGroupName?: string | null;
+  genderCode?: string | null;
+  isActive?: boolean;
+}
+
+export interface PagedApiResponse<T> {
+  items: T[];
+  totalCount: number;
+}
+
+export interface WeeklyScheduleApiEmployee {
+  id: number;
+  full_name?: string | null;
+  avatar?: string | null;
+  employee_code?: string | null;
+  region_id?: number | null;
+  region_name?: string | null;
+  branch_id?: number | null;
+  branch_name?: string | null;
+  department_id?: number | null;
+  department_name?: string | null;
+  job_title_id?: number | null;
+  job_title_name?: string | null;
+  access_group_id?: number | null;
+  access_group_name?: string | null;
+  gender_code?: string | null;
+  is_active?: boolean;
+}
+
+export interface WeeklyScheduleApiAssignment {
+  id: number;
+  employee_id: number;
+  shift_id?: number | null;
+  assignment_date: string;
+  is_published?: boolean;
+  note?: string | null;
+  attendance_status?: string | null;
+  employee_name?: string | null;
+  employee_avatar?: string | null;
+  employee_code?: string | null;
+  branch_id?: number | null;
+  branch_name?: string | null;
+  job_title_id?: number | null;
+  job_title_name?: string | null;
+  project_id?: string | null;
+  project_name?: string | null;
+  shift_name?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  color?: string | null;
+}
+
+export interface WeeklyScheduleApiOpenShift {
+  id: number;
+  shift_id?: number | null;
+  branch_id?: number | null;
+  branch_name?: string | null;
+  department_id?: number | null;
+  job_title_id?: number | null;
+  job_title_name?: string | null;
+  required_quantity?: number | null;
+  assigned_quantity?: number | null;
+  status?: string | null;
+  open_date: string;
+  close_date?: string | null;
+  shift_name?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  color?: string | null;
+}
+
+export interface WeeklyScheduleApiResponse {
+  week_start_date: string;
+  employees?: WeeklyScheduleApiEmployee[];
+  assignments?: WeeklyScheduleApiAssignment[];
+  open_shifts?: WeeklyScheduleApiOpenShift[];
+  last_updated_at?: string;
 }
