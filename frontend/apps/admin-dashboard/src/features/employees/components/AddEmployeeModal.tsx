@@ -114,6 +114,7 @@ const EMAIL_ERROR_MESSAGE = CONFIGURED_COMPANY_EMAIL_DOMAIN
   : 'Email phải đúng định dạng và dùng domain công ty hợp lệ, @gmail.com hoặc @outlook.com.vn';
 
 const SPECIAL_CHARS_REGEX = /[!@#$%^&*()_+=[\]{};':"\\|,<>/?]/;
+const FULL_NAME_REGEX = /^[\p{L}\s]+$/u;
 
 const INVITE_LINK = 'https://nexa-hr.com/invite/69c62e9908f09CbYE...';
 
@@ -425,7 +426,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
     // Họ tên
     if (!formData.fullName.trim()) {
       newErrors.fullName = 'Họ tên là bắt buộc';
-    } else if (SPECIAL_CHARS_REGEX.test(formData.fullName)) {
+    } else if (!FULL_NAME_REGEX.test(formData.fullName.trim())) {
       newErrors.fullName = 'Họ tên không được chứa ký tự đặc biệt';
     }
     

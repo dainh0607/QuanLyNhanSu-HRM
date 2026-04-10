@@ -239,7 +239,12 @@ const EmployeeDataTable: React.FC<EmployeeDataTableProps> = ({
             const employmentStatus = resolveEmploymentStatus(employee);
 
             return (
-              <tr key={employee.id} className="group transition-colors hover:bg-gray-50">
+              <tr
+                key={employee.id}
+                className={`group transition-colors hover:bg-gray-50 ${
+                  activeMenuId === employee.id ? 'relative z-[950]' : 'relative z-0'
+                }`}
+              >
                 <td className="border-b border-gray-100 bg-white px-4 py-4 group-hover:bg-gray-50">
                   <input
                     type="checkbox"
@@ -315,7 +320,7 @@ const EmployeeDataTable: React.FC<EmployeeDataTableProps> = ({
 
                 <td
                   className={`sticky right-0 border-b border-l border-gray-100 bg-white px-4 py-4 text-right shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.05)] group-hover:bg-gray-50 ${
-                    activeMenuId === employee.id
+                    activeMenuId === employee.id ? 'z-[980]' : 'z-[901]'
                   }`}
                 >
                   <div className="relative inline-block text-left">

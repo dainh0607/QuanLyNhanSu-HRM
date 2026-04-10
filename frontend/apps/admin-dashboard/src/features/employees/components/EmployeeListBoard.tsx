@@ -5,7 +5,6 @@ import {
   BASIC_INFO_EXPORT_COLUMNS,
   type BasicInfoExportColumn,
 } from '../data/basicInfoExportColumns';
-import PersonnelWorkspaceTabs from '../../personnel/components/PersonnelWorkspaceTabs';
 import { DEFAULT_COLUMNS } from '../data/mockData';
 import type { ColumnConfig, Employee } from '../types';
 import AddEmployeeModal from './AddEmployeeModal';
@@ -193,8 +192,6 @@ const EmployeeListBoard: React.FC<EmployeeListProps> = ({ onSelectEmployee }) =>
       }`}
       id="main-content-container"
     >
-      <PersonnelWorkspaceTabs />
-
       <ExportPageToolbar
         onAddEmployee={() => setIsAddModalOpen(true)}
         onOpenBasicInfoExport={() => setIsBasicInfoExportOpen(true)}
@@ -220,7 +217,7 @@ const EmployeeListBoard: React.FC<EmployeeListProps> = ({ onSelectEmployee }) =>
           />
 
           <div
-            className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
+            className="flex min-h-0 flex-col overflow-visible rounded-xl border border-gray-200 bg-white shadow-sm"
             data-purpose="employee-table-container"
           >
             {isLoading ? (

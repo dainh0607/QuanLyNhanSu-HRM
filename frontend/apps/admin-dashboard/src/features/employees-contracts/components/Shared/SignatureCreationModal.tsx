@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
 import ModalShell from './ModalShell';
-import type { SignatureMethod } from '../../signersService';
+import type { SignatureMethod } from '../../services/signersService';
 
 interface SignatureCreationModalProps {
   isOpen: boolean;

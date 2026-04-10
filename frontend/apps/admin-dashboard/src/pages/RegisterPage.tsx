@@ -271,7 +271,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin, onRegist
           </div>
         </div>
         <p className="phone-field-hint">
-          Äá»™ dĂ i há»£p lá»‡: {phoneLengthDescription} cho mĂ£{' '}
+          Nhập độ dài số điện thoại: {phoneLengthDescription} cho mã{' '}
           {getDialCodeByPhoneCountryValue(phoneCountryValue)}
         </p>
 

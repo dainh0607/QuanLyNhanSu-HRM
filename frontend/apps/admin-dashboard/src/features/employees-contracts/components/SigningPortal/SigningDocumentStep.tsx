@@ -1,10 +1,10 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { usePdfDocument } from '../PDF/usePdfDocument';
+import { usePdfDocument } from '../../hooks/usePdfDocument';
 import PdfPageCanvas from '../PDF/PdfPageCanvas';
 import SignatureCreationModal from '../Shared/SignatureCreationModal';
 import type { SignaturePayload } from '../Shared/SignatureCreationModal';
 import SigningConsentModal from './SigningConsentModal';
-import { signersService, type SignerAuthResponseDto } from '../../signersService';
+import { signersService, type SignerAuthResponseDto } from '../../services/signersService';
 import { API_URL } from '../../../../services/employee/core';
 
 interface SigningDocumentStepProps {

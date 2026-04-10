@@ -65,6 +65,7 @@ appsettings.*.json
 *.pfx
 *.certificate
 *.secret
+firebase-config.json
 
 # ----------------------------------------------------------------------
 # OS / IDE / Others

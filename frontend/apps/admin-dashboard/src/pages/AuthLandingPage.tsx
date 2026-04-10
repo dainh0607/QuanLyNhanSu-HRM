@@ -6,24 +6,15 @@ const AuthLandingPage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const dispatchUser = async () => {
-      const user = authService.getCurrentUser();
-      
-      if (!user) {
-        // Double check if context was lost, try to re-validate session
-        const validatedUser = await authService.checkAuth();
-        if (!validatedUser) {
-          navigate('/login', { replace: true });
-          return;
-        }
-        handleRedirection(validatedUser);
-      } else {
-        handleRedirection(user);
-      }
-    };
+    const user = authService.getCurrentUser();
 
-    const handleRedirection = (user: any) => {
-      const roles = user.roles || [];
+    if (!user) {
+      navigate('/login', { replace: true });
+      return;
+    }
+
+    const handleRedirection = (currentUser: { roles?: string[] }) => {
+      const roles = currentUser.roles || [];
       const isAdmin = roles.includes('Admin') || roles.includes('Manager');
 
       if (isAdmin) {
@@ -33,7 +24,7 @@ const AuthLandingPage: React.FC = () => {
       }
     };
 
-    void dispatchUser();
+    handleRedirection(user);
   }, [navigate]);
 
   return (

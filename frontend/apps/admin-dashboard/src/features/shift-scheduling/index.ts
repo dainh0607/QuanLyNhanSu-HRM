@@ -1,1 +1,1 @@
-export { default as WeeklyShiftSchedulePage } from './components/WeeklyShiftSchedulePage';
+export { default as WeeklyShiftSchedulePage } from "./WeeklyShiftSchedulePage";

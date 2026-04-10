@@ -14,6 +14,7 @@ using ERP.Entities;
 using ERP.Entities.Models;
 using FirebaseAdmin.Auth;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
@@ -48,10 +49,11 @@ namespace ERP.Services.Auth
 
         public async Task<AuthResponseDto> SignUpAsync(SignUpDto dto)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            IDbContextTransaction? transaction = null;
 
             try
             {
+                transaction = await _context.Database.BeginTransactionAsync();
                 InvitationTokens invitation = null;
                 if (!string.IsNullOrEmpty(dto.InvitationToken))
                 {
@@ -102,7 +104,10 @@ namespace ERP.Services.Auth
                 }
                 catch (Exception fbEx)
                 {
-                    await transaction.RollbackAsync();
+                    if (transaction != null)
+                    {
+                        await transaction.RollbackAsync();
+                    }
                     _logger.LogError(fbEx, "Firebase error during sign up");
                     return new AuthResponseDto { Success = false, Message = $"Lỗi Firebase: {fbEx.Message}" };
                 }
@@ -160,7 +165,10 @@ namespace ERP.Services.Auth
                 }
                 catch (Exception)
                 {
-                    await transaction.RollbackAsync();
+                    if (transaction != null)
+                    {
+                        await transaction.RollbackAsync();
+                    }
                     try
                     {
                         if (firebaseUser != null && !string.IsNullOrEmpty(firebaseUser.Uid))
