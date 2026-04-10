@@ -7,6 +7,7 @@ import {
   WORKING_HOURS_OPTIONS,
 } from "../data/constants";
 import { createMockWeeklyShiftScheduleApiResponse } from "../data/mockWeeklyShiftSchedule";
+import { getRuntimeOpenShiftsForWeek } from "../open-shift/openShiftRuntimeStore";
 import type {
   EmployeeListApiItem,
   MetadataOptionApiItem,
@@ -473,7 +474,12 @@ const getWeeklySchedule = async (filters: ShiftScheduleFilters): Promise<WeeklyS
     return transformApiResponse(response, "api", filters);
   } catch (error) {
     console.warn("Weekly schedule endpoint is unavailable, falling back to mock data.", error);
-    return transformApiResponse(createMockWeeklyShiftScheduleApiResponse(filters.weekStartDate), "mock", filters);
+    const mockResponse = createMockWeeklyShiftScheduleApiResponse(filters.weekStartDate);
+    mockResponse.open_shifts = [
+      ...(mockResponse.open_shifts ?? []),
+      ...getRuntimeOpenShiftsForWeek(filters.weekStartDate),
+    ];
+    return transformApiResponse(mockResponse, "mock", filters);
   }
 };
 

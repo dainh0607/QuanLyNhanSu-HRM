@@ -12,6 +12,7 @@ export interface AttendanceStatusMeta {
   chipClassName: string;
   cardClassName: string;
   icon: string;
+  color: string;
 }
 
 export const SCHEDULE_VIEW_OPTIONS: Array<SelectOption & { value: ScheduleViewMode }> = [
@@ -31,6 +32,7 @@ export const ATTENDANCE_STATUS_META: Record<AttendanceStatus, AttendanceStatusMe
     chipClassName: "border-slate-200 bg-slate-50 text-slate-600",
     cardClassName: "border-slate-200 bg-slate-50 text-slate-700",
     icon: "event_busy",
+    color: "#94a3b8",
   },
   upcoming: {
     label: "Chưa đến ca",
@@ -38,6 +40,7 @@ export const ATTENDANCE_STATUS_META: Record<AttendanceStatus, AttendanceStatusMe
     chipClassName: "border-sky-200 bg-sky-50 text-sky-700",
     cardClassName: "border-sky-200 bg-sky-50 text-sky-800",
     icon: "schedule",
+    color: "#0ea5e9",
   },
   onTime: {
     label: "Chấm công đúng giờ",
@@ -45,6 +48,7 @@ export const ATTENDANCE_STATUS_META: Record<AttendanceStatus, AttendanceStatusMe
     chipClassName: "border-emerald-200 bg-emerald-50 text-emerald-700",
     cardClassName: "border-emerald-200 bg-emerald-50 text-emerald-800",
     icon: "task_alt",
+    color: "#10b981",
   },
   lateEarly: {
     label: "Vào trễ ra sớm",
@@ -52,6 +56,7 @@ export const ATTENDANCE_STATUS_META: Record<AttendanceStatus, AttendanceStatusMe
     chipClassName: "border-amber-200 bg-amber-50 text-amber-700",
     cardClassName: "border-amber-200 bg-amber-50 text-amber-800",
     icon: "running_with_errors",
+    color: "#f59e0b",
   },
   missingCheck: {
     label: "Chưa vào/Ra ca",
@@ -59,6 +64,7 @@ export const ATTENDANCE_STATUS_META: Record<AttendanceStatus, AttendanceStatusMe
     chipClassName: "border-rose-200 bg-rose-50 text-rose-700",
     cardClassName: "border-rose-200 bg-rose-50 text-rose-800",
     icon: "logout",
+    color: "#f43f5e",
   },
   paidLeave: {
     label: "Nghỉ phép có lương",
@@ -66,6 +72,7 @@ export const ATTENDANCE_STATUS_META: Record<AttendanceStatus, AttendanceStatusMe
     chipClassName: "border-cyan-200 bg-cyan-50 text-cyan-700",
     cardClassName: "border-cyan-200 bg-cyan-50 text-cyan-800",
     icon: "beach_access",
+    color: "#06b6d4",
   },
   unpaidLeave: {
     label: "Nghỉ phép không lương",
@@ -73,6 +80,7 @@ export const ATTENDANCE_STATUS_META: Record<AttendanceStatus, AttendanceStatusMe
     chipClassName: "border-zinc-200 bg-zinc-50 text-zinc-700",
     cardClassName: "border-zinc-200 bg-zinc-50 text-zinc-800",
     icon: "money_off",
+    color: "#71717a",
   },
   businessTrip: {
     label: "Công tác/Ra ngoài",
@@ -80,6 +88,7 @@ export const ATTENDANCE_STATUS_META: Record<AttendanceStatus, AttendanceStatusMe
     chipClassName: "border-teal-200 bg-teal-50 text-teal-700",
     cardClassName: "border-teal-200 bg-teal-50 text-teal-800",
     icon: "flight_takeoff",
+    color: "#14b8a6",
   },
   locked: {
     label: "Ca bị khóa",
@@ -87,6 +96,7 @@ export const ATTENDANCE_STATUS_META: Record<AttendanceStatus, AttendanceStatusMe
     chipClassName: "border-indigo-200 bg-indigo-50 text-indigo-700",
     cardClassName: "border-indigo-200 bg-indigo-50 text-indigo-800",
     icon: "lock",
+    color: "#4f46e5",
   },
 };
 

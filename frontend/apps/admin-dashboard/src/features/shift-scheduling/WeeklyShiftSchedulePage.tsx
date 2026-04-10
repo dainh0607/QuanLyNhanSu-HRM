@@ -7,8 +7,10 @@ import ShiftLegend from "./components/ShiftLegend";
 import CompactShiftScheduleGrid from "./components/CompactShiftScheduleGrid";
 import CompactShiftScheduleToolbarWithAdvancedSidebar from "./components/CompactShiftScheduleToolbarWithAdvancedSidebar";
 import ShiftSettingsModal from "./components/ShiftSettingsModal";
-import OpenShiftModal from "./components/OpenShiftModal";
-import ShiftTemplateModal from "./components/ShiftTemplateModal";
+import OpenShiftModal from "./open-shift/OpenShiftModal";
+import ShiftTemplateModal from "./shift-template/ShiftTemplateModal";
+import AssignedShiftActionModals from "./assigned-shift-actions/AssignedShiftActionModals";
+import { useAssignedShiftQuickActions } from "./assigned-shift-actions/hooks/useAssignedShiftQuickActions";
 import { useWeeklyShiftSchedule } from "./hooks/useWeeklyShiftSchedule";
 import type {
   ScheduleViewMode,
@@ -62,9 +64,14 @@ export const WeeklyShiftSchedulePage = () => {
     employeeStatusOptions,
   } = useWeeklyShiftSchedule();
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
-  const [isOpenShiftModalOpen, setIsOpenShiftModalOpen] = useState<boolean>(false);
+  const [selectedOpenShiftDate, setSelectedOpenShiftDate] = useState<string | null>(null);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState<boolean>(false);
   const [isAdvancedFilterOpen, setIsAdvancedFilterOpen] = useState<boolean>(false);
+  const assignedShiftQuickActions = useAssignedShiftQuickActions({
+    notify,
+    reload,
+    useMockFallback: data?.dataSource === "mock",
+  });
 
   const advancedSidebarFilters = useMemo<EmployeeFilterState>(
     () => ({
@@ -212,7 +219,7 @@ export const WeeklyShiftSchedulePage = () => {
                 void reload();
               }}
               onExport={() => notify(`Đã sẵn sàng xuất file cho ${weekLabel}.`, "info")}
-              onImport={() => notify("Đã sẵn sàng nhập dữ liệu xếp ca từ nguồn ngoài.", "info")}
+              onImport={() => setIsTemplateModalOpen(true)}
               onOpenHistory={() =>
                 notify("Nút Cảnh báo đã sẵn sàng để nối sang module Lịch sử vào/ra.", "info")
               }
@@ -249,7 +256,9 @@ export const WeeklyShiftSchedulePage = () => {
                         "info",
                       )
                     }
+                    onCreateOpenShift={(date) => setSelectedOpenShiftDate(date)}
                     highlightShortage={settings.highlightShortage}
+                    quickActionHandlers={assignedShiftQuickActions.quickActionHandlers}
                   />
                   <ShiftLegend />
                 </>
@@ -288,10 +297,12 @@ export const WeeklyShiftSchedulePage = () => {
       />
 
       <OpenShiftModal 
-        isOpen={isOpenShiftModalOpen}
-        onClose={() => setIsOpenShiftModalOpen(false)}
+        isOpen={Boolean(selectedOpenShiftDate)}
+        selectedDate={selectedOpenShiftDate}
+        useMockFallback={data?.dataSource === "mock"}
+        onClose={() => setSelectedOpenShiftDate(null)}
         onSuccess={() => {
-          setIsOpenShiftModalOpen(false);
+          setSelectedOpenShiftDate(null);
           notify("Đã khởi tạo Ca Mở thành công", "success");
           void reload();
         }}
@@ -302,10 +313,12 @@ export const WeeklyShiftSchedulePage = () => {
         onClose={() => setIsTemplateModalOpen(false)}
         onSuccess={() => {
           setIsTemplateModalOpen(false);
-          notify("Đã lưu Mẫu Ca mới thành công", "success");
+          notify("Tạo ca làm thành công", "success");
           void reload();
         }}
       />
+
+      <AssignedShiftActionModals controller={assignedShiftQuickActions} />
 
       {ToastComponent}
     </>

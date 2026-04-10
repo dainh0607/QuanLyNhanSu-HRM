@@ -84,8 +84,20 @@ export const getAddressDistrictOptions = async (country: string, city: string): 
     return [];
   }
 
-  const countryCandidates = getAddressCountryQueryCandidates(country);
-  const cityCandidates = getAddressCityQueryCandidates(country, city);
+  const normalizeAsciiCandidate = (value: string): string =>
+    value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const countryCandidates = Array.from(
+    new Set([...getAddressCountryQueryCandidates(country), normalizeAsciiCandidate(country)].filter(Boolean)),
+  );
+  const cityCandidates = Array.from(
+    new Set([...getAddressCityQueryCandidates(country, city), normalizeAsciiCandidate(city)].filter(Boolean)),
+  );
 
   for (const countryCandidate of countryCandidates) {
     for (const cityCandidate of cityCandidates) {

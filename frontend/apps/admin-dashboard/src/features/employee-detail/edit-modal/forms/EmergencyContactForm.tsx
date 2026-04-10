@@ -68,6 +68,7 @@ const EmergencyContactForm: React.FC<EmergencyContactFormProps> = ({
       <FormRow label="Địa chỉ khẩn cấp" required error={errors.address}>
         <textarea
           value={data.address}
+          maxLength={250}
           onChange={(event) => onFieldChange('address', event.target.value)}
           className={`${getFieldClassName(Boolean(errors.address))} min-h-[112px] py-3`}
           placeholder="Nhập địa chỉ khẩn cấp"

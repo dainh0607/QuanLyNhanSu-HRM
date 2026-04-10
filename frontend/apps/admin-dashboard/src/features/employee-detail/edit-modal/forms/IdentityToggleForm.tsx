@@ -3,9 +3,11 @@ import type { EmployeeEditIdentityPayload } from '../../../../services/employeeS
 import { FormHeading, FormRow } from '../components/FormPrimitives';
 import { getFieldClassName } from '../formStyles';
 import DatePickerInput from '../../../../components/common/DatePickerInput';
+import { getTodayIsoDate } from '../utils';
 
 interface IdentityToggleFormProps {
   data: EmployeeEditIdentityPayload;
+  errors: Record<string, string>;
   onFieldChange: <F extends keyof EmployeeEditIdentityPayload>(
     field: F,
     value: EmployeeEditIdentityPayload[F],
@@ -55,8 +57,11 @@ const IdentityToggleCard: React.FC<IdentityToggleCardProps> = ({
   </section>
 );
 
-const IdentityToggleForm: React.FC<IdentityToggleFormProps> = ({ data, onFieldChange }) => (
-  <>
+const IdentityToggleForm: React.FC<IdentityToggleFormProps> = ({ data, errors, onFieldChange }) => {
+  const todayIsoDate = getTodayIsoDate();
+
+  return (
+    <>
     <FormHeading
       title="Thông tin định danh"
       description="Bật hoặc tắt từng loại giấy tờ để xác nhận nhân viên đã cung cấp CMND/CCCD và Hộ chiếu."
@@ -75,7 +80,8 @@ const IdentityToggleForm: React.FC<IdentityToggleFormProps> = ({ data, onFieldCh
               type="text"
               value={data.identityNumber}
               onChange={(event) => onFieldChange('identityNumber', event.target.value)}
-              className={getFieldClassName(false)}
+              inputMode="numeric"
+              className={getFieldClassName(Boolean(errors.identityNumber))}
               placeholder="Nhập số CMND/CCCD"
             />
           </FormRow>
@@ -83,6 +89,8 @@ const IdentityToggleForm: React.FC<IdentityToggleFormProps> = ({ data, onFieldCh
           <FormRow label="Ngày cấp">
             <DatePickerInput
               value={data.identityIssueDate}
+              hasError={Boolean(errors.identityIssueDate)}
+              max={todayIsoDate}
               onChange={(value: string) => onFieldChange('identityIssueDate', value)}
               ariaLabel="Ngày cấp CMND/CCCD"
             />
@@ -93,7 +101,7 @@ const IdentityToggleForm: React.FC<IdentityToggleFormProps> = ({ data, onFieldCh
               type="text"
               value={data.identityIssuePlace}
               onChange={(event) => onFieldChange('identityIssuePlace', event.target.value)}
-              className={getFieldClassName(false)}
+              className={getFieldClassName(Boolean(errors.identityIssuePlace))}
               placeholder="Nhập nơi cấp"
             />
           </FormRow>
@@ -111,15 +119,17 @@ const IdentityToggleForm: React.FC<IdentityToggleFormProps> = ({ data, onFieldCh
             <input
               type="text"
               value={data.passportNumber}
+              maxLength={20}
               onChange={(event) => onFieldChange('passportNumber', event.target.value)}
-              className={getFieldClassName(false)}
+              className={getFieldClassName(Boolean(errors.passportNumber))}
               placeholder="Nhập số hộ chiếu"
             />
           </FormRow>
         </div>
       </IdentityToggleCard>
     </div>
-  </>
-);
+    </>
+  );
+};
 
 export default IdentityToggleForm;

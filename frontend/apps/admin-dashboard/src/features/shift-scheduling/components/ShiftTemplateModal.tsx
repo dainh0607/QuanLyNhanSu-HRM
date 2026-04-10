@@ -1,9 +1,31 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { SelectOption } from "../types";
+
+export interface ShiftTemplateFormValues {
+  name: string;
+  startTime: string;
+  endTime: string;
+  branchId: string;
+  deptId: string;
+  jobId: string;
+  repeatDays: string[];
+}
 
 interface ShiftTemplateModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  title?: string;
+  submitLabel?: string;
+  mode?: "template" | "directAssign";
+  branchOptions?: SelectOption[];
+  assignmentContext?: {
+    employeeName: string;
+    assignmentDate: string;
+    branchId?: string;
+  };
+  onSubmit?: (values: ShiftTemplateFormValues) => void | Promise<void>;
+  isSubmittingExternal?: boolean;
 }
 
 const WEEKDAYS = [
@@ -16,30 +38,72 @@ const WEEKDAYS = [
   { id: "sun", label: "CN" },
 ];
 
-export const ShiftTemplateModal = ({ isOpen, onClose, onSuccess }: ShiftTemplateModalProps) => {
-  const [formData, setFormData] = useState({
-    name: "",
-    startTime: "08:00",
-    endTime: "17:00",
-    branchId: "",
-    deptId: "",
-    jobId: ""
-  });
-  
+const DEFAULT_FORM_DATA = {
+  name: "",
+  startTime: "08:00",
+  endTime: "17:00",
+  branchId: "",
+  deptId: "",
+  jobId: "",
+};
+
+const DEFAULT_BRANCH_OPTIONS: SelectOption[] = [
+  { value: "", label: "Chọn..." },
+  { value: "1", label: "Hà Nội" },
+  { value: "2", label: "Hồ Chí Minh" },
+  { value: "3", label: "Bình Thạnh" },
+];
+
+export const ShiftTemplateModal = ({
+  isOpen,
+  onClose,
+  onSuccess,
+  title = "Tạo ca làm việc mẫu",
+  submitLabel = "Lưu ca mẫu",
+  mode = "template",
+  branchOptions,
+  assignmentContext,
+  onSubmit,
+  isSubmittingExternal = false,
+}: ShiftTemplateModalProps) => {
+  const [formData, setFormData] = useState(DEFAULT_FORM_DATA);
   const [repeatDays, setRepeatDays] = useState<string[]>(["mon", "tue", "wed", "thu", "fri", "sat"]);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string>("");
+  const [isSubmittingInternal, setIsSubmittingInternal] = useState(false);
+
+  const resolvedBranchOptions = useMemo(
+    () =>
+      branchOptions && branchOptions.length > 1
+        ? branchOptions
+        : DEFAULT_BRANCH_OPTIONS,
+    [branchOptions],
+  );
+
+  const isSubmitting = isSubmittingExternal || isSubmittingInternal;
 
   useEffect(() => {
     if (!isOpen) {
       setTimeout(() => {
-        setFormData({ name: "", startTime: "08:00", endTime: "17:00", branchId: "", deptId: "", jobId: "" });
+        setFormData(DEFAULT_FORM_DATA);
         setRepeatDays(["mon", "tue", "wed", "thu", "fri", "sat"]);
         setErrors({});
-        setIsSubmitting(false);
+        setSubmitError("");
+        setIsSubmittingInternal(false);
       }, 300);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !assignmentContext?.branchId) {
+      return;
+    }
+
+    setFormData((current) => ({
+      ...current,
+      branchId: current.branchId || assignmentContext.branchId || "",
+    }));
+  }, [assignmentContext?.branchId, isOpen]);
 
   if (!isOpen) return null;
 
@@ -60,16 +124,36 @@ export const ShiftTemplateModal = ({ isOpen, onClose, onSuccess }: ShiftTemplate
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
-    setIsSubmitting(true);
+    setSubmitError("");
+    setIsSubmittingInternal(true);
     // Giả lập gọi API
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const payload: ShiftTemplateFormValues = {
+        ...formData,
+        repeatDays,
+      };
+
+      if (onSubmit) {
+        await onSubmit(payload);
+      } else {
+        await new Promise((resolve) => window.setTimeout(resolve, 800));
+      }
+
       onSuccess();
-    }, 800);
+    } catch (error) {
+      console.error("Failed to submit shift template.", error);
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : "Không thể lưu ca làm. Vui lòng thử lại.",
+      );
+    } finally {
+      setIsSubmittingInternal(false);
+    }
   };
 
   // Logic nhận diện ca qua đêm 
@@ -84,6 +168,20 @@ export const ShiftTemplateModal = ({ isOpen, onClose, onSuccess }: ShiftTemplate
             <span className="material-symbols-outlined text-xl">close</span>
           </button>
         </div>
+
+        {mode === "directAssign" && assignmentContext ? (
+          <div className="border-b border-slate-100 bg-[#EFF6FF] px-6 py-3 text-sm text-[#134BBA]">
+            {title}: sau khi tạo mới, ca làm sẽ được gán trực tiếp cho{" "}
+            <span className="font-semibold">{assignmentContext.employeeName}</span> vào ngày{" "}
+            <span className="font-semibold">{assignmentContext.assignmentDate}</span>.
+          </div>
+        ) : null}
+
+        {submitError ? (
+          <div className="mx-6 mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
+            {submitError}
+          </div>
+        ) : null}
 
         <form onSubmit={handleSubmit} className="overflow-y-auto px-6 py-5 flex flex-col gap-6 shift-scheduling-scrollbar">
           
@@ -150,11 +248,20 @@ export const ShiftTemplateModal = ({ isOpen, onClose, onSuccess }: ShiftTemplate
                 <select 
                   value={formData.branchId}
                   onChange={(e) => { setFormData(p => ({...p, branchId: e.target.value})); setErrors(p => ({...p, branchId: ""})); }}
+                  data-branch-option-count={resolvedBranchOptions.length}
                   className={`w-full rounded-xl border ${errors.branchId ? 'border-red-400' : 'border-slate-200'} bg-white px-3 py-2 text-sm outline-none focus:border-[#134BBA] focus:ring-1`}
                 >
                   <option value="">Chọn...</option>
                   <option value="1">Hà Nội</option>
                   <option value="2">Hồ Chí Minh</option>
+                  <option value="3">Bình Thạnh</option>
+                  {resolvedBranchOptions
+                    .filter((option) => !["", "1", "2", "3"].includes(option.value))
+                    .map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                 </select>
                 {errors.branchId && <p className="mt-1 text-[10px] font-medium text-red-500">{errors.branchId}</p>}
               </div>
@@ -211,6 +318,7 @@ export const ShiftTemplateModal = ({ isOpen, onClose, onSuccess }: ShiftTemplate
           <button 
             onClick={handleSubmit}
             disabled={isSubmitting}
+            aria-label={submitLabel}
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#134BBA] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0F3F9F] disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]"
           >
             {isSubmitting ? (

@@ -58,7 +58,7 @@ const AdditionalInfoForm: React.FC<AdditionalInfoFormProps> = ({
           type="text"
           value={data.unionGroup}
           onChange={(event) => onFieldChange('unionGroup', event.target.value)}
-          className={getFieldClassName(false)}
+          className={getFieldClassName(Boolean(errors.unionGroup))}
           placeholder="Nhập tên công đoàn hoặc trạng thái tham gia"
         />
       </FormRow>
@@ -78,7 +78,7 @@ const AdditionalInfoForm: React.FC<AdditionalInfoFormProps> = ({
           type="text"
           value={data.religion}
           onChange={(event) => onFieldChange('religion', event.target.value)}
-          className={getFieldClassName(false)}
+          className={getFieldClassName(Boolean(errors.religion))}
           placeholder="Nhập tôn giáo"
         />
       </FormRow>
@@ -138,8 +138,9 @@ const AdditionalInfoForm: React.FC<AdditionalInfoFormProps> = ({
       <FormRow label="Ghi chú">
         <textarea
           value={data.note}
+          maxLength={255}
           onChange={(event) => onFieldChange('note', event.target.value)}
-          className={getTextareaClassName(false)}
+          className={getTextareaClassName(Boolean(errors.note))}
           placeholder="Nhập ghi chú bổ sung"
         />
       </FormRow>

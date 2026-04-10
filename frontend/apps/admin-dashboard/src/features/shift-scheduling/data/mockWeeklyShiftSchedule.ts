@@ -4,7 +4,7 @@ import type {
   WeeklyScheduleApiOpenShift,
   WeeklyScheduleApiResponse,
 } from "../types";
-import { addDays, parseIsoDate, toIsoDate } from "../utils/week";
+import { addDays, parseIsoDate, startOfWeek, toIsoDate } from "../utils/week";
 
 const baseEmployees: WeeklyScheduleApiEmployee[] = [
   {
@@ -109,7 +109,22 @@ interface AssignmentTemplate {
   color?: string;
 }
 
-const assignmentTemplates: AssignmentTemplate[] = [
+export interface MockShiftCatalogItem {
+  id: number;
+  shift_id: number;
+  shift_name: string;
+  start_time: string;
+  end_time: string;
+  branch_id?: number | null;
+  branch_name?: string | null;
+  department_ids?: number[];
+  job_title_ids?: number[];
+  repeat_days?: string[];
+  color?: string | null;
+  note?: string | null;
+}
+
+const baseAssignmentTemplates: AssignmentTemplate[] = [
   { id: 1, employeeId: 101, dayOffset: 0, shiftName: "Ca hành chính cố định", startTime: "08:00", endTime: "17:00", attendanceStatus: "onTime", projectId: "du-an-ban-le", projectName: "Dự án bán lẻ", color: "#134BBA" },
   { id: 2, employeeId: 101, dayOffset: 2, shiftName: "Ca sáng cửa hàng", startTime: "07:30", endTime: "15:30", attendanceStatus: "lateEarly", projectId: "du-an-ban-le", projectName: "Dự án bán lẻ", color: "#2563EB" },
   { id: 3, employeeId: 101, dayOffset: 4, shiftName: "Ca tối hỗ trợ", startTime: "14:00", endTime: "22:00", attendanceStatus: "upcoming", projectId: "du-an-van-hanh", projectName: "Dự án vận hành", color: "#3B82F6" },
@@ -124,11 +139,65 @@ const assignmentTemplates: AssignmentTemplate[] = [
   { id: 12, employeeId: 105, dayOffset: 2, shiftName: "Ca giao nhận liên chi nhánh", startTime: "09:00", endTime: "17:00", attendanceStatus: "businessTrip", projectId: "du-an-khai-truong", projectName: "Dự án khai trương", color: "#0F766E" },
 ];
 
-const openShiftTemplates: Array<Omit<WeeklyScheduleApiOpenShift, "open_date"> & { dayOffset: number }> = [
+const baseOpenShiftTemplates: Array<Omit<WeeklyScheduleApiOpenShift, "open_date"> & { dayOffset: number }> = [
   { id: 201, shift_id: 31, shift_name: "Ca mở quầy sáng", start_time: "07:00", end_time: "11:00", branch_id: 1, branch_name: "Chi nhánh Quận 1", department_id: 8, job_title_id: 11, job_title_name: "Thu ngân", required_quantity: 2, assigned_quantity: 1, status: "open", close_date: null, color: "#2563EB", dayOffset: 0 },
   { id: 202, shift_id: 32, shift_name: "Ca hỗ trợ giờ trưa", start_time: "11:00", end_time: "15:00", branch_id: 2, branch_name: "Chi nhánh Thủ Đức", department_id: 8, job_title_id: 13, job_title_name: "Phục vụ", required_quantity: 3, assigned_quantity: 0, status: "open", close_date: null, color: "#1D4ED8", dayOffset: 2 },
   { id: 203, shift_id: 33, shift_name: "Ca khóa cuối tuần", start_time: "17:00", end_time: "22:00", branch_id: 3, branch_name: "Chi nhánh Bình Thạnh", department_id: 9, job_title_id: 15, job_title_name: "Giao nhận", required_quantity: 1, assigned_quantity: 1, status: "locked", close_date: null, color: "#1E1B4B", dayOffset: 5 },
 ];
+
+const baseShiftCatalog: MockShiftCatalogItem[] = [
+  {
+    id: 1,
+    shift_id: 701,
+    shift_name: "Ca sáng chuẩn",
+    start_time: "08:00",
+    end_time: "17:00",
+    branch_id: 1,
+    branch_name: "Chi nhánh Quận 1",
+    color: "#134BBA",
+    note: "Ca tiêu chuẩn 1 công.",
+  },
+  {
+    id: 2,
+    shift_id: 702,
+    shift_name: "Ca giữa ngày",
+    start_time: "10:00",
+    end_time: "19:00",
+    branch_id: 1,
+    branch_name: "Chi nhánh Quận 1",
+    color: "#2563EB",
+    note: "Phù hợp hỗ trợ giờ cao điểm trưa.",
+  },
+  {
+    id: 3,
+    shift_id: 703,
+    shift_name: "Ca chiều tối",
+    start_time: "14:00",
+    end_time: "22:00",
+    branch_id: 2,
+    branch_name: "Chi nhánh Thủ Đức",
+    color: "#1D4ED8",
+    note: "Thường dùng cho ca phụ cuối ngày.",
+  },
+  {
+    id: 4,
+    shift_id: 704,
+    shift_name: "Ca linh hoạt 6 giờ",
+    start_time: "12:00",
+    end_time: "18:00",
+    branch_id: 3,
+    branch_name: "Chi nhánh Bình Thạnh",
+    color: "#0F766E",
+    note: "Ca hỗ trợ ngắn, dễ gán trực tiếp.",
+  },
+];
+
+let runtimeAssignments: WeeklyScheduleApiAssignment[] = [];
+let runtimeShiftCatalog: MockShiftCatalogItem[] = [];
+let nextRuntimeAssignmentId = 1000;
+let nextRuntimeShiftId = 900;
+const deletedAssignmentIds = new Set<number>();
+const assignmentStatusOverrides = new Map<number, string>();
 
 const buildAssignment = (
   weekStartDate: string,
@@ -136,6 +205,7 @@ const buildAssignment = (
 ): WeeklyScheduleApiAssignment => {
   const employee = baseEmployees.find((item) => item.id === template.employeeId);
   const assignmentDate = toIsoDate(addDays(parseIsoDate(weekStartDate), template.dayOffset));
+  const attendanceStatus = assignmentStatusOverrides.get(template.id) ?? template.attendanceStatus;
 
   return {
     id: template.id,
@@ -144,7 +214,7 @@ const buildAssignment = (
     assignment_date: assignmentDate,
     is_published: template.isPublished ?? true,
     note: template.note,
-    attendance_status: template.attendanceStatus,
+    attendance_status: attendanceStatus,
     employee_name: employee?.full_name,
     employee_avatar: employee?.avatar,
     employee_code: employee?.employee_code,
@@ -161,13 +231,231 @@ const buildAssignment = (
   };
 };
 
+const getWeekDateKeys = (weekStartDate: string): Set<string> =>
+  new Set(
+    Array.from({ length: 7 }, (_, index) =>
+      toIsoDate(addDays(startOfWeek(parseIsoDate(weekStartDate)), index)),
+    ),
+  );
+
+const getRuntimeAssignmentsForWeek = (weekStartDate: string): WeeklyScheduleApiAssignment[] => {
+  const weekDates = getWeekDateKeys(weekStartDate);
+
+  return runtimeAssignments
+    .filter((assignment) => weekDates.has(assignment.assignment_date))
+    .filter((assignment) => !deletedAssignmentIds.has(assignment.id))
+    .map((assignment) => ({
+      ...assignment,
+      attendance_status:
+        assignmentStatusOverrides.get(assignment.id) ?? assignment.attendance_status,
+    }));
+};
+
+const resolveAssignmentById = (assignmentId: number): WeeklyScheduleApiAssignment | null => {
+  const runtimeAssignment = runtimeAssignments.find((assignment) => assignment.id === assignmentId);
+  if (runtimeAssignment) {
+    return {
+      ...runtimeAssignment,
+      attendance_status:
+        assignmentStatusOverrides.get(runtimeAssignment.id) ?? runtimeAssignment.attendance_status,
+    };
+  }
+
+  const baseTemplate = baseAssignmentTemplates.find((template) => template.id === assignmentId);
+  if (!baseTemplate) {
+    return null;
+  }
+
+  return buildAssignment(toIsoDate(startOfWeek(new Date())), baseTemplate);
+};
+
+export const getMockEmployeeById = (
+  employeeId: number,
+): WeeklyScheduleApiEmployee | undefined =>
+  baseEmployees.find((employee) => employee.id === employeeId);
+
+export const getMockShiftAssignmentStatus = (
+  assignmentId: number | undefined,
+  fallbackStatus?: string | null,
+): string | null => {
+  if (!assignmentId) {
+    return fallbackStatus ?? null;
+  }
+
+  return assignmentStatusOverrides.get(assignmentId) ?? fallbackStatus ?? null;
+};
+
+export const getMockAvailableShiftCatalog = (
+  branchId?: number | null,
+): MockShiftCatalogItem[] => {
+  const items = [...runtimeShiftCatalog, ...baseShiftCatalog];
+  if (!branchId) {
+    return items;
+  }
+
+  return items.filter((item) => !item.branch_id || item.branch_id === branchId);
+};
+
+export const assignMockShiftToEmployee = ({
+  employeeId,
+  assignmentDate,
+  shift,
+}: {
+  employeeId: number;
+  assignmentDate: string;
+  shift: MockShiftCatalogItem;
+}): WeeklyScheduleApiAssignment => {
+  const employee = getMockEmployeeById(employeeId);
+  const assignment: WeeklyScheduleApiAssignment = {
+    id: nextRuntimeAssignmentId++,
+    employee_id: employeeId,
+    shift_id: shift.shift_id,
+    assignment_date: assignmentDate,
+    is_published: true,
+    note: shift.note ?? null,
+    attendance_status: "upcoming",
+    employee_name: employee?.full_name,
+    employee_avatar: employee?.avatar,
+    employee_code: employee?.employee_code,
+    branch_id: shift.branch_id ?? employee?.branch_id ?? null,
+    branch_name: shift.branch_name ?? employee?.branch_name ?? null,
+    job_title_id: employee?.job_title_id ?? null,
+    job_title_name: employee?.job_title_name ?? null,
+    project_id: null,
+    project_name: null,
+    shift_name: shift.shift_name,
+    start_time: shift.start_time,
+    end_time: shift.end_time,
+    color: shift.color ?? "#1D4ED8",
+  };
+
+  runtimeAssignments = [assignment, ...runtimeAssignments];
+  assignmentStatusOverrides.delete(assignment.id);
+  return assignment;
+};
+
+export const createMockShiftTemplateAndAssign = ({
+  employeeId,
+  assignmentDate,
+  name,
+  startTime,
+  endTime,
+  branchId,
+}: {
+  employeeId: number;
+  assignmentDate: string;
+  name: string;
+  startTime: string;
+  endTime: string;
+  branchId?: number | null;
+}): WeeklyScheduleApiAssignment => {
+  const employee = getMockEmployeeById(employeeId);
+  const resolvedBranchId = branchId ?? employee?.branch_id ?? null;
+  const resolvedBranchName =
+    employee?.branch_id === resolvedBranchId
+      ? employee?.branch_name ?? null
+      : baseEmployees.find((item) => item.branch_id === resolvedBranchId)?.branch_name ?? null;
+
+  const shift: MockShiftCatalogItem = {
+    id: nextRuntimeShiftId,
+    shift_id: nextRuntimeShiftId++,
+    shift_name: name,
+    start_time: startTime,
+    end_time: endTime,
+    branch_id: resolvedBranchId,
+    branch_name: resolvedBranchName,
+    color: "#134BBA",
+    note: "Tạo mới từ luồng gán trực tiếp.",
+  };
+
+  runtimeShiftCatalog = [shift, ...runtimeShiftCatalog];
+  return assignMockShiftToEmployee({ employeeId, assignmentDate, shift });
+};
+
+export const createMockShiftTemplate = ({
+  name,
+  startTime,
+  endTime,
+  branchIds,
+}: {
+  name: string;
+  startTime: string;
+  endTime: string;
+  branchIds?: number[];
+}): MockShiftCatalogItem[] => {
+  const targetBranchIds = branchIds?.length ? branchIds : [null];
+
+  const createdTemplates = targetBranchIds.map((branchId) => {
+    const matchedBranch = baseEmployees.find((item) => item.branch_id === branchId);
+    const shift: MockShiftCatalogItem = {
+      id: nextRuntimeShiftId,
+      shift_id: nextRuntimeShiftId++,
+      shift_name: name,
+      start_time: startTime,
+      end_time: endTime,
+      branch_id: branchId,
+      branch_name: matchedBranch?.branch_name ?? null,
+      color: "#134BBA",
+      note: "Tạo mới từ màn hình quản lý mẫu ca.",
+    };
+
+    return shift;
+  });
+
+  runtimeShiftCatalog = [...createdTemplates, ...runtimeShiftCatalog];
+  return createdTemplates;
+};
+
+export const deleteMockShiftAssignment = (assignmentId: number): boolean => {
+  const previousRuntimeLength = runtimeAssignments.length;
+  runtimeAssignments = runtimeAssignments.filter((assignment) => assignment.id !== assignmentId);
+  assignmentStatusOverrides.delete(assignmentId);
+
+  if (runtimeAssignments.length !== previousRuntimeLength) {
+    return true;
+  }
+
+  const hasBaseAssignment = baseAssignmentTemplates.some((template) => template.id === assignmentId);
+  if (hasBaseAssignment) {
+    deletedAssignmentIds.add(assignmentId);
+    return true;
+  }
+
+  return false;
+};
+
+export const refreshMockShiftAssignmentAttendance = (assignmentId: number): string => {
+  const assignment = resolveAssignmentById(assignmentId);
+  const currentStatus =
+    assignmentStatusOverrides.get(assignmentId) ?? assignment?.attendance_status ?? "upcoming";
+  const nextStatus =
+    currentStatus === "onTime" || currentStatus === "paidLeave" || currentStatus === "unpaidLeave"
+      ? currentStatus
+      : "onTime";
+
+  assignmentStatusOverrides.set(assignmentId, nextStatus);
+  return nextStatus;
+};
+
+export const markMockShiftAssignmentStatus = (
+  assignmentId: number,
+  status: string,
+): void => {
+  assignmentStatusOverrides.set(assignmentId, status);
+};
+
 export const createMockWeeklyShiftScheduleApiResponse = (
   weekStartDate: string,
 ): WeeklyScheduleApiResponse => ({
   week_start_date: weekStartDate,
   employees: baseEmployees,
-  assignments: assignmentTemplates.map((template) => buildAssignment(weekStartDate, template)),
-  open_shifts: openShiftTemplates.map((template) => ({
+  assignments: [
+    ...baseAssignmentTemplates
+      .filter((template) => !deletedAssignmentIds.has(template.id))
+      .map((template) => buildAssignment(weekStartDate, template)),
+    ...getRuntimeAssignmentsForWeek(weekStartDate),
+  ],
+  open_shifts: baseOpenShiftTemplates.map((template) => ({
     ...template,
     open_date: toIsoDate(addDays(parseIsoDate(weekStartDate), template.dayOffset)),
   })),
