@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ERP.Entities.Models
 {
     [Table("OpenShifts")]
-    public class OpenShifts : BaseEntity
+    public class OpenShifts : AuditableEntity
     {
         [Column("shift_id")]
         public int shift_id { get; set; }

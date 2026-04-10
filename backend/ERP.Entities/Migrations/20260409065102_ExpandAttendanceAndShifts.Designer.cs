@@ -4,6 +4,7 @@ using ERP.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ERP.Entities.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260409065102_ExpandAttendanceAndShifts")]
+    partial class ExpandAttendanceAndShifts
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -291,56 +294,6 @@ namespace ERP.Entities.Migrations
                     b.ToTable("Assets", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Entities.Models.AttendanceLocations", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("updated_at");
-
-                    b.Property<int>("branch_id")
-                        .HasColumnType("int")
-                        .HasColumnName("branch_id");
-
-                    b.Property<bool>("is_active")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_active");
-
-                    b.Property<decimal>("latitude")
-                        .HasColumnType("decimal(18,10)")
-                        .HasColumnName("latitude");
-
-                    b.Property<string>("location_name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("location_name");
-
-                    b.Property<decimal>("longitude")
-                        .HasColumnType("decimal(18,10)")
-                        .HasColumnName("longitude");
-
-                    b.Property<int>("radius_meters")
-                        .HasColumnType("int")
-                        .HasColumnName("radius_meters");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("branch_id");
-
-                    b.ToTable("AttendanceLocations");
-                });
-
             modelBuilder.Entity("ERP.Entities.Models.AttendanceLogs", b =>
                 {
                     b.Property<int>("Id")
@@ -474,14 +427,6 @@ namespace ERP.Entities.Migrations
                     b.Property<bool>("require_location_check")
                         .HasColumnType("bit")
                         .HasColumnName("require_location_check");
-
-                    b.Property<int>("round_checkin_minutes")
-                        .HasColumnType("int")
-                        .HasColumnName("round_checkin_minutes");
-
-                    b.Property<int>("round_checkout_minutes")
-                        .HasColumnType("int")
-                        .HasColumnName("round_checkout_minutes");
 
                     b.Property<string>("wifi_name")
                         .IsRequired()
@@ -3504,47 +3449,6 @@ namespace ERP.Entities.Migrations
                     b.ToTable("PromotionHistory", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Entities.Models.PublicHolidays", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("updated_at");
-
-                    b.Property<string>("description")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("description");
-
-                    b.Property<DateTime>("holiday_date")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("holiday_date");
-
-                    b.Property<string>("holiday_name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("holiday_name");
-
-                    b.Property<bool>("is_paid")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_paid");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("PublicHolidays");
-                });
-
             modelBuilder.Entity("ERP.Entities.Models.Regions", b =>
                 {
                     b.Property<int>("Id")
@@ -5034,49 +4938,6 @@ namespace ERP.Entities.Migrations
                     b.ToTable("ShiftCycleAssignments");
                 });
 
-            modelBuilder.Entity("ERP.Entities.Models.ShiftCycleItems", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("updated_at");
-
-                    b.Property<int>("day_number")
-                        .HasColumnType("int")
-                        .HasColumnName("day_number");
-
-                    b.Property<string>("note")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("note");
-
-                    b.Property<int?>("shift_id")
-                        .HasColumnType("int")
-                        .HasColumnName("shift_id");
-
-                    b.Property<int>("template_id")
-                        .HasColumnType("int")
-                        .HasColumnName("template_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("shift_id");
-
-                    b.HasIndex("template_id");
-
-                    b.ToTable("ShiftCycleItems");
-                });
-
             modelBuilder.Entity("ERP.Entities.Models.ShiftCycleTemplates", b =>
                 {
                     b.Property<int>("Id")
@@ -5705,17 +5566,6 @@ namespace ERP.Entities.Migrations
                     b.Navigation("Asset");
 
                     b.Navigation("Employee");
-                });
-
-            modelBuilder.Entity("ERP.Entities.Models.AttendanceLocations", b =>
-                {
-                    b.HasOne("ERP.Entities.Models.Branches", "Branch")
-                        .WithMany()
-                        .HasForeignKey("branch_id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Branch");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.AttendanceLogs", b =>
@@ -6840,24 +6690,6 @@ namespace ERP.Entities.Migrations
                         .IsRequired();
 
                     b.Navigation("Employee");
-
-                    b.Navigation("Template");
-                });
-
-            modelBuilder.Entity("ERP.Entities.Models.ShiftCycleItems", b =>
-                {
-                    b.HasOne("ERP.Entities.Models.Shifts", "Shift")
-                        .WithMany()
-                        .HasForeignKey("shift_id")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("ERP.Entities.Models.ShiftCycleTemplates", "Template")
-                        .WithMany()
-                        .HasForeignKey("template_id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Shift");
 
                     b.Navigation("Template");
                 });

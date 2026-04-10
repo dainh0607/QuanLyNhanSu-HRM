@@ -21,5 +21,10 @@ namespace ERP.Services.Lookup
         // Contract Lookups (SCRUM-218 & SCRUM-132)
         Task<IEnumerable<LookupDto>> GetContractTypesAsync();
         Task<IEnumerable<LookupDto>> GetTaxTypesAsync();
+
+        // Organization dropdowns (T178)
+        Task<IEnumerable<LookupDto>> GetBranchesLookupAsync();
+        Task<IEnumerable<LookupDto>> GetDepartmentsLookupAsync();
+        Task<IEnumerable<LookupDto>> GetJobTitlesLookupAsync();
     }
 }
