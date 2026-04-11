@@ -2,28 +2,33 @@ import React from 'react';
 
 export const FormHeading: React.FC<{ title: string; description?: string }> = ({
   title,
-  description: _description,
 }) => (
-  <div className="mb-8">
-    <div className="flex items-center gap-3">
-      <span className="h-[3px] w-10 rounded-full bg-emerald-500"></span>
-      <h4 className="text-[20px] font-bold text-slate-950">{title}</h4>
-    </div>
+  <div className="mb-10 flex items-center gap-4">
+    <div className="h-7 w-[4px] rounded-full bg-emerald-600"></div>
+    <h4 className="text-[20px] font-bold text-slate-900">{title}</h4>
   </div>
 );
 
 export const FormRow: React.FC<{
   label: string;
+  description?: string; // New prop
   required?: boolean;
   error?: string;
   children: React.ReactNode;
-}> = ({ label, required = false, error, children }) => (
-  <div className="grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)] lg:items-start lg:gap-6">
-    <label className="pt-3 text-sm font-semibold text-slate-800">
-      {label}
-      {required ? <span className="ml-1 text-rose-500">*</span> : null}
-    </label>
-    <div className="w-full max-w-[720px]">
+}> = ({ label, description, required = false, error, children }) => (
+  <div className="grid grid-cols-1 gap-3 py-6 first:pt-0 last:pb-0 border-b border-slate-100 last:border-0 lg:grid-cols-[300px_1fr] lg:items-start lg:gap-10">
+    <div className="space-y-1">
+      <label className="text-[15px] font-bold text-slate-900">
+        {label}
+        {required ? <span className="ml-1 text-rose-500">*</span> : null}
+      </label>
+      {description && (
+        <p className="text-[13px] leading-relaxed text-slate-400">
+          {description}
+        </p>
+      )}
+    </div>
+    <div className="w-full">
       {children}
       {error ? <p className="mt-2 text-xs font-medium text-rose-500">{error}</p> : null}
     </div>

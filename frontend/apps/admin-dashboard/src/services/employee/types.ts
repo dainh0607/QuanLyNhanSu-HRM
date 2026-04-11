@@ -9,6 +9,13 @@ export interface PaginatedResponse<T> {
   hasNextPage: boolean;
 }
 
+export interface LateEarlyRule {
+  id: string;
+  startDate: string;
+  endDate: string;
+  minutes: string;
+}
+
 export interface EmployeeProfileBasicInfo extends Partial<Employee> {
   id: number;
   originPlace?: string;
@@ -20,6 +27,24 @@ export interface EmployeeProfileBasicInfo extends Partial<Employee> {
   taxCode?: string;
   unionGroup?: string;
   note?: string;
+  probationStartDate?: string;
+  contractSignDate?: string;
+  contractExpiryDate?: string;
+  seniorityMonths?: number;
+  lateEarlyAllowed?: number;
+  lateAllowedMinutes?: number;
+  earlyAllowedMinutes?: number;
+  lateEarlyDetailedRules?: string;
+  lateEarlyNote?: string;
+  isResigned?: boolean;
+  resignationReason?: string;
+  secondaryBranchId?: number;
+  secondaryDepartmentId?: number;
+  secondaryJobTitleId?: number;
+  isDepartmentHead?: boolean;
+  regionId?: number;
+  accessGroupId?: number;
+  managerName?: string;
 }
 
 export interface EmployeeProfileAddress {
@@ -332,4 +357,34 @@ export interface EmployeeListFilters {
   jobTitleId?: number;
   regionId?: number;
   accessGroupId?: number;
+}
+
+export interface EmployeeEditJobStatusPayload {
+  probationStartDate: string;
+  contractSignDate: string;
+  contractExpiryDate: string;
+  workType: string;
+  seniorityMonths: string;
+  lateEarlyAllowed: string;
+  lateAllowedMinutes: string;
+  earlyAllowedMinutes: string;
+  lateEarlyDetailedRules: LateEarlyRule[];
+  lateEarlyNote: string;
+  isResigned: boolean;
+  resignationReason: string;
+}
+
+export interface EmployeeEditJobInfoPayload {
+  regionId: string;
+  branchId: string;
+  secondaryBranchId: string;
+  departmentId: string;
+  secondaryDepartmentId: string;
+  jobTitleId: string;
+  secondaryJobTitleId: string;
+  accessGroupId: string;
+  managerId: string;
+  managerName: string;
+  isActive: boolean;
+  isDepartmentHead: boolean;
 }
