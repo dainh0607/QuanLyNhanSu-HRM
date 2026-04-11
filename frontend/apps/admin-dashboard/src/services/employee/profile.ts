@@ -17,7 +17,6 @@ import {
   toNullableDateInputValue,
   toNullableEditableString,
 } from "./helpers";
-import { getAddressTypesMetadata } from "./metadata";
 import type {
   EmployeeAddressProfile,
   EmployeeEditAdditionalInfoPayload,
@@ -565,8 +564,7 @@ const updateEmployeeEditPermanentAddress = async (
     throw createMissingEndpointError("PUT", "Dia chi thuong tru");
   }
 
-  const addressTypes = await getAddressTypesMetadata();
-  const updatePayload = toEmployeeAddressUpdatePayload(payload, addressTypes);
+  const updatePayload = toEmployeeAddressUpdatePayload(payload);
 
   return requestJson<unknown>(
     endpoint,

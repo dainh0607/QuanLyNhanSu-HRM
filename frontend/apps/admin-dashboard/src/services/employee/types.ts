@@ -253,9 +253,22 @@ export interface EmployeeAddressUpdatePayload {
   endDate?: string;
 }
 
+export interface EmployeeAddressDtoPayload {
+  id: number;
+  addressLine: string;
+  ward: string;
+  district: string;
+  city: string;
+  country: string;
+  postalCode: string;
+}
+
 export interface EmployeeAddressUpdateRequest {
-  addresses: EmployeeAddressUpdatePayload[];
   originPlace?: string;
+  permanentAddress: EmployeeAddressDtoPayload;
+  mergedAddress: EmployeeAddressDtoPayload;
+  currentAddress?: string;
+  additionalAddresses: EmployeeAddressUpdatePayload[];
 }
 
 export interface EmployeeEditEducationItemPayload {

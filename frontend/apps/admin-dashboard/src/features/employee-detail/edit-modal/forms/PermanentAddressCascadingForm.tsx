@@ -12,6 +12,7 @@ type AddressFormKey = 'permanentAddress' | 'mergedAddress';
 
 interface PermanentAddressCascadingFormProps {
   data: EmployeeEditPermanentAddressPayload;
+  errors: Record<string, string>;
   onFieldChange: <F extends keyof EmployeeEditPermanentAddressPayload>(
     field: F,
     value: EmployeeEditPermanentAddressPayload[F],
@@ -97,11 +98,21 @@ const AddressSelectField: React.FC<{
   value: string;
   placeholder: string;
   options: string[];
+  error?: string;
   disabled?: boolean;
   loading?: boolean;
   onChange: (value: string) => void;
-}> = ({ label, value, placeholder, options, disabled = false, loading = false, onChange }) => (
-  <FormRow label={label}>
+}> = ({
+  label,
+  value,
+  placeholder,
+  options,
+  error,
+  disabled = false,
+  loading = false,
+  onChange,
+}) => (
+  <FormRow label={label} error={error}>
     <div className="relative">
       <select
         value={value}
@@ -125,6 +136,7 @@ const AddressSelectField: React.FC<{
 
 const PermanentAddressCascadingForm: React.FC<PermanentAddressCascadingFormProps> = ({
   data,
+  errors,
   onFieldChange,
 }) => {
   const [activeAddressForm, setActiveAddressForm] = useState<AddressFormKey>('permanentAddress');
@@ -137,6 +149,8 @@ const PermanentAddressCascadingForm: React.FC<PermanentAddressCascadingFormProps
   const activeOptionState = addressOptions[activeAddressForm];
   const isMergedAddressView = activeAddressForm === 'mergedAddress';
   const isMergedVietnam = isMergedAddressView && isVietnamCountry(activeAddress.country);
+  const getFieldError = (field: keyof EmployeeEditAddressFormPayload): string | undefined =>
+    errors[`${activeAddressForm}.${field}`];
   const resolvedCountryOptions = mergeUniqueOptions(countryOptions, [
     data.permanentAddress.country,
     data.mergedAddress.country,
@@ -452,6 +466,7 @@ const PermanentAddressCascadingForm: React.FC<PermanentAddressCascadingFormProps
           value={activeAddress.country}
           placeholder="Chọn quốc gia"
           options={resolvedCountryOptions}
+          error={getFieldError('country')}
           onChange={(value) => handleCountryChange(activeAddressForm, value)}
         />
 
@@ -466,6 +481,7 @@ const PermanentAddressCascadingForm: React.FC<PermanentAddressCascadingFormProps
               : 'Chọn quốc gia trước'
           }
           options={resolvedCityOptions}
+          error={getFieldError('city')}
           disabled={!activeAddress.country.trim()}
           loading={activeOptionState.isLoadingCities}
           onChange={(value) => handleCityChange(activeAddressForm, value)}
@@ -481,6 +497,7 @@ const PermanentAddressCascadingForm: React.FC<PermanentAddressCascadingFormProps
                 : 'Chọn tỉnh/thành phố trước'
             }
             options={resolvedDistrictOptions}
+            error={getFieldError('district')}
             disabled={!activeAddress.country.trim() || !activeAddress.city.trim()}
             loading={activeOptionState.isLoadingDistricts}
             onChange={(value) => updateAddressForm(activeAddressForm, 'district', value)}
@@ -497,7 +514,7 @@ const PermanentAddressCascadingForm: React.FC<PermanentAddressCascadingFormProps
           />
         </FormRow>
 
-        <FormRow label={activeConfig.addressLabel}>
+        <FormRow label={activeConfig.addressLabel} error={getFieldError('addressLine')}>
           <input
             type="text"
             value={activeAddress.addressLine}

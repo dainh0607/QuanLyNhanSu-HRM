@@ -156,6 +156,7 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<ISignerService, SignerService>();
 builder.Services.AddScoped<IContractNotificationService, ContractNotificationService>();
 builder.Services.AddScoped<IAttendanceService, AttendanceService>();
+builder.Services.AddScoped<IShiftService, ShiftService>();
 builder.Services.AddHostedService<EmployeeStatusWorker>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>

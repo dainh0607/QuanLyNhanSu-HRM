@@ -1,8 +1,8 @@
 import type { Employee } from "../../features/employees/types";
 import { API_URL } from "./core";
 import type {
-  AddressTypeMetadata,
   EmployeeAddressProfile,
+  EmployeeAddressDtoPayload,
   EmployeeAddressUpdatePayload,
   EmployeeAddressUpdateRequest,
   EmployeeEditAddressFormPayload,
@@ -453,6 +453,18 @@ const createEmptyAddressUpdatePayload = (
   isCurrent: source.isCurrent,
 });
 
+const createAddressDtoPayload = (
+  source: EmployeeEditAddressFormPayload,
+): EmployeeAddressDtoPayload => ({
+  id: source.addressId ?? source.employeeAddressId ?? 0,
+  addressLine: source.addressLine.trim(),
+  ward: source.ward.trim(),
+  district: source.district.trim(),
+  city: source.city.trim(),
+  country: source.country.trim(),
+  postalCode: "",
+});
+
 const isEditableAddressEmpty = (address: EmployeeEditAddressFormPayload): boolean =>
   [address.country, address.city, address.district, address.ward, address.addressLine].every(
     (value) => !value.trim(),
@@ -460,50 +472,21 @@ const isEditableAddressEmpty = (address: EmployeeEditAddressFormPayload): boolea
 
 export const toEmployeeAddressUpdatePayload = (
   payload: EmployeeEditPermanentAddressPayload,
-  addressTypes: AddressTypeMetadata[],
 ): EmployeeAddressUpdateRequest => {
-  const resolveAddressTypeId = (
-    address: EmployeeEditAddressFormPayload,
-    keywords: string[],
-    fallbackName: string,
-  ): number => {
-    if (address.addressTypeId) {
-      return address.addressTypeId;
-    }
-
-    const matched = addressTypes.find((type) =>
-      keywords.some((keyword) => normalizeText(type.name).includes(keyword)),
-    );
-
-    if (matched) {
-      return matched.id;
-    }
-
-    throw new Error(`Cannot find a matching address type for ${fallbackName}.`);
-  };
-
-  const permanentAddress = {
-    ...payload.permanentAddress,
-    addressTypeId: resolveAddressTypeId(
-      payload.permanentAddress,
-      ["thuong tru", "permanent"],
-      "permanent address",
-    ),
-  };
-
-  const mergedAddress = {
-    ...payload.mergedAddress,
-    addressTypeId: resolveAddressTypeId(
-      payload.mergedAddress,
-      ["sat nhap", "tam tru", "current"],
-      "current address",
-    ),
-  };
-
   return {
     originPlace: payload.originPlace.trim() || undefined,
-    addresses: [permanentAddress, mergedAddress]
+    permanentAddress: createAddressDtoPayload(payload.permanentAddress),
+    mergedAddress: createAddressDtoPayload(payload.mergedAddress),
+    currentAddress: payload.mergedAddress.addressLine.trim() || undefined,
+    additionalAddresses: [payload.permanentAddress, payload.mergedAddress]
       .filter((address) => !isEditableAddressEmpty(address))
+      .filter(
+        (address) =>
+          ![1, 2, 3].includes(address.addressTypeId ?? 0) &&
+          !['thuong tru', 'tam tru', 'sat nhap', 'permanent', 'current'].some((keyword) =>
+            normalizeText(address.addressTypeName).includes(keyword),
+          ),
+      )
       .map((address) => createEmptyAddressUpdatePayload(address)),
   };
 };

@@ -217,7 +217,7 @@ const EmployeeListBoard: React.FC<EmployeeListProps> = ({ onSelectEmployee }) =>
           />
 
           <div
-            className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
+            className="flex min-h-0 flex-col overflow-visible rounded-xl border border-gray-200 bg-white shadow-sm"
             data-purpose="employee-table-container"
           >
             {isLoading ? (

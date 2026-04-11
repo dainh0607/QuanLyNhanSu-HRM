@@ -419,6 +419,9 @@ export const mergeDependentClientFields = (
 
 export const EMAIL_REGEX = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 export const PHONE_REGEX = /^\d{9,15}$/;
+export const PERSON_NAME_REGEX = /^[\p{L}\s]+$/u;
+export const TEXT_WITHOUT_SPECIAL_CHARS_REGEX = /^[\p{L}\p{N}\s.-]*$/u;
+export const ALPHANUMERIC_REGEX = /^[A-Za-z0-9]+$/;
 
 export const isEmailValid = (value: string): boolean => EMAIL_REGEX.test(value.trim());
 export const isPhoneValid = (value: string): boolean => PHONE_REGEX.test(value.trim());
@@ -428,6 +431,35 @@ export const isSkypeValid = (value: string): boolean => /^[a-zA-Z0-9._-]{3,50}$/
 export const isFacebookValid = (value: string): boolean =>
   /^(https?:\/\/)?(www\.)?facebook\.com\/[A-Za-z0-9.]+\/?$/.test(value) ||
   /^[A-Za-z0-9.]{5,50}$/.test(value);
+export const hasInvalidPersonNameCharacters = (value: string): boolean => {
+  const normalizedValue = value.trim();
+  return normalizedValue ? !PERSON_NAME_REGEX.test(normalizedValue) : false;
+};
+export const hasInvalidTextCharacters = (value: string): boolean => {
+  const normalizedValue = value.trim();
+  return normalizedValue ? !TEXT_WITHOUT_SPECIAL_CHARS_REGEX.test(normalizedValue) : false;
+};
+export const hasInvalidAlphaNumericCharacters = (value: string): boolean => {
+  const normalizedValue = value.trim();
+  return normalizedValue ? !ALPHANUMERIC_REGEX.test(normalizedValue) : false;
+};
+export const exceedsMaxLength = (value: string, maxLength: number): boolean =>
+  value.trim().length > maxLength;
+export const getTodayIsoDate = (): string => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+export const isDuplicateNormalizedValue = (left: string, right: string): boolean =>
+  left.trim().length > 0 && left.trim() === right.trim();
+export const isVietnamPhoneCode = (value?: string | null): boolean => {
+  const normalizedValue = (value ?? '').replace(/\s+/g, '');
+  const digits = normalizedValue.replace(/\D/g, '');
+
+  return normalizedValue.startsWith('+84') || digits.startsWith('84');
+};
 
 /**
  * Checks if a string contains any special characters.

@@ -112,6 +112,7 @@ const PersonalTabPanel: React.FC<PersonalTabPanelProps> = ({
       return (
         <PermanentAddressCascadingForm
           data={personalForms.permanentAddress.data}
+          errors={personalForms.permanentAddress.errors}
           onFieldChange={onPermanentAddressChange}
         />
       );
@@ -119,6 +120,7 @@ const PersonalTabPanel: React.FC<PersonalTabPanelProps> = ({
       return (
         <EducationListForm
           data={personalForms.education.data}
+          errors={personalForms.education.errors}
           onChange={onEducationChange}
         />
       );
@@ -126,6 +128,7 @@ const PersonalTabPanel: React.FC<PersonalTabPanelProps> = ({
       return (
         <IdentityToggleForm
           data={personalForms.identity.data}
+          errors={personalForms.identity.errors}
           onFieldChange={onIdentityChange}
         />
       );

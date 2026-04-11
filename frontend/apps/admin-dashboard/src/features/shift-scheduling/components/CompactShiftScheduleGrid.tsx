@@ -1,5 +1,6 @@
 import type { WeeklyScheduleCell, WeeklyScheduleRow } from "../types";
 import { getDayHeader, getWeekDates, toIsoDate } from "../utils/week";
+import type { AssignedShiftQuickActionHandlers } from "../assigned-shift-actions/types";
 import ShiftMatrixCell from "./ShiftMatrixCell";
 
 interface CompactShiftScheduleGridProps {
@@ -9,7 +10,9 @@ interface CompactShiftScheduleGridProps {
   searchTerm: string;
   onSearchChange: (value: string) => void;
   onAddEmployee: () => void;
+  onCreateOpenShift?: (date: string) => void;
   highlightShortage?: boolean;
+  quickActionHandlers?: AssignedShiftQuickActionHandlers;
 }
 
 const getInitials = (fullName: string): string => {
@@ -32,7 +35,9 @@ export const CompactShiftScheduleGrid = ({
   searchTerm,
   onSearchChange,
   onAddEmployee,
+  onCreateOpenShift,
   highlightShortage = true,
+  quickActionHandlers,
 }: CompactShiftScheduleGridProps) => {
   const weekDates = getWeekDates(weekStartDate);
   const gridTemplateColumns = "240px repeat(7, minmax(146px, 1fr))";
@@ -86,8 +91,10 @@ export const CompactShiftScheduleGrid = ({
             return (
               <ShiftMatrixCell
                 key={`open-${isoDate}`}
+                date={isoDate}
                 shifts={openShiftCells[isoDate]?.shifts ?? []}
                 isOpenShiftRow
+                onCreateOpenShift={onCreateOpenShift}
                 highlightShortage={highlightShortage}
               />
             );
@@ -118,7 +125,9 @@ export const CompactShiftScheduleGrid = ({
                   <ShiftMatrixCell
                     key={`${row.employee.id}-${isoDate}`}
                     shifts={row.cells[isoDate]?.shifts ?? []}
+                    employee={row.employee}
                     highlightShortage={highlightShortage}
+                    quickActionHandlers={quickActionHandlers}
                   />
                 );
               })}

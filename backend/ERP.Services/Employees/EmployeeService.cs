@@ -167,6 +167,26 @@ namespace ERP.Services.Employees
             return employee != null ? MapToDto(employee) : null;
         }
 
+        public async Task<IEnumerable<EmployeeDto>> GetActiveByBranchAsync(int branchId)
+        {
+            var today = DateTime.Today;
+            var employees = await _unitOfWork.Repository<EmployeeEntity>()
+                .AsQueryable()
+                .Include(e => e.Branch)
+                .Include(e => e.Department)
+                .Include(e => e.JobTitle)
+                .Include(e => e.Gender)
+                .Where(e => e.branch_id == branchId && e.is_active && !e.is_resigned && (e.start_date == null || e.start_date <= today))
+                .OrderBy(e => e.employee_code)
+                .ToListAsync();
+
+            var accessGroupLookup = await BuildAccessGroupLookupAsync(employees.Select(e => e.Id));
+            
+            return employees.Select(e => MapToDto(
+                e, 
+                accessGroupLookup.TryGetValue(e.Id, out var accessGroup) ? accessGroup : null)).ToList();
+        }
+
         public async Task<EmployeeFullProfileDto?> GetFullProfileAsync(int id)
         {
             var employee = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(id);

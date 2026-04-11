@@ -121,7 +121,8 @@ const HealthForm: React.FC<HealthFormProps> = ({ data, errors, onFieldChange }) 
           type="text"
           value={data.congenitalDisease}
           onChange={(event) => onFieldChange('congenitalDisease', event.target.value)}
-          className={getFieldClassName(false)}
+          maxLength={250}
+          className={getFieldClassName(Boolean(errors.congenitalDisease))}
           placeholder="Nhập bệnh bẩm sinh (nếu có)"
         />
       </FormRow>
@@ -131,7 +132,8 @@ const HealthForm: React.FC<HealthFormProps> = ({ data, errors, onFieldChange }) 
           type="text"
           value={data.chronicDisease}
           onChange={(event) => onFieldChange('chronicDisease', event.target.value)}
-          className={getFieldClassName(false)}
+          maxLength={250}
+          className={getFieldClassName(Boolean(errors.chronicDisease))}
           placeholder="Nhập bệnh mãn tính"
         />
       </FormRow>

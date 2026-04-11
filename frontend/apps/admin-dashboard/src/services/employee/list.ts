@@ -171,6 +171,45 @@ const checkEmployeeCodeExists = async (
   }
 };
 
+const checkEmployeeEmailExists = async (
+  email: string,
+  excludeEmployeeId?: number,
+): Promise<boolean> => {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) {
+    return false;
+  }
+
+  try {
+    let pageNumber = 1;
+    let totalPages = 1;
+
+    while (pageNumber <= totalPages) {
+      const result = await getEmployees(pageNumber, 100, email);
+      totalPages = result.totalPages || 1;
+
+      const isDuplicate = result.items.some((item) => {
+        const candidateEmails = [item.email, item.workEmail]
+          .map((value) => value?.trim().toLowerCase())
+          .filter((value): value is string => Boolean(value));
+
+        return item.id !== excludeEmployeeId && candidateEmails.includes(normalizedEmail);
+      });
+
+      if (isDuplicate) {
+        return true;
+      }
+
+      pageNumber += 1;
+    }
+
+    return false;
+  } catch (error) {
+    console.error("Check Employee Email Error:", error);
+    return false;
+  }
+};
+
 export const employeeListService = {
   getEmployees,
   exportEmployeesBasicInfoFile,
@@ -180,4 +219,5 @@ export const employeeListService = {
   getNextEmployeeCode,
   createEmployee,
   checkEmployeeCodeExists,
+  checkEmployeeEmailExists,
 };

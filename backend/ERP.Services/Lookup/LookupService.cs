@@ -119,5 +119,23 @@ namespace ERP.Services.Lookup
             };
             return Task.FromResult<IEnumerable<LookupDto>>(data);
         }
+
+        public async Task<IEnumerable<LookupDto>> GetBranchesLookupAsync()
+        {
+            var data = await _unitOfWork.Repository<Branches>().GetAllAsync();
+            return data.Select(x => new LookupDto { Code = x.Id.ToString(), Name = x.name });
+        }
+
+        public async Task<IEnumerable<LookupDto>> GetDepartmentsLookupAsync()
+        {
+            var data = await _unitOfWork.Repository<Departments>().GetAllAsync();
+            return data.Select(x => new LookupDto { Code = x.Id.ToString(), Name = x.name });
+        }
+
+        public async Task<IEnumerable<LookupDto>> GetJobTitlesLookupAsync()
+        {
+            var data = await _unitOfWork.Repository<JobTitles>().GetAllAsync();
+            return data.Select(x => new LookupDto { Code = x.Id.ToString(), Name = x.name });
+        }
     }
 }

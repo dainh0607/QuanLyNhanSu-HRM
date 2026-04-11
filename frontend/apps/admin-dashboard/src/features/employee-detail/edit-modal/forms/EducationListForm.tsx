@@ -5,9 +5,11 @@ import type {
 } from '../../../../services/employeeService';
 import { DatePickerInput, FormHeading, FormRow } from '../components/FormPrimitives';
 import { getFieldClassName } from '../formStyles';
+import { getTodayIsoDate } from '../utils';
 
 interface EducationListFormProps {
   data: EmployeeEditEducationPayload;
+  errors: Record<string, string>;
   onChange: (value: EmployeeEditEducationPayload) => void;
 }
 
@@ -67,8 +69,9 @@ const mergeOptions = (
 
 const selectClassName = `${getFieldClassName(false)} appearance-none pr-12`;
 
-const EducationListForm: React.FC<EducationListFormProps> = ({ data, onChange }) => {
+const EducationListForm: React.FC<EducationListFormProps> = ({ data, errors, onChange }) => {
   const educationItems = data.length > 0 ? data : [createEmptyEducationItem()];
+  const todayIsoDate = getTodayIsoDate();
   const levelOptions = mergeOptions(
     EDUCATION_LEVEL_OPTIONS,
     educationItems.map((item) => item.level),
@@ -105,6 +108,11 @@ const EducationListForm: React.FC<EducationListFormProps> = ({ data, onChange })
 
     onChange(educationItems.filter((_, itemIndex) => itemIndex !== index));
   };
+
+  const getItemError = (
+    index: number,
+    field: keyof EmployeeEditEducationItemPayload,
+  ): string | undefined => errors[`education.${index}.${field}`];
 
   return (
     <>
@@ -187,7 +195,7 @@ const EducationListForm: React.FC<EducationListFormProps> = ({ data, onChange })
                   type="text"
                   value={item.institution}
                   onChange={(event) => updateItem(index, { institution: event.target.value })}
-                  className={getFieldClassName(false)}
+                  className={getFieldClassName(Boolean(getItemError(index, 'institution')))}
                   placeholder="Nhập nơi đào tạo"
                 />
               </FormRow>
@@ -195,6 +203,8 @@ const EducationListForm: React.FC<EducationListFormProps> = ({ data, onChange })
               <FormRow label="Ngày cấp">
                 <DatePickerInput
                   value={item.issueDate}
+                  hasError={Boolean(getItemError(index, 'issueDate'))}
+                  max={todayIsoDate}
                   ariaLabel={`ngày cấp bằng cấp ${index + 1}`}
                   onChange={(value) => updateItem(index, { issueDate: value })}
                 />
@@ -203,8 +213,9 @@ const EducationListForm: React.FC<EducationListFormProps> = ({ data, onChange })
               <FormRow label="Ghi chú">
                 <textarea
                   value={item.note}
+                  maxLength={100}
                   onChange={(event) => updateItem(index, { note: event.target.value })}
-                  className={`${getFieldClassName(false)} min-h-[112px] py-3`}
+                  className={`${getFieldClassName(Boolean(getItemError(index, 'note')))} min-h-[112px] py-3`}
                   placeholder="Nhập ghi chú"
                 />
               </FormRow>

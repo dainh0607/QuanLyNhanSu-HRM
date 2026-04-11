@@ -28,6 +28,8 @@ export const parseIsoDate = (value: string): Date => {
 
 export const getCurrentWeekStartDate = (): string => toIsoDate(startOfWeek(new Date()));
 
+export const isTodayIsoDate = (value: string): boolean => toIsoDate(new Date()) === value;
+
 export const getWeekDates = (weekStartDate: string): Date[] => {
   const weekStart = startOfWeek(parseIsoDate(weekStartDate));
   return Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));

@@ -21,6 +21,24 @@ namespace ERP.Entities.Models
         [Column("end_time")]
         public TimeSpan end_time { get; set; }
 
+        [Column("break_start")]
+        public TimeSpan? break_start { get; set; }
+
+        [Column("break_end")]
+        public TimeSpan? break_end { get; set; }
+
+        [Column("grace_period_in")]
+        public int grace_period_in { get; set; }
+
+        [Column("grace_period_out")]
+        public int grace_period_out { get; set; }
+
+        [Column("min_checkin_before")]
+        public int min_checkin_before { get; set; }
+
+        [Column("is_overnight")]
+        public bool is_overnight { get; set; }
+
         [Column("color")]
         [StringLength(20)]
         public string color { get; set; }
