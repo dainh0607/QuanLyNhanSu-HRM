@@ -52,7 +52,16 @@ namespace ERP.Entities.Models
         [Column("is_active")]
         public bool is_active { get; set; }
 
+        [Column("default_branch_ids")]
+        public string? default_branch_ids { get; set; }
+
+        [Column("default_department_ids")]
+        public string? default_department_ids { get; set; }
+
+        [Column("default_job_title_ids")]
+        public string? default_job_title_ids { get; set; }
+
         [Column("note")]
-        public string note { get; set; }
+        public string? note { get; set; }
     }
 }

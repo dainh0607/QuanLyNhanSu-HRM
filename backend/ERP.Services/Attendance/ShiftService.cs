@@ -219,28 +219,39 @@ namespace ERP.Services.Attendance
                 StartTime = shift.start_time,
                 EndTime = shift.end_time,
                 Color = shift.color,
-                // Placeholders for defaults (T177)
-                DefaultBranchIds = new List<int>(),
-                DefaultDepartmentIds = new List<int>(),
-                DefaultPositionIds = new List<int>()
+                DefaultBranchIds = ParseIds(shift.default_branch_ids),
+                DefaultDepartmentIds = ParseIds(shift.default_department_ids),
+                DefaultPositionIds = ParseIds(shift.default_job_title_ids)
             };
+        }
+
+        private List<int> ParseIds(string? idsString)
+        {
+            if (string.IsNullOrEmpty(idsString)) return new List<int>();
+            return idsString.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                           .Select(s => int.TryParse(s.Trim(), out int id) ? id : (int?)null)
+                           .Where(id => id.HasValue)
+                           .Select(id => id!.Value)
+                           .ToList();
         }
 
         public async Task<bool> CreateOpenShiftsAsync(OpenShiftCreateDto dto)
         {
+            if (dto.BranchIds == null || !dto.BranchIds.Any() || 
+                dto.DepartmentIds == null || !dto.DepartmentIds.Any() || 
+                dto.PositionIds == null || !dto.PositionIds.Any())
+            {
+                throw new Exception("Danh sách Chi nhánh, Phòng ban và Chức danh không được để trống.");
+            }
+
             await _unitOfWork.BeginTransactionAsync();
             try
             {
-                // Ensure there's at least one value to loop through if IDs are empty
-                var branchIds = dto.BranchIds.Any() ? dto.BranchIds : new List<int> { 0 };
-                var deptIds = dto.DepartmentIds.Any() ? dto.DepartmentIds : new List<int> { 0 };
-                var posIds = dto.PositionIds.Any() ? dto.PositionIds : new List<int> { 0 };
-
-                foreach (var bid in branchIds)
+                foreach (var bid in dto.BranchIds)
                 {
-                    foreach (var did in deptIds)
+                    foreach (var did in dto.DepartmentIds)
                     {
-                        foreach (var pid in posIds)
+                        foreach (var pid in dto.PositionIds)
                         {
                             var openShift = new OpenShifts
                             {
