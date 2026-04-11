@@ -7,7 +7,6 @@ import {
   type EmployeeEditBasicInfoPayload,
   type EmployeeEditContactPayload,
   type EmployeeEditDependentsPayload,
-  type EmployeeEditEducationPayload,
   type EmployeeEditEmergencyContactPayload,
   type EmployeeEditHealthPayload,
   type RegionMetadata,
@@ -42,22 +41,16 @@ import {
   buildSeedForms,
   buildWorkSeedForms,
   cloneForm,
-  exceedsMaxLength,
   createPersonalFormsState,
   createWorkFormsState,
   formsEqual,
-  hasInvalidAlphaNumericCharacters,
-  hasInvalidPersonNameCharacters,
-  hasInvalidTextCharacters,
   isEmailValid,
   isFacebookValid,
-  isDuplicateNormalizedValue,
+  mergeDependentClientFields,
   isNumericString,
   isPhoneValid,
   isTaxCodeValid,
-  isVietnamPhoneCode,
   isSkypeValid,
-  mergeDependentClientFields,
   mergeFormData,
   resolveSectionKey,
   containsSpecialChars,
@@ -625,223 +618,6 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
 
     if (taxCode && !isTaxCodeValid(taxCode)) {
       nextErrors.taxCode = 'Mã số thuế phải gồm 10 hoặc 13 chữ số.';
-    }
-
-    return nextErrors;
-  };
-
-  const validateBasicInfoEnhanced = async (
-    data: EmployeeEditBasicInfoPayload,
-  ): Promise<Record<string, string>> => {
-    const nextErrors = await validateBasicInfo(data);
-    const fullName = data.fullName.trim();
-
-    if (fullName && hasInvalidPersonNameCharacters(fullName)) {
-      nextErrors.fullName = 'Họ tên không được chứa ký tự đặc biệt.';
-    }
-
-    return nextErrors;
-  };
-
-  const validateContactEnhanced = async (
-    data: EmployeeEditContactPayload,
-  ): Promise<Record<string, string>> => {
-    const nextErrors = validateContact(data);
-    const email = data.email.trim();
-
-    if (email && isEmailValid(email)) {
-      const emailExists = await employeeService.checkEmployeeEmailExists(email, employee.id);
-      if (emailExists) {
-        nextErrors.email = 'Email đã tồn tại.';
-      }
-    }
-
-    return nextErrors;
-  };
-
-  const validateEmergencyContactEnhanced = (
-    data: EmployeeEditEmergencyContactPayload,
-  ): Record<string, string> => {
-    const nextErrors = validateEmergencyContact(data);
-    const name = data.name.trim();
-    const relationship = data.relationship.trim();
-    const mobilePhone = data.mobilePhone.trim();
-    const homePhone = data.homePhone.trim();
-    const address = data.address.trim();
-
-    if (name && hasInvalidPersonNameCharacters(name)) {
-      nextErrors.name = 'Tên người liên hệ không được chứa ký tự đặc biệt.';
-    }
-
-    if (relationship && hasInvalidPersonNameCharacters(relationship)) {
-      nextErrors.relationship = 'Quan hệ với nhân viên không được chứa ký tự đặc biệt.';
-    }
-
-    if (mobilePhone && homePhone && isDuplicateNormalizedValue(mobilePhone, homePhone)) {
-      nextErrors.homePhone = 'Số điện thoại khẩn cấp không được trùng nhau.';
-    }
-
-    if (address && exceedsMaxLength(address, 250)) {
-      nextErrors.address = 'Địa chỉ khẩn cấp chỉ được tối đa 250 ký tự.';
-    }
-
-    return nextErrors;
-  };
-
-  const validatePermanentAddressEnhanced = (
-    data: EmployeeEditPermanentAddressPayload,
-  ): Record<string, string> => {
-    const nextErrors: Record<string, string> = {};
-    const { permanentAddress, mergedAddress } = data;
-    const hasMergedAddressInput = [
-      mergedAddress.country,
-      mergedAddress.city,
-      mergedAddress.ward,
-      mergedAddress.addressLine,
-    ].some((value) => value.trim());
-
-    if (!permanentAddress.country.trim()) {
-      nextErrors['permanentAddress.country'] = 'Quốc gia là bắt buộc.';
-    }
-
-    if (!permanentAddress.city.trim()) {
-      nextErrors['permanentAddress.city'] = 'Tỉnh/Thành phố là bắt buộc.';
-    }
-
-    if (!permanentAddress.district.trim()) {
-      nextErrors['permanentAddress.district'] = 'Quận/Huyện là bắt buộc.';
-    }
-
-    if (!permanentAddress.addressLine.trim()) {
-      nextErrors['permanentAddress.addressLine'] = 'Địa chỉ thường trú là bắt buộc.';
-    }
-
-    if (hasMergedAddressInput) {
-      if (!mergedAddress.country.trim()) {
-        nextErrors['mergedAddress.country'] = 'Quốc gia là bắt buộc.';
-      }
-
-      if (!mergedAddress.city.trim()) {
-        nextErrors['mergedAddress.city'] = 'Tỉnh/Thành phố là bắt buộc.';
-      }
-
-      if (!mergedAddress.addressLine.trim()) {
-        nextErrors['mergedAddress.addressLine'] = 'Địa chỉ sát nhập là bắt buộc.';
-      }
-    }
-
-    return nextErrors;
-  };
-
-  const validateEducationEnhanced = (
-    data: EmployeeEditEducationPayload,
-  ): Record<string, string> => {
-    const nextErrors: Record<string, string> = {};
-
-    data.forEach((item, index) => {
-      const hasData = [item.institution, item.major, item.level, item.issueDate, item.note].some(
-        (value) => value.trim(),
-      );
-
-      if (!hasData) {
-        return;
-      }
-
-      if (item.institution.trim() && hasInvalidTextCharacters(item.institution)) {
-        nextErrors[`education.${index}.institution`] =
-          'Nơi đào tạo không được chứa ký tự đặc biệt.';
-      }
-
-      if (item.issueDate && !isDateNotFuture(item.issueDate)) {
-        nextErrors[`education.${index}.issueDate`] =
-          'Ngày cấp không được lớn hơn ngày hiện tại.';
-      }
-
-      if (item.note.trim() && exceedsMaxLength(item.note, 100)) {
-        nextErrors[`education.${index}.note`] = 'Ghi chú chỉ được tối đa 100 ký tự.';
-      }
-    });
-
-    return nextErrors;
-  };
-
-  const validateIdentityEnhanced = (
-    data: EmployeeEditIdentityPayload,
-  ): Record<string, string> => {
-    const nextErrors: Record<string, string> = {};
-    const identityNumber = data.identityNumber.trim();
-    const identityIssuePlace = data.identityIssuePlace.trim();
-    const passportNumber = data.passportNumber.trim();
-    const isVietnamEmployee =
-      isVietnamPhoneCode(employee.phone) || isVietnamPhoneCode(profile?.basicInfo?.phone);
-
-    if (data.hasIdentityCard && identityNumber) {
-      if (!isNumericString(identityNumber)) {
-        nextErrors.identityNumber = 'Số CMND/CCCD chỉ được chứa chữ số.';
-      } else if (isVietnamEmployee && identityNumber.length !== 12) {
-        nextErrors.identityNumber =
-          'Với mã vùng Việt Nam, CCCD phải gồm đúng 12 chữ số.';
-      } else if (!isVietnamEmployee && (identityNumber.length < 6 || identityNumber.length > 20)) {
-        nextErrors.identityNumber = 'Số CMND/CCCD phải gồm từ 6 đến 20 chữ số.';
-      }
-    }
-
-    if (data.hasIdentityCard && data.identityIssueDate && !isDateNotFuture(data.identityIssueDate)) {
-      nextErrors.identityIssueDate = 'Ngày cấp không được lớn hơn ngày hiện tại.';
-    }
-
-    if (data.hasIdentityCard && identityIssuePlace && hasInvalidTextCharacters(identityIssuePlace)) {
-      nextErrors.identityIssuePlace = 'Nơi cấp không được chứa ký tự đặc biệt.';
-    }
-
-    if (data.hasPassport && passportNumber) {
-      if (exceedsMaxLength(passportNumber, 20)) {
-        nextErrors.passportNumber = 'Số hộ chiếu chỉ được tối đa 20 ký tự.';
-      } else if (hasInvalidAlphaNumericCharacters(passportNumber)) {
-        nextErrors.passportNumber = 'Số hộ chiếu không được chứa ký tự đặc biệt.';
-      }
-    }
-
-    return nextErrors;
-  };
-
-  const validateHealthEnhanced = (data: EmployeeEditHealthPayload): Record<string, string> => {
-    const nextErrors = validateHealth(data);
-
-    if (data.congenitalDisease.trim()) {
-      if (hasInvalidTextCharacters(data.congenitalDisease)) {
-        nextErrors.congenitalDisease = 'Bệnh bẩm sinh không được chứa ký tự đặc biệt.';
-      } else if (exceedsMaxLength(data.congenitalDisease, 250)) {
-        nextErrors.congenitalDisease = 'Bệnh bẩm sinh chỉ được tối đa 250 ký tự.';
-      }
-    }
-
-    if (data.chronicDisease.trim()) {
-      if (hasInvalidTextCharacters(data.chronicDisease)) {
-        nextErrors.chronicDisease = 'Bệnh mãn tính không được chứa ký tự đặc biệt.';
-      } else if (exceedsMaxLength(data.chronicDisease, 250)) {
-        nextErrors.chronicDisease = 'Bệnh mãn tính chỉ được tối đa 250 ký tự.';
-      }
-    }
-
-    return nextErrors;
-  };
-
-  const validateAdditionalInfoEnhanced = (
-    data: EmployeeEditAdditionalInfoPayload,
-  ): Record<string, string> => {
-    const nextErrors = validateAdditionalInfo(data);
-
-    if (data.unionGroup.trim() && hasInvalidTextCharacters(data.unionGroup)) {
-      nextErrors.unionGroup = 'Công đoàn không được chứa ký tự đặc biệt.';
-    }
-
-    if (data.religion.trim() && hasInvalidTextCharacters(data.religion)) {
-      nextErrors.religion = 'Tôn giáo không được chứa ký tự đặc biệt.';
-    }
-
-    if (data.note.trim() && exceedsMaxLength(data.note, 255)) {
-      nextErrors.note = 'Ghi chú chỉ được tối đa 255 ký tự.';
     }
 
     return nextErrors;
