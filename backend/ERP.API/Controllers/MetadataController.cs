@@ -2,8 +2,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.Repositories.Interfaces;
 using ERP.Entities.Models;
+using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace ERP.API.Controllers
 {
@@ -34,16 +36,26 @@ namespace ERP.API.Controllers
         }
 
         [HttpGet("departments")]
-        public async Task<IActionResult> GetDepartments()
+        public async Task<IActionResult> GetDepartments([FromQuery] List<int>? branch_ids)
         {
-            var data = await _unitOfWork.Repository<Departments>().GetAllAsync();
+            var query = _unitOfWork.Repository<Departments>().AsQueryable();
+            if (branch_ids != null && branch_ids.Any())
+            {
+                query = query.Where(d => !d.branch_id.HasValue || branch_ids.Contains(d.branch_id.Value));
+            }
+            var data = await query.ToListAsync();
             return Ok(data.Select(d => new { d.Id, d.name, d.code, d.parent_id }));
         }
 
         [HttpGet("job-titles")]
-        public async Task<IActionResult> GetJobTitles()
+        public async Task<IActionResult> GetJobTitles([FromQuery] List<int>? branch_ids)
         {
-            var data = await _unitOfWork.Repository<JobTitles>().GetAllAsync();
+            var query = _unitOfWork.Repository<JobTitles>().AsQueryable();
+            if (branch_ids != null && branch_ids.Any())
+            {
+                query = query.Where(j => !j.branch_id.HasValue || branch_ids.Contains(j.branch_id.Value));
+            }
+            var data = await query.ToListAsync();
             return Ok(data.Select(j => new { j.Id, j.name, j.code }));
         }
 

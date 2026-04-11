@@ -48,9 +48,9 @@ namespace ERP.API.Controllers
         public async Task<IActionResult> GetBranches() => Ok(await _lookupService.GetBranchesLookupAsync());
 
         [HttpGet("departments")]
-        public async Task<IActionResult> GetDepartments() => Ok(await _lookupService.GetDepartmentsLookupAsync());
+        public async Task<IActionResult> GetDepartments([FromQuery] List<int>? branchIds) => Ok(await _lookupService.GetDepartmentsLookupAsync(branchIds));
 
         [HttpGet("job-titles")]
-        public async Task<IActionResult> GetJobTitles() => Ok(await _lookupService.GetJobTitlesLookupAsync());
+        public async Task<IActionResult> GetJobTitles([FromQuery] List<int>? branchIds) => Ok(await _lookupService.GetJobTitlesLookupAsync(branchIds));
     }
 }

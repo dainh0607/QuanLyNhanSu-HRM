@@ -15,6 +15,12 @@ namespace ERP.Entities.Models
         [StringLength(50)]
         public string code { get; set; }
 
+        [Column("branch_id")]
+        public int? branch_id { get; set; }
+
+        [ForeignKey("branch_id")]
+        public virtual Branches? Branch { get; set; }
+
         public virtual ICollection<Employees> Employees { get; set; } = new HashSet<Employees>();
     }
 }

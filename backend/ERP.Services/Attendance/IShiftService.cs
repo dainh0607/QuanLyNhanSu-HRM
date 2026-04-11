@@ -14,5 +14,6 @@ namespace ERP.Services.Attendance
         // Shift detail & Open shifts (T177/T182)
         Task<ShiftDetailDto?> GetShiftDetailAsync(int shiftId);
         Task<bool> CreateOpenShiftsAsync(OpenShiftCreateDto dto);
+        Task<IEnumerable<WeeklyScheduleApiOpenShiftDto>> GetOpenShiftsAsync(DateTime startDate, DateTime endDate, int? branchId);
     }
 }

@@ -148,6 +148,39 @@ namespace ERP.Services.Attendance
             return await _unitOfWork.SaveChangesAsync() > 0;
         }
 
+        public async Task<IEnumerable<WeeklyScheduleApiOpenShiftDto>> GetOpenShiftsAsync(DateTime startDate, DateTime endDate, int? branchId)
+        {
+            var query = _unitOfWork.Repository<OpenShifts>()
+                .AsQueryable()
+                .Include(o => o.Shift)
+                .Include(o => o.Branch)
+                .Include(o => o.JobTitle)
+                .Where(o => o.open_date >= startDate && o.open_date < endDate);
+
+            if (branchId.HasValue)
+                query = query.Where(o => o.branch_id == branchId.Value);
+
+            var openShifts = await query.ToListAsync();
+
+            return openShifts.Select(o => new WeeklyScheduleApiOpenShiftDto
+            {
+                Id = o.Id,
+                ShiftId = o.shift_id,
+                ShiftName = o.Shift?.shift_name,
+                StartTime = o.Shift?.start_time.ToString(@"hh\:mm"),
+                EndTime = o.Shift?.end_time.ToString(@"hh\:mm"),
+                OpenDate = o.open_date.ToString("yyyy-MM-dd"),
+                Status = o.status,
+                RequiredQuantity = o.required_quantity,
+                AssignedQuantity = 0,
+                BranchId = o.branch_id,
+                BranchName = o.Branch?.name,
+                DepartmentId = o.department_id,
+                JobTitleId = o.job_title_id,
+                JobTitleName = o.JobTitle?.name
+            });
+        }
+
         public async Task<int> CreateShiftAsync(ShiftCreateDto dto)
         {
             await _unitOfWork.BeginTransactionAsync();

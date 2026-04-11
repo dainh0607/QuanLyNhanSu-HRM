@@ -24,7 +24,7 @@ namespace ERP.Services.Lookup
 
         // Organization dropdowns (T178)
         Task<IEnumerable<LookupDto>> GetBranchesLookupAsync();
-        Task<IEnumerable<LookupDto>> GetDepartmentsLookupAsync();
-        Task<IEnumerable<LookupDto>> GetJobTitlesLookupAsync();
+        Task<IEnumerable<LookupDto>> GetDepartmentsLookupAsync(List<int>? branchIds = null);
+        Task<IEnumerable<LookupDto>> GetJobTitlesLookupAsync(List<int>? branchIds = null);
     }
 }

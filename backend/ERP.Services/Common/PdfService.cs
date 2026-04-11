@@ -75,9 +75,52 @@ namespace ERP.Services.Common
             }
         }
 
-        /// <summary>
-        /// Stamps a signature image onto a PDF at specified coordinates
-        /// </summary>
+        public Task<byte[]> GeneratePdfFromTextAsync(string text, string title)
+        {
+            if (string.IsNullOrEmpty(text)) text = "(Không có nội dung văn bản)";
+
+            var document = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.Margin(1, Unit.Centimetre);
+                    page.PageColor(Colors.White);
+                    page.DefaultTextStyle(x => x.FontSize(11).FontFamily(Fonts.Verdana));
+
+                    page.Header().Text(title).SemiBold().FontSize(14).AlignCenter();
+
+                    page.Content().PaddingVertical(0.5f, Unit.Centimetre).Column(col =>
+                    {
+                        // Split by new lines to handle basic paragraph spacing
+                        var paragraphs = text.Split(new[] { "\n", "\r\n" }, StringSplitOptions.None);
+                        foreach (var p in paragraphs)
+                        {
+                            if (string.IsNullOrWhiteSpace(p))
+                            {
+                                col.Item().PaddingBottom(5);
+                            }
+                            else
+                            {
+                                col.Item().Text(p).Justify();
+                            }
+                        }
+                    });
+
+                    page.Footer().AlignCenter().Text(x =>
+                    {
+                        x.Span("Trang ");
+                        x.CurrentPageNumber();
+                    });
+                });
+            });
+
+            using (var ms = new MemoryStream())
+            {
+                document.GeneratePdf(ms);
+                return Task.FromResult(ms.ToArray());
+            }
+        }
         public async Task<byte[]> StampSignatureAsync(
             byte[] pdfBytes,
             byte[] signatureImageBytes,

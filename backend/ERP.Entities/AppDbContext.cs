@@ -102,6 +102,7 @@ namespace ERP.Entities
         public DbSet<SalaryGradeConfig> SalaryGradeConfig { get; set; }
         public DbSet<ShiftAssignments> ShiftAssignments { get; set; }
         public DbSet<ShiftTypes> ShiftTypes { get; set; }
+        public DbSet<ShiftTemplates> ShiftTemplates { get; set; }
         public DbSet<Shifts> Shifts { get; set; }
         public DbSet<ShiftCycleTemplates> ShiftCycleTemplates { get; set; }
         public DbSet<ShiftCycleAssignments> ShiftCycleAssignments { get; set; }

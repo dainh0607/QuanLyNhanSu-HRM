@@ -109,5 +109,19 @@ namespace ERP.API.Controllers
                 return BadRequest(new { Message = ex.Message });
             }
         }
+
+        [HttpGet("open")]
+        public async Task<IActionResult> GetOpenShifts([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] int? branchId = null)
+        {
+            try
+            {
+                var result = await _shiftService.GetOpenShiftsAsync(startDate, endDate, branchId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
     }
 }

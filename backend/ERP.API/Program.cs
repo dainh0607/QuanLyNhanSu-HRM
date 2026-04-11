@@ -157,6 +157,9 @@ builder.Services.AddScoped<ISignerService, SignerService>();
 builder.Services.AddScoped<IContractNotificationService, ContractNotificationService>();
 builder.Services.AddScoped<IAttendanceService, AttendanceService>();
 builder.Services.AddScoped<IShiftService, ShiftService>();
+builder.Services.AddScoped<IShiftTemplateService, ShiftTemplateService>();
+builder.Services.AddScoped<IShiftAssignmentService, ShiftAssignmentService>();
+builder.Services.AddScoped<IDocxService, DocxService>();
 builder.Services.AddHostedService<EmployeeStatusWorker>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>

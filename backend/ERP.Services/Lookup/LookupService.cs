@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using ERP.DTOs;
 using ERP.Entities.Models;
 using ERP.Repositories.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Services.Lookup
 {
@@ -126,15 +127,29 @@ namespace ERP.Services.Lookup
             return data.Select(x => new LookupDto { Code = x.Id.ToString(), Name = x.name });
         }
 
-        public async Task<IEnumerable<LookupDto>> GetDepartmentsLookupAsync()
+        public async Task<IEnumerable<LookupDto>> GetDepartmentsLookupAsync(List<int>? branchIds = null)
         {
-            var data = await _unitOfWork.Repository<Departments>().GetAllAsync();
+            var query = _unitOfWork.Repository<Departments>().AsQueryable();
+            
+            if (branchIds != null && branchIds.Any())
+            {
+                query = query.Where(x => !x.branch_id.HasValue || branchIds.Contains(x.branch_id.Value));
+            }
+
+            var data = await query.ToListAsync();
             return data.Select(x => new LookupDto { Code = x.Id.ToString(), Name = x.name });
         }
 
-        public async Task<IEnumerable<LookupDto>> GetJobTitlesLookupAsync()
+        public async Task<IEnumerable<LookupDto>> GetJobTitlesLookupAsync(List<int>? branchIds = null)
         {
-            var data = await _unitOfWork.Repository<JobTitles>().GetAllAsync();
+            var query = _unitOfWork.Repository<JobTitles>().AsQueryable();
+
+            if (branchIds != null && branchIds.Any())
+            {
+                query = query.Where(x => !x.branch_id.HasValue || branchIds.Contains(x.branch_id.Value));
+            }
+
+            var data = await query.ToListAsync();
             return data.Select(x => new LookupDto { Code = x.Id.ToString(), Name = x.name });
         }
     }
