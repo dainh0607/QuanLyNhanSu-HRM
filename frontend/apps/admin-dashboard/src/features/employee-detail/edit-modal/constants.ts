@@ -24,7 +24,23 @@ export const PERSONAL_TABS = [
   { key: 'dependents', label: 'Người phụ thuộc' },
   { key: 'additionalInfo', label: 'Thông tin khác' },
 ] as const;
+export const WORK_TABS = [
+  { key: 'jobStatus', label: 'Tình trạng công việc' },
+  { key: 'jobInfo', label: 'Thông tin công việc' },
+  { key: 'promotionHistory', label: 'Lịch sử thăng tiến' },
+  { key: 'workHistory', label: 'Lịch sử công tác' },
+  { key: 'salaryAllowance', label: 'Tiền lương/Trợ cấp' },
+  { key: 'contract', label: 'Hợp đồng' },
+] as const;
 
+export const WORK_TAB_SUCCESS_MESSAGES = {
+  jobStatus: 'Cập nhật tình trạng công việc thành công.',
+  jobInfo: 'Cập nhật thông tin công việc thành công.',
+  promotionHistory: 'Cập nhật lịch sử thăng tiến thành công.',
+  workHistory: 'Cập nhật lịch sử công tác thành công.',
+  salaryAllowance: 'Cập nhật tiền lương/trợ cấp thành công.',
+  contract: 'Cập nhật hợp đồng thành công.',
+} as const;
 export const SECTION_PLACEHOLDER_COPY = {
   work: 'Shell chỉnh sửa cho Công việc đã được dựng sẵn để nối form ở bước tiếp theo.',
   leave: 'Shell chỉnh sửa cho Nghỉ phép đã được dựng sẵn để nối form ở bước tiếp theo.',
@@ -65,3 +81,11 @@ export const IDENTITY_OPTIONS: Array<{ value: EmployeeIdentityType; label: strin
   { value: 'CCCD', label: 'CCCD' },
   { value: 'PASSPORT', label: 'Hộ chiếu' },
 ];
+
+export const WORK_TYPE_OPTIONS = [
+  { value: 'OFFICIAL', label: 'Chính thức' },
+  { value: 'PROBATION', label: 'Thử việc' },
+  { value: 'PART_TIME', label: 'Bán thời gian' },
+  { value: 'CONTRACTOR', label: 'Hợp đồng' },
+  { value: 'INTERN', label: 'Thực tập' },
+] as const;

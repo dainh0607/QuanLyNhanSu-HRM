@@ -80,6 +80,14 @@ export const EMPLOYEE_EDIT_ENDPOINTS = {
     get: EMPLOYEE_PROFILE_ENDPOINTS.otherInfo,
     put: EMPLOYEE_PROFILE_ENDPOINTS.otherInfo,
   },
+  jobStatus: {
+    get: "",
+    put: EMPLOYEE_PROFILE_ENDPOINTS.basicInfo,
+  },
+  jobInfo: {
+    get: "",
+    put: EMPLOYEE_PROFILE_ENDPOINTS.basicInfo,
+  },
 } as const;
 
 export const getUniqueSortedOptionNames = (
