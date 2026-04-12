@@ -176,6 +176,7 @@ using (var scope = app.Services.CreateScope())
         {
             logger.LogInformation("[STARTUP] Ensuring database is migrated and seeded...");
             db.Database.Migrate();
+            await AuthSessionSchemaInitializer.EnsureCreatedAsync(db);
 
             // Sync with Firebase
             var userService = services.GetRequiredService<IUserService>();
@@ -231,6 +232,16 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         logger.LogError(ex, "An error occurred during startup initialization.");
+
+        try
+        {
+            await AuthSessionSchemaInitializer.EnsureCreatedAsync(db);
+            logger.LogWarning("[STARTUP] Applied fallback AuthSessions schema initialization after startup failure.");
+        }
+        catch (Exception schemaEx)
+        {
+            logger.LogError(schemaEx, "Fallback AuthSessions schema initialization failed.");
+        }
     }
 }
 

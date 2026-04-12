@@ -78,9 +78,9 @@ const SigningPortalPage: React.FC = () => {
           <div className="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-emerald-500">
             <span className="material-symbols-outlined text-4xl">check_circle</span>
           </div>
-          <h1 className="text-3xl font-bold text-slate-900">Cam on ban da hoan tat ky Hop dong</h1>
+          <h1 className="text-3xl font-bold text-slate-900">Cảm ơn bạn đã hoàn tất ký Hợp đồng</h1>
           <p className="mt-4 max-w-md text-lg text-slate-600">
-            Chu ky cua ban da duoc he thong ghi nhan. Mot ban sao hop dong se duoc gui den email cua ban sau khi tat ca cac ben hoan tat.
+            Chữ ký của bạn đã được hệ thống ghi nhận. Một bản sao hợp đồng sẽ được gửi đến email của bạn sau khi tất cả các bên hoàn tất.
           </p>
           <div className="mt-10 flex flex-col gap-3 min-w-[240px]">
             <button

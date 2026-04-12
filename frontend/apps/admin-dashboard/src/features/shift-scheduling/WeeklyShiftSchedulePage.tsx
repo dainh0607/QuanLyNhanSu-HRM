@@ -1,17 +1,21 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import FilterSidebar, {
   type EmployeeFilterKey,
   type EmployeeFilterState,
 } from "../employees/components/FilterSidebar";
-import ShiftLegend from "./components/ShiftLegend";
-import CompactShiftScheduleGrid from "./components/CompactShiftScheduleGrid";
-import CompactShiftScheduleToolbarWithAdvancedSidebar from "./components/CompactShiftScheduleToolbarWithAdvancedSidebar";
-import ShiftSettingsModal from "./components/ShiftSettingsModal";
-import OpenShiftModal from "./open-shift/OpenShiftModal";
-import ShiftTemplateModal from "./shift-template/ShiftTemplateModal";
 import AssignedShiftActionModals from "./assigned-shift-actions/AssignedShiftActionModals";
 import { useAssignedShiftQuickActions } from "./assigned-shift-actions/hooks/useAssignedShiftQuickActions";
+import CompactShiftScheduleGrid from "./components/CompactShiftScheduleGrid";
+import CompactShiftScheduleToolbarWithAdvancedSidebar from "./components/CompactShiftScheduleToolbarWithAdvancedSidebar";
+import ShiftLegend from "./components/ShiftLegend";
+import ShiftSettingsModal from "./components/ShiftSettingsModal";
 import { useWeeklyShiftSchedule } from "./hooks/useWeeklyShiftSchedule";
+import OpenShiftModal from "./open-shift/OpenShiftModal";
+import QuickAddEmployeesModal from "./quick-add-employees/QuickAddEmployeesModal";
+import ShiftCopyModal from "./shift-copy/ShiftCopyModal";
+import ShiftTabAssignModal from "./shift-tab-assign/ShiftTabAssignModal";
+import ShiftTemplateModal from "./shift-template/ShiftTemplateModal";
 import type {
   ScheduleViewMode,
   ShiftScheduleFilters,
@@ -35,17 +39,24 @@ const filterPublishedData = (
       cells: Object.fromEntries(
         Object.entries(row.cells).map(([date, cell]) => [
           date,
-          { ...cell, shifts: cell.shifts.filter((shift) => shift.isPublished !== false) },
+          {
+            ...cell,
+            shifts: cell.shifts.filter((shift) => shift.isPublished !== false),
+          },
         ]),
       ),
     })),
     openShiftCells: Object.fromEntries(
-      Object.entries(data.openShiftCells).map(([date, cell]) => [date, { ...cell, shifts: cell.shifts }]),
+      Object.entries(data.openShiftCells).map(([date, cell]) => [
+        date,
+        { ...cell, shifts: cell.shifts },
+      ]),
     ),
   };
 };
 
 export const WeeklyShiftSchedulePage = () => {
+  const navigate = useNavigate();
   const {
     filters,
     setFilters,
@@ -54,7 +65,6 @@ export const WeeklyShiftSchedulePage = () => {
     isLoading,
     isRefreshing,
     lookups,
-    employeeOptions,
     settings,
     setSettings,
     reload,
@@ -67,6 +77,10 @@ export const WeeklyShiftSchedulePage = () => {
   const [selectedOpenShiftDate, setSelectedOpenShiftDate] = useState<string | null>(null);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState<boolean>(false);
   const [isAdvancedFilterOpen, setIsAdvancedFilterOpen] = useState<boolean>(false);
+  const [isQuickAddEmployeesOpen, setIsQuickAddEmployeesOpen] = useState<boolean>(false);
+  const [isShiftAssignOpen, setIsShiftAssignOpen] = useState<boolean>(false);
+  const [isShiftCopyOpen, setIsShiftCopyOpen] = useState<boolean>(false);
+
   const assignedShiftQuickActions = useAssignedShiftQuickActions({
     notify,
     reload,
@@ -112,7 +126,10 @@ export const WeeklyShiftSchedulePage = () => {
     ];
 
     advancedKeys.forEach((key) => {
-      updateFilter(key as keyof ShiftScheduleFilters, (nextFilters[key]?.[0] ?? "") as never);
+      updateFilter(
+        key as keyof ShiftScheduleFilters,
+        (nextFilters[key]?.[0] ?? "") as never,
+      );
     });
 
     setIsAdvancedFilterOpen(false);
@@ -142,11 +159,16 @@ export const WeeklyShiftSchedulePage = () => {
       branchId: nextViewMode === "branch" ? current.branchId : "",
       projectId: nextViewMode === "project" ? current.projectId : "",
       jobTitleId: nextViewMode === "jobTitle" ? current.jobTitleId : "",
-      workingHoursBucket: nextViewMode === "workingHours" ? current.workingHoursBucket : "",
-      workingDaysBucket: nextViewMode === "workingDays" ? current.workingDaysBucket : "",
-      workedHoursBucket: nextViewMode === "workedHours" ? current.workedHoursBucket : "",
-      attendanceStatus: nextViewMode === "attendance" ? current.attendanceStatus : "all",
-      employeeStatus: nextViewMode === "attendance" ? current.employeeStatus : "active",
+      workingHoursBucket:
+        nextViewMode === "workingHours" ? current.workingHoursBucket : "",
+      workingDaysBucket:
+        nextViewMode === "workingDays" ? current.workingDaysBucket : "",
+      workedHoursBucket:
+        nextViewMode === "workedHours" ? current.workedHoursBucket : "",
+      attendanceStatus:
+        nextViewMode === "attendance" ? current.attendanceStatus : "all",
+      employeeStatus:
+        nextViewMode === "attendance" ? current.employeeStatus : "active",
     }));
   };
 
@@ -187,8 +209,10 @@ export const WeeklyShiftSchedulePage = () => {
 
   return (
     <>
-      <main className="relative flex h-[calc(100vh-64px)] w-full flex-col overflow-hidden px-[30px] py-6" id="main-content-container">
-        
+      <main
+        className="relative flex h-[calc(100vh-64px)] w-full flex-col overflow-hidden px-[30px] py-6"
+        id="main-content-container"
+      >
         <div className="relative flex min-h-0 flex-1 gap-6 overflow-hidden">
           <FilterSidebar
             key={JSON.stringify(advancedSidebarFilters)}
@@ -197,7 +221,7 @@ export const WeeklyShiftSchedulePage = () => {
             onApply={applyAdvancedFilters}
             initialFilters={advancedSidebarFilters}
           />
-          
+
           <div className="flex min-w-0 flex-1 flex-col gap-3">
             <CompactShiftScheduleToolbarWithAdvancedSidebar
               filters={filters}
@@ -218,13 +242,26 @@ export const WeeklyShiftSchedulePage = () => {
               onRefresh={() => {
                 void reload();
               }}
-              onExport={() => notify(`Đã sẵn sàng xuất file cho ${weekLabel}.`, "info")}
+              onExport={() =>
+                notify(`Đã sẵn sàng xuất file cho ${weekLabel}.`, "info")
+              }
               onImport={() => setIsTemplateModalOpen(true)}
+              onOpenShiftTemplateList={() =>
+                navigate("/working-day/timekeeping/shift-templates")
+              }
+              onOpenAssignShift={() => setIsShiftAssignOpen(true)}
+              onOpenCopyShift={() => setIsShiftCopyOpen(true)}
               onOpenHistory={() =>
-                notify("Nút Cảnh báo đã sẵn sàng để nối sang module Lịch sử vào/ra.", "info")
+                notify(
+                  "Nút Cảnh báo đã sẵn sàng để nối sang module Lịch sử vào/ra.",
+                  "info",
+                )
               }
               onOpenMealBoard={() =>
-                notify("Nút Bảng xuất ăn đã sẵn sàng để nối sang module tương ứng.", "info")
+                notify(
+                  "Nút Bảng xuất ăn đã sẵn sàng để nối sang module tương ứng.",
+                  "info",
+                )
               }
               onOpenSettings={() => setIsSettingsOpen(true)}
               isAdvancedFilterOpen={isAdvancedFilterOpen}
@@ -234,7 +271,7 @@ export const WeeklyShiftSchedulePage = () => {
 
             <div className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
               {isLoading && !visibleData ? (
-                <div className="flex min-h-[360px] items-center justify-center flex-1">
+                <div className="flex min-h-[360px] flex-1 items-center justify-center">
                   <div className="text-center">
                     <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-[#BFDBFE] border-t-[#134BBA]" />
                     <p className="mt-4 text-sm font-medium text-slate-500">
@@ -250,12 +287,7 @@ export const WeeklyShiftSchedulePage = () => {
                     openShiftCells={visibleData.openShiftCells}
                     searchTerm={filters.searchTerm}
                     onSearchChange={(value) => updateFilter("searchTerm", value)}
-                    onAddEmployee={() =>
-                      notify(
-                        `Đã sẵn sàng nối luồng thêm nhân viên vào bảng xếp ca. Hiện có ${employeeOptions.length} nhân viên khả dụng từ API.`,
-                        "info",
-                      )
-                    }
+                    onAddEmployee={() => setIsQuickAddEmployeesOpen(true)}
                     onCreateOpenShift={(date) => setSelectedOpenShiftDate(date)}
                     highlightShortage={settings.highlightShortage}
                     quickActionHandlers={assignedShiftQuickActions.quickActionHandlers}
@@ -263,9 +295,11 @@ export const WeeklyShiftSchedulePage = () => {
                   <ShiftLegend />
                 </>
               ) : (
-                <div className="flex min-h-[280px] flex-col items-center justify-center px-6 py-12 text-center flex-1">
+                <div className="flex min-h-[280px] flex-1 flex-col items-center justify-center px-6 py-12 text-center">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#EFF6FF] text-[#134BBA]">
-                    <span className="material-symbols-outlined text-[30px]">calendar_view_week</span>
+                    <span className="material-symbols-outlined text-[30px]">
+                      calendar_view_week
+                    </span>
                   </div>
                   <h2 className="mt-5 text-xl font-semibold text-slate-900">
                     Chưa có dữ liệu xếp ca để hiển thị
@@ -296,7 +330,7 @@ export const WeeklyShiftSchedulePage = () => {
         onSave={handleSaveSettings}
       />
 
-      <OpenShiftModal 
+      <OpenShiftModal
         isOpen={Boolean(selectedOpenShiftDate)}
         selectedDate={selectedOpenShiftDate}
         useMockFallback={data?.dataSource === "mock"}
@@ -307,8 +341,8 @@ export const WeeklyShiftSchedulePage = () => {
           void reload();
         }}
       />
-      
-      <ShiftTemplateModal 
+
+      <ShiftTemplateModal
         isOpen={isTemplateModalOpen}
         onClose={() => setIsTemplateModalOpen(false)}
         onSuccess={() => {
@@ -318,7 +352,49 @@ export const WeeklyShiftSchedulePage = () => {
         }}
       />
 
-      <AssignedShiftActionModals controller={assignedShiftQuickActions} />
+      <AssignedShiftActionModals
+        controller={assignedShiftQuickActions}
+        employees={data?.employees ?? []}
+      />
+
+      <QuickAddEmployeesModal
+        isOpen={isQuickAddEmployeesOpen}
+        preferredBranchId={filters.branchId}
+        useMockFallback={data?.dataSource === "mock"}
+        onClose={() => setIsQuickAddEmployeesOpen(false)}
+        onSuccess={(createdCount) => {
+          setIsQuickAddEmployeesOpen(false);
+          notify(`Đã thêm thành công ${createdCount} nhân viên`, "success");
+          void reload();
+        }}
+      />
+
+      <ShiftTabAssignModal
+        isOpen={isShiftAssignOpen}
+        initialBranchId={filters.branchId}
+        initialWeekStartDate={filters.weekStartDate}
+        branchOptions={lookups.branches}
+        useMockFallback={data?.dataSource === "mock"}
+        notify={notify}
+        onClose={() => setIsShiftAssignOpen(false)}
+        onSuccess={() => {
+          void reload();
+        }}
+      />
+
+      <ShiftCopyModal
+        isOpen={isShiftCopyOpen}
+        initialBranchId={filters.branchId}
+        initialWeekStartDate={filters.weekStartDate}
+        branchOptions={lookups.branches}
+        useMockFallback={data?.dataSource === "mock"}
+        notify={notify}
+        onClose={() => setIsShiftCopyOpen(false)}
+        onSuccess={() => {
+          setIsShiftCopyOpen(false);
+          void reload();
+        }}
+      />
 
       {ToastComponent}
     </>

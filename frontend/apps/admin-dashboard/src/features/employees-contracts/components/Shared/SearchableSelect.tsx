@@ -102,27 +102,27 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
 
           <div className="max-h-64 overflow-y-auto p-2">
             {filteredOptions.length > 0 ? (
-              filteredOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => {
-                    onChange(option.value);
-                    setIsOpen(false);
-                    setSearchInput('');
-                  }}
-                  className={`w-full rounded-xl px-3 py-2.5 text-left transition-colors ${
-                    value === option.value
-                      ? 'bg-[#134BBA]/8 text-[#134BBA]'
-                      : 'text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  <p className="text-sm font-medium">{option.label}</p>
-                  {option.supportingText ? (
-                    <p className="mt-1 text-xs text-slate-500">{option.supportingText}</p>
-                  ) : null}
-                </button>
-              ))
+              filteredOptions.map((option, index) => (
+                  <button
+                    key={option.value || `searchable-option-${index}-${option.label}`}
+                    type="button"
+                    onClick={() => {
+                      onChange(option.value);
+                      setIsOpen(false);
+                      setSearchInput('');
+                    }}
+                    className={`w-full rounded-xl px-3 py-2.5 text-left transition-colors ${
+                      value === option.value
+                        ? 'bg-[#134BBA]/8 text-[#134BBA]'
+                        : 'text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    <p className="text-sm font-medium">{option.label}</p>
+                    {option.supportingText ? (
+                      <p className="mt-1 text-xs text-slate-500">{option.supportingText}</p>
+                    ) : null}
+                  </button>
+                ))
             ) : (
               <div className="px-3 py-6 text-center text-sm text-slate-500">
                 Không tìm thấy dữ liệu phù hợp.

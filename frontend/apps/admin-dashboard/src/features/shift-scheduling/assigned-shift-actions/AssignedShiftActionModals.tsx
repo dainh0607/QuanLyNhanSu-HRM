@@ -1,4 +1,4 @@
-import ShiftTemplateModal from "../shift-template/ShiftTemplateModal";
+﻿import ShiftTemplateModal from "../shift-template/ShiftTemplateModal";
 import type { ShiftTemplateSubmitPayload } from "../shift-template/types";
 import AvailableShiftPickerModal from "./AvailableShiftPickerModal";
 import ShiftAssignmentDeleteModal from "./ShiftAssignmentDeleteModal";
@@ -6,13 +6,16 @@ import ShiftAssignmentDetailsModal from "./ShiftAssignmentDetailsModal";
 import ShiftLeaveRequestModal from "./ShiftLeaveRequestModal";
 import ShiftLocationMapModal from "./ShiftLocationMapModal";
 import type { UseAssignedShiftQuickActionsResult } from "./hooks/useAssignedShiftQuickActions";
+import type { WeeklyScheduleEmployee } from "../types";
 
 interface AssignedShiftActionModalsProps {
   controller: UseAssignedShiftQuickActionsResult;
+  employees: WeeklyScheduleEmployee[];
 }
 
 export const AssignedShiftActionModals = ({
   controller,
+  employees,
 }: AssignedShiftActionModalsProps) => (
   <>
     <ShiftAssignmentDetailsModal
@@ -62,6 +65,7 @@ export const AssignedShiftActionModals = ({
     <ShiftLeaveRequestModal
       isOpen={Boolean(controller.leaveContext)}
       context={controller.leaveContext}
+      employees={employees}
       isSubmitting={controller.isSubmittingLeave}
       onClose={controller.closeLeaveModal}
       onSubmit={controller.submitLeaveRequest}

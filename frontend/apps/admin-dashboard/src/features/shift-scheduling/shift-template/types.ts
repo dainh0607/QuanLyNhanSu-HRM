@@ -45,14 +45,30 @@ export interface ShiftTemplateSubmitPayload extends ShiftTemplateAdvancedSetting
   repeatDays: string[];
 }
 
+export interface ShiftTemplateInitialData extends Partial<ShiftTemplateSubmitPayload> {
+  id: string | number;
+  code?: string;
+  displayOrder?: number;
+  isActive?: boolean;
+}
+
+export type ShiftTemplateModalMode =
+  | "template"
+  | "create"
+  | "edit"
+  | "directAssign";
+
 export interface ShiftTemplateModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
   title?: string;
   submitLabel?: string;
-  mode?: "template" | "directAssign";
+  mode?: ShiftTemplateModalMode;
   assignmentContext?: ShiftTemplateAssignmentContext;
   onSubmit?: (values: ShiftTemplateSubmitPayload) => void | Promise<void>;
+  onUpdate?: (values: ShiftTemplateSubmitPayload) => void | Promise<void>;
   isSubmittingExternal?: boolean;
+  initialData?: ShiftTemplateInitialData | null;
+  onPreview?: (data: ShiftTemplateInitialData) => void;
 }

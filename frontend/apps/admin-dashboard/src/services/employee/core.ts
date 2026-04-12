@@ -38,7 +38,7 @@ export const requestJson = async <T>(
     response = await authFetch(input, init);
   } catch (error) {
     throw createHttpError(
-      `${fallbackMessage}. Khong the ket noi toi may chu API.`,
+      `${fallbackMessage}. Không thể kết nối tới máy chủ API.`,
       0,
       error,
     );
@@ -76,7 +76,7 @@ export const requestBlob = async (
     response = await authFetch(input, init);
   } catch (error) {
     throw createHttpError(
-      `${fallbackMessage}. Khong the ket noi toi may chu API.`,
+      `${fallbackMessage}. Không thể kết nối tới máy chủ API.`,
       0,
       error,
     );

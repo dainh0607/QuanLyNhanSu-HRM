@@ -96,12 +96,18 @@ namespace ERP.Services.Auth
             await FirebaseAuth.DefaultInstance.DeleteUserAsync(uid);
         }
 
-        public async Task<(bool Success, string? IdToken, string? RefreshToken, int? ExpiresIn, string? Message)> SignInWithPasswordAsync(string email, string password)
+        public async Task<(bool Success, string? IdToken, string? RefreshToken, int? ExpiresIn, string? LocalId, string? Email, string? Message)> SignInWithPasswordAsync(string email, string password)
         {
+            var normalizedEmail = email?.Trim();
+
             if (IsBypassAuth)
             {
-                _logger.LogInformation("Bypassing Firebase authentication for {Email}", email);
-                return (true, "bypass-token", "bypass-refresh-token", 3600, "Login successful (Bypass Mode)");
+                _logger.LogInformation("Bypassing Firebase authentication for {Email}", normalizedEmail);
+                var fallbackLocalId = string.IsNullOrWhiteSpace(normalizedEmail)
+                    ? "bypass-uid"
+                    : $"bypass:{normalizedEmail.ToLowerInvariant()}";
+
+                return (true, "bypass-token", "bypass-refresh-token", 3600, fallbackLocalId, normalizedEmail, "Login successful (Bypass Mode)");
             }
 
             try
@@ -109,7 +115,7 @@ namespace ERP.Services.Auth
                 var apiKey = _configuration["Firebase:apiKey"];
                 if (string.IsNullOrEmpty(apiKey))
                 {
-                    return (false, null, null, null, "Firebase API Key is missing");
+                    return (false, null, null, null, null, null, "Firebase API Key is missing");
                 }
 
                 var client = _httpClientFactory.CreateClient();
@@ -117,7 +123,7 @@ namespace ERP.Services.Auth
                 
                 var requestBody = new
                 {
-                    email = email,
+                    email = normalizedEmail,
                     password = password,
                     returnSecureToken = true
                 };
@@ -127,19 +133,27 @@ namespace ERP.Services.Auth
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    _logger.LogWarning($"Firebase login failed for {email}: {content}");
-                    return (false, null, null, null, "Firebase authentication failed");
+                    _logger.LogWarning($"Firebase login failed for {normalizedEmail}: {content}");
+                    return (false, null, null, null, null, normalizedEmail, "Firebase authentication failed");
                 }
 
                 var firebaseResponse = JsonSerializer.Deserialize<FirebaseLoginResponse>(content);
                 int.TryParse(firebaseResponse?.expiresIn ?? "3600", out int expiresIn);
 
-                return (true, firebaseResponse?.idToken, firebaseResponse?.refreshToken, expiresIn, "Login successful");
+                return (
+                    true,
+                    firebaseResponse?.idToken,
+                    firebaseResponse?.refreshToken,
+                    expiresIn,
+                    firebaseResponse?.localId,
+                    firebaseResponse?.email ?? normalizedEmail,
+                    "Login successful"
+                );
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error during Firebase REST login for {email}");
-                return (false, null, null, null, ex.Message);
+                _logger.LogError(ex, $"Error during Firebase REST login for {normalizedEmail}");
+                return (false, null, null, null, null, normalizedEmail, ex.Message);
             }
         }
 

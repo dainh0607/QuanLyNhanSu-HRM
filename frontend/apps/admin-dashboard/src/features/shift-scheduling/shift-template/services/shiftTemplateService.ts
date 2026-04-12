@@ -1,8 +1,12 @@
-import { employeeService } from "../../../../services/employeeService";
+﻿import { employeeService } from "../../../../services/employeeService";
 import { API_URL, requestJson } from "../../../../services/employee/core";
 import { createMockShiftTemplate } from "../../data/mockWeeklyShiftSchedule";
 import { registerRuntimeShiftTemplate } from "../../open-shift/openShiftRuntimeStore";
-import type { ShiftTemplateCatalogData, ShiftTemplateSubmitPayload, ShiftTemplateTargetOption } from "../types";
+import type {
+  ShiftTemplateCatalogData,
+  ShiftTemplateSubmitPayload,
+  ShiftTemplateTargetOption,
+} from "../types";
 
 interface ShiftCreateResponse {
   id?: number;

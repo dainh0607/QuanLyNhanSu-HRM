@@ -1,5 +1,4 @@
 import type {
-  AttendanceStatus,
   WeeklyScheduleEmployee,
   WeeklyScheduleShift,
 } from "../types";
@@ -57,11 +56,41 @@ export interface AvailableShiftOption {
   note?: string | null;
 }
 
+export type LeaveRequestDurationType =
+  | "quarterDay"
+  | "halfDay"
+  | "threeQuarterDay"
+  | "inDay"
+  | "hourly";
+
+export type LeaveRequestReasonCode =
+  | "annualLeave"
+  | "sickLeave"
+  | "personalLeave"
+  | "maternityLeave"
+  | "unpaidLeave";
+
 export interface LeaveRequestFormValues {
-  leaveType: AttendanceStatus | "businessTrip";
-  duration: "fullDay" | "halfDay";
-  note: string;
+  employeeId: number;
+  employeeName: string;
+  startDate: string;
+  shiftId: number | null;
+  shiftName: string;
+  shiftStartTime: string;
+  shiftEndTime: string;
+  durationType: LeaveRequestDurationType;
+  leaveReasonCode: LeaveRequestReasonCode | "";
+  handoverEmployeeId: string;
+  phoneNumber: string;
+  discussionContent: string;
+  reason: string;
+  startTime: string;
+  endTime: string;
 }
+
+export type LeaveRequestFormErrors = Partial<
+  Record<keyof LeaveRequestFormValues, string>
+>;
 
 export type DirectShiftTemplatePayload = ShiftTemplateSubmitPayload;
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import QuickTargetingModal from "./QuickTargetingModal";
 import SearchableMultiSelect from "./SearchableMultiSelect";
 import { shiftTemplateService } from "./services/shiftTemplateService";
@@ -6,6 +6,8 @@ import TimeSelectField from "./TimeSelectField";
 import type {
   ShiftTemplateCatalogData,
   ShiftTemplateFormValues,
+  ShiftTemplateInitialData,
+  ShiftTemplateModalMode,
   ShiftTemplateModalProps,
   ShiftTemplateSubmitPayload,
 } from "./types";
@@ -44,21 +46,97 @@ const DEFAULT_FORM_VALUES: ShiftTemplateFormValues = {
 const combineTime = (hour: string, minute: string): string =>
   hour && minute ? `${hour}:${minute}` : "";
 
+const splitTime = (value?: string): { hour: string; minute: string } => {
+  if (!value) {
+    return { hour: "", minute: "" };
+  }
+
+  const [hour = "", minute = ""] = value.split(":");
+  return { hour, minute };
+};
+
 const isCrossNightShift = (startTime: string, endTime: string): boolean =>
   Boolean(startTime && endTime && endTime < startTime);
 
 const toNumberInput = (value: string): string => value.replace(/[^\d]/g, "");
 
+const getDefaultTitle = (mode: ShiftTemplateModalMode): string => {
+  switch (mode) {
+    case "edit":
+      return "Chỉnh sửa ca";
+    case "directAssign":
+      return "Tạo ca làm mới";
+    case "create":
+    case "template":
+    default:
+      return "Tạo ca làm việc mới";
+  }
+};
+
+const getDefaultSubmitLabel = (mode: ShiftTemplateModalMode): string =>
+  mode === "edit" ? "Cập nhật" : "Tạo mới";
+
+const getDescription = (mode: ShiftTemplateModalMode): string =>
+  mode === "edit"
+    ? "Điều chỉnh mẫu ca làm hiện có để đồng bộ lại thời gian và đối tượng áp dụng."
+    : "Tạo mẫu ca làm tiêu chuẩn để tái sử dụng nhanh khi xếp ca cho nhân viên.";
+
+const shouldShowPreviewButton = (
+  mode: ShiftTemplateModalMode,
+  initialData: ShiftTemplateInitialData | null | undefined,
+): boolean => mode === "edit" && Boolean(initialData);
+
+const createFormValues = (
+  initialData?: ShiftTemplateInitialData | null,
+  assignmentBranchId?: string,
+): ShiftTemplateFormValues => {
+  const start = splitTime(initialData?.startTime);
+  const end = splitTime(initialData?.endTime);
+  const branchIds =
+    initialData?.branchIds && initialData.branchIds.length > 0
+      ? initialData.branchIds
+      : assignmentBranchId
+        ? [assignmentBranchId]
+        : [];
+
+  return {
+    ...DEFAULT_FORM_VALUES,
+    name: initialData?.name ?? "",
+    startHour: start.hour,
+    startMinute: start.minute,
+    endHour: end.hour || DEFAULT_FORM_VALUES.endHour,
+    endMinute: end.minute || DEFAULT_FORM_VALUES.endMinute,
+    branchIds,
+    departmentIds: initialData?.departmentIds ?? [],
+    jobTitleIds: initialData?.jobTitleIds ?? [],
+    repeatDays:
+      initialData?.repeatDays && initialData.repeatDays.length > 0
+        ? initialData.repeatDays
+        : DEFAULT_FORM_VALUES.repeatDays,
+    breakDurationMinutes:
+      initialData?.breakDurationMinutes ?? DEFAULT_FORM_VALUES.breakDurationMinutes,
+    allowedLateCheckInMinutes:
+      initialData?.allowedLateCheckInMinutes ??
+      DEFAULT_FORM_VALUES.allowedLateCheckInMinutes,
+    allowedEarlyCheckOutMinutes:
+      initialData?.allowedEarlyCheckOutMinutes ??
+      DEFAULT_FORM_VALUES.allowedEarlyCheckOutMinutes,
+  };
+};
+
 export const ShiftTemplateModal = ({
   isOpen,
   onClose,
   onSuccess,
-  title = "Tạo ca làm việc mới",
-  submitLabel = "Tạo mới",
+  title,
+  submitLabel,
   mode = "template",
   assignmentContext,
   onSubmit,
+  onUpdate,
   isSubmittingExternal = false,
+  initialData = null,
+  onPreview,
 }: ShiftTemplateModalProps) => {
   const [catalog, setCatalog] = useState<ShiftTemplateCatalogData>(EMPTY_CATALOG);
   const [isLoadingCatalog, setIsLoadingCatalog] = useState(false);
@@ -69,7 +147,30 @@ export const ShiftTemplateModal = ({
   const [isAdvancedExpanded, setIsAdvancedExpanded] = useState(false);
   const [isQuickSelectOpen, setIsQuickSelectOpen] = useState(false);
 
+  const resolvedTitle = title ?? getDefaultTitle(mode);
+  const resolvedSubmitLabel = submitLabel ?? getDefaultSubmitLabel(mode);
   const isSubmitting = isSubmittingExternal || isSubmittingInternal;
+
+  useEffect(() => {
+    if (!isOpen) {
+      setCatalog(EMPTY_CATALOG);
+      setFormValues(DEFAULT_FORM_VALUES);
+      setErrors({});
+      setSubmitError("");
+      setIsAdvancedExpanded(false);
+      setIsQuickSelectOpen(false);
+      setIsSubmittingInternal(false);
+      setIsLoadingCatalog(false);
+      return;
+    }
+
+    setFormValues(createFormValues(initialData, assignmentContext?.branchId));
+    setErrors({});
+    setSubmitError("");
+    setIsAdvancedExpanded(false);
+    setIsQuickSelectOpen(false);
+    setIsSubmittingInternal(false);
+  }, [assignmentContext?.branchId, initialData, isOpen]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -85,6 +186,7 @@ export const ShiftTemplateModal = ({
         if (!isMounted) {
           return;
         }
+
         setCatalog(response);
       })
       .catch((error) => {
@@ -103,30 +205,6 @@ export const ShiftTemplateModal = ({
       isMounted = false;
     };
   }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      const resetTimer = window.setTimeout(() => {
-        setFormValues(DEFAULT_FORM_VALUES);
-        setErrors({});
-        setSubmitError("");
-        setIsAdvancedExpanded(false);
-        setIsQuickSelectOpen(false);
-        setIsSubmittingInternal(false);
-      }, 200);
-
-      return () => window.clearTimeout(resetTimer);
-    }
-
-    if (assignmentContext?.branchId) {
-      setFormValues((current) => ({
-        ...current,
-        branchIds: current.branchIds.length ? current.branchIds : [assignmentContext.branchId!],
-      }));
-    }
-
-    return undefined;
-  }, [assignmentContext?.branchId, isOpen]);
 
   const filteredDepartments = useMemo(() => {
     if (!formValues.branchIds.length) {
@@ -153,6 +231,10 @@ export const ShiftTemplateModal = ({
   }, [catalog.jobTitles, formValues.branchIds]);
 
   useEffect(() => {
+    if (!isOpen || isLoadingCatalog) {
+      return;
+    }
+
     setFormValues((current) => ({
       ...current,
       departmentIds: current.departmentIds.filter((value) =>
@@ -162,7 +244,7 @@ export const ShiftTemplateModal = ({
         filteredJobTitles.some((option) => option.value === value),
       ),
     }));
-  }, [filteredDepartments, filteredJobTitles]);
+  }, [filteredDepartments, filteredJobTitles, isLoadingCatalog, isOpen]);
 
   const startTime = combineTime(formValues.startHour, formValues.startMinute);
   const endTime = combineTime(formValues.endHour, formValues.endMinute);
@@ -173,7 +255,12 @@ export const ShiftTemplateModal = ({
     value: ShiftTemplateFormValues[Key],
   ) => {
     setFormValues((current) => ({ ...current, [key]: value }));
-    setErrors((current) => ({ ...current, [key]: "" }));
+    setErrors((current) => ({
+      ...current,
+      [key]: "",
+      startTime:
+        key === "startHour" || key === "startMinute" ? "" : current.startTime,
+    }));
   };
 
   const toggleRepeatDay = (dayId: string) => {
@@ -228,7 +315,9 @@ export const ShiftTemplateModal = ({
     setIsSubmittingInternal(true);
 
     try {
-      if (onSubmit) {
+      if (mode === "edit" && onUpdate) {
+        await onUpdate(payload);
+      } else if (onSubmit) {
         await onSubmit(payload);
       } else {
         await shiftTemplateService.createShiftTemplate(payload, true);
@@ -236,9 +325,11 @@ export const ShiftTemplateModal = ({
 
       onSuccess();
     } catch (error) {
-      console.error("Failed to create shift template.", error);
+      console.error("Failed to submit shift template.", error);
       setSubmitError(
-        error instanceof Error ? error.message : "Không thể tạo ca làm. Vui lòng thử lại.",
+        error instanceof Error
+          ? error.message
+          : "Không thể lưu ca làm. Vui lòng thử lại.",
       );
     } finally {
       setIsSubmittingInternal(false);
@@ -255,16 +346,15 @@ export const ShiftTemplateModal = ({
         <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
           <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
             <div>
-              <h2 className="text-xl font-semibold text-slate-900">{title}</h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Tạo mẫu ca làm tiêu chuẩn để tái sử dụng nhanh khi xếp ca cho nhân viên.
-              </p>
+              <h2 className="text-xl font-semibold text-slate-900">{resolvedTitle}</h2>
+              <p className="mt-1 text-sm text-slate-500">{getDescription(mode)}</p>
             </div>
 
             <button
               type="button"
               onClick={onClose}
               className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              aria-label="Đóng modal tạo ca làm"
             >
               <span className="material-symbols-outlined text-[20px]">close</span>
             </button>
@@ -299,7 +389,9 @@ export const ShiftTemplateModal = ({
                   <div className="rounded-3xl border border-slate-200 bg-white p-5">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <h3 className="text-sm font-semibold text-slate-900">Thông tin ca làm</h3>
+                        <h3 className="text-sm font-semibold text-slate-900">
+                          Thông tin ca làm
+                        </h3>
                         <p className="mt-1 text-sm text-slate-500">
                           Khai báo thời gian chuẩn và các cấu hình mở rộng cho ca làm.
                         </p>
@@ -316,9 +408,24 @@ export const ShiftTemplateModal = ({
 
                     <div className="mt-5 space-y-5">
                       <label className="block">
-                        <span className="mb-2 block text-sm font-semibold text-slate-700">
-                          Tên ca làm <span className="text-rose-500">*</span>
-                        </span>
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <span className="text-sm font-semibold text-slate-700">
+                            Tên ca làm <span className="text-rose-500">*</span>
+                          </span>
+                          {shouldShowPreviewButton(mode, initialData) && onPreview ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (initialData) {
+                                  onPreview(initialData);
+                                }
+                              }}
+                              className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-600 transition hover:bg-emerald-100"
+                            >
+                              Xem
+                            </button>
+                          ) : null}
+                        </div>
                         <input
                           type="text"
                           value={formValues.name}
@@ -358,7 +465,11 @@ export const ShiftTemplateModal = ({
                         />
                       </div>
 
-                      {isAdvancedExpanded ? (
+                      <div
+                        className={`overflow-hidden transition-all duration-300 ${
+                          isAdvancedExpanded ? "max-h-[320px] opacity-100" : "max-h-0 opacity-0"
+                        }`}
+                      >
                         <div className="grid gap-4 rounded-2xl border border-sky-100 bg-sky-50/60 p-4 md:grid-cols-3">
                           <label className="block">
                             <span className="mb-2 block text-sm font-medium text-slate-700">
@@ -414,13 +525,15 @@ export const ShiftTemplateModal = ({
                             />
                           </label>
                         </div>
-                      ) : null}
+                      </div>
                     </div>
                   </div>
 
                   <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-semibold text-slate-900">Lặp lại hằng tuần</h3>
+                      <h3 className="text-sm font-semibold text-slate-900">
+                        Lặp lại hằng tuần
+                      </h3>
                       <div className="group relative flex items-center justify-center">
                         <span className="material-symbols-outlined cursor-help text-[16px] text-slate-400">
                           help
@@ -482,8 +595,7 @@ export const ShiftTemplateModal = ({
                         Phân bổ đối tượng áp dụng
                       </h3>
                       <p className="mt-1 text-sm text-slate-500">
-                        Hỗ trợ chọn nhiều chi nhánh, phòng ban và chức danh, đồng thời lọc phụ thuộc
-                        theo chi nhánh đã chọn.
+                        Hỗ trợ chọn nhiều chi nhánh, phòng ban và chức danh, đồng thời lọc phụ thuộc theo chi nhánh đã chọn.
                       </p>
                     </div>
 
@@ -558,7 +670,7 @@ export const ShiftTemplateModal = ({
               {isSubmitting ? (
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
               ) : null}
-              {submitLabel}
+              {resolvedSubmitLabel}
             </button>
           </div>
         </div>

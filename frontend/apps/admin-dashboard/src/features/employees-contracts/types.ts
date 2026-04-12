@@ -8,8 +8,9 @@ export type ContractStatusKey = "effective" | "pending" | "expired";
 export type ContractCategoryKey = "all" | "official" | "probation" | "seasonal";
 
 export interface LookupItem {
-  id: number;
-  name: string;
+  id?: number;
+  code?: string;
+  name?: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -265,4 +266,10 @@ export interface ContractSignerPositionDto {
 export interface ContractStep4Dto {
   ContractId: number;
   Positions: ContractSignerPositionDto[];
+}
+
+export interface ElectronicContractSubmitResult {
+  message?: string;
+  warningMessage?: string;
+  notificationSent?: boolean;
 }

@@ -134,23 +134,34 @@ const readJsonSafely = async <T>(response: Response): Promise<T | null> => {
   }
 };
 
+interface CreateHeadersOptions {
+  includeAuth?: boolean;
+  includeCsrf?: boolean;
+}
+
 const createHeaders = (
   headers?: HeadersInit,
   method?: string,
-  body?: BodyInit | null
+  body?: BodyInit | null,
+  options: CreateHeadersOptions = {}
 ): Headers => {
   const mergedHeaders = new Headers(headers);
   const normalizedMethod = (method ?? "GET").toUpperCase();
+  const { includeAuth = true, includeCsrf = true } = options;
 
   if (body && !(body instanceof FormData) && !mergedHeaders.has("Content-Type")) {
     mergedHeaders.set("Content-Type", "application/json");
   }
 
-  if (authToken && !mergedHeaders.has("Authorization")) {
+  if (includeAuth && authToken && !mergedHeaders.has("Authorization")) {
     mergedHeaders.set("Authorization", `Bearer ${authToken}`);
   }
 
-  if (!SAFE_METHODS.has(normalizedMethod) && !mergedHeaders.has(CSRF_HEADER_NAME)) {
+  if (
+    includeCsrf &&
+    !SAFE_METHODS.has(normalizedMethod) &&
+    !mergedHeaders.has(CSRF_HEADER_NAME)
+  ) {
     const csrfToken = getCookieValue(CSRF_COOKIE_NAME);
     if (csrfToken) {
       mergedHeaders.set(CSRF_HEADER_NAME, csrfToken);
@@ -221,11 +232,16 @@ export const authFetch = async (
 export const authService = {
   login: async (email: string, password: string): Promise<AuthResponse> => {
     try {
+      const normalizedEmail = email.trim().toLowerCase();
+      const payload = JSON.stringify({ email: normalizedEmail, password });
       const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         credentials: "include",
-        headers: createHeaders(undefined, "POST", JSON.stringify({ email, password })),
-        body: JSON.stringify({ email, password }),
+        headers: createHeaders(undefined, "POST", payload, {
+          includeAuth: false,
+          includeCsrf: false,
+        }),
+        body: payload,
       });
 
       const data = await readJsonSafely<AuthResponse>(response);
@@ -250,18 +266,22 @@ export const authService = {
       clearInMemorySession();
       return {
         success: false,
-        message: "Khong the ket noi toi may chu. Vui long thu lai sau.",
+        message: "Không thể kết nối tới máy chủ. Vui lòng thử lại sau.",
       };
     }
   },
 
   register: async (userData: unknown): Promise<AuthResponse> => {
     try {
+      const payload = JSON.stringify(userData);
       const response = await fetch(`${API_URL}/auth/sign-up`, {
         method: "POST",
         credentials: "include",
-        headers: createHeaders(undefined, "POST", JSON.stringify(userData)),
-        body: JSON.stringify(userData),
+        headers: createHeaders(undefined, "POST", payload, {
+          includeAuth: false,
+          includeCsrf: false,
+        }),
+        body: payload,
       });
 
       const data = await readJsonSafely<AuthResponse>(response);
@@ -269,18 +289,18 @@ export const authService = {
       if (response.ok && data?.success) {
         return {
           success: true,
-          message: data.message || "Dang ky tai khoan thanh cong!",
+          message: data.message || "Đăng ký tài khoản thành công!",
         };
       }
 
       return {
         success: false,
-        message: data?.message || "Dang ky that bai.",
+        message: data?.message || "Đăng ký thất bại.",
       };
     } catch {
       return {
         success: false,
-        message: "Khong the ket noi toi may chu.",
+        message: "Không thể kết nối tới máy chủ.",
       };
     }
   },
@@ -297,18 +317,18 @@ export const authService = {
       if (response.ok && data?.success) {
         return {
           success: true,
-          message: data.message || "Doi mat khau thanh cong.",
+          message: data.message || "Đổi mật khẩu thành công.",
         };
       }
 
       return {
         success: false,
-        message: data?.message || "Khong the doi mat khau.",
+        message: data?.message || "Không thể đổi mật khẩu.",
       };
     } catch {
       return {
         success: false,
-        message: "Khong the ket noi toi may chu. Vui long thu lai sau.",
+        message: "Không thể kết nối tới máy chủ. Vui lòng thử lại sau.",
       };
     }
   },

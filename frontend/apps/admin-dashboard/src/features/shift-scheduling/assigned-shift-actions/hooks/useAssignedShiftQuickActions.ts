@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+﻿import { useCallback, useMemo, useState } from "react";
 import { assignedShiftActionsService } from "../services/assignedShiftActionsService";
 import type {
   AssignedShiftActionContext,
@@ -257,7 +257,7 @@ export const useAssignedShiftQuickActions = ({
             useMockFallback,
           );
           setLeaveContext(null);
-          notify("Đã tạo yêu cầu nghỉ phép.", "success");
+          notify("Tạo yêu cầu nghỉ phép thành công", "success");
           await reload();
 
           if (detailDataKey === getContextKey(leaveContext)) {
@@ -311,7 +311,10 @@ export const useAssignedShiftQuickActions = ({
   }, [pickerContext]);
 
   const handleEditAttendanceTime = useCallback(() => {
-    notify("Nút sửa thời gian đã sẵn sàng để nối quyền chỉnh sửa công thực tế.", "info");
+    notify(
+      "Nút sửa thời gian đã sẵn sàng để nối quyền chỉnh sửa công thực tế.",
+      "info",
+    );
   }, [notify]);
 
   return {

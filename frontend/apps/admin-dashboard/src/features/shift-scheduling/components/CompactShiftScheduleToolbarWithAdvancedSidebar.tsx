@@ -1,5 +1,9 @@
-import { SCHEDULE_VIEW_OPTIONS } from "../data/constants";
-import type { SelectOption, ShiftScheduleFilters, ShiftScheduleLookups } from "../types";
+﻿import { SCHEDULE_VIEW_OPTIONS } from "../data/constants";
+import type {
+  SelectOption,
+  ShiftScheduleFilters,
+  ShiftScheduleLookups,
+} from "../types";
 import FilterSelect from "./FilterSelect";
 import IconActionButton from "./IconActionButton";
 
@@ -11,13 +15,19 @@ interface CompactShiftScheduleToolbarWithAdvancedSidebarProps {
   weekLabel: string;
   isRefreshing: boolean;
   onViewModeChange: (value: string) => void;
-  onFilterChange: <Key extends keyof ShiftScheduleFilters>(key: Key, value: ShiftScheduleFilters[Key]) => void;
+  onFilterChange: <Key extends keyof ShiftScheduleFilters>(
+    key: Key,
+    value: ShiftScheduleFilters[Key],
+  ) => void;
   onPreviousWeek: () => void;
   onNextWeek: () => void;
   onWeekChange: (value: string) => void;
   onRefresh: () => void;
   onExport: () => void;
   onImport: () => void;
+  onOpenShiftTemplateList: () => void;
+  onOpenAssignShift: () => void;
+  onOpenCopyShift: () => void;
   onOpenHistory: () => void;
   onOpenMealBoard: () => void;
   onOpenSettings: () => void;
@@ -41,6 +51,9 @@ export const CompactShiftScheduleToolbarWithAdvancedSidebar = ({
   onRefresh,
   onExport,
   onImport,
+  onOpenShiftTemplateList,
+  onOpenAssignShift,
+  onOpenCopyShift,
   onOpenHistory,
   onOpenMealBoard,
   onOpenSettings,
@@ -49,266 +62,282 @@ export const CompactShiftScheduleToolbarWithAdvancedSidebar = ({
   onToggleAdvancedFilter,
 }: CompactShiftScheduleToolbarWithAdvancedSidebarProps) => {
   return (
-    <>
-      <section className="space-y-3">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="min-w-0">
-            <h1 className="truncate text-[30px] font-bold tracking-tight text-slate-900">
-              Xếp ca và Chấm công
-            </h1>
-            <p className="mt-1 text-sm text-slate-500">{weekLabel}</p>
-          </div>
+    <section className="space-y-3">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0">
+          <h1 className="truncate text-[30px] font-bold tracking-tight text-slate-900">
+            Xếp ca và Chấm công
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">{weekLabel}</p>
+        </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Xuất file Dropdown */}
-            <div className="group relative inline-block text-left">
-              <button
-                type="button"
-                onClick={onExport}
-                className="flex items-center rounded-lg border border-[#192841] bg-white px-4 py-2 text-sm font-semibold text-[#192841] transition-colors hover:bg-[#192841]/5"
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="group relative inline-block text-left">
+            <button
+              type="button"
+              onClick={onExport}
+              className="flex items-center rounded-lg border border-[#192841] bg-white px-4 py-2 text-sm font-semibold text-[#192841] transition-colors hover:bg-[#192841]/5"
+            >
+              <span className="material-symbols-outlined mr-2 text-[18px] text-[#192841]">
+                download
+              </span>
+              Xuất file
+              <svg
+                className="ml-2 h-4 w-4 text-[#192841] transition-transform duration-200 group-hover:rotate-180"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                <span className="material-symbols-outlined mr-2 text-[18px] text-[#192841]">
-                  download
-                </span>
-                Xuất file
-                <svg
-                  className="ml-2 h-4 w-4 text-[#192841] transition-transform duration-200 group-hover:rotate-180"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </button>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
 
-              <div className="absolute right-0 top-full z-50 hidden pt-1.5 transition-all duration-200 group-hover:block">
-                <div className="w-52 overflow-hidden rounded-xl border border-gray-200 bg-white py-2 shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
-                  <button
-                    type="button"
-                    className="block w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                  >
-                    Xuất theo ngày công
-                  </button>
-                  <button
-                    type="button"
-                    className="block w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                  >
-                    Xuất theo giờ công
-                  </button>
-                  <button
-                    type="button"
-                    className="block w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                  >
-                    Bảng phân ca
-                  </button>
-                  <button
-                    type="button"
-                    className="block w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                  >
-                    Bảng đi muộn, về sớm
-                  </button>
-                  <button
-                    type="button"
-                    className="block w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                  >
-                    Bảng tăng ca
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Nhập dữ liệu Split Button */}
-            <div className="flex items-center">
-              <div className="flex items-center rounded-lg bg-[#134BBA] transition-all duration-200 shadow-md hover:shadow-lg">
+            <div className="absolute right-0 top-full z-50 hidden pt-1.5 transition-all duration-200 group-hover:block">
+              <div className="w-52 overflow-hidden rounded-xl border border-gray-200 bg-white py-2 shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
                 <button
                   type="button"
-                  onClick={onImport}
-                  className="flex items-center border-r border-white/20 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#0e378c] rounded-l-lg"
+                  className="block w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
                 >
-                  Nhập dữ liệu
+                  Xuất theo ngày công
+                </button>
+                <button
+                  type="button"
+                  className="block w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
+                >
+                  Xuất theo giờ công
+                </button>
+                <button
+                  type="button"
+                  className="block w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
+                >
+                  Bảng phân ca
+                </button>
+                <button
+                  type="button"
+                  className="block w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
+                >
+                  Bảng đi muộn, về sớm
+                </button>
+                <button
+                  type="button"
+                  className="block w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
+                >
+                  Bảng tăng ca
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center">
+            <div className="flex items-center rounded-lg bg-[#134BBA] shadow-md transition-all duration-200 hover:shadow-lg">
+              <button
+                type="button"
+                onClick={onImport}
+                className="flex items-center rounded-l-lg border-r border-white/20 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#0e378c]"
+              >
+                Nhập dữ liệu
+              </button>
+
+              <div className="group/chevron relative h-full">
+                <button
+                  type="button"
+                  className="flex h-full items-center justify-center rounded-r-lg px-3 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#0e378c]"
+                >
+                  <span className="material-symbols-outlined text-[18px] text-white transition-transform duration-200 group-hover/chevron:rotate-180">
+                    expand_more
+                  </span>
                 </button>
 
-                <div className="group/chevron relative h-full">
-                  <button
-                    type="button"
-                    className="flex h-full items-center justify-center rounded-r-lg px-3 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#0e378c]"
-                  >
-                    <span className="material-symbols-outlined text-[18px] text-white transition-transform duration-200 group-hover/chevron:rotate-180">
-                      expand_more
-                    </span>
-                  </button>
-
-                  <div className="animate-[fadeSlideDown_0.2s_ease-out] absolute right-0 top-full z-[1000] hidden pt-1.5 group-hover/chevron:block">
-                    <div className="w-52 overflow-hidden rounded-xl border border-gray-200 bg-white py-2 shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
-                      <div className="mb-1 border-b border-gray-50 px-4 py-2">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                          Tùy chọn nhập
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={onImport}
-                        className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                      >
-                        Tạo ca làm
-                      </button>
-                      <button
-                        type="button"
-                        className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                      >
-                        Danh sách ca
-                      </button>
-                      <button
-                        type="button"
-                        className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                      >
-                        Xếp ca
-                      </button>
-                      <button
-                        type="button"
-                        className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                      >
-                        Sao chép ca
-                      </button>
-                      <button
-                        type="button"
-                        onClick={onImport}
-                        className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                      >
-                        Nhập dữ liệu
-                      </button>
-                      <button
-                        type="button"
-                        className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                      >
-                        Phân ca thông minh
-                      </button>
+                <div className="absolute right-0 top-full z-[1000] hidden animate-[fadeSlideDown_0.2s_ease-out] pt-1.5 group-hover/chevron:block">
+                  <div className="w-52 overflow-hidden rounded-xl border border-gray-200 bg-white py-2 shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
+                    <div className="mb-1 border-b border-gray-50 px-4 py-2">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                        Tùy chọn nhập
+                      </span>
                     </div>
+                    <button
+                      type="button"
+                      onClick={onImport}
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
+                    >
+                      Tạo ca làm
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onOpenShiftTemplateList}
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
+                    >
+                      Danh sách ca
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onOpenAssignShift}
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
+                    >
+                      Xếp ca
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onOpenCopyShift}
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
+                    >
+                      Sao chép ca
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onImport}
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
+                    >
+                      Nhập dữ liệu
+                    </button>
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
+                    >
+                      Phân ca thông minh
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="flex flex-wrap items-center gap-2 rounded-md border border-slate-200 bg-white p-2">
+      <div className="flex flex-wrap items-center gap-2 rounded-md border border-slate-200 bg-white p-2">
+        <button
+          type="button"
+          onClick={onToggleAdvancedFilter}
+          aria-label={
+            isAdvancedFilterOpen ? "Đóng bộ lọc nâng cao" : "Mở bộ lọc nâng cao"
+          }
+          title="Bộ lọc nâng cao"
+          className={`relative inline-flex h-9 w-9 items-center justify-center rounded-md border transition ${
+            isAdvancedFilterOpen
+              ? "border-[#134BBA] bg-[#EFF6FF] text-[#134BBA]"
+              : "border-slate-200 bg-white text-slate-600 hover:border-[#BFDBFE] hover:text-[#134BBA]"
+          }`}
+        >
+          <span className="material-symbols-outlined text-[18px]">tune</span>
+          {activeAdvancedFilterCount > 0 ? (
+            <span className="absolute -right-1 -top-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-[#134BBA] px-1 py-0.5 text-[10px] font-semibold leading-none text-white">
+              {activeAdvancedFilterCount}
+            </span>
+          ) : null}
+        </button>
+
+        <div className="inline-flex items-center rounded-md border border-slate-200 bg-white">
           <button
             type="button"
-            onClick={onToggleAdvancedFilter}
-            aria-label={isAdvancedFilterOpen ? "Đóng bộ lọc nâng cao" : "Mở bộ lọc nâng cao"}
-            title="Bộ lọc nâng cao"
-            className={`relative inline-flex h-9 w-9 items-center justify-center rounded-md border transition ${
-              isAdvancedFilterOpen 
-                ? "border-[#134BBA] bg-[#EFF6FF] text-[#134BBA]" 
-                : "border-slate-200 bg-white text-slate-600 hover:border-[#BFDBFE] hover:text-[#134BBA]"
-            }`}
+            onClick={onPreviousWeek}
+            className="inline-flex h-9 w-9 items-center justify-center text-slate-500 transition hover:text-[#134BBA]"
           >
-            <span className="material-symbols-outlined text-[18px]">tune</span>
-            {activeAdvancedFilterCount > 0 ? (
-              <span className="absolute -right-1 -top-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-[#134BBA] px-1 py-0.5 text-[10px] font-semibold leading-none text-white">
-                {activeAdvancedFilterCount}
-              </span>
-            ) : null}
+            <span className="material-symbols-outlined text-[18px]">chevron_left</span>
           </button>
-
-          <div className="inline-flex items-center rounded-md border border-slate-200 bg-white">
-            <button
-              type="button"
-              onClick={onPreviousWeek}
-              className="inline-flex h-9 w-9 items-center justify-center text-slate-500 transition hover:text-[#134BBA]"
-            >
-              <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-            </button>
-            <label className="relative">
-              <span className="sr-only">Chọn tuần</span>
-              <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">
-                calendar_month
-              </span>
-              <input
-                type="date"
-                value={filters.weekStartDate}
-                onChange={(event) => onWeekChange(event.target.value)}
-                className="h-9 min-w-[148px] border-x border-slate-200 bg-white py-1.5 pl-9 pr-3 text-sm font-medium text-slate-700 outline-none"
-              />
-            </label>
-            <button
-              type="button"
-              onClick={onNextWeek}
-              className="inline-flex h-9 w-9 items-center justify-center text-slate-500 transition hover:text-[#134BBA]"
-            >
-              <span className="material-symbols-outlined text-[18px]">chevron_right</span>
-            </button>
-          </div>
-
-          <FilterSelect
-            label="Lọc xếp ca theo"
-            value={filters.viewMode}
-            options={SCHEDULE_VIEW_OPTIONS}
-            onChange={onViewModeChange}
-          />
-
-          {filters.viewMode === "branch" ? (
-            <FilterSelect
-              label="Chi nhánh"
-              value={filters.branchId}
-              options={lookups.branches}
-              onChange={(value) => onFilterChange("branchId", value)}
+          <label className="relative">
+            <span className="sr-only">Chọn tuần</span>
+            <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">
+              calendar_month
+            </span>
+            <input
+              type="date"
+              value={filters.weekStartDate}
+              onChange={(event) => onWeekChange(event.target.value)}
+              className="h-9 min-w-[148px] border-x border-slate-200 bg-white py-1.5 pl-9 pr-3 text-sm font-medium text-slate-700 outline-none"
             />
-          ) : null}
-
-          {filters.viewMode === "attendance" ? (
-            <>
-              <FilterSelect
-                label="Trạng thái chấm công"
-                value={filters.attendanceStatus}
-                options={attendanceStatusOptions}
-                onChange={(value) =>
-                  onFilterChange("attendanceStatus", value as ShiftScheduleFilters["attendanceStatus"])
-                }
-              />
-              <FilterSelect
-                label="Trạng thái nhân viên"
-                value={filters.employeeStatus}
-                options={employeeStatusOptions}
-                onChange={(value) =>
-                  onFilterChange("employeeStatus", value as ShiftScheduleFilters["employeeStatus"])
-                }
-              />
-            </>
-          ) : null}
-
-          {filters.viewMode === "project" ? (
-            <FilterSelect
-              label="Dự án"
-              value={filters.projectId}
-              options={lookups.projects}
-              onChange={(value) => onFilterChange("projectId", value)}
-            />
-          ) : null}
-
-          {filters.viewMode === "jobTitle" ? (
-            <FilterSelect
-              label="Chức danh"
-              value={filters.jobTitleId}
-              options={lookups.jobTitles}
-              onChange={(value) => onFilterChange("jobTitleId", value)}
-            />
-          ) : null}
-
-          <div className="ml-auto flex flex-wrap items-center gap-2">
-            <IconActionButton icon="refresh" label="Làm mới bảng" onClick={onRefresh} isLoading={isRefreshing} />
-            <IconActionButton icon="warning" label="Lịch sử vào/ra" onClick={onOpenHistory} />
-            <IconActionButton icon="restaurant" label="Bảng xuất ăn" onClick={onOpenMealBoard} />
-            <IconActionButton icon="settings" label="Cài đặt chấm công" onClick={onOpenSettings} />
-          </div>
+          </label>
+          <button
+            type="button"
+            onClick={onNextWeek}
+            className="inline-flex h-9 w-9 items-center justify-center text-slate-500 transition hover:text-[#134BBA]"
+          >
+            <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+          </button>
         </div>
-      </section>
-    </>
+
+        <FilterSelect
+          label="Lọc xếp ca theo"
+          value={filters.viewMode}
+          options={SCHEDULE_VIEW_OPTIONS}
+          onChange={onViewModeChange}
+        />
+
+        {filters.viewMode === "branch" ? (
+          <FilterSelect
+            label="Chi nhánh"
+            value={filters.branchId}
+            options={lookups.branches}
+            onChange={(value) => onFilterChange("branchId", value)}
+          />
+        ) : null}
+
+        {filters.viewMode === "attendance" ? (
+          <>
+            <FilterSelect
+              label="Trạng thái chấm công"
+              value={filters.attendanceStatus}
+              options={attendanceStatusOptions}
+              onChange={(value) =>
+                onFilterChange(
+                  "attendanceStatus",
+                  value as ShiftScheduleFilters["attendanceStatus"],
+                )
+              }
+            />
+            <FilterSelect
+              label="Trạng thái nhân viên"
+              value={filters.employeeStatus}
+              options={employeeStatusOptions}
+              onChange={(value) =>
+                onFilterChange(
+                  "employeeStatus",
+                  value as ShiftScheduleFilters["employeeStatus"],
+                )
+              }
+            />
+          </>
+        ) : null}
+
+        {filters.viewMode === "project" ? (
+          <FilterSelect
+            label="Dự án"
+            value={filters.projectId}
+            options={lookups.projects}
+            onChange={(value) => onFilterChange("projectId", value)}
+          />
+        ) : null}
+
+        {filters.viewMode === "jobTitle" ? (
+          <FilterSelect
+            label="Chức danh"
+            value={filters.jobTitleId}
+            options={lookups.jobTitles}
+            onChange={(value) => onFilterChange("jobTitleId", value)}
+          />
+        ) : null}
+
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <IconActionButton
+            icon="refresh"
+            label="Làm mới bảng"
+            onClick={onRefresh}
+            isLoading={isRefreshing}
+          />
+          <IconActionButton icon="warning" label="Lịch sử vào/ra" onClick={onOpenHistory} />
+          <IconActionButton icon="restaurant" label="Bảng xuất ăn" onClick={onOpenMealBoard} />
+          <IconActionButton
+            icon="settings"
+            label="Cài đặt chấm công"
+            onClick={onOpenSettings}
+          />
+        </div>
+      </div>
+    </section>
   );
 };
 

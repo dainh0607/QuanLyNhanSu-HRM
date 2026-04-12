@@ -1,4 +1,4 @@
-interface TimeSelectFieldProps {
+﻿interface TimeSelectFieldProps {
   label: string;
   required?: boolean;
   hour: string;
@@ -43,7 +43,9 @@ export const TimeSelectField = ({
         value={hour}
         onChange={(event) => onHourChange(event.target.value)}
         className={`h-11 rounded-xl border bg-white px-3 text-sm outline-none transition ${
-          error ? "border-rose-400" : "border-slate-200 focus:border-[#134BBA] focus:ring-1 focus:ring-[#134BBA]"
+          error
+            ? "border-rose-400"
+            : "border-slate-200 focus:border-[#134BBA] focus:ring-1 focus:ring-[#134BBA]"
         }`}
       >
         <option value="">Giờ</option>
@@ -60,7 +62,9 @@ export const TimeSelectField = ({
         value={minute}
         onChange={(event) => onMinuteChange(event.target.value)}
         className={`h-11 rounded-xl border bg-white px-3 text-sm outline-none transition ${
-          error ? "border-rose-400" : "border-slate-200 focus:border-[#134BBA] focus:ring-1 focus:ring-[#134BBA]"
+          error
+            ? "border-rose-400"
+            : "border-slate-200 focus:border-[#134BBA] focus:ring-1 focus:ring-[#134BBA]"
         }`}
       >
         <option value="">Phút</option>

@@ -48,6 +48,45 @@ export const getIsoWeekNumber = (value: Date): number => {
   return Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
 };
 
+export const getIsoWeekYear = (value: Date): number => {
+  const date = new Date(Date.UTC(value.getFullYear(), value.getMonth(), value.getDate()));
+  const weekday = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - weekday);
+  return date.getUTCFullYear();
+};
+
+export const normalizeWeekStartDate = (value: string): string =>
+  toIsoDate(startOfWeek(parseIsoDate(value)));
+
+export const toIsoWeekInputValue = (weekStartDate: string): string => {
+  if (!weekStartDate) {
+    return "";
+  }
+
+  const normalizedWeekStart = startOfWeek(parseIsoDate(weekStartDate));
+  const weekYear = getIsoWeekYear(normalizedWeekStart);
+  const weekNumber = getIsoWeekNumber(normalizedWeekStart);
+  return `${weekYear}-W${String(weekNumber).padStart(2, "0")}`;
+};
+
+export const parseIsoWeekInputValue = (value: string): string => {
+  if (!value) {
+    return "";
+  }
+
+  const [yearPart, weekPart] = value.split("-W");
+  const weekYear = Number(yearPart);
+  const weekNumber = Number(weekPart);
+
+  if (!Number.isFinite(weekYear) || !Number.isFinite(weekNumber) || weekNumber <= 0) {
+    return "";
+  }
+
+  const januaryFourth = new Date(weekYear, 0, 4);
+  const mondayOfWeekOne = startOfWeek(januaryFourth);
+  return toIsoDate(addDays(mondayOfWeekOne, (weekNumber - 1) * 7));
+};
+
 export const getWeekLabel = (weekStartDate: string): string => {
   const weekStart = parseIsoDate(weekStartDate);
   return `Tuần ${getIsoWeekNumber(weekStart)} - ${weekStart.getFullYear()}`;

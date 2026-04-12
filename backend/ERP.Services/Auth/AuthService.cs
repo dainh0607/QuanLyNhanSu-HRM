@@ -198,16 +198,29 @@ namespace ERP.Services.Auth
         {
             try
             {
-                var firebaseResult = await _firebaseService.SignInWithPasswordAsync(dto.Email, dto.Password);
+                var normalizedEmail = dto.Email?.Trim();
+                var firebaseResult = await _firebaseService.SignInWithPasswordAsync(normalizedEmail ?? string.Empty, dto.Password);
                 if (!firebaseResult.Success)
                 {
                     return new AuthResponseDto { Success = false, Message = firebaseResult.Message ?? "Dang nhap that bai" };
                 }
 
-                var localUser = await FindLocalUserForLoginAsync(firebaseResult.IdToken ?? string.Empty, dto.Email);
+                var allowAutoProvisionEmployee =
+                    !string.IsNullOrWhiteSpace(firebaseResult.LocalId) &&
+                    !firebaseResult.LocalId.StartsWith("bypass:", StringComparison.OrdinalIgnoreCase);
+
+                var localUser = await EnsureLocalUserForLoginAsync(
+                    firebaseResult.LocalId,
+                    firebaseResult.Email ?? normalizedEmail,
+                    allowAutoProvisionEmployee
+                );
                 if (localUser == null)
                 {
-                    return new AuthResponseDto { Success = false, Message = "Tai khoan khong duoc tim thay trong he thong local" };
+                    return new AuthResponseDto
+                    {
+                        Success = false,
+                        Message = "Tai khoan chua duoc dong bo vao he thong. Vui long lien he quan tri vien."
+                    };
                 }
 
                 var userInfo = await BuildUserInfoAsync(localUser);
@@ -736,22 +749,202 @@ namespace ERP.Services.Auth
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        private async Task<Users?> FindLocalUserForLoginAsync(string firebaseUid, string email)
+        private async Task<Users?> EnsureLocalUserForLoginAsync(string? firebaseUid, string? email, bool allowAutoProvisionEmployee)
         {
-            var localUser = await _context.Users
-                .Include(u => u.Employee)
-                .FirstOrDefaultAsync(u => u.firebase_uid == firebaseUid && u.is_active);
-
-            if (localUser != null)
+            var normalizedEmail = email?.Trim();
+            if (string.IsNullOrWhiteSpace(normalizedEmail))
             {
-                return localUser;
+                return null;
             }
 
-            return await _context.Users
+            var normalizedEmailLower = normalizedEmail.ToLower();
+            var localUser = await _context.Users
                 .Include(u => u.Employee)
                 .FirstOrDefaultAsync(u =>
                     u.is_active &&
-                    (u.username == email || u.Employee.email == email));
+                    (
+                        (!string.IsNullOrWhiteSpace(firebaseUid) && u.firebase_uid == firebaseUid) ||
+                        (!string.IsNullOrWhiteSpace(u.username) && u.username.ToLower() == normalizedEmailLower) ||
+                        (u.Employee != null &&
+                            (
+                                (!string.IsNullOrWhiteSpace(u.Employee.email) && u.Employee.email.ToLower() == normalizedEmailLower) ||
+                                (!string.IsNullOrWhiteSpace(u.Employee.work_email) && u.Employee.work_email.ToLower() == normalizedEmailLower)
+                            ))
+                    ));
+
+            if (localUser == null)
+            {
+                var employee = await EnsureEmployeeForLoginAsync(normalizedEmail, allowAutoProvisionEmployee);
+                if (employee == null)
+                {
+                    return null;
+                }
+
+                localUser = new Users
+                {
+                    employee_id = employee.Id,
+                    username = BuildInternalUsername(employee.employee_code, employee.Id),
+                    firebase_uid = Truncate(firebaseUid ?? $"email:{normalizedEmailLower}", 128),
+                    is_active = true,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                _context.Users.Add(localUser);
+                await _context.SaveChangesAsync();
+            }
+
+            var shouldSaveLocalUser = false;
+            if (!string.IsNullOrWhiteSpace(firebaseUid) &&
+                !string.Equals(localUser.firebase_uid, firebaseUid, StringComparison.Ordinal))
+            {
+                localUser.firebase_uid = Truncate(firebaseUid, 128);
+                shouldSaveLocalUser = true;
+            }
+
+            var desiredUsername = BuildInternalUsername(localUser.Employee?.employee_code, localUser.Employee?.Id ?? localUser.Id);
+            if (!string.IsNullOrWhiteSpace(desiredUsername) &&
+                !string.Equals(localUser.username, desiredUsername, StringComparison.Ordinal))
+            {
+                localUser.username = desiredUsername;
+                shouldSaveLocalUser = true;
+            }
+
+            if (shouldSaveLocalUser)
+            {
+                localUser.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+            }
+
+            await EnsureLoginRolesAsync(localUser.Id, normalizedEmail);
+
+            return await _context.Users
+                .Include(u => u.Employee)
+                .FirstOrDefaultAsync(u => u.Id == localUser.Id && u.is_active);
+        }
+
+        private async Task<EmployeeEntity?> EnsureEmployeeForLoginAsync(string email, bool allowAutoProvisionEmployee)
+        {
+            var normalizedEmailLower = email.Trim().ToLower();
+
+            var employee = await _context.Employees.FirstOrDefaultAsync(e =>
+                e.is_active &&
+                (
+                    (!string.IsNullOrWhiteSpace(e.email) && e.email.ToLower() == normalizedEmailLower) ||
+                    (!string.IsNullOrWhiteSpace(e.work_email) && e.work_email.ToLower() == normalizedEmailLower)
+                ));
+
+            if (employee != null)
+            {
+                return employee;
+            }
+
+            if (!allowAutoProvisionEmployee && !IsMasterEmail(email))
+            {
+                return null;
+            }
+
+            employee = new EmployeeEntity
+            {
+                employee_code = Truncate(
+                    (IsMasterEmail(email) ? $"ADMIN_{Guid.NewGuid():N}" : $"EMP_{Guid.NewGuid():N}")
+                        .ToUpperInvariant(),
+                    20),
+                full_name = IsMasterEmail(email) ? "System Administrator" : email.Split('@')[0],
+                email = email,
+                work_email = email,
+                is_active = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.Employees.Add(employee);
+            await _context.SaveChangesAsync();
+
+            return employee;
+        }
+
+        private async Task EnsureLoginRolesAsync(int userId, string email)
+        {
+            var adminRoleId = await EnsureRoleExistsAsync("Admin", "System Administrator");
+            var managerRoleId = await EnsureRoleExistsAsync("Manager", "Manager");
+            var activeRoleIds = await _context.UserRoles
+                .Where(ur => ur.user_id == userId && ur.is_active)
+                .Select(ur => ur.role_id)
+                .ToListAsync();
+
+            var isMasterEmail = IsMasterEmail(email);
+            var defaultRoleId = isMasterEmail ? adminRoleId : managerRoleId;
+
+            if (activeRoleIds.Count == 0)
+            {
+                _context.UserRoles.Add(new UserRoles
+                {
+                    user_id = userId,
+                    role_id = defaultRoleId,
+                    is_active = true,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                });
+
+                await _context.SaveChangesAsync();
+                return;
+            }
+
+            if (isMasterEmail && !activeRoleIds.Contains(adminRoleId))
+            {
+                _context.UserRoles.Add(new UserRoles
+                {
+                    user_id = userId,
+                    role_id = adminRoleId,
+                    is_active = true,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                });
+
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        private async Task<int> EnsureRoleExistsAsync(string roleName, string description)
+        {
+            var existingRole = await _context.Roles
+                .FirstOrDefaultAsync(role =>
+                    role.name == roleName ||
+                    role.name.ToLower() == roleName.ToLower());
+
+            if (existingRole != null)
+            {
+                if (!existingRole.is_active)
+                {
+                    existingRole.is_active = true;
+                    existingRole.UpdatedAt = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                }
+
+                return existingRole.Id;
+            }
+
+            var role = new Roles
+            {
+                name = roleName,
+                description = description,
+                is_active = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.Roles.Add(role);
+            await _context.SaveChangesAsync();
+            return role.Id;
+        }
+
+        private bool IsMasterEmail(string? email)
+        {
+            var masterEmail = _configuration["AdminSettings:MasterEmail"];
+            return !string.IsNullOrWhiteSpace(masterEmail) &&
+                   !string.IsNullOrWhiteSpace(email) &&
+                   string.Equals(email.Trim(), masterEmail.Trim(), StringComparison.OrdinalIgnoreCase);
         }
 
         private async Task<UserInfoDto?> BuildUserInfoAsync(Users? localUser)
@@ -764,7 +957,9 @@ namespace ERP.Services.Auth
             var roles = await _context.UserRoles
                 .Where(ur => ur.user_id == localUser.Id && ur.is_active)
                 .Include(ur => ur.Role)
-                .Select(ur => ur.Role.name)
+                .Select(ur => ur.Role != null ? ur.Role.name : null)
+                .Where(roleName => !string.IsNullOrWhiteSpace(roleName))
+                .Select(roleName => roleName!)
                 .ToListAsync();
 
             return new UserInfoDto

@@ -37,6 +37,18 @@ const formatDateLabel = (value: string | null): string => {
 const isPositiveInteger = (value: string): boolean =>
   /^[1-9]\d*$/.test(value.trim());
 
+const areStringArraysEqual = (left: string[], right: string[]): boolean =>
+  left.length === right.length && left.every((value, index) => value === right[index]);
+
+const createEmptyFormData = (): OpenShiftFormData => ({
+  targets: {
+    branches: [],
+    departments: [],
+    jobTitles: [],
+  },
+  shiftTemplates: [],
+});
+
 export const OpenShiftModal = ({
   isOpen,
   selectedDate,
@@ -56,8 +68,23 @@ export const OpenShiftModal = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState("");
 
+  const resetModalState = () => {
+    setFormData(createEmptyFormData());
+    setIsLoadingData(false);
+    setSelectedShiftId("");
+    setBranchIds([]);
+    setDepartmentIds([]);
+    setJobTitleIds([]);
+    setQuantity("1");
+    setAutoPublish(true);
+    setErrors({});
+    setSubmitError("");
+    setIsSubmitting(false);
+  };
+
   useEffect(() => {
     if (!isOpen) {
+      resetModalState();
       return;
     }
 
@@ -75,7 +102,7 @@ export const OpenShiftModal = ({
         console.error("Failed to load open shift form data.", error);
         if (isMounted) {
           setFormData(EMPTY_FORM_DATA);
-          setSubmitError("Khong the tai du lieu khoi tao ca mo.");
+          setSubmitError("Không thể tải dữ liệu khởi tạo ca mở.");
         }
       })
       .finally(() => {
@@ -91,20 +118,17 @@ export const OpenShiftModal = ({
 
   useEffect(() => {
     if (!isOpen) {
-      const resetTimer = window.setTimeout(() => {
-        setSelectedShiftId("");
-        setBranchIds([]);
-        setDepartmentIds([]);
-        setJobTitleIds([]);
-        setQuantity("1");
-        setAutoPublish(true);
-        setErrors({});
-        setSubmitError("");
-        setIsSubmitting(false);
-      }, 200);
-
-      return () => window.clearTimeout(resetTimer);
+      return undefined;
     }
+
+    setSelectedShiftId("");
+    setBranchIds([]);
+    setDepartmentIds([]);
+    setJobTitleIds([]);
+    setQuantity("1");
+    setAutoPublish(true);
+    setErrors({});
+    setSubmitError("");
 
     return undefined;
   }, [isOpen]);
@@ -140,17 +164,29 @@ export const OpenShiftModal = ({
   }, [branchIds, formData.targets.jobTitles]);
 
   useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
     setDepartmentIds((current) =>
-      current.filter((value) =>
-        filteredDepartments.some((option) => option.value === value),
-      ),
+      {
+        const nextValues = current.filter((value) =>
+          filteredDepartments.some((option) => option.value === value),
+        );
+
+        return areStringArraysEqual(current, nextValues) ? current : nextValues;
+      },
     );
     setJobTitleIds((current) =>
-      current.filter((value) =>
-        filteredJobTitles.some((option) => option.value === value),
-      ),
+      {
+        const nextValues = current.filter((value) =>
+          filteredJobTitles.some((option) => option.value === value),
+        );
+
+        return areStringArraysEqual(current, nextValues) ? current : nextValues;
+      },
     );
-  }, [filteredDepartments, filteredJobTitles]);
+  }, [filteredDepartments, filteredJobTitles, isOpen]);
 
   const handleShiftSelect = (shift: OpenShiftTemplateOption) => {
     setSelectedShiftId(shift.id);
@@ -167,11 +203,11 @@ export const OpenShiftModal = ({
     const nextErrors: Record<string, string> = {};
 
     if (!selectedShift) {
-      nextErrors.shiftId = "Vui long chon loai ca can khoi tao.";
+      nextErrors.shiftId = "Vui lòng chọn loại ca cần khởi tạo.";
     }
 
     if (!isPositiveInteger(quantity)) {
-      nextErrors.quantity = "So luong phai la so nguyen duong lon hon hoac bang 1.";
+      nextErrors.quantity = "Số lượng phải là số nguyên dương lớn hơn hoặc bằng 1.";
     }
 
     setErrors(nextErrors);
@@ -211,7 +247,7 @@ export const OpenShiftModal = ({
       setSubmitError(
         error instanceof Error
           ? error.message
-          : "Khong the tao ca mo. Vui long thu lai.",
+          : "Không thể tạo ca mở. Vui lòng thử lại.",
       );
     } finally {
       setIsSubmitting(false);
@@ -227,9 +263,9 @@ export const OpenShiftModal = ({
       <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
         <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
           <div>
-            <h2 className="text-xl font-semibold text-slate-900">Khoi tao Ca mo</h2>
+            <h2 className="text-xl font-semibold text-slate-900">Khởi tạo Ca mở</h2>
             <p className="mt-1 text-sm text-slate-500">
-              Chon mau ca lam va dieu chinh muc tieu nhan ca cho ngay{" "}
+              Chọn mẫu ca làm và điều chỉnh mục tiêu nhận ca cho ngày{" "}
               <span className="font-semibold text-slate-700">
                 {formatDateLabel(selectedDate)}
               </span>
@@ -266,13 +302,13 @@ export const OpenShiftModal = ({
               <section className="rounded-3xl border border-slate-200 bg-white p-5">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <h3 className="text-sm font-semibold text-slate-900">Loai ca mo</h3>
+                    <h3 className="text-sm font-semibold text-slate-900">Loại ca mở</h3>
                     <p className="mt-1 text-sm text-slate-500">
-                      Tick mot loai ca de he thong tu dong mo rong va dien san cau hinh.
+                      Chọn một loại ca để hệ thống tự động mở rộng và điền sẵn cấu hình.
                     </p>
                   </div>
                   <span className="rounded-full bg-[#EFF6FF] px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-[#134BBA]">
-                    {formData.shiftTemplates.length} mau ca
+                    {formData.shiftTemplates.length} mẫu ca
                   </span>
                 </div>
 
@@ -285,7 +321,7 @@ export const OpenShiftModal = ({
                     />
                   ) : (
                     <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
-                      Chua co mau ca lam. Hay tao mau ca truoc khi khoi tao Ca mo.
+                      Chưa có mẫu ca làm. Hãy tạo mẫu ca trước khi khởi tạo Ca mở.
                     </div>
                   )}
                 </div>
@@ -306,46 +342,46 @@ export const OpenShiftModal = ({
                   <div className="space-y-4">
                     <div className="rounded-2xl border border-sky-100 bg-white p-4">
                       <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#134BBA]">
-                        Cau hinh muc tieu nhan ca
+                        Cấu hình mục tiêu nhận ca
                       </p>
                       <p className="mt-2 text-sm text-slate-500">
-                        Gia tri duoc lay tu thiet lap goc cua mau ca, ban co the xoa tag hoac chon them.
+                        Giá trị được lấy từ thiết lập gốc của mẫu ca, bạn có thể xóa tag hoặc chọn thêm.
                       </p>
                     </div>
 
                     <div className="grid gap-4">
                       <TagMultiSelectField
-                        label="Chi nhanh"
-                        placeholder="Chon chi nhanh ap dung"
+                        label="Chi nhánh"
+                        placeholder="Chọn chi nhánh áp dụng"
                         options={formData.targets.branches}
                         selectedValues={branchIds}
                         onChange={setBranchIds}
                       />
 
                       <TagMultiSelectField
-                        label="Phong ban"
-                        placeholder="Chon phong ban"
+                        label="Phòng ban"
+                        placeholder="Chọn phòng ban"
                         options={filteredDepartments}
                         selectedValues={departmentIds}
                         onChange={setDepartmentIds}
                         helperText={
                           branchIds.length
-                            ? "Dang loc theo chi nhanh dang chon."
-                            : "Chon chi nhanh de thu gon danh sach phong ban."
+                            ? "Đang lọc theo chi nhánh đang chọn."
+                            : "Chọn chi nhánh để thu gọn danh sách phòng ban."
                         }
                         disabled={!filteredDepartments.length}
                       />
 
                       <TagMultiSelectField
-                        label="Chuc danh"
-                        placeholder="Chon chuc danh"
+                        label="Chức danh"
+                        placeholder="Chọn chức danh"
                         options={filteredJobTitles}
                         selectedValues={jobTitleIds}
                         onChange={setJobTitleIds}
                         helperText={
                           branchIds.length
-                            ? "Dang loc theo chi nhanh dang chon."
-                            : "Chon chi nhanh de thu gon danh sach chuc danh."
+                            ? "Đang lọc theo chi nhánh đang chọn."
+                            : "Chọn chi nhánh để thu gọn danh sách chức danh."
                         }
                         disabled={!filteredJobTitles.length}
                       />
@@ -355,7 +391,7 @@ export const OpenShiftModal = ({
                   <div className="space-y-4">
                     <div className="rounded-2xl border border-slate-200 bg-white p-4">
                       <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">
-                        Tong quan
+                        Tổng quan
                       </p>
                       <p className="mt-2 text-sm font-semibold text-slate-800">
                         {selectedShift?.name}
@@ -367,7 +403,7 @@ export const OpenShiftModal = ({
 
                     <label className="block rounded-2xl border border-slate-200 bg-white p-4">
                       <span className="mb-2 block text-sm font-semibold text-slate-700">
-                        So luong <span className="text-rose-500">*</span>
+                        Số lượng <span className="text-rose-500">*</span>
                       </span>
                       <input
                         type="text"
@@ -394,10 +430,10 @@ export const OpenShiftModal = ({
                       <label className="flex cursor-pointer items-center justify-between gap-3">
                         <div>
                           <p className="text-sm font-semibold text-slate-700">
-                            Cong bo tu dong
+                            Công bố tự động
                           </p>
                           <p className="mt-1 text-xs text-slate-400">
-                            Mac dinh bat de hien thi ngay tren bang xep ca sau khi tao.
+                            Mặc định bật để hiển thị ngay trên bảng xếp ca sau khi tạo.
                           </p>
                         </div>
 
@@ -426,7 +462,7 @@ export const OpenShiftModal = ({
             onClick={onClose}
             className="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-200"
           >
-            Huy
+            Hủy
           </button>
           <button
             type="submit"
@@ -437,7 +473,7 @@ export const OpenShiftModal = ({
             {isSubmitting ? (
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
             ) : null}
-            Tao moi
+            Tạo mới
           </button>
         </div>
       </div>

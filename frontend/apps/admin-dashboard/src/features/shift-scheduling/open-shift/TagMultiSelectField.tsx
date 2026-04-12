@@ -131,7 +131,7 @@ export const TagMultiSelectField = ({
                 type="search"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Tim kiem..."
+                placeholder="Tìm kiếm..."
                 className="h-10 w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-3 text-sm text-slate-700 outline-none transition focus:border-[#134BBA] focus:ring-1 focus:ring-[#134BBA]"
               />
             </label>
@@ -157,7 +157,7 @@ export const TagMultiSelectField = ({
                 })
               ) : (
                 <div className="px-3 py-6 text-center text-sm text-slate-400">
-                  Khong tim thay du lieu phu hop.
+                  Không tìm thấy dữ liệu phù hợp.
                 </div>
               )}
             </div>

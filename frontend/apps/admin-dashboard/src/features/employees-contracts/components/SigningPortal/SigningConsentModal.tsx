@@ -26,15 +26,15 @@ const SigningConsentModal: React.FC<SigningConsentModalProps> = ({
     <ModalShell
       isOpen={isOpen}
       onClose={onClose}
-      title="Xac nhan dong y ky dien tu"
-      description="Ban vui long xac nhan y chi cua minh truoc khi he thong ghi nhan viec ky hop dong."
+      title="Xác nhận đồng ý ký điện tử"
+      description="Bạn vui lòng xác nhận ý chí của mình trước khi hệ thống ghi nhận việc ký hợp đồng."
       maxWidthClassName="max-w-xl"
     >
       <div className="space-y-6 px-6 py-6 lg:px-8">
         <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
           <p className="text-sm leading-6 text-slate-700">
-            Toi xac nhan cac thong tin va chu ky duoc ap dung tren tai lieu nay la do toi tu tao,
-            tu nguyen su dung va dong y thuc hien ky dien tu cho hop dong.
+            Tôi xác nhận các thông tin và chữ ký được áp dụng trên tài liệu này là do tôi tự tạo,
+            tự nguyện sử dụng và đồng ý thực hiện ký điện tử cho hợp đồng.
           </p>
         </div>
 
@@ -46,7 +46,7 @@ const SigningConsentModal: React.FC<SigningConsentModalProps> = ({
             className="mt-1 h-4 w-4 rounded border-slate-300 text-[#134BBA] focus:ring-[#134BBA]"
           />
           <span className="text-sm leading-6 text-slate-700">
-            Toi da doc, hieu va dong y voi dieu khoan ky dien tu cua hop dong nay.
+            Tôi đã đọc, hiểu và đồng ý với điều khoản ký điện tử của hợp đồng này.
           </span>
         </label>
 
@@ -68,7 +68,7 @@ const SigningConsentModal: React.FC<SigningConsentModalProps> = ({
             {isSubmitting ? (
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
             ) : null}
-            Dong y va hoan tat
+            Đồng ý và hoàn tất
           </button>
         </div>
       </div>

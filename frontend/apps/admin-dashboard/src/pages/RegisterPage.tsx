@@ -83,6 +83,17 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigateToLogin, onRegist
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!email.trim().toLowerCase().endsWith('@gmail.com')) {
+      setError('Tài khoản phải có đuôi @gmail.com.');
+      return;
+    }
+
+    if (password.length < 8) {
+      setError('Mật khẩu phải có ít nhất 8 ký tự.');
+      return;
+    }
+
     const phoneError = validatePhoneNumberByCountryValue(phoneCountryValue, phone);
     if (phoneError) {
       setError(phoneError);

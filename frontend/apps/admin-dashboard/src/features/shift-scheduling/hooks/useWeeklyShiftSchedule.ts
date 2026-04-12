@@ -1,4 +1,4 @@
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+﻿import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { useToast } from "../../../hooks/useToast";
 import {
@@ -19,7 +19,10 @@ import { getCurrentWeekStartDate } from "../utils/week";
 interface UseWeeklyShiftScheduleResult {
   filters: ShiftScheduleFilters;
   setFilters: Dispatch<SetStateAction<ShiftScheduleFilters>>;
-  updateFilter: <Key extends keyof ShiftScheduleFilters>(key: Key, value: ShiftScheduleFilters[Key]) => void;
+  updateFilter: <Key extends keyof ShiftScheduleFilters>(
+    key: Key,
+    value: ShiftScheduleFilters[Key],
+  ) => void;
   data: ShiftScheduleGridData | null;
   isLoading: boolean;
   isRefreshing: boolean;
@@ -69,14 +72,19 @@ export const useWeeklyShiftSchedule = (): UseWeeklyShiftScheduleResult => {
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [lookups, setLookups] = useState<ShiftScheduleLookups>(emptyLookups);
   const [employeeOptions, setEmployeeOptions] = useState<SelectOption[]>([]);
-  const [settings, setSettings] = useState<ShiftScheduleSettings>(DEFAULT_SHIFT_SCHEDULE_SETTINGS);
+  const [settings, setSettings] = useState<ShiftScheduleSettings>(
+    DEFAULT_SHIFT_SCHEDULE_SETTINGS,
+  );
   const deferredSearchTerm = useDeferredValue(filters.searchTerm);
   const dataSourceRef = useRef<ShiftScheduleGridData["dataSource"] | null>(null);
 
-  const effectiveFilters = useMemo<ShiftScheduleFilters>(() => ({
-    ...filters,
-    searchTerm: deferredSearchTerm,
-  }), [deferredSearchTerm, filters]);
+  const effectiveFilters = useMemo<ShiftScheduleFilters>(
+    () => ({
+      ...filters,
+      searchTerm: deferredSearchTerm,
+    }),
+    [deferredSearchTerm, filters],
+  );
 
   const updateFilter = <Key extends keyof ShiftScheduleFilters>(
     key: Key,

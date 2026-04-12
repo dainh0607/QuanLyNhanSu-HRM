@@ -6,6 +6,7 @@ using ERP.Repositories.Interfaces;
 using ERP.Services.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace ERP.Services.Contracts
 {
@@ -14,12 +15,18 @@ namespace ERP.Services.Contracts
         private readonly IUnitOfWork _unitOfWork;
         private readonly IEmailService _emailService;
         private readonly IConfiguration _configuration;
+        private readonly ILogger<ContractNotificationService> _logger;
 
-        public ContractNotificationService(IUnitOfWork unitOfWork, IEmailService emailService, IConfiguration configuration)
+        public ContractNotificationService(
+            IUnitOfWork unitOfWork,
+            IEmailService emailService,
+            IConfiguration configuration,
+            ILogger<ContractNotificationService> logger)
         {
             _unitOfWork = unitOfWork;
             _emailService = emailService;
             _configuration = configuration;
+            _logger = logger;
         }
 
         public async Task<bool> NotifySignerAsync(int signerId)
@@ -51,13 +58,30 @@ namespace ERP.Services.Contracts
                 <p>Trân trọng,<br/>Đội ngũ NexaHRM</p>
             ";
 
-            await _emailService.SendEmailAsync(signer.email, subject, body);
-            
-            signer.status = "Sent";
-            _unitOfWork.Repository<ContractSigners>().Update(signer);
-            await _unitOfWork.SaveChangesAsync();
+            try
+            {
+                await _emailService.SendEmailAsync(signer.email, subject, body);
 
-            return true;
+                signer.status = "Sent";
+                _unitOfWork.Repository<ContractSigners>().Update(signer);
+                await _unitOfWork.SaveChangesAsync();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                signer.status = "Pending";
+                _unitOfWork.Repository<ContractSigners>().Update(signer);
+                await _unitOfWork.SaveChangesAsync();
+
+                _logger.LogError(
+                    ex,
+                    "Failed to notify signer {SignerId} for contract {ContractId}",
+                    signer.Id,
+                    signer.contract_id);
+
+                return false;
+            }
         }
 
         public async Task<bool> NotifyNextSignerAsync(int contractId)

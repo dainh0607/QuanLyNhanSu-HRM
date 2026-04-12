@@ -139,8 +139,8 @@ const ElectronicContractInfoStep: React.FC<ElectronicContractInfoStepProps> = ({
           className={getFieldClassName(Boolean(errors.contractTypeId))}
         >
           <option value="">Chọn loại hợp đồng</option>
-          {contractTypeOptions.map((option) => (
-            <option key={option.value} value={option.value}>
+          {contractTypeOptions.map((option, index) => (
+            <option key={option.value || `contract-type-${index}-${option.label}`} value={option.value}>
               {option.label}
             </option>
           ))}
@@ -184,8 +184,8 @@ const ElectronicContractInfoStep: React.FC<ElectronicContractInfoStepProps> = ({
           className={getFieldClassName(Boolean(errors.taxType))}
         >
           <option value="">Chọn loại thuế</option>
-          {taxTypeOptions.map((option) => (
-            <option key={option.value} value={option.value}>
+          {taxTypeOptions.map((option, index) => (
+            <option key={option.value || `tax-type-${index}-${option.label}`} value={option.value}>
               {option.label}
             </option>
           ))}

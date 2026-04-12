@@ -27,7 +27,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister, onLoginSucc
   const [rememberMe, setRememberMe] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,22 +35,24 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister, onLoginSucc
     setError(null);
 
     const trimmedEmail = email.trim();
-    const trimmedPassword = password.trim();
 
-    // Client-side validation: display generic error for empty fields
-    if (!trimmedEmail || !trimmedPassword) {
-      setError('Tài khoản và mật khẩu không chính xác');
+    if (!trimmedEmail.toLowerCase().endsWith('@gmail.com')) {
+      setError('Tài khoản phải có đuôi @gmail.com.');
+      return;
+    }
+
+    if (password.length < 8) {
+      setError('Mật khẩu phải có ít nhất 8 ký tự.');
       return;
     }
 
     setLoading(true);
 
     try {
-      const response = await authService.login(trimmedEmail, trimmedPassword);
+      const response = await authService.login(trimmedEmail, password);
       if (response.success) {
-        if (onLoginSuccess) onLoginSuccess();
+        onLoginSuccess?.();
       } else {
-        // Use the message from backend or a generic fallback
         setError(response.message || 'Tài khoản hoặc mật khẩu không chính xác.');
       }
     } catch {
@@ -70,16 +71,18 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister, onLoginSucc
         </p>
 
         {error && (
-          <div style={{ 
-            background: 'rgba(255, 0, 0, 0.1)', 
-            border: '1px solid rgba(255, 0, 0, 0.2)', 
-            color: '#ff4d4d', 
-            padding: '8px 12px', 
-            borderRadius: '6px', 
-            fontSize: '0.75rem', 
-            marginBottom: '14px',
-            textAlign: 'center'
-          }}>
+          <div
+            style={{
+              background: 'rgba(255, 0, 0, 0.1)',
+              border: '1px solid rgba(255, 0, 0, 0.2)',
+              color: '#ff4d4d',
+              padding: '8px 12px',
+              borderRadius: '6px',
+              fontSize: '0.75rem',
+              marginBottom: '14px',
+              textAlign: 'center',
+            }}
+          >
             {error}
           </div>
         )}
@@ -180,8 +183,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister, onLoginSucc
 
         <p className="login-footer">
           Bạn chưa có tài khoản?{' '}
-          <button 
-            type="button" 
+          <button
+            type="button"
             className="signup-link"
             onClick={onNavigateToRegister}
           >

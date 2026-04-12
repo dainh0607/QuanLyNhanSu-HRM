@@ -101,7 +101,7 @@
   border-radius: 7px;
   color: rgba(255, 255, 255, 0.85);
   font-size: 0.72rem;
-  font-family: 'Inter', sans-serif;
+  font-family: inherit;
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
@@ -193,7 +193,7 @@
   border-radius: 7px;
   color: #ffffff;
   font-size: 0.75rem;
-  font-family: 'Inter', sans-serif;
+  font-family: inherit;
   transition: all 0.3s ease;
   outline: none;
 }
@@ -297,7 +297,7 @@
   color: #0a0f23;
   font-size: 0.8rem;
   font-weight: 600;
-  font-family: 'Inter', sans-serif;
+  font-family: inherit;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
@@ -350,7 +350,7 @@
   color: rgba(255, 255, 255, 0.8);
   font-size: 0.7rem;
   font-weight: 500;
-  font-family: 'Inter', sans-serif;
+  font-family: inherit;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;

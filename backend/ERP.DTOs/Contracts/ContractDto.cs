@@ -87,6 +87,13 @@ namespace ERP.DTOs.Contracts
         public int ContractId { get; set; }
     }
 
+    public class ElectronicContractSubmitResultDto
+    {
+        public string Message { get; set; } = string.Empty;
+        public bool NotificationSent { get; set; }
+        public string? WarningMessage { get; set; }
+    }
+
     public class ContractUpdateDto
     {
         public string ContractNumber { get; set; }

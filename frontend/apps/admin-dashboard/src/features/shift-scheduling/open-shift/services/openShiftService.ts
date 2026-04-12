@@ -2,6 +2,7 @@ import { API_URL, requestJson } from "../../../../services/employee/core";
 import { shiftTemplateService } from "../../shift-template/services/shiftTemplateService";
 import type { ShiftTemplateCatalogData } from "../../shift-template/types";
 import {
+  getRuntimeShiftTemplateById,
   getRuntimeShiftTemplateCatalog,
   registerRuntimeOpenShift,
   type RuntimeShiftTemplate,
@@ -76,6 +77,33 @@ const mapRuntimeTemplate = (
   note: template.note ?? null,
 });
 
+const preferDefinedArray = (primary: string[], fallback: string[]): string[] =>
+  primary.length > 0 ? primary : fallback;
+
+const mergeTemplateWithRuntime = (
+  template: OpenShiftTemplateOption,
+  runtimeTemplate: RuntimeShiftTemplate | null,
+): OpenShiftTemplateOption => {
+  if (!runtimeTemplate) {
+    return template;
+  }
+
+  return {
+    id: String(runtimeTemplate.id),
+    shiftId: runtimeTemplate.shiftId,
+    name: runtimeTemplate.name || template.name,
+    startTime: runtimeTemplate.startTime || template.startTime,
+    endTime: runtimeTemplate.endTime || template.endTime,
+    branchIds: preferDefinedArray(runtimeTemplate.branchIds, template.branchIds),
+    departmentIds: preferDefinedArray(
+      runtimeTemplate.departmentIds,
+      template.departmentIds,
+    ),
+    jobTitleIds: preferDefinedArray(runtimeTemplate.jobTitleIds, template.jobTitleIds),
+    note: runtimeTemplate.note ?? template.note ?? null,
+  };
+};
+
 const mapApiTemplate = (
   item: ShiftTemplateApiItem,
 ): OpenShiftTemplateOption | null => {
@@ -148,11 +176,16 @@ export const openShiftService = {
       const response = await requestJson<ShiftTemplateApiItem[]>(
         `${API_URL}/shifts?isActive=true`,
         { method: "GET" },
-        "Khong the tai danh sach mau ca lam",
+        "Không thể tải danh sách mẫu ca làm",
       );
 
       const apiTemplates = response
         .map((item) => mapApiTemplate(item))
+        .map((item) =>
+          item
+            ? mergeTemplateWithRuntime(item, getRuntimeShiftTemplateById(item.shiftId))
+            : null,
+        )
         .filter((item): item is OpenShiftTemplateOption => Boolean(item));
 
       return {
@@ -189,7 +222,7 @@ export const openShiftService = {
             auto_publish: payload.autoPublish,
           }),
         },
-        "Khong the tao ca mo",
+        "Không thể tạo ca mở",
       );
       return;
     } catch (error) {

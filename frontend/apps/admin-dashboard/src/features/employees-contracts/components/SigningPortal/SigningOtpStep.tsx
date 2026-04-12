@@ -40,7 +40,7 @@ const SigningOtpStep: React.FC<SigningOtpStepProps> = ({ token, onSuccess }) => 
         await signersService.generateOtp({ signatureToken: token });
       } catch (err) {
         console.error('Failed to send initial OTP:', err);
-        setError(getErrorMessage(err, 'Khong the gui ma xac thuc. Vui long tai lai trang.'));
+        setError(getErrorMessage(err, 'Không thể gửi mã xác thực. Vui lòng tải lại trang.'));
       }
     };
     initOtp();
@@ -81,7 +81,7 @@ const SigningOtpStep: React.FC<SigningOtpStepProps> = ({ token, onSuccess }) => 
       setOtp(new Array(6).fill(''));
       inputRefs.current[0]?.focus();
     } catch (err) {
-      setError(getErrorMessage(err, 'Gui lai ma that bai. Vui long thu lai.'));
+      setError(getErrorMessage(err, 'Gửi lại mã thất bại. Vui lòng thử lại.'));
     } finally {
       setIsResending(false);
     }
@@ -100,7 +100,7 @@ const SigningOtpStep: React.FC<SigningOtpStepProps> = ({ token, onSuccess }) => 
         });
         onSuccess(response);
       } catch (err) {
-        const message = getErrorMessage(err, 'Xac thuc ma OTP that bai.');
+        const message = getErrorMessage(err, 'Xác thực mã OTP thất bại.');
         setError(message);
         // Clear OTP on failure
         setOtp(new Array(6).fill(''));

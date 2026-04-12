@@ -112,9 +112,8 @@ namespace ERP.API.Controllers
         {
             try
             {
-                var success = await _contractService.SubmitElectronicContractAsync(dto.ContractId);
-                if (!success) return BadRequest();
-                return Ok(new { Message = "Hợp đồng đã được gửi và bắt đầu quy trình ký duyệt." });
+                var result = await _contractService.SubmitElectronicContractAsync(dto.ContractId);
+                return Ok(result);
             }
             catch (Exception ex)
             {

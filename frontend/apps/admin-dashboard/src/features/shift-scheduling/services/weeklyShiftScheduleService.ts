@@ -8,6 +8,7 @@ import {
 } from "../data/constants";
 import { createMockWeeklyShiftScheduleApiResponse } from "../data/mockWeeklyShiftSchedule";
 import { getRuntimeOpenShiftsForWeek } from "../open-shift/openShiftRuntimeStore";
+import { getRuntimeQuickAddedEmployees } from "../quick-add-employees/stores/quickAddEmployeesRuntimeStore";
 import type {
   EmployeeListApiItem,
   MetadataOptionApiItem,
@@ -42,12 +43,28 @@ const appendIfValue = (url: URL, key: string, value: string): void => {
   }
 };
 
+const mergeRuntimeEmployees = (
+  employees: WeeklyScheduleApiEmployee[] | undefined,
+): WeeklyScheduleApiEmployee[] => {
+  const merged = [...(employees ?? []), ...getRuntimeQuickAddedEmployees()];
+  const seen = new Set<number>();
+
+  return merged.filter((employee) => {
+    if (seen.has(employee.id)) {
+      return false;
+    }
+
+    seen.add(employee.id);
+    return true;
+  });
+};
+
 const normalizeAttendanceStatus = (value?: string | null): WeeklyScheduleShift["attendanceStatus"] => {
   const normalized = value?.trim().toLowerCase();
 
   switch (normalized) {
     case "không chấm công":
-    case "khong cham cong":
+    case "không chấm công":
     case "noattendance":
     case "untracked":
       return "untracked";
@@ -471,10 +488,18 @@ const getWeeklySchedule = async (filters: ShiftScheduleFilters): Promise<WeeklyS
       "Không thể tải bảng xếp ca tuần",
     );
 
-    return transformApiResponse(response, "api", filters);
+    return transformApiResponse(
+      {
+        ...response,
+        employees: mergeRuntimeEmployees(response.employees),
+      },
+      "api",
+      filters,
+    );
   } catch (error) {
     console.warn("Weekly schedule endpoint is unavailable, falling back to mock data.", error);
     const mockResponse = createMockWeeklyShiftScheduleApiResponse(filters.weekStartDate);
+    mockResponse.employees = mergeRuntimeEmployees(mockResponse.employees);
     mockResponse.open_shifts = [
       ...(mockResponse.open_shifts ?? []),
       ...getRuntimeOpenShiftsForWeek(filters.weekStartDate),

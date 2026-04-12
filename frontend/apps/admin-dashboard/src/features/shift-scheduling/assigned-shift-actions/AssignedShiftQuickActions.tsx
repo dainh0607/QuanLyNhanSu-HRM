@@ -1,9 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { isTodayIsoDate } from "../utils/week";
-import type {
-  AssignedShiftActionContext,
-  AssignedShiftQuickActionHandlers,
-} from "./types";
+import type { AssignedShiftActionContext, AssignedShiftQuickActionHandlers } from "./types";
 
 interface AssignedShiftQuickActionsProps {
   context: AssignedShiftActionContext;

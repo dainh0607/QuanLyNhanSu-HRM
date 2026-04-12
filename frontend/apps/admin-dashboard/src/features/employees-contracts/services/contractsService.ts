@@ -27,6 +27,7 @@ import type {
   ContractStep3Dto,
   ContractStep4Dto,
   ContractSignerDto,
+  ElectronicContractSubmitResult,
 } from '../types';
 
 interface UploadedDocumentResponse {
@@ -486,7 +487,7 @@ export const contractsService = {
       'Lưu vị trí chữ ký thất bại',
     ),
   submitElectronicContract: (id: number) =>
-    requestJson<{ message?: string }>(
+    requestJson<ElectronicContractSubmitResult>(
       `${API_URL}/contracts/electronic/submit`,
       {
         method: 'POST',

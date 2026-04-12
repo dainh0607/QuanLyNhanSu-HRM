@@ -12,6 +12,11 @@ import {
 import { registerRuntimeShiftTemplate } from "../../open-shift/openShiftRuntimeStore";
 import type { AttendanceStatus } from "../../types";
 import { formatTime, getHoursBetween, parseIsoDate } from "../../utils/week";
+import {
+  getLeaveRequestAttendanceStatus,
+  getLeaveTimeRange,
+  isLeaveRequestAutoApproved,
+} from "../leave-request/utils";
 import type {
   AssignedShiftActionContext,
   AvailableShiftOption,
@@ -484,6 +489,9 @@ export const assignedShiftActionsService = {
     values: LeaveRequestFormValues,
     useMockFallback: boolean,
   ): Promise<void> {
+    const resolvedRange = getLeaveTimeRange(values);
+    const approvalStatus = isLeaveRequestAutoApproved() ? "approved" : "pending";
+
     try {
       await requestJson(
         `${API_URL}/leave-requests`,
@@ -491,10 +499,20 @@ export const assignedShiftActionsService = {
           method: "POST",
           body: JSON.stringify({
             employee_id: context.employee.id,
-            leave_date: context.shift.date,
-            leave_type: values.leaveType,
-            duration: values.duration,
-            note: values.note,
+            shift_assignment_id: context.shift.sourceId ?? null,
+            shift_id: context.shift.shiftId ?? null,
+            leave_date: values.startDate,
+            duration_type: values.durationType,
+            leave_reason_code: values.leaveReasonCode,
+            leave_reason: values.reason,
+            handover_employee_id: values.handoverEmployeeId
+              ? Number(values.handoverEmployeeId)
+              : null,
+            contact_phone: values.phoneNumber || null,
+            discussion_content: values.discussionContent || null,
+            start_time: resolvedRange?.startTime ?? values.startTime,
+            end_time: resolvedRange?.endTime ?? values.endTime,
+            approval_status: approvalStatus,
           }),
         },
         "Không thể tạo yêu cầu nghỉ phép",
@@ -506,8 +524,10 @@ export const assignedShiftActionsService = {
       }
     }
 
-    const mappedStatus =
-      values.leaveType === "businessTrip" ? "businessTrip" : values.leaveType;
-    markMockShiftAssignmentStatus(context.shift.sourceId, mappedStatus);
+    markMockShiftAssignmentStatus(
+      context.shift.sourceId,
+      getLeaveRequestAttendanceStatus(values.leaveReasonCode || "annualLeave"),
+    );
   },
 };
+

@@ -103,7 +103,7 @@ const SigningDocumentStep: React.FC<SigningDocumentStepProps> = ({ signerInfo, o
       setIsConsentModalOpen(false);
       onComplete();
     } catch (submitSigningError) {
-      setSubmitError(getErrorMessage(submitSigningError, 'Khong the hoan tat ky. Vui long thu lai.'));
+      setSubmitError(getErrorMessage(submitSigningError, 'Không thể hoàn tất ký. Vui lòng thử lại.'));
     } finally {
       setIsSubmitting(false);
     }

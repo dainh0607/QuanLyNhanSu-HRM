@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -147,12 +147,12 @@ namespace ERP.Services.Contracts
             {
                 TotalContracts = allContracts.Count,
                 ActiveContracts = allContracts.Count(c => c.status == "Active"),
-                PendingSignatureCount = allContracts.Count(c => c.status == "Draft"), // "Chờ ký"
+                PendingSignatureCount = allContracts.Count(c => c.status == "Draft"), // "Chá» kĂ½"
                 ExpiredContracts = allContracts.Count(c => c.status == "Expired" || (c.expiry_date.HasValue && c.expiry_date < today)),
                 ExpiringSoon = allContracts.Count(c => c.status == "Active" && c.expiry_date.HasValue && c.expiry_date >= today && c.expiry_date <= expiringThreshold),
                 DraftContracts = allContracts.Count(c => c.status == "Draft"),
-                ProbationContracts = allContracts.Count(c => c.ContractType != null && c.ContractType.name.Contains("Thử việc")),
-                OfficialContracts = allContracts.Count(c => c.ContractType != null && c.ContractType.name.Contains("Chính thức"))
+                ProbationContracts = allContracts.Count(c => c.ContractType != null && c.ContractType.name.Contains("Thá»­ viá»‡c")),
+                OfficialContracts = allContracts.Count(c => c.ContractType != null && c.ContractType.name.Contains("ChĂ­nh thá»©c"))
             };
         }
 
@@ -167,9 +167,9 @@ namespace ERP.Services.Contracts
             // Header - Using semicolon (';') for Vietnamese Excel compatibility
             var headers = new[] 
             { 
-                "STT", "Mã nhân viên", "Họ và tên", "Số hợp đồng", "Loại hợp đồng", 
-                "Trạng thái", "Ngày ký", "Ngày hiệu lực", "Ngày hết hạn", 
-                "Chi nhánh", "Phòng ban", "Người ký", "Loại thuế TNCN" 
+                "STT", "MĂ£ nhĂ¢n viĂªn", "Há» vĂ  tĂªn", "Sá»‘ há»£p Ä‘á»“ng", "Loáº¡i há»£p Ä‘á»“ng", 
+                "Tráº¡ng thĂ¡i", "NgĂ y kĂ½", "NgĂ y hiá»‡u lá»±c", "NgĂ y háº¿t háº¡n", 
+                "Chi nhĂ¡nh", "PhĂ²ng ban", "NgÆ°á»i kĂ½", "Loáº¡i thuáº¿ TNCN" 
             };
             sb.AppendLine(string.Join(";", headers.Select(EscapeCsv)));
 
@@ -239,11 +239,11 @@ namespace ERP.Services.Contracts
         {
             return status switch
             {
-                "Active" => "Đang hiệu lực",
-                "Expired" => "Hết hạn",
-                "Draft" => "Chờ ký",
-                "Terminated" => "Đã chấm dứt",
-                "Cancelled" => "Đã hủy",
+                "Active" => "Äang hiá»‡u lá»±c",
+                "Expired" => "Háº¿t háº¡n",
+                "Draft" => "Chá» kĂ½",
+                "Terminated" => "ÄĂ£ cháº¥m dá»©t",
+                "Cancelled" => "ÄĂ£ há»§y",
                 _ => status
             };
         }
@@ -324,13 +324,13 @@ namespace ERP.Services.Contracts
                 .FirstOrDefaultAsync(c => c.contract_number == dto.ContractNumber);
             if (existingContract != null)
             {
-                throw new System.Exception($"Số hợp đồng '{dto.ContractNumber}' đã tồn tại trên hệ thống.");
+                throw new System.Exception($"Sá»‘ há»£p Ä‘á»“ng '{dto.ContractNumber}' Ä‘Ă£ tá»“n táº¡i trĂªn há»‡ thá»‘ng.");
             }
 
             // 2. Validation: Expiry Date >= Sign Date (AC 3)
             if (dto.SignDate.HasValue && dto.ExpiryDate.HasValue && dto.ExpiryDate < dto.SignDate)
             {
-                throw new System.Exception("Ngày hết hạn không được nhỏ hơn ngày ký.");
+                throw new System.Exception("NgĂ y háº¿t háº¡n khĂ´ng Ä‘Æ°á»£c nhá» hÆ¡n ngĂ y kĂ½.");
             }
 
             // 3. Validation: Overlapping dates (Existing logic)
@@ -338,7 +338,7 @@ namespace ERP.Services.Contracts
             var startDate = dto.EffectiveDate ?? dto.SignDate ?? DateTime.UtcNow;
             if (await CheckOverlappingContractAsync(dto.EmployeeId, startDate, dto.ExpiryDate))
             {
-                throw new System.Exception("Nhân viên này đã có hợp đồng khác hiệu lực trong khoảng thời gian này.");
+                throw new System.Exception("NhĂ¢n viĂªn nĂ y Ä‘Ă£ cĂ³ há»£p Ä‘á»“ng khĂ¡c hiá»‡u lá»±c trong khoáº£ng thá»i gian nĂ y.");
             }
 
             var contract = new Entities.Models.Contracts
@@ -419,7 +419,7 @@ namespace ERP.Services.Contracts
             
             if (await CheckOverlappingContractAsync(contract.employee_id, newStartDate, newEndDate, id))
             {
-                throw new Exception("Cập nhật thất bại: Khoảng thời gian hiệu lực mới bị chồng chéo với hợp đồng khác.");
+                throw new Exception("Cáº­p nháº­t tháº¥t báº¡i: Khoáº£ng thá»i gian hiá»‡u lá»±c má»›i bá»‹ chá»“ng chĂ©o vá»›i há»£p Ä‘á»“ng khĂ¡c.");
             }
 
             contract.contract_number = dto.ContractNumber;
@@ -465,7 +465,7 @@ namespace ERP.Services.Contracts
                 .Include(c => c.Template)
                 .FirstOrDefaultAsync(c => c.Id == id);
 
-            if (contract == null) throw new Exception("Không tìm thấy hợp đồng.");
+            if (contract == null) throw new Exception("KhĂ´ng tĂ¬m tháº¥y há»£p Ä‘á»“ng.");
 
             if (contract.is_electronic)
             {
@@ -478,7 +478,7 @@ namespace ERP.Services.Contracts
                 // Return Physical File
                 if (string.IsNullOrEmpty(contract.attachment))
                 {
-                    throw new Exception("Hợp đồng này không có tệp đính kèm để xem trước.");
+                    throw new Exception("Há»£p Ä‘á»“ng nĂ y khĂ´ng cĂ³ tá»‡p Ä‘Ă­nh kĂ¨m Ä‘á»ƒ xem trÆ°á»›c.");
                 }
 
                 // Extract relative path from URL
@@ -494,7 +494,7 @@ namespace ERP.Services.Contracts
 
                 if (!File.Exists(filePath))
                 {
-                    throw new Exception("Tệp đính kèm không tồn tại trên hệ thống.");
+                    throw new Exception("Tá»‡p Ä‘Ă­nh kĂ¨m khĂ´ng tá»“n táº¡i trĂªn há»‡ thá»‘ng.");
                 }
 
                 var content = await File.ReadAllBytesAsync(filePath);
@@ -509,8 +509,8 @@ namespace ERP.Services.Contracts
                 .Include(c => c.Signers)
                 .FirstOrDefaultAsync(c => c.Id == dto.ContractId);
 
-            if (contract == null) throw new Exception("Không tìm thấy hợp đồng.");
-            if (!contract.is_electronic) throw new Exception("Hợp đồng này không phải là hợp đồng điện tử.");
+            if (contract == null) throw new Exception("KhĂ´ng tĂ¬m tháº¥y há»£p Ä‘á»“ng.");
+            if (!contract.is_electronic) throw new Exception("Há»£p Ä‘á»“ng nĂ y khĂ´ng pháº£i lĂ  há»£p Ä‘á»“ng Ä‘iá»‡n tá»­.");
 
             // 1. Remove existing signers
             var signerRepo = _unitOfWork.Repository<ContractSigners>();
@@ -569,7 +569,7 @@ namespace ERP.Services.Contracts
                 .ToListAsync();
 
             if (signerIds == null || !signerIds.Any()) 
-                throw new Exception("Không tìm thấy danh sách người ký cho hợp đồng này.");
+                throw new Exception("KhĂ´ng tĂ¬m tháº¥y danh sĂ¡ch ngÆ°á»i kĂ½ cho há»£p Ä‘á»“ng nĂ y.");
 
             var positionRepo = _unitOfWork.Repository<ContractSignerPositions>();
 
@@ -587,7 +587,7 @@ namespace ERP.Services.Contracts
             foreach (var posDto in dto.Positions)
             {
                 if (!signerIds.Contains(posDto.SignerId))
-                    throw new Exception($"Người ký (ID: {posDto.SignerId}) không thuộc hợp đồng này.");
+                    throw new Exception($"NgÆ°á»i kĂ½ (ID: {posDto.SignerId}) khĂ´ng thuá»™c há»£p Ä‘á»“ng nĂ y.");
 
                 var newPos = new ContractSignerPositions
                 {
@@ -606,7 +606,7 @@ namespace ERP.Services.Contracts
             return await _unitOfWork.SaveChangesAsync() > 0;
         }
 
-        public async Task<bool> SubmitElectronicContractAsync(int contractId)
+        public async Task<ElectronicContractSubmitResultDto> SubmitElectronicContractAsync(int contractId)
         {
             var contract = await _unitOfWork.Repository<Entities.Models.Contracts>()
                 .AsQueryable()
@@ -615,9 +615,14 @@ namespace ERP.Services.Contracts
                 .Include(c => c.Signers)
                 .FirstOrDefaultAsync(c => c.Id == contractId);
 
-            if (contract == null) throw new Exception("Không tìm thấy hợp đồng.");
-            if (!contract.is_electronic) throw new Exception("Hợp đồng này không phải là hợp đồng điện tử.");
+            if (contract == null) throw new Exception("KhĂ´ng tĂ¬m tháº¥y há»£p Ä‘á»“ng.");
+            if (!contract.is_electronic) throw new Exception("Há»£p Ä‘á»“ng nĂ y khĂ´ng pháº£i lĂ  há»£p Ä‘á»“ng Ä‘iá»‡n tá»­.");
             
+            if (contract.Signers == null || !contract.Signers.Any())
+            {
+                throw new Exception("Há»£p Ä‘á»“ng Ä‘iá»‡n tá»­ chÆ°a cĂ³ ngÆ°á»i kĂ½ Ä‘á»ƒ phĂ¡t hĂ nh.");
+            }
+
             // 1. Generate final PDF
             var pdfBytes = await _pdfService.GenerateContractPdfAsync(contract);
             
@@ -637,9 +642,18 @@ namespace ERP.Services.Contracts
             await _unitOfWork.SaveChangesAsync();
 
             // 4. Handle first signer notification via NotificationService
-            await _notificationService.NotifyNextSignerAsync(contract.Id);
+            var notificationSent = await _notificationService.NotifyNextSignerAsync(contract.Id);
 
-            return true;
+            return new ElectronicContractSubmitResultDto
+            {
+                Message = notificationSent 
+                    ? "Há»£p Ä‘á»“ng Ä‘Ă£ Ä‘Æ°á»£c gá»­i vĂ  báº¯t Ä‘áº§u quy trĂ¬nh kĂ½ duyá»‡t." 
+                    : "Há»£p Ä‘á»“ng Ä‘Ă£ Ä‘Æ°á»£c phĂ¡t hĂ nh, nhÆ°ng chÆ°a gá»­i Ä‘Æ°á»£c email cho ngÆ°á»i kĂ½ Ä‘áº§u tiĂªn.",
+                NotificationSent = notificationSent,
+                WarningMessage = notificationSent 
+                    ? null 
+                    : "Há»£p Ä‘á»“ng Ä‘Ă£ Ä‘Æ°á»£c phĂ¡t hĂ nh, nhÆ°ng email má»i kĂ½ chÆ°a Ä‘Æ°á»£c gá»­i. Vui lĂ²ng kiá»ƒm tra cáº¥u hĂ¬nh email á»©ng dá»¥ng."
+            };
         }
     }
 }

@@ -63,6 +63,13 @@ const ACCEPTED_FILE_EXTENSIONS = ['pdf', 'doc', 'docx'];
 const STEPS = ['Thông tin hợp đồng', 'Xem trước PDF', 'Người tham gia', 'Vị trí ký', 'Tổng kết'] as const;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const normalizeEmail = (value?: string | null) => value?.trim().toLowerCase() ?? '';
+const mapLookupOptions = (items: Array<{ id?: number | string; code?: string; name?: string | null }>) =>
+  items
+    .filter((item) => (item.id != null || item.code != null) && Boolean(item.name?.trim()))
+    .map((item) => ({ 
+      value: String(item.code ?? item.id ?? ''), 
+      label: item.name!.trim() 
+    }));
 
 const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> = ({
   isOpen,
@@ -114,8 +121,8 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
         ]);
         
         if (isMounted) {
-          setContractTypeOptions(types.map(t => ({ value: String(t.id), label: t.name })));
-          setTaxTypeOptions(taxes.map(t => ({ value: String(t.id), label: t.name })));
+          setContractTypeOptions(mapLookupOptions(types));
+          setTaxTypeOptions(mapLookupOptions(taxes));
         }
       } catch (error) {
         console.error('Failed to load electronic contract lookups:', error);
@@ -465,15 +472,19 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
     setIsSubmitting(true);
 
     try {
-      await contractsService.submitElectronicContract(contractId);
+      const response = await contractsService.submitElectronicContract(contractId);
 
       await onSubmitted?.();
       onClose();
+      if (response.warningMessage) {
+        showToast(response.warningMessage, 'info');
+        return;
+      }
       showToast('Hợp đồng đã được gửi và bắt đầu quy trình ký duyệt.', 'success');
     } catch (error) {
       console.error('Electronic Contract Finalization Error:', error);
       const message =
-        error instanceof Error ? error.message : 'Gửi hợp đồng điện tử thất bại. Vui lòng thử lại.';
+        (error as any)?.message || (error as any)?.Message || (error instanceof Error ? error.message : 'Gửi hợp đồng điện tử thất bại. Vui lòng thử lại.');
       showToast(message, 'error');
     } finally {
       setIsSubmitting(false);

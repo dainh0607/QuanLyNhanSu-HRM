@@ -132,7 +132,7 @@ const completeSigning = async (dto: CompleteSigningDto, accessToken: string) =>
       },
       body: JSON.stringify(dto),
     },
-    'Hoan tat ky that bai',
+    'Hoàn tất ký thất bại',
   );
 
 export const signersService = {
