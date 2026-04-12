@@ -1,0 +1,68 @@
+### Shift & Employee API Tests
+
+@baseUrl = http://localhost:5000/api
+@branchId = 1
+@employeeId = 1
+@userId = 1
+@shiftId = 1
+@date = 2026-04-13
+
+### T169: Get list of active employees at branch
+GET {{baseUrl}}/employees/active-by-branch?branchId={{branchId}}
+Authorization: Bearer {{token}}
+
+### T170 & T176: Get weekly shift schedule matrix
+GET {{baseUrl}}/shifts/weekly-schedule?branchId={{branchId}}&startDate={{date}}
+Authorization: Bearer {{token}}
+
+### T199: Get Shift Detail & Attendance
+GET {{baseUrl}}/shifts/detail?employeeId={{employeeId}}&date={{date}}
+Authorization: Bearer {{token}}
+
+### T200: Delete Assigned Shift (Unassign)
+DELETE {{baseUrl}}/shifts/assignment?employeeId={{employeeId}}&date={{date}}
+Authorization: Bearer {{token}}
+
+### T201: Create Shift Template (with optional assignment)
+POST {{baseUrl}}/shifts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "shiftCode": "HC_AUTO",
+  "shiftName": "Ca Hành Chính (Tự động gán)",
+  "startTime": "08:00:00",
+  "endTime": "17:30:00",
+  "color": "#4e73df",
+  "shiftTypeId": 1,
+  "assignToUserId": {{userId}},
+  "assignDate": "{{date}}T00:00:00"
+}
+
+### T177: Get Shift Type Detail (Defaults)
+GET {{baseUrl}}/shifts/{{shiftId}}/detail
+Authorization: Bearer {{token}}
+
+### T178: Organization Dropdowns
+GET {{baseUrl}}/lookups/branches
+Authorization: Bearer {{token}}
+
+### T178: Organization Dropdowns (Departments)
+GET {{baseUrl}}/lookups/departments
+Authorization: Bearer {{token}}
+
+### T182: Create Open Shift Batch
+POST {{baseUrl}}/shifts/open
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "date": "{{date}}T00:00:00",
+  "shiftId": {{shiftId}},
+  "branchIds": [1],
+  "departmentIds": [1, 2],
+  "positionIds": [1],
+  "quantity": 5,
+  "isAutoPublish": true,
+  "note": "Cần tuyển gấp nhân viên hỗ trợ sự kiện"
+}

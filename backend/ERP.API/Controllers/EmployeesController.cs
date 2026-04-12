@@ -27,6 +27,13 @@ namespace ERP.API.Controllers
             return Ok(result);
         }
 
+        [HttpGet("active-by-branch")]
+        public async Task<IActionResult> GetActiveByBranch([FromQuery] int branchId)
+        {
+            var result = await _employeeService.GetActiveByBranchAsync(branchId);
+            return Ok(result);
+        }
+
         [HttpGet("{id}/full-profile")]
         public async Task<IActionResult> GetFullProfile(int id)
         {

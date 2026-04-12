@@ -291,6 +291,56 @@ namespace ERP.Entities.Migrations
                     b.ToTable("Assets", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.AttendanceLocations", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("branch_id")
+                        .HasColumnType("int")
+                        .HasColumnName("branch_id");
+
+                    b.Property<bool>("is_active")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<decimal>("latitude")
+                        .HasColumnType("decimal(18,10)")
+                        .HasColumnName("latitude");
+
+                    b.Property<string>("location_name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("location_name");
+
+                    b.Property<decimal>("longitude")
+                        .HasColumnType("decimal(18,10)")
+                        .HasColumnName("longitude");
+
+                    b.Property<int>("radius_meters")
+                        .HasColumnType("int")
+                        .HasColumnName("radius_meters");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("branch_id");
+
+                    b.ToTable("AttendanceLocations");
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.AttendanceLogs", b =>
                 {
                     b.Property<int>("Id")
@@ -366,6 +416,82 @@ namespace ERP.Entities.Migrations
                     b.HasIndex("attendance_record_id");
 
                     b.ToTable("AttendanceModifications", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Entities.Models.AttendancePolicies", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("allow_early_minutes")
+                        .HasColumnType("int")
+                        .HasColumnName("allow_early_minutes");
+
+                    b.Property<int>("allow_late_minutes")
+                        .HasColumnType("int")
+                        .HasColumnName("allow_late_minutes");
+
+                    b.Property<bool>("allow_wifi_attendance")
+                        .HasColumnType("bit")
+                        .HasColumnName("allow_wifi_attendance");
+
+                    b.Property<string>("description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("description");
+
+                    b.Property<bool>("is_active")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("note")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("note");
+
+                    b.Property<string>("policy_name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("policy_name");
+
+                    b.Property<bool>("require_face_recognition")
+                        .HasColumnType("bit")
+                        .HasColumnName("require_face_recognition");
+
+                    b.Property<bool>("require_location_check")
+                        .HasColumnType("bit")
+                        .HasColumnName("require_location_check");
+
+                    b.Property<int>("round_checkin_minutes")
+                        .HasColumnType("int")
+                        .HasColumnName("round_checkin_minutes");
+
+                    b.Property<int>("round_checkout_minutes")
+                        .HasColumnType("int")
+                        .HasColumnName("round_checkout_minutes");
+
+                    b.Property<string>("wifi_name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("wifi_name");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AttendancePolicies");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.AttendanceRecords", b =>
@@ -477,6 +603,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("no_attendance");
 
+                    b.Property<int?>("policy_id")
+                        .HasColumnType("int")
+                        .HasColumnName("policy_id");
+
                     b.Property<bool>("proxy_attendance")
                         .HasColumnType("bit")
                         .HasColumnName("proxy_attendance");
@@ -498,6 +628,8 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("unrestricted_attendance");
 
                     b.HasKey("employee_id");
+
+                    b.HasIndex("policy_id");
 
                     b.ToTable("AttendanceSettings", (string)null);
                 });
@@ -1023,6 +1155,89 @@ namespace ERP.Entities.Migrations
                     b.ToTable("Courses", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.DailyAttendance", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<DateTime?>("check_in_actual")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("check_in_actual");
+
+                    b.Property<DateTime?>("check_out_actual")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("check_out_actual");
+
+                    b.Property<DateTime>("date")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("date");
+
+                    b.Property<int>("early_minutes")
+                        .HasColumnType("int")
+                        .HasColumnName("early_minutes");
+
+                    b.Property<int>("employee_id")
+                        .HasColumnType("int")
+                        .HasColumnName("employee_id");
+
+                    b.Property<bool>("is_absent")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_absent");
+
+                    b.Property<int>("late_minutes")
+                        .HasColumnType("int")
+                        .HasColumnName("late_minutes");
+
+                    b.Property<int?>("leave_type_id")
+                        .HasColumnType("int")
+                        .HasColumnName("leave_type_id");
+
+                    b.Property<string>("note")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("note");
+
+                    b.Property<decimal>("overtime_hours")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("overtime_hours");
+
+                    b.Property<int?>("shift_id")
+                        .HasColumnType("int")
+                        .HasColumnName("shift_id");
+
+                    b.Property<string>("status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("status");
+
+                    b.Property<decimal>("total_work_hours")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("total_work_hours");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("employee_id");
+
+                    b.HasIndex("leave_type_id");
+
+                    b.HasIndex("shift_id");
+
+                    b.ToTable("DailyAttendance");
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.DecisionTypes", b =>
                 {
                     b.Property<int>("Id")
@@ -1132,6 +1347,10 @@ namespace ERP.Entities.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("branch_id")
+                        .HasColumnType("int")
+                        .HasColumnName("branch_id");
+
                     b.Property<string>("code")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -1149,6 +1368,8 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("parent_id");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("branch_id");
 
                     b.ToTable("Departments", (string)null);
 
@@ -2361,6 +2582,10 @@ namespace ERP.Entities.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("branch_id")
+                        .HasColumnType("int")
+                        .HasColumnName("branch_id");
+
                     b.Property<string>("code")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -2374,6 +2599,8 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("name");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("branch_id");
 
                     b.ToTable("JobTitles", (string)null);
 
@@ -2826,6 +3053,14 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("id");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
 
                     b.Property<bool>("auto_publish")
                         .HasColumnType("bit")
@@ -3287,6 +3522,47 @@ namespace ERP.Entities.Migrations
                     b.HasIndex("job_title_id");
 
                     b.ToTable("PromotionHistory", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Entities.Models.PublicHolidays", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("description");
+
+                    b.Property<DateTime>("holiday_date")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("holiday_date");
+
+                    b.Property<string>("holiday_name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("holiday_name");
+
+                    b.Property<bool>("is_paid")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_paid");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PublicHolidays");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.Regions", b =>
@@ -4727,6 +5003,205 @@ namespace ERP.Entities.Migrations
                     b.ToTable("ShiftAssignments", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.ShiftCycleAssignments", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("employee_id")
+                        .HasColumnType("int")
+                        .HasColumnName("employee_id");
+
+                    b.Property<DateTime?>("end_date")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("end_date");
+
+                    b.Property<bool>("is_active")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("note")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("note");
+
+                    b.Property<DateTime>("start_date")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("start_date");
+
+                    b.Property<int>("template_id")
+                        .HasColumnType("int")
+                        .HasColumnName("template_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("employee_id");
+
+                    b.HasIndex("template_id");
+
+                    b.ToTable("ShiftCycleAssignments");
+                });
+
+            modelBuilder.Entity("ERP.Entities.Models.ShiftCycleItems", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("day_number")
+                        .HasColumnType("int")
+                        .HasColumnName("day_number");
+
+                    b.Property<string>("note")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("note");
+
+                    b.Property<int?>("shift_id")
+                        .HasColumnType("int")
+                        .HasColumnName("shift_id");
+
+                    b.Property<int>("template_id")
+                        .HasColumnType("int")
+                        .HasColumnName("template_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("shift_id");
+
+                    b.HasIndex("template_id");
+
+                    b.ToTable("ShiftCycleItems");
+                });
+
+            modelBuilder.Entity("ERP.Entities.Models.ShiftCycleTemplates", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("cycle_days")
+                        .HasColumnType("int")
+                        .HasColumnName("cycle_days");
+
+                    b.Property<string>("description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("description");
+
+                    b.Property<bool>("is_active")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("template_name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("template_name");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ShiftCycleTemplates");
+                });
+
+            modelBuilder.Entity("ERP.Entities.Models.ShiftTemplates", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("branch_ids")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("branch_ids");
+
+                    b.Property<string>("department_ids")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("department_ids");
+
+                    b.Property<TimeSpan>("end_time")
+                        .HasColumnType("time")
+                        .HasColumnName("end_time");
+
+                    b.Property<bool>("is_active")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("is_cross_night")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_cross_night");
+
+                    b.Property<string>("note")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("note");
+
+                    b.Property<string>("position_ids")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("position_ids");
+
+                    b.Property<string>("repeat_days")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("repeat_days");
+
+                    b.Property<TimeSpan>("start_time")
+                        .HasColumnType("time")
+                        .HasColumnName("start_time");
+
+                    b.Property<string>("template_name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("template_name");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ShiftTemplates");
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.ShiftTypes", b =>
                 {
                     b.Property<int>("Id")
@@ -4788,22 +5263,57 @@ namespace ERP.Entities.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<TimeSpan?>("break_end")
+                        .HasColumnType("time")
+                        .HasColumnName("break_end");
+
+                    b.Property<TimeSpan?>("break_start")
+                        .HasColumnType("time")
+                        .HasColumnName("break_start");
+
                     b.Property<string>("color")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("color");
 
+                    b.Property<string>("default_branch_ids")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("default_branch_ids");
+
+                    b.Property<string>("default_department_ids")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("default_department_ids");
+
+                    b.Property<string>("default_job_title_ids")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("default_job_title_ids");
+
                     b.Property<TimeSpan>("end_time")
                         .HasColumnType("time")
                         .HasColumnName("end_time");
+
+                    b.Property<int>("grace_period_in")
+                        .HasColumnType("int")
+                        .HasColumnName("grace_period_in");
+
+                    b.Property<int>("grace_period_out")
+                        .HasColumnType("int")
+                        .HasColumnName("grace_period_out");
 
                     b.Property<bool>("is_active")
                         .HasColumnType("bit")
                         .HasColumnName("is_active");
 
+                    b.Property<bool>("is_overnight")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_overnight");
+
+                    b.Property<int>("min_checkin_before")
+                        .HasColumnType("int")
+                        .HasColumnName("min_checkin_before");
+
                     b.Property<string>("note")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("note");
 
@@ -5292,6 +5802,17 @@ namespace ERP.Entities.Migrations
                     b.Navigation("Employee");
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.AttendanceLocations", b =>
+                {
+                    b.HasOne("ERP.Entities.Models.Branches", "Branch")
+                        .WithMany()
+                        .HasForeignKey("branch_id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Branch");
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.AttendanceLogs", b =>
                 {
                     b.HasOne("ERP.Entities.Models.Employees", "Employee")
@@ -5354,7 +5875,14 @@ namespace ERP.Entities.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ERP.Entities.Models.AttendancePolicies", "Policy")
+                        .WithMany()
+                        .HasForeignKey("policy_id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Employee");
+
+                    b.Navigation("Policy");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.AuthSessions", b =>
@@ -5424,6 +5952,41 @@ namespace ERP.Entities.Migrations
                     b.Navigation("Employee");
 
                     b.Navigation("Template");
+                });
+
+            modelBuilder.Entity("ERP.Entities.Models.DailyAttendance", b =>
+                {
+                    b.HasOne("ERP.Entities.Models.Employees", "Employee")
+                        .WithMany()
+                        .HasForeignKey("employee_id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Entities.Models.LeaveTypes", "LeaveType")
+                        .WithMany()
+                        .HasForeignKey("leave_type_id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Entities.Models.Shifts", "Shift")
+                        .WithMany()
+                        .HasForeignKey("shift_id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("LeaveType");
+
+                    b.Navigation("Shift");
+                });
+
+            modelBuilder.Entity("ERP.Entities.Models.Departments", b =>
+                {
+                    b.HasOne("ERP.Entities.Models.Branches", "Branch")
+                        .WithMany()
+                        .HasForeignKey("branch_id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Branch");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.Dependents", b =>
@@ -5720,6 +6283,16 @@ namespace ERP.Entities.Migrations
                     b.Navigation("Creator");
 
                     b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("ERP.Entities.Models.JobTitles", b =>
+                {
+                    b.HasOne("ERP.Entities.Models.Branches", "Branch")
+                        .WithMany()
+                        .HasForeignKey("branch_id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Branch");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.LeaveRequests", b =>
@@ -6365,6 +6938,43 @@ namespace ERP.Entities.Migrations
                     b.Navigation("Employee");
 
                     b.Navigation("Shift");
+                });
+
+            modelBuilder.Entity("ERP.Entities.Models.ShiftCycleAssignments", b =>
+                {
+                    b.HasOne("ERP.Entities.Models.Employees", "Employee")
+                        .WithMany()
+                        .HasForeignKey("employee_id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Entities.Models.ShiftCycleTemplates", "Template")
+                        .WithMany()
+                        .HasForeignKey("template_id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("Template");
+                });
+
+            modelBuilder.Entity("ERP.Entities.Models.ShiftCycleItems", b =>
+                {
+                    b.HasOne("ERP.Entities.Models.Shifts", "Shift")
+                        .WithMany()
+                        .HasForeignKey("shift_id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Entities.Models.ShiftCycleTemplates", "Template")
+                        .WithMany()
+                        .HasForeignKey("template_id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Shift");
+
+                    b.Navigation("Template");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.Shifts", b =>

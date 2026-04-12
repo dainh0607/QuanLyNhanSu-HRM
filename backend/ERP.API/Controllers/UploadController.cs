@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using ERP.Services.Common;
 
 namespace ERP.API.Controllers
 {
@@ -13,9 +14,13 @@ namespace ERP.API.Controllers
     public class UploadController : ControllerBase
     {
         private readonly string _uploadPath;
+        private readonly IDocxService _docxService;
+        private readonly IPdfService _pdfService;
 
-        public UploadController()
+        public UploadController(IDocxService docxService, IPdfService pdfService)
         {
+            _docxService = docxService;
+            _pdfService = pdfService;
             _uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
             if (!Directory.Exists(_uploadPath))
             {
@@ -32,7 +37,9 @@ namespace ERP.API.Controllers
 
             try 
             {
-                var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+                var fileExtension = Path.GetExtension(file.FileName).ToLower();
+                var baseFileName = Guid.NewGuid().ToString();
+                var fileName = $"{baseFileName}{fileExtension}";
                 var filePath = Path.Combine(_uploadPath, fileName);
 
                 using (var stream = new FileStream(filePath, FileMode.Create))
@@ -41,7 +48,37 @@ namespace ERP.API.Controllers
                 }
 
                 var fileUrl = $"/uploads/{fileName}";
-                return Ok(new { FileUrl = fileUrl, FileName = file.FileName });
+                string? pdfUrl = null;
+
+                // T186: Auto convert docx to pdf
+                if (fileExtension == ".docx")
+                {
+                    try
+                    {
+                        using (var docxStream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                        {
+                            var text = await _docxService.ExtractTextAsync(docxStream);
+                            var pdfBytes = await _pdfService.GeneratePdfFromTextAsync(text, $"Nội dung từ file: {file.FileName}");
+                            
+                            var pdfFileName = $"{baseFileName}.pdf";
+                            var pdfFilePath = Path.Combine(_uploadPath, pdfFileName);
+                            
+                            await System.IO.File.WriteAllBytesAsync(pdfFilePath, pdfBytes);
+                            pdfUrl = $"/uploads/{pdfFileName}";
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        // Log error but provide the original file url anyway
+                    }
+                }
+
+                return Ok(new { 
+                    FileUrl = fileUrl, 
+                    PdfUrl = pdfUrl ?? fileUrl, // If converted, return pdfUrl, otherwise original
+                    OriginalUrl = fileUrl,
+                    FileName = file.FileName 
+                });
             }
             catch (Exception ex)
             {

@@ -9,3 +9,5 @@ export const employeeService = {
   ...employeeMetadataService,
   ...employeeProfileService,
 };
+
+export { employeeListService, employeeMetadataService, employeeProfileService };

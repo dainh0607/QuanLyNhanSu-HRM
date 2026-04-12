@@ -6,6 +6,11 @@ namespace ERP.Services.Common
     public interface IPdfService
     {
         Task<byte[]> GenerateContractPdfAsync(Entities.Models.Contracts contract);
+
+        /// <summary>
+        /// Tạo file PDF từ văn bản thuần túy (Dùng cho preview Docx)
+        /// </summary>
+        Task<byte[]> GeneratePdfFromTextAsync(string text, string title);
         
         /// <summary>
         /// Stamps a signature image onto a PDF at specified coordinates

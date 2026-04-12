@@ -1,6 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
+using ERP.Services.Attendance;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,20 +11,29 @@ namespace ERP.API.Controllers
     [Authorize]
     public class ShiftAssignmentsController : ControllerBase
     {
-        public ShiftAssignmentsController()
+        private readonly IShiftAssignmentService _assignmentService;
+
+        public ShiftAssignmentsController(IShiftAssignmentService assignmentService)
         {
+            _assignmentService = assignmentService;
         }
 
         [HttpGet("weekly")]
-        public IActionResult GetWeeklySchedule([FromQuery] string weekStartDate, [FromQuery] string viewMode = "branch")
+        public async Task<IActionResult> GetWeeklySchedule(
+            [FromQuery] string weekStartDate,
+            [FromQuery] int? branchId = null,
+            [FromQuery] int? departmentId = null,
+            [FromQuery] string? searchTerm = null)
         {
-            // Return empty list to resolve 404 and allow frontend mock fallback
-            return Ok(new { 
-                items = new List<object>(),
-                weekStartDate = weekStartDate,
-                viewMode = viewMode,
-                totalCount = 0
-            });
+            try
+            {
+                var result = await _assignmentService.GetWeeklyScheduleAsync(weekStartDate, branchId, departmentId, searchTerm);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
         }
     }
 }

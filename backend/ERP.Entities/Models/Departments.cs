@@ -18,6 +18,12 @@ namespace ERP.Entities.Models
         [Column("parent_id")]
         public int? parent_id { get; set; }
 
+        [Column("branch_id")]
+        public int? branch_id { get; set; }
+
+        [ForeignKey("branch_id")]
+        public virtual Branches? Branch { get; set; }
+
         public virtual ICollection<Employees> Employees { get; set; } = new HashSet<Employees>();
 
         public virtual ICollection<Employees> SecondaryEmployees { get; set; } = new HashSet<Employees>();

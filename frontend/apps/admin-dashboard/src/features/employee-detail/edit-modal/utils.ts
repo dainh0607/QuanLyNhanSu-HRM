@@ -5,7 +5,14 @@ import type {
 } from '../../../services/employeeService';
 import type { Employee } from '../../employees/types';
 import { getRecordValue, pickAddress } from '../utils';
-import type { ModalSectionKey, PersonalFormMap, PersonalFormsState, TabState } from './types';
+import type {
+  ModalSectionKey,
+  PersonalFormMap,
+  PersonalFormsState,
+  TabState,
+  WorkFormMap,
+  WorkFormsState,
+} from './types';
 
 export const toStringValue = (...values: Array<unknown>): string => {
   for (const value of values) {
@@ -286,6 +293,58 @@ export const buildSeedForms = (
   };
 };
 
+export const buildWorkSeedForms = (
+  profile: EmployeeFullProfile | null,
+): WorkFormMap => {
+  const basicInfo = profile?.basicInfo;
+  const basicInfoRecord = (basicInfo ?? {}) as unknown as Record<string, unknown>;
+
+  return {
+    jobStatus: {
+      probationStartDate: toDateInputValue(getRecordValue(basicInfoRecord, ['probationStartDate']) as string),
+      contractSignDate: toDateInputValue(getRecordValue(basicInfoRecord, ['contractSignDate']) as string),
+      contractExpiryDate: toDateInputValue(getRecordValue(basicInfoRecord, ['contractExpiryDate']) as string),
+      workType: toStringValue(getRecordValue(basicInfoRecord, ['workType'])),
+      seniorityMonths: toStringValue(getRecordValue(basicInfoRecord, ['seniorityMonths'])),
+      lateEarlyAllowed: toStringValue(getRecordValue(basicInfoRecord, ['lateEarlyAllowed'])),
+      lateAllowedMinutes: toStringValue(getRecordValue(basicInfoRecord, ['lateAllowedMinutes'])),
+      earlyAllowedMinutes: toStringValue(getRecordValue(basicInfoRecord, ['earlyAllowedMinutes'])),
+      lateEarlyDetailedRules: (() => {
+        const value = getRecordValue(basicInfoRecord, ['lateEarlyDetailedRules']);
+        if (typeof value === 'string' && value.trim()) {
+          try {
+            return JSON.parse(value);
+          } catch (e) {
+            console.error('Error parsing lateEarlyDetailedRules:', e);
+          }
+        }
+        return Array.isArray(value) ? value : [];
+      })(),
+      lateEarlyNote: toStringValue(getRecordValue(basicInfoRecord, ['lateEarlyNote'])),
+      isResigned: Boolean(getRecordValue(basicInfoRecord, ['isResigned'])),
+      resignationReason: toStringValue(getRecordValue(basicInfoRecord, ['resignationReason'])),
+    },
+    jobInfo: {
+      regionId: toStringValue(getRecordValue(basicInfoRecord, ['regionId'])),
+      branchId: toStringValue(getRecordValue(basicInfoRecord, ['branchId'])),
+      secondaryBranchId: toStringValue(getRecordValue(basicInfoRecord, ['secondaryBranchId'])),
+      departmentId: toStringValue(getRecordValue(basicInfoRecord, ['departmentId'])),
+      secondaryDepartmentId: toStringValue(getRecordValue(basicInfoRecord, ['secondaryDepartmentId'])),
+      jobTitleId: toStringValue(getRecordValue(basicInfoRecord, ['jobTitleId'])),
+      secondaryJobTitleId: toStringValue(getRecordValue(basicInfoRecord, ['secondaryJobTitleId'])),
+      accessGroupId: toStringValue(getRecordValue(basicInfoRecord, ['accessGroupId'])),
+      managerId: toStringValue(getRecordValue(basicInfoRecord, ['managerId'])),
+      managerName: toStringValue(getRecordValue(basicInfoRecord, ['managerName'])),
+      isActive: Boolean(getRecordValue(basicInfoRecord, ['isActive'])),
+      isDepartmentHead: Boolean(getRecordValue(basicInfoRecord, ['isDepartmentHead'])),
+    },
+    promotionHistory: {},
+    workHistory: {},
+    salaryAllowance: {},
+    contract: {},
+  };
+};
+
 export const createPersonalFormsState = (seed: PersonalFormMap): PersonalFormsState => ({
   basicInfo: createTabState(seed.basicInfo),
   contact: createTabState(seed.contact),
@@ -297,6 +356,15 @@ export const createPersonalFormsState = (seed: PersonalFormMap): PersonalFormsSt
   health: createTabState(seed.health),
   dependents: createTabState(seed.dependents),
   additionalInfo: createTabState(seed.additionalInfo),
+});
+
+export const createWorkFormsState = (seed: WorkFormMap): WorkFormsState => ({
+  jobStatus: createTabState(seed.jobStatus),
+  jobInfo: createTabState(seed.jobInfo),
+  promotionHistory: createTabState(seed.promotionHistory),
+  workHistory: createTabState(seed.workHistory),
+  salaryAllowance: createTabState(seed.salaryAllowance),
+  contract: createTabState(seed.contract),
 });
 
 export const buildDependentClientSignature = (

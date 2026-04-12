@@ -21,6 +21,10 @@ namespace ERP.Entities
         public DbSet<AttendanceModifications> AttendanceModifications { get; set; }
         public DbSet<AttendanceRecords> AttendanceRecords { get; set; }
         public DbSet<AttendanceSettings> AttendanceSettings { get; set; }
+        public DbSet<AttendancePolicies> AttendancePolicies { get; set; }
+        public DbSet<DailyAttendance> DailyAttendance { get; set; }
+        public DbSet<AttendanceLocations> AttendanceLocations { get; set; }
+        public DbSet<PublicHolidays> PublicHolidays { get; set; }
         public DbSet<BankAccounts> BankAccounts { get; set; }
         public DbSet<Branches> Branches { get; set; }
         public DbSet<Certificates> Certificates { get; set; }
@@ -98,7 +102,11 @@ namespace ERP.Entities
         public DbSet<SalaryGradeConfig> SalaryGradeConfig { get; set; }
         public DbSet<ShiftAssignments> ShiftAssignments { get; set; }
         public DbSet<ShiftTypes> ShiftTypes { get; set; }
+        public DbSet<ShiftTemplates> ShiftTemplates { get; set; }
         public DbSet<Shifts> Shifts { get; set; }
+        public DbSet<ShiftCycleTemplates> ShiftCycleTemplates { get; set; }
+        public DbSet<ShiftCycleAssignments> ShiftCycleAssignments { get; set; }
+        public DbSet<ShiftCycleItems> ShiftCycleItems { get; set; }
         public DbSet<Skills> Skills { get; set; }
         public DbSet<TaxBrackets> TaxBrackets { get; set; }
         public DbSet<TaxTypes> TaxTypes { get; set; }

@@ -7,16 +7,24 @@ import {
   type EmployeeEditBasicInfoPayload,
   type EmployeeEditContactPayload,
   type EmployeeEditDependentsPayload,
-  type EmployeeEditEducationPayload,
   type EmployeeEditEmergencyContactPayload,
   type EmployeeEditHealthPayload,
-  type EmployeeEditIdentityPayload,
-  type EmployeeEditPermanentAddressPayload,
+  type RegionMetadata,
+  type BranchMetadata,
+  type DepartmentMetadata,
+  type JobTitleMetadata,
+  type AccessGroupMetadata,
 } from '../../../services/employeeService';
-import { MODAL_SECTIONS, PERSONAL_TAB_SUCCESS_MESSAGES } from './constants';
+import {
+  MODAL_SECTIONS,
+  PERSONAL_TAB_SUCCESS_MESSAGES,
+  WORK_TAB_SUCCESS_MESSAGES,
+} from './constants';
 import EditModalSidebar from './components/EditModalSidebar';
 import PersonalTabNavigation from './components/PersonalTabNavigationV2';
 import PersonalTabPanel from './components/PersonalTabPanel';
+import WorkTabNavigation from './components/WorkTabNavigation';
+import WorkTabPanel from './components/WorkTabPanel';
 import SectionPlaceholder from './components/SectionPlaceholder';
 import { isModalSectionAvailable } from './sectionAvailability';
 import UnsavedChangesDialog from './components/UnsavedChangesDialog';
@@ -26,25 +34,23 @@ import type {
   ModalSectionKey,
   PersonalFormMap,
   PersonalTabKey,
+  WorkFormMap,
+  WorkTabKey,
 } from './types';
 import {
   buildSeedForms,
+  buildWorkSeedForms,
   cloneForm,
-  exceedsMaxLength,
   createPersonalFormsState,
+  createWorkFormsState,
   formsEqual,
-  hasInvalidAlphaNumericCharacters,
-  hasInvalidPersonNameCharacters,
-  hasInvalidTextCharacters,
   isEmailValid,
   isFacebookValid,
-  isDuplicateNormalizedValue,
+  mergeDependentClientFields,
   isNumericString,
   isPhoneValid,
   isTaxCodeValid,
-  isVietnamPhoneCode,
   isSkypeValid,
-  mergeDependentClientFields,
   mergeFormData,
   resolveSectionKey,
   containsSpecialChars,
@@ -85,12 +91,27 @@ const PERSONAL_TAB_SAVERS: {
   additionalInfo: employeeService.updateEmployeeEditAdditionalInfo,
 };
 
+const WORK_TAB_LOADERS: Partial<{
+  [K in WorkTabKey]: (employeeId: number) => Promise<WorkFormMap[K]>;
+}> = {
+  jobStatus: employeeService.getEmployeeEditJobStatus,
+  jobInfo: employeeService.getEmployeeEditJobInfo,
+};
+
+const WORK_TAB_SAVERS: Partial<{
+  [K in WorkTabKey]: (employeeId: number, payload: WorkFormMap[K]) => Promise<unknown>;
+}> = {
+  jobStatus: employeeService.updateEmployeeEditJobStatus,
+  jobInfo: employeeService.updateEmployeeEditJobInfo,
+};
+
 const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
   isOpen,
   employee,
   profile,
   initialSectionLabel,
   initialPersonalTab,
+  initialWorkTab,
   onClose,
   onSaved,
 }) => {
@@ -100,19 +121,56 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
   const [activePersonalTab, setActivePersonalTab] = useState<PersonalTabKey>(
     initialPersonalTab ?? 'basicInfo',
   );
+  const [activeWorkTab, setActiveWorkTab] = useState<WorkTabKey>(
+    initialWorkTab ?? 'jobStatus',
+  );
+
   const [personalForms, setPersonalForms] = useState(() =>
     createPersonalFormsState(buildSeedForms(employee, profile)),
   );
+  const [workForms, setWorkForms] = useState(() =>
+    createWorkFormsState(buildWorkSeedForms(profile)),
+  );
+
+  const [metadata, setMetadata] = useState<{
+    regions: RegionMetadata[];
+    branches: BranchMetadata[];
+    departments: DepartmentMetadata[];
+    jobTitles: JobTitleMetadata[];
+    accessGroups: AccessGroupMetadata[];
+    isLoaded: boolean;
+    isLoading: boolean;
+  }>({
+    regions: [],
+    branches: [],
+    departments: [],
+    jobTitles: [],
+    accessGroups: [],
+    isLoaded: false,
+    isLoading: false,
+  });
 
   const activePersonalState = personalForms[activePersonalTab];
-  const isCurrentTabDirty = activeSection === 'personal' && activePersonalState.isDirty;
+  const activeWorkState = workForms[activeWorkTab];
+
+  const isCurrentTabDirty = 
+    (activeSection === 'personal' && activePersonalState.isDirty) ||
+    (activeSection === 'work' && activeWorkState.isDirty);
+
   const shouldGuardLeaving = isCurrentTabDirty;
   const isSaveEnabled =
-    activeSection === 'personal' &&
-    activePersonalState.isLoaded &&
-    !activePersonalState.isLoading &&
-    !activePersonalState.isSubmitting &&
-    isCurrentTabDirty;
+    ((activeSection === 'personal' &&
+      activePersonalState.isLoaded &&
+      !activePersonalState.isLoading &&
+      !activePersonalState.isSubmitting &&
+      activePersonalState.isDirty) ||
+      (activeSection === 'work' &&
+        activeWorkState.isLoaded &&
+        !activeWorkState.isLoading &&
+        !activeWorkState.isSubmitting &&
+        activeWorkState.isDirty)) &&
+    !metadata.isLoading;
+
   const resolveAvailableSection = useCallback(
     (section: ModalSectionKey) => (isModalSectionAvailable(section) ? section : 'personal'),
     [],
@@ -124,14 +182,16 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
     }
 
     const frameId = window.requestAnimationFrame(() => {
-      setActiveSection(resolveAvailableSection(resolveSectionKey(initialSectionLabel)));
+      const sectionKey = resolveSectionKey(initialSectionLabel);
+      setActiveSection(resolveAvailableSection(sectionKey));
       setActivePersonalTab(initialPersonalTab ?? 'basicInfo');
+      setActiveWorkTab(initialWorkTab ?? 'jobStatus');
     });
 
     return () => {
       window.cancelAnimationFrame(frameId);
     };
-  }, [initialPersonalTab, initialSectionLabel, isOpen, resolveAvailableSection]);
+  }, [initialPersonalTab, initialWorkTab, initialSectionLabel, isOpen, resolveAvailableSection]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -201,6 +261,90 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
     }
   }, [employee.id]);
 
+  const loadWorkTab = useCallback(async (tabKey: WorkTabKey) => {
+    const loader = WORK_TAB_LOADERS[tabKey];
+    if (!loader) {
+      setWorkForms((prev) => ({
+        ...prev,
+        [tabKey]: {
+          ...prev[tabKey],
+          isLoaded: true,
+          isLoading: false,
+        },
+      }));
+      return;
+    }
+
+    setWorkForms((prev) => ({
+      ...prev,
+      [tabKey]: {
+        ...prev[tabKey],
+        isLoading: true,
+        loadError: null,
+      },
+    }));
+
+    try {
+      const response = await loader(employee.id);
+      setWorkForms((prev) => {
+        const nextTab = prev[tabKey];
+        const mergedData = mergeFormData(nextTab.data, response);
+
+        return {
+          ...prev,
+          [tabKey]: {
+            ...nextTab,
+            data: mergedData,
+            initialData: cloneForm(mergedData),
+            isDirty: false,
+            errors: {},
+            isLoading: false,
+            isLoaded: true,
+            loadError: null,
+          },
+        };
+      });
+    } catch (error) {
+      console.error(`Load work tab ${tabKey} error:`, error);
+      setWorkForms((prev) => ({
+        ...prev,
+        [tabKey]: {
+          ...prev[tabKey],
+          isLoading: false,
+          isLoaded: true,
+          loadError: 'Không thể tải dữ liệu tab này.',
+        },
+      }));
+    }
+  }, [employee.id]);
+
+  const loadMetadata = useCallback(async () => {
+    setMetadata((prev) => ({ ...prev, isLoading: true }));
+    try {
+      const [regions, branches, departments, jobTitles, accessGroups] = await Promise.all([
+        employeeService.getRegionsMetadata(),
+        employeeService.getBranchesMetadata(),
+        employeeService.getDepartmentsMetadata(),
+        employeeService.getJobTitlesMetadata(),
+        employeeService.getAccessGroupsMetadata(),
+      ]);
+
+      setMetadata({
+        regions,
+        branches,
+        departments,
+        jobTitles,
+        accessGroups,
+        isLoaded: true,
+        isLoading: false,
+      });
+    } catch (error) {
+      console.error('Load metadata error:', error);
+      setMetadata((prev) => ({ ...prev, isLoading: false, isLoaded: true }));
+      showToast('Không thể tải dữ liệu danh mục.', 'error');
+    }
+  }, [showToast]);
+
   useEffect(() => {
     if (!isOpen || activeSection !== 'personal') {
       return;
@@ -219,6 +363,28 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
     };
   }, [activePersonalTab, activeSection, isOpen, loadPersonalTab, personalForms]);
 
+  useEffect(() => {
+    if (!isOpen || activeSection !== 'work') {
+      return;
+    }
+
+    if (!metadata.isLoaded && !metadata.isLoading) {
+      void loadMetadata();
+    }
+
+    if (workForms[activeWorkTab].isLoaded || workForms[activeWorkTab].isLoading) {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      void loadWorkTab(activeWorkTab);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [activeWorkTab, activeSection, isOpen, loadWorkTab, workForms, metadata, loadMetadata]);
+
   const updateTabData = <K extends PersonalTabKey, F extends keyof PersonalFormMap[K]>(
     tabKey: K,
     field: F,
@@ -228,11 +394,37 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
       const nextTab = prev[tabKey];
       const nextErrors = { ...nextTab.errors };
       delete nextErrors[String(field)];
-      Object.keys(nextErrors).forEach((errorKey) => {
-        if (errorKey.startsWith(`${String(field)}.`)) {
-          delete nextErrors[errorKey];
-        }
-      });
+
+      return {
+        ...prev,
+        [tabKey]: {
+          ...nextTab,
+          data: {
+            ...nextTab.data,
+            [field]: value,
+          },
+          isDirty: !formsEqual(
+            {
+              ...nextTab.data,
+              [field]: value,
+            },
+            nextTab.initialData,
+          ),
+          errors: nextErrors,
+        },
+      };
+    });
+  };
+
+  const updateWorkTabData = <K extends WorkTabKey, F extends keyof WorkFormMap[K]>(
+    tabKey: K,
+    field: F,
+    value: WorkFormMap[K][F],
+  ) => {
+    setWorkForms((prev) => {
+      const nextTab = prev[tabKey];
+      const nextErrors = { ...nextTab.errors };
+      delete nextErrors[String(field)];
 
       return {
         ...prev,
@@ -431,246 +623,32 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
     return nextErrors;
   };
 
-  const validateBasicInfoEnhanced = async (
-    data: EmployeeEditBasicInfoPayload,
-  ): Promise<Record<string, string>> => {
-    const nextErrors = await validateBasicInfo(data);
-    const fullName = data.fullName.trim();
-
-    if (fullName && hasInvalidPersonNameCharacters(fullName)) {
-      nextErrors.fullName = 'Họ tên không được chứa ký tự đặc biệt.';
-    }
-
-    return nextErrors;
-  };
-
-  const validateContactEnhanced = async (
-    data: EmployeeEditContactPayload,
-  ): Promise<Record<string, string>> => {
-    const nextErrors = validateContact(data);
-    const email = data.email.trim();
-
-    if (email && isEmailValid(email)) {
-      const emailExists = await employeeService.checkEmployeeEmailExists(email, employee.id);
-      if (emailExists) {
-        nextErrors.email = 'Email đã tồn tại.';
-      }
-    }
-
-    return nextErrors;
-  };
-
-  const validateEmergencyContactEnhanced = (
-    data: EmployeeEditEmergencyContactPayload,
-  ): Record<string, string> => {
-    const nextErrors = validateEmergencyContact(data);
-    const name = data.name.trim();
-    const relationship = data.relationship.trim();
-    const mobilePhone = data.mobilePhone.trim();
-    const homePhone = data.homePhone.trim();
-    const address = data.address.trim();
-
-    if (name && hasInvalidPersonNameCharacters(name)) {
-      nextErrors.name = 'Tên người liên hệ không được chứa ký tự đặc biệt.';
-    }
-
-    if (relationship && hasInvalidPersonNameCharacters(relationship)) {
-      nextErrors.relationship = 'Quan hệ với nhân viên không được chứa ký tự đặc biệt.';
-    }
-
-    if (mobilePhone && homePhone && isDuplicateNormalizedValue(mobilePhone, homePhone)) {
-      nextErrors.homePhone = 'Số điện thoại khẩn cấp không được trùng nhau.';
-    }
-
-    if (address && exceedsMaxLength(address, 250)) {
-      nextErrors.address = 'Địa chỉ khẩn cấp chỉ được tối đa 250 ký tự.';
-    }
-
-    return nextErrors;
-  };
-
-  const validatePermanentAddressEnhanced = (
-    data: EmployeeEditPermanentAddressPayload,
-  ): Record<string, string> => {
-    const nextErrors: Record<string, string> = {};
-    const { permanentAddress, mergedAddress } = data;
-    const hasMergedAddressInput = [
-      mergedAddress.country,
-      mergedAddress.city,
-      mergedAddress.ward,
-      mergedAddress.addressLine,
-    ].some((value) => value.trim());
-
-    if (!permanentAddress.country.trim()) {
-      nextErrors['permanentAddress.country'] = 'Quốc gia là bắt buộc.';
-    }
-
-    if (!permanentAddress.city.trim()) {
-      nextErrors['permanentAddress.city'] = 'Tỉnh/Thành phố là bắt buộc.';
-    }
-
-    if (!permanentAddress.district.trim()) {
-      nextErrors['permanentAddress.district'] = 'Quận/Huyện là bắt buộc.';
-    }
-
-    if (!permanentAddress.addressLine.trim()) {
-      nextErrors['permanentAddress.addressLine'] = 'Địa chỉ thường trú là bắt buộc.';
-    }
-
-    if (hasMergedAddressInput) {
-      if (!mergedAddress.country.trim()) {
-        nextErrors['mergedAddress.country'] = 'Quốc gia là bắt buộc.';
-      }
-
-      if (!mergedAddress.city.trim()) {
-        nextErrors['mergedAddress.city'] = 'Tỉnh/Thành phố là bắt buộc.';
-      }
-
-      if (!mergedAddress.addressLine.trim()) {
-        nextErrors['mergedAddress.addressLine'] = 'Địa chỉ sát nhập là bắt buộc.';
-      }
-    }
-
-    return nextErrors;
-  };
-
-  const validateEducationEnhanced = (
-    data: EmployeeEditEducationPayload,
-  ): Record<string, string> => {
-    const nextErrors: Record<string, string> = {};
-
-    data.forEach((item, index) => {
-      const hasData = [item.institution, item.major, item.level, item.issueDate, item.note].some(
-        (value) => value.trim(),
-      );
-
-      if (!hasData) {
-        return;
-      }
-
-      if (item.institution.trim() && hasInvalidTextCharacters(item.institution)) {
-        nextErrors[`education.${index}.institution`] =
-          'Nơi đào tạo không được chứa ký tự đặc biệt.';
-      }
-
-      if (item.issueDate && !isDateNotFuture(item.issueDate)) {
-        nextErrors[`education.${index}.issueDate`] =
-          'Ngày cấp không được lớn hơn ngày hiện tại.';
-      }
-
-      if (item.note.trim() && exceedsMaxLength(item.note, 100)) {
-        nextErrors[`education.${index}.note`] = 'Ghi chú chỉ được tối đa 100 ký tự.';
-      }
-    });
-
-    return nextErrors;
-  };
-
-  const validateIdentityEnhanced = (
-    data: EmployeeEditIdentityPayload,
-  ): Record<string, string> => {
-    const nextErrors: Record<string, string> = {};
-    const identityNumber = data.identityNumber.trim();
-    const identityIssuePlace = data.identityIssuePlace.trim();
-    const passportNumber = data.passportNumber.trim();
-    const isVietnamEmployee =
-      isVietnamPhoneCode(employee.phone) || isVietnamPhoneCode(profile?.basicInfo?.phone);
-
-    if (data.hasIdentityCard && identityNumber) {
-      if (!isNumericString(identityNumber)) {
-        nextErrors.identityNumber = 'Số CMND/CCCD chỉ được chứa chữ số.';
-      } else if (isVietnamEmployee && identityNumber.length !== 12) {
-        nextErrors.identityNumber =
-          'Với mã vùng Việt Nam, CCCD phải gồm đúng 12 chữ số.';
-      } else if (!isVietnamEmployee && (identityNumber.length < 6 || identityNumber.length > 20)) {
-        nextErrors.identityNumber = 'Số CMND/CCCD phải gồm từ 6 đến 20 chữ số.';
-      }
-    }
-
-    if (data.hasIdentityCard && data.identityIssueDate && !isDateNotFuture(data.identityIssueDate)) {
-      nextErrors.identityIssueDate = 'Ngày cấp không được lớn hơn ngày hiện tại.';
-    }
-
-    if (data.hasIdentityCard && identityIssuePlace && hasInvalidTextCharacters(identityIssuePlace)) {
-      nextErrors.identityIssuePlace = 'Nơi cấp không được chứa ký tự đặc biệt.';
-    }
-
-    if (data.hasPassport && passportNumber) {
-      if (exceedsMaxLength(passportNumber, 20)) {
-        nextErrors.passportNumber = 'Số hộ chiếu chỉ được tối đa 20 ký tự.';
-      } else if (hasInvalidAlphaNumericCharacters(passportNumber)) {
-        nextErrors.passportNumber = 'Số hộ chiếu không được chứa ký tự đặc biệt.';
-      }
-    }
-
-    return nextErrors;
-  };
-
-  const validateHealthEnhanced = (data: EmployeeEditHealthPayload): Record<string, string> => {
-    const nextErrors = validateHealth(data);
-
-    if (data.congenitalDisease.trim()) {
-      if (hasInvalidTextCharacters(data.congenitalDisease)) {
-        nextErrors.congenitalDisease = 'Bệnh bẩm sinh không được chứa ký tự đặc biệt.';
-      } else if (exceedsMaxLength(data.congenitalDisease, 250)) {
-        nextErrors.congenitalDisease = 'Bệnh bẩm sinh chỉ được tối đa 250 ký tự.';
-      }
-    }
-
-    if (data.chronicDisease.trim()) {
-      if (hasInvalidTextCharacters(data.chronicDisease)) {
-        nextErrors.chronicDisease = 'Bệnh mãn tính không được chứa ký tự đặc biệt.';
-      } else if (exceedsMaxLength(data.chronicDisease, 250)) {
-        nextErrors.chronicDisease = 'Bệnh mãn tính chỉ được tối đa 250 ký tự.';
-      }
-    }
-
-    return nextErrors;
-  };
-
-  const validateAdditionalInfoEnhanced = (
-    data: EmployeeEditAdditionalInfoPayload,
-  ): Record<string, string> => {
-    const nextErrors = validateAdditionalInfo(data);
-
-    if (data.unionGroup.trim() && hasInvalidTextCharacters(data.unionGroup)) {
-      nextErrors.unionGroup = 'Công đoàn không được chứa ký tự đặc biệt.';
-    }
-
-    if (data.religion.trim() && hasInvalidTextCharacters(data.religion)) {
-      nextErrors.religion = 'Tôn giáo không được chứa ký tự đặc biệt.';
-    }
-
-    if (data.note.trim() && exceedsMaxLength(data.note, 255)) {
-      nextErrors.note = 'Ghi chú chỉ được tối đa 255 ký tự.';
-    }
-
-    return nextErrors;
-  };
-
   const validateCurrentTab = async (): Promise<Record<string, string>> => {
-    switch (activePersonalTab) {
-      case 'basicInfo':
-        return validateBasicInfoEnhanced(personalForms.basicInfo.data);
-      case 'contact':
-        return validateContactEnhanced(personalForms.contact.data);
-      case 'emergencyContact':
-        return validateEmergencyContactEnhanced(personalForms.emergencyContact.data);
-      case 'permanentAddress':
-        return validatePermanentAddressEnhanced(personalForms.permanentAddress.data);
-      case 'education':
-        return validateEducationEnhanced(personalForms.education.data);
-      case 'identity':
-        return validateIdentityEnhanced(personalForms.identity.data);
-      case 'bankAccount':
-        return validateBankAccount(personalForms.bankAccount.data);
-      case 'health':
-        return validateHealthEnhanced(personalForms.health.data);
-      case 'additionalInfo':
-        return validateAdditionalInfoEnhanced(personalForms.additionalInfo.data);
-      default:
-        return {};
+    if (activeSection === 'personal') {
+      switch (activePersonalTab) {
+        case 'basicInfo':
+          return validateBasicInfo(personalForms.basicInfo.data);
+        case 'contact':
+          return validateContact(personalForms.contact.data);
+        case 'emergencyContact':
+          return validateEmergencyContact(personalForms.emergencyContact.data);
+        case 'bankAccount':
+          return validateBankAccount(personalForms.bankAccount.data);
+        case 'health':
+          return validateHealth(personalForms.health.data);
+        case 'additionalInfo':
+          return validateAdditionalInfo(personalForms.additionalInfo.data);
+        default:
+          return {};
+      }
     }
+
+    if (activeSection === 'work') {
+      // Logic validate cho Work tab nếu cần, hiện tại chủ yếu là select
+      return {};
+    }
+
+    return {};
   };
 
   const handleSave = async () => {
@@ -680,86 +658,109 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
 
     const nextErrors = await validateCurrentTab();
     if (Object.keys(nextErrors).length > 0) {
-      setPersonalForms((prev) => ({
-        ...prev,
-        [activePersonalTab]: {
-          ...prev[activePersonalTab],
-          errors: nextErrors,
-        },
-      }));
+      if (activeSection === 'personal') {
+        setPersonalForms((prev) => ({
+          ...prev,
+          [activePersonalTab]: {
+            ...prev[activePersonalTab],
+            errors: nextErrors,
+          },
+        }));
+      } else if (activeSection === 'work') {
+        setWorkForms((prev) => ({
+          ...prev,
+          [activeWorkTab]: {
+            ...prev[activeWorkTab],
+            errors: nextErrors,
+          },
+        }));
+      }
       showToast('Vui lòng kiểm tra lại thông tin bắt buộc hoặc định dạng dữ liệu.', 'error');
       return;
     }
 
-    setPersonalForms((prev) => ({
-      ...prev,
-      [activePersonalTab]: {
-        ...prev[activePersonalTab],
-        isSubmitting: true,
-      },
-    }));
+    if (activeSection === 'personal') {
+      setPersonalForms((prev) => ({
+        ...prev,
+        [activePersonalTab]: {
+          ...prev[activePersonalTab],
+          isSubmitting: true,
+        },
+      }));
 
-    try {
-      switch (activePersonalTab) {
-        case 'basicInfo':
-          await PERSONAL_TAB_SAVERS.basicInfo(employee.id, personalForms.basicInfo.data);
-          break;
-        case 'contact':
-          await PERSONAL_TAB_SAVERS.contact(employee.id, personalForms.contact.data);
-          break;
-        case 'emergencyContact':
-          await PERSONAL_TAB_SAVERS.emergencyContact(employee.id, personalForms.emergencyContact.data);
-          break;
-        case 'permanentAddress':
-          await PERSONAL_TAB_SAVERS.permanentAddress(employee.id, personalForms.permanentAddress.data);
-          break;
-        case 'education':
-          await PERSONAL_TAB_SAVERS.education(employee.id, personalForms.education.data);
-          break;
-        case 'identity':
-          await PERSONAL_TAB_SAVERS.identity(employee.id, personalForms.identity.data);
-          break;
-        case 'bankAccount':
-          await PERSONAL_TAB_SAVERS.bankAccount(employee.id, personalForms.bankAccount.data);
-          break;
-        case 'health':
-          await PERSONAL_TAB_SAVERS.health(employee.id, personalForms.health.data);
-          break;
-        case 'additionalInfo':
-          await PERSONAL_TAB_SAVERS.additionalInfo(employee.id, personalForms.additionalInfo.data);
-          break;
-        default:
-          break;
+      try {
+        const saver = PERSONAL_TAB_SAVERS[activePersonalTab];
+        await (saver as (id: number, data: any) => Promise<unknown>)(
+          employee.id,
+          personalForms[activePersonalTab].data,
+        );
+
+        setPersonalForms((prev) => ({
+          ...prev,
+          [activePersonalTab]: {
+            ...prev[activePersonalTab],
+            initialData: cloneForm(prev[activePersonalTab].data),
+            isDirty: false,
+            errors: {},
+            isSubmitting: false,
+          },
+        }));
+
+        await loadPersonalTab(activePersonalTab);
+        showToast(PERSONAL_TAB_SUCCESS_MESSAGES[activePersonalTab], 'success');
+        onSaved?.();
+      } catch (error) {
+        console.error(`Save personal ${activePersonalTab} error:`, error);
+        setPersonalForms((prev) => ({
+          ...prev,
+          [activePersonalTab]: {
+            ...prev[activePersonalTab],
+            isSubmitting: false,
+          },
+        }));
+        showToast(error instanceof Error ? error.message : 'Không thể lưu dữ liệu.', 'error');
       }
+    } else if (activeSection === 'work') {
+      const saver = WORK_TAB_SAVERS[activeWorkTab];
+      if (!saver) return;
 
-      setPersonalForms((prev) => ({
+      setWorkForms((prev) => ({
         ...prev,
-        [activePersonalTab]: {
-          ...prev[activePersonalTab],
-          initialData: cloneForm(prev[activePersonalTab].data),
-          isDirty: false,
-          errors: {},
-          isSubmitting: false,
+        [activeWorkTab]: {
+          ...prev[activeWorkTab],
+          isSubmitting: true,
         },
       }));
 
-      await loadPersonalTab(activePersonalTab);
+      try {
+        const payload = workForms[activeWorkTab].data;
+        await (saver as (id: number, data: any) => Promise<unknown>)(employee.id, payload);
 
-      showToast(PERSONAL_TAB_SUCCESS_MESSAGES[activePersonalTab], 'success');
-      onSaved?.();
-    } catch (error) {
-      console.error(`Save ${activePersonalTab} error:`, error);
-      setPersonalForms((prev) => ({
-        ...prev,
-        [activePersonalTab]: {
-          ...prev[activePersonalTab],
-          isSubmitting: false,
-        },
-      }));
+        setWorkForms((prev) => ({
+          ...prev,
+          [activeWorkTab]: {
+            ...prev[activeWorkTab],
+            initialData: cloneForm(prev[activeWorkTab].data),
+            isDirty: false,
+            errors: {},
+            isSubmitting: false,
+          },
+        }));
 
-      const errorMessage =
-        error instanceof Error ? error.message : 'Không thể lưu dữ liệu. Vui lòng thử lại.';
-      showToast(errorMessage, 'error');
+        await loadWorkTab(activeWorkTab);
+        showToast(WORK_TAB_SUCCESS_MESSAGES[activeWorkTab], 'success');
+        onSaved?.();
+      } catch (error) {
+        console.error(`Save work ${activeWorkTab} error:`, error);
+        setWorkForms((prev) => ({
+          ...prev,
+          [activeWorkTab]: {
+            ...prev[activeWorkTab],
+            isSubmitting: false,
+          },
+        }));
+        showToast(error instanceof Error ? error.message : 'Không thể lưu dữ liệu.', 'error');
+      }
     }
   };
 
@@ -810,6 +811,14 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
     requestAction(shouldGuardLeaving, () => setActivePersonalTab(tab));
   };
 
+  const handleWorkTabChange = (tab: WorkTabKey) => {
+    if (tab === activeWorkTab) {
+      return;
+    }
+
+    requestAction(shouldGuardLeaving, () => setActiveWorkTab(tab));
+  };
+
   const handleRequestClose = () => {
     requestAction(shouldGuardLeaving, onClose);
   };
@@ -821,7 +830,11 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
   const activeSectionConfig =
     MODAL_SECTIONS.find((section) => section.key === activeSection) ?? MODAL_SECTIONS[0];
   const currentLoadError =
-    activeSection === 'personal' ? personalForms[activePersonalTab].loadError : null;
+    activeSection === 'personal'
+      ? personalForms[activePersonalTab].loadError
+      : activeSection === 'work'
+        ? workForms[activeWorkTab].loadError
+        : null;
 
   return (
     <div
@@ -864,7 +877,8 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
                         : 'cursor-not-allowed bg-slate-200 text-slate-500'
                     }`}
                   >
-                    {activeSection === 'personal' && activePersonalState.isSubmitting ? (
+                    {(activeSection === 'personal' && activePersonalState.isSubmitting) ||
+                    (activeSection === 'work' && activeWorkState.isSubmitting) ? (
                       <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
                     ) : null}
                     Lưu
@@ -876,6 +890,12 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
                     activeTab={activePersonalTab}
                     personalForms={personalForms}
                     onChange={handlePersonalTabChange}
+                  />
+                ) : activeSection === 'work' ? (
+                  <WorkTabNavigation
+                    activeTab={activeWorkTab}
+                    workForms={workForms}
+                    onChange={handleWorkTabChange}
                   />
                 ) : null}
               </div>
@@ -907,6 +927,21 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
                       updateTabData('additionalInfo', field, value)
                     }
                     onCreateDependent={handleCreateDependent}
+                  />
+                ) : activeSection === 'work' ? (
+                  <WorkTabPanel
+                    employeeId={employee.id}
+                    activeTab={activeWorkTab}
+                    data={activeWorkState.data}
+                    errors={activeWorkState.errors}
+                    onFieldChange={(field: any, value: any) => (updateWorkTabData as any)(activeWorkTab, field, value)}
+                    metadata={{
+                      regions: metadata.regions,
+                      branches: metadata.branches,
+                      departments: metadata.departments,
+                      jobTitles: metadata.jobTitles,
+                      accessGroups: metadata.accessGroups,
+                    }}
                   />
                 ) : (
                   <SectionPlaceholder
