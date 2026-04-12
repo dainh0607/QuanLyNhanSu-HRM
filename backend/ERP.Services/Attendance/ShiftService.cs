@@ -316,5 +316,49 @@ namespace ERP.Services.Attendance
                 throw;
             }
         }
+
+        public async Task<IEnumerable<ShiftOptionApiItemDto>> GetShiftsAsync(bool? isActive, int? branchId)
+        {
+            var query = _unitOfWork.Repository<Shifts>().AsQueryable();
+
+            if (isActive.HasValue)
+            {
+                query = query.Where(s => s.is_active == isActive.Value);
+            }
+
+            // We do a simple fetch. The branch/department relationships in the Shift template
+            // are stored as CSV strings in `default_branch_ids` etc.
+            var shifts = await query.ToListAsync();
+
+            var result = new List<ShiftOptionApiItemDto>();
+            foreach (var s in shifts)
+            {
+                var branchIds = ParseIds(s.default_branch_ids);
+                var departmentIds = ParseIds(s.default_department_ids);
+                var jobTitleIds = ParseIds(s.default_job_title_ids);
+
+                // If branchId is provided, filter by it
+                if (branchId.HasValue && branchIds.Any() && !branchIds.Contains(branchId.Value))
+                {
+                    continue; // Skip if this shift is strictly for other branches
+                }
+
+                result.Add(new ShiftOptionApiItemDto
+                {
+                    id = s.Id,
+                    shift_id = s.Id,
+                    shift_name = s.shift_name,
+                    start_time = s.start_time.ToString(@"hh\:mm"),
+                    end_time = s.end_time.ToString(@"hh\:mm"),
+                    color = s.color,
+                    note = s.note,
+                    branch_ids = branchIds,
+                    department_ids = departmentIds,
+                    job_title_ids = jobTitleIds
+                });
+            }
+
+            return result;
+        }
     }
 }

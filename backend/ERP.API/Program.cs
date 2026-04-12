@@ -30,16 +30,23 @@ var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get
 
 // Firebase SDK Initialization
 var serviceAccountPath = Path.Combine(builder.Environment.ContentRootPath, "firebase-config.json");
-if (File.Exists(serviceAccountPath))
+if (File.Exists(serviceAccountPath) && new FileInfo(serviceAccountPath).Length > 0)
 {
-    FirebaseApp.Create(new AppOptions()
+    try
     {
-        Credential = GoogleCredential.FromFile(serviceAccountPath)
-    });
+        FirebaseApp.Create(new AppOptions()
+        {
+            Credential = GoogleCredential.FromFile(serviceAccountPath)
+        });
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($" [ERROR] Failed to initialize Firebase: {ex.Message}");
+    }
 }
 else
 {
-    Console.WriteLine(" [WARNING] firebase-config.json not found. Firebase Admin SDK not initialized.");
+    Console.WriteLine(" [WARNING] firebase-config.json not found or is empty. Firebase Admin SDK not initialized.");
 }
 
 // Authentication & Authorization Configuration
