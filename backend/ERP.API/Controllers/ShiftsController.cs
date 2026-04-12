@@ -19,6 +19,20 @@ namespace ERP.API.Controllers
             _shiftService = shiftService;
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetShifts([FromQuery] bool? isActive, [FromQuery] int? branchId)
+        {
+            try
+            {
+                var result = await _shiftService.GetShiftsAsync(isActive, branchId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
         [HttpGet("weekly-schedule")]
         public async Task<IActionResult> GetWeeklySchedule([FromQuery] int branchId, [FromQuery] DateTime startDate)
         {
@@ -93,7 +107,7 @@ namespace ERP.API.Controllers
             }
         }
 
-        [HttpPost("open")]
+        [HttpPost("~/api/open-shifts")]
         public async Task<IActionResult> CreateOpenShifts([FromBody] OpenShiftCreateDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -110,7 +124,7 @@ namespace ERP.API.Controllers
             }
         }
 
-        [HttpGet("open")]
+        [HttpGet("~/api/open-shifts")]
         public async Task<IActionResult> GetOpenShifts([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] int? branchId = null)
         {
             try

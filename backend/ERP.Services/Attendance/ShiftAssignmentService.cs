@@ -126,5 +126,45 @@ namespace ERP.Services.Attendance
                 LastUpdatedAt = DateTime.UtcNow
             };
         }
+
+        public async Task<int> CreateAssignmentAsync(ShiftAssignmentCreateDto dto)
+        {
+            var assignment = new ShiftAssignments
+            {
+                employee_id = dto.employee_id,
+                shift_id = dto.shift_id,
+                assignment_date = dto.assignment_date.Date,
+                note = dto.note,
+                is_published = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            await _unitOfWork.Repository<ShiftAssignments>().AddAsync(assignment);
+            await _unitOfWork.SaveChangesAsync();
+            return assignment.Id;
+        }
+
+        public async Task<bool> DeleteAssignmentByIdAsync(int id)
+        {
+            var assignment = await _unitOfWork.Repository<ShiftAssignments>().GetByIdAsync(id);
+            if (assignment == null) return false;
+
+            _unitOfWork.Repository<ShiftAssignments>().Remove(assignment);
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> RefreshAttendanceAsync(int assignmentId)
+        {
+            var assignment = await _unitOfWork.Repository<ShiftAssignments>().GetByIdAsync(assignmentId);
+            if (assignment == null) return false;
+
+            // Simple mock logic for refresh attendance.
+            // In a real system, this would recount time punches.
+            // For now, we just update the timestamp to simulate refresh.
+            assignment.UpdatedAt = DateTime.UtcNow;
+            _unitOfWork.Repository<ShiftAssignments>().Update(assignment);
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
     }
 }

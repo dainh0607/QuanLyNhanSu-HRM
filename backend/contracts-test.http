@@ -1,7 +1,6 @@
 ### Variables
 @baseUrl = http://localhost:5122/api
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNCIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWVpZGVudGlmaWVyIjoiMTQiLCJlbWFpbCI6Imtmcm9nMTIzM0BnbWFpbC5jb20iLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9lbWFpbGFkZHJlc3MiOiJrZnJvZzEyMzNAZ21haWwuY29tIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZSI6IkjDuW5nIFN1cGVyIEFkbWluIiwianRpIjoiMmMwODViMWEtZGFlOC00YWIyLTgyZmYtMmVmNDdlZGE4YzJlIiwiU2Vzc2lvbklkIjoiYjVmYWU2YzdmZWU4NGE0MTk3ZTk2NTAzNjIxNDkyNGQiLCJUb2tlblR5cGUiOiJBY2Nlc3MiLCJFbXBsb3llZUlkIjoiMTQiLCJFbXBsb3llZUNvZGUiOiJBRE0wMTEiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOlsiTWFuYWdlciIsIlVzZXIiXSwiZXhwIjoxNzc1MzE0ODQyLCJpc3MiOiJOZXhhSFJNIiwiYXVkIjoiTmV4YUhSTV9DbGllbnQifQ.HzvqVQU_I5mj6OJPw2XVaZmHT2ovxmiotmelz2KkJNE
-Authorization: Bearer {{token}}
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNCIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWVpZGVudGlmaWVyIjoiMTQiLCJlbWFpbCI6Imtmcm9nMTIzM0BnbWFpbC5jb20iLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9lbWFpbGFkZHJlc3MiOiJrZnJvZzEyMzNAZ21haWwuY29tIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZSI6IkjDuW5nIFN1cGVyIEFkbWluIiwianRpIjoiMmJkNTFjOTItNjhiZi00ZGE2LTgyOWUtZDQ0YjJlNjRmYjc4IiwiU2Vzc2lvbklkIjoiNTY2NzI1NGQ3NzlkNDdjMTk1MTY5MGUwNzFkYTc2YmIiLCJUb2tlblR5cGUiOiJBY2Nlc3MiLCJFbXBsb3llZUlkIjoiMTQiLCJFbXBsb3llZUNvZGUiOiJBRE0wMTEiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOlsiTWFuYWdlciIsIlVzZXIiXSwiZXhwIjoxNzc2MDA2Mzk4LCJpc3MiOiJOZXhhSFJNIiwiYXVkIjoiTmV4YUhSTV9DbGllbnQifQ.-BL0pRxMthysH1sK7h6ZGGIAU9kCS6lgB7GMWdGay-I
 
 ### 2. Get Specific Contract Template by ID
 GET {{baseUrl}}/ContractTemplates/1
@@ -50,7 +49,7 @@ X-Bypass-CSRF: true
 Content-Type: application/json
 
 {
-    "contractId": 13,
+    "contractId": 14,
     "signers": [
         {
             "email": "kfrog1233@gmail.com",
@@ -60,7 +59,7 @@ Content-Type: application/json
             "userId": 14
         },
         {
-            "email": "partner@external.com",
+            "email": "kfrog1233@gmail.com",
             "fullName": "John Doe (Partner)",
             "signOrder": 2,
             "status": "Pending"
@@ -75,10 +74,10 @@ X-Bypass-CSRF: true
 Content-Type: application/json
 
 {
-    "contractId": 13,
+    "contractId": 14,
     "positions": [
         {
-            "signerId": 1,
+            "signerId": 14,
             "type": "signature",
             "pageNumber": 1,
             "xPos": 150.5,
@@ -105,7 +104,7 @@ X-Bypass-CSRF: true
 Content-Type: application/json
 
 {
-    "contractId": 13
+    "contractId": 14
 }
 
 ### 9. Generate Signer OTP
