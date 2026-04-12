@@ -447,6 +447,37 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
     });
   };
 
+  const updateWorkTabData = <K extends WorkTabKey, F extends keyof WorkFormMap[K]>(
+    tabKey: K,
+    field: F,
+    value: WorkFormMap[K][F],
+  ) => {
+    setWorkForms((prev) => {
+      const nextTab = prev[tabKey];
+      const nextErrors = { ...nextTab.errors };
+      delete nextErrors[String(field)];
+
+      return {
+        ...prev,
+        [tabKey]: {
+          ...nextTab,
+          data: {
+            ...nextTab.data,
+            [field]: value,
+          },
+          isDirty: !formsEqual(
+            {
+              ...nextTab.data,
+              [field]: value,
+            },
+            nextTab.initialData,
+          ),
+          errors: nextErrors,
+        },
+      };
+    });
+  };
+
   const replaceTabData = <K extends PersonalTabKey>(tabKey: K, data: PersonalFormMap[K]) => {
     setPersonalForms((prev) => ({
       ...prev,
