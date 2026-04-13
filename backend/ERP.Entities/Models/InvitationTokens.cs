@@ -7,9 +7,6 @@ namespace ERP.Entities.Models
     [Table("InvitationTokens")]
     public class InvitationTokens : AuditableEntity
     {
-        [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int Id { get; set; }
 
         [Required]
         [StringLength(255)]
