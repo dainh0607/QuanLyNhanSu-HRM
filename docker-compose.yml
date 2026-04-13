@@ -1,0 +1,49 @@
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: nexahrm-db
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${DB_PASSWORD:-StrongPassword123!}
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql-data:/var/opt/mssql
+    networks:
+      - hrm-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nexahrm-backend
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Server=db;Database=NexaHRM;User Id=sa;Password=${DB_PASSWORD:-StrongPassword123!};TrustServerCertificate=True;
+      - JwtSettings__Secret=${JWT_SECRET:-NexaHRM_Super_Secret_Key_2026_Change_Me}
+    depends_on:
+      - db
+    ports:
+      - "5122:8080"
+    networks:
+      - hrm-network
+
+  frontend:
+    build:
+      context: ./frontend/apps/admin-dashboard
+      dockerfile: Dockerfile
+    container_name: nexahrm-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - hrm-network
+
+networks:
+  hrm-network:
+    driver: bridge
+
+volumes:
+  mssql-data:

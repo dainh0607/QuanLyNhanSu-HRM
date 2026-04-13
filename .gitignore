@@ -36,8 +36,12 @@ pnpm-debug.log*
 # Thư mục kết quả biên dịch
 [Bb]in/
 [Oo]bj/
-[Bb]in_codex*/
-[Oo]bj_codex*/
+*[Bb]in/
+*[Oo]bj/
+[Bb]in_*/
+[Oo]bj_*/
+*[Bb]in_*/
+*[Oo]bj_*/
 [Dd]ebug/
 [Rr]elease/
 TestResults/
