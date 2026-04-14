@@ -364,6 +364,8 @@ namespace ERP.API.Controllers
             {
                 Success = result.Success,
                 Message = result.Message,
+                IdToken = result.IdToken,
+                CsrfToken = result.CsrfToken,
                 ExpiresIn = result.ExpiresIn,
                 User = result.User
             };

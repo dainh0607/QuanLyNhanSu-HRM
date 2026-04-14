@@ -75,8 +75,8 @@ const ColumnConfigSidebar: React.FC<ColumnConfigSidebarProps> = ({
       aria-hidden={!isOpen}
     >
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between shrink-0">
-        <h2 className="text-lg font-bold text-gray-900">Tùy chỉnh</h2>
+      <div className="px-[23px] py-[15px] border-b border-gray-200 flex items-center justify-between shrink-0">
+        <h2 className="text-[17px] font-bold text-gray-900">Tùy chỉnh</h2>
         <button
           onClick={onClose}
           className="p-1 hover:bg-gray-100 rounded-full transition-colors text-gray-400"
@@ -86,11 +86,11 @@ const ColumnConfigSidebar: React.FC<ColumnConfigSidebarProps> = ({
       </div>
 
       {/* Body */}
-      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6 scrollbar-hide">
+      <div className="flex-1 overflow-y-auto px-[23px] py-[15px] space-y-6 scrollbar-hide">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Cột</span>
+          <span className="text-[13px] font-semibold text-gray-700 uppercase tracking-wider">Cột</span>
           <div className="flex items-center space-x-3">
-            <span className="text-sm text-gray-500">Phân trang</span>
+            <span className="text-[13px] text-gray-500">Phân trang</span>
             <label className="switch">
               <input
                 type="checkbox"
@@ -106,7 +106,7 @@ const ColumnConfigSidebar: React.FC<ColumnConfigSidebarProps> = ({
           {sortedColumns.map((col) => (
             <div
               key={col.id}
-              className={`flex items-center justify-between p-3 rounded-xl group transition-colors ${
+              className={`flex items-center justify-between p-[11px] rounded-xl group transition-colors ${
                 col.pinned ? 'bg-[#192841]/5 border border-[#192841]/10' : 'bg-blue-50/50'
               }`}
             >
@@ -114,7 +114,7 @@ const ColumnConfigSidebar: React.FC<ColumnConfigSidebarProps> = ({
                 <span className="material-symbols-outlined text-gray-400 cursor-move text-[18px]">
                   drag_indicator
                 </span>
-                <span className={`text-sm font-medium ${col.pinned ? 'text-[#192841]' : 'text-gray-700'}`}>
+                <span className={`text-[13px] font-medium ${col.pinned ? 'text-[#192841]' : 'text-gray-700'}`}>
                   {col.label}
                 </span>
                 {col.pinned && (

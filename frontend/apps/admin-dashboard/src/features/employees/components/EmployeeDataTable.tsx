@@ -203,7 +203,7 @@ const EmployeeDataTable: React.FC<EmployeeDataTableProps> = ({
       <table className="min-w-max w-full border-separate border-spacing-0 text-left">
         <thead>
           <tr className="sticky top-0 z-10 border-b border-gray-200 bg-gray-50">
-            <th className="w-10 border-b border-gray-200 bg-gray-50 px-4 py-3">
+            <th className="w-10 border-b border-gray-200 bg-gray-50 px-[15px] py-[11px]">
               <input
                 type="checkbox"
                 className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
@@ -213,7 +213,7 @@ const EmployeeDataTable: React.FC<EmployeeDataTableProps> = ({
             </th>
 
             {showNameColumn ? (
-              <th className="whitespace-nowrap border-b border-gray-200 bg-gray-50 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
+              <th className="whitespace-nowrap border-b border-gray-200 bg-gray-50 px-[15px] py-[11px] text-[11px] font-semibold uppercase tracking-wider text-gray-500">
                 Tên nhân viên
               </th>
             ) : null}
@@ -221,13 +221,13 @@ const EmployeeDataTable: React.FC<EmployeeDataTableProps> = ({
             {visibleColumns.map((column) => (
               <th
                 key={column.id}
-                className="whitespace-nowrap border-b border-gray-200 bg-gray-50 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500"
+                className="whitespace-nowrap border-b border-gray-200 bg-gray-50 px-[15px] py-[11px] text-[11px] font-semibold uppercase tracking-wider text-gray-500"
               >
                 {column.label}
               </th>
             ))}
 
-            <th className="sticky right-0 z-[900] border-b border-l border-gray-100 bg-gray-50 px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
+            <th className="sticky right-0 z-[900] border-b border-l border-gray-100 bg-gray-50 px-[15px] py-[11px] text-right text-[11px] font-semibold uppercase tracking-wider text-gray-500">
               Thao tác
             </th>
           </tr>
@@ -245,7 +245,7 @@ const EmployeeDataTable: React.FC<EmployeeDataTableProps> = ({
                   activeMenuId === employee.id ? 'relative z-[950]' : 'relative z-0'
                 }`}
               >
-                <td className="border-b border-gray-100 bg-white px-4 py-4 group-hover:bg-gray-50">
+                <td className="border-b border-gray-100 bg-white px-[15px] py-[15px] group-hover:bg-gray-50">
                   <input
                     type="checkbox"
                     className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
@@ -255,16 +255,16 @@ const EmployeeDataTable: React.FC<EmployeeDataTableProps> = ({
                 </td>
 
                 {showNameColumn ? (
-                  <td className="border-b border-gray-100 bg-white px-4 py-4 group-hover:bg-gray-50">
-                    <div className="flex min-w-[300px] items-center gap-3">
+                  <td className="border-b border-gray-100 bg-white px-[15px] py-[15px] group-hover:bg-gray-50">
+                    <div className="flex min-w-[300px] items-center gap-[11px]">
                       {employee.avatar ? (
                         <img
                           src={employee.avatar}
                           alt={employee.fullName}
-                          className="h-11 w-11 rounded-full object-cover ring-2 ring-slate-100"
+                          className="h-[43px] w-[43px] rounded-full object-cover ring-2 ring-slate-100"
                         />
                       ) : (
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#dbeafe] to-[#bfdbfe] text-sm font-bold text-[#1d4ed8] ring-2 ring-slate-100">
+                        <div className="flex h-[43px] w-[43px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#dbeafe] to-[#bfdbfe] text-[13px] font-bold text-[#1d4ed8] ring-2 ring-slate-100">
                           {getInitials(employee.fullName)}
                         </div>
                       )}
@@ -273,7 +273,7 @@ const EmployeeDataTable: React.FC<EmployeeDataTableProps> = ({
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
-                            className={`truncate text-left text-sm font-semibold text-gray-900 transition-colors ${
+                            className={`truncate text-left text-[13px] font-semibold text-gray-900 transition-colors ${
                               onSelectEmployee ? 'hover:text-[#134BBA]' : ''
                             }`}
                             onClick={() => onSelectEmployee?.(employee)}
@@ -281,7 +281,7 @@ const EmployeeDataTable: React.FC<EmployeeDataTableProps> = ({
                             {employee.fullName}
                           </button>
                           {isAdmin ? (
-                            <span className="text-sm leading-none" title="Quản trị">
+                            <span className="text-[13px] leading-none" title="Quản trị">
                               👑
                             </span>
                           ) : null}
@@ -289,17 +289,17 @@ const EmployeeDataTable: React.FC<EmployeeDataTableProps> = ({
 
                         <div className="mt-1 flex flex-wrap items-center gap-2">
                           {employee.jobTitleName ? (
-                            <span className="max-w-[220px] truncate text-xs font-medium text-slate-500">
+                            <span className="max-w-[220px] truncate text-[11px] font-medium text-slate-500">
                               {employee.jobTitleName}
                             </span>
                           ) : null}
                           <span
-                            className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${employmentStatus.className}`}
+                            className={`inline-flex items-center rounded-full px-[9px] py-[3px] text-[10px] font-semibold ${employmentStatus.className}`}
                           >
                             {employmentStatus.label}
                           </span>
                           {isAdmin ? (
-                            <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
+                            <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-[9px] py-[3px] text-[10px] font-semibold text-amber-700">
                               Quản trị
                             </span>
                           ) : null}
@@ -312,14 +312,14 @@ const EmployeeDataTable: React.FC<EmployeeDataTableProps> = ({
                 {visibleColumns.map((column) => (
                   <td
                     key={column.id}
-                    className="whitespace-nowrap border-b border-gray-100 bg-white px-4 py-4 text-sm text-gray-600 group-hover:bg-gray-50"
+                    className="whitespace-nowrap border-b border-gray-100 bg-white px-[15px] py-[15px] text-[13px] text-gray-600 group-hover:bg-gray-50"
                   >
                     {getCellValue(employee, column.key)}
                   </td>
                 ))}
 
                 <td
-                  className={`sticky right-0 border-b border-l border-gray-100 bg-white px-4 py-4 text-right shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.05)] group-hover:bg-gray-50 ${
+                  className={`sticky right-0 border-b border-l border-gray-100 bg-white px-[15px] py-[15px] text-right shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.05)] group-hover:bg-gray-50 ${
                     activeMenuId === employee.id ? 'z-[980]' : 'z-[901]'
                   }`}
                 >
@@ -329,13 +329,13 @@ const EmployeeDataTable: React.FC<EmployeeDataTableProps> = ({
                       className="rounded-full p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                       type="button"
                     >
-                      <span className="material-symbols-outlined block text-[20px]">more_vert</span>
+                      <span className="material-symbols-outlined block text-[19px]">more_vert</span>
                     </button>
 
                     {activeMenuId === employee.id ? (
                       <div
                         ref={menuRef}
-                        className={`absolute right-2 z-[9999] w-32 animate-[fadeSlideDown_0.2s_ease-out] rounded-xl border border-gray-100 bg-white py-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.15)] ${
+                        className={`absolute right-2 z-[9999] w-32 animate-[fadeSlideDown_0.2s_ease-out] rounded-xl border border-gray-100 bg-white py-[5px] shadow-[0_10px_30px_rgba(0,0,0,0.15)] ${
                           index < 2 ? 'top-full mt-1' : 'bottom-full mb-1'
                         }`}
                       >
@@ -344,10 +344,10 @@ const EmployeeDataTable: React.FC<EmployeeDataTableProps> = ({
                             onDeleteEmployee?.(employee.id);
                             setActiveMenuId(null);
                           }}
-                          className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                          className="flex w-full items-center gap-[11px] px-[15px] py-[7px] text-left text-[13px] font-medium text-gray-700 transition-colors hover:bg-gray-50"
                           type="button"
                         >
-                          <span className="material-symbols-outlined text-[20px] text-[#192841]">
+                          <span className="material-symbols-outlined text-[19px] text-[#192841]">
                             delete
                           </span>
                           Xóa
@@ -360,10 +360,10 @@ const EmployeeDataTable: React.FC<EmployeeDataTableProps> = ({
                             onSelectEmployee?.(employee);
                             setActiveMenuId(null);
                           }}
-                          className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                          className="flex w-full items-center gap-[11px] px-[15px] py-[7px] text-left text-[13px] font-medium text-gray-700 transition-colors hover:bg-gray-50"
                           type="button"
                         >
-                          <span className="material-symbols-outlined text-[20px] text-[#192841]">
+                          <span className="material-symbols-outlined text-[19px] text-[#192841]">
                             edit
                           </span>
                           Sửa

@@ -676,7 +676,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
                   placeholder="Nhập địa chỉ email" 
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  className={`w-full h-11 px-4 border rounded-xl text-sm focus:outline-none focus:ring-4 transition-all ${errors.email ? 'border-red-400 bg-red-50/30 ring-red-100' : 'border-gray-200 focus:border-[#192841] focus:ring-[#192841]/5'}`}
+                  className={`w-full h-[43px] px-[15px] border rounded-xl text-[13px] focus:outline-none focus:ring-4 transition-all ${errors.email ? 'border-red-400 bg-red-50/30 ring-red-100' : 'border-gray-200 focus:border-[#192841] focus:ring-[#192841]/5'}`}
                 />
                 {errors.email && <p className="text-[11px] font-medium text-red-500 pl-1">{errors.email}</p>}
               </div>
@@ -816,7 +816,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
                     <select 
                       value={formData.branchId}
                       onChange={(e) => handleInputChange('branchId', e.target.value)}
-                      className="w-full h-11 px-4 border border-gray-200 rounded-xl text-sm appearance-none bg-white focus:outline-none focus:border-[#192841] focus:ring-4 focus:ring-[#192841]/5 transition-all pr-10 disabled:bg-gray-50/50 disabled:text-gray-400 cursor-pointer disabled:cursor-not-allowed"
+                      className="w-full h-11 px-4 border border-gray-200 rounded-xl text-sm appearance-none bg-white focus:outline-none focus:ring-4 transition-all pr-10 disabled:bg-gray-50/50 disabled:text-gray-400 cursor-pointer disabled:cursor-not-allowed"
                       disabled={metadataLoading.branches || (shouldFilterBranchesByRegion && !formData.regionId)}
                     >
                       <option value="">{metadataLoading.branches ? 'Đang tải...' : shouldFilterBranchesByRegion && !formData.regionId ? 'Chọn vùng trước' : 'Chọn chi nhánh'}</option>
@@ -895,12 +895,12 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
         </div>
 
         {/* Footer */}
-        <div className="px-8 py-5 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/50">
+        <div className="p-[23px] border-t bg-gray-50 rounded-b-2xl flex justify-end gap-3">
           <button 
             type="button"
             onClick={onClose}
             disabled={submitting}
-            className="px-6 py-2.5 border border-gray-200 rounded-lg text-sm font-bold text-gray-600 hover:bg-white hover:border-gray-300 transition-all shadow-sm disabled:opacity-50"
+            className="px-[31px] py-[9px] border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-600 hover:bg-white hover:border-gray-300 transition-all shadow-sm disabled:opacity-50"
           >
             Hủy
           </button>

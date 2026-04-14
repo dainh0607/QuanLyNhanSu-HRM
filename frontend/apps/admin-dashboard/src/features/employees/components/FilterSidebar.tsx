@@ -252,7 +252,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
     const isCheckboxDisabled = isLoadingOptions || options.length === 0;
 
     return (
-      <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-3" key={id}>
+      <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-[11px]" key={id}>
         <div className="flex items-center justify-between gap-3">
           <label className="flex items-center gap-3">
             <input
@@ -272,9 +272,9 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
         </div>
 
         {isEnabled ? (
-          <div className="mt-3 pl-7">
+          <div className="mt-[11px] pl-[27px]">
             <select
-              className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-3 pr-8 text-sm focus:border-[#192841] focus:ring-[#192841]"
+              className="w-full rounded-lg border border-gray-300 bg-white py-[7px] pl-3 pr-8 text-[13px] focus:border-[#192841] focus:ring-[#192841]"
               value={selectedValue}
               onChange={(event) => handleFilterValueChange(id, event.target.value)}
             >
@@ -301,8 +301,8 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
       }`}
       id="filter-sidebar"
     >
-      <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-6 py-4">
-        <h2 className="text-base font-bold text-gray-900">Bộ lọc</h2>
+      <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-[23px] py-[15px]">
+        <h2 className="text-[15px] font-bold text-gray-900">Bộ lọc</h2>
         <button
           onClick={onClose}
           className="rounded-full p-1 transition-colors hover:bg-gray-100"
@@ -312,12 +312,12 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
         </button>
       </div>
 
-      <div className="scrollbar-hide flex-1 space-y-4 overflow-y-auto p-5">
+      <div className="scrollbar-hide flex-1 space-y-4 overflow-y-auto p-[19px]">
         {filterGroups.map(renderFilterGroup)}
 
         <button
           onClick={() => onApply(activeFilters)}
-          className="mt-6 w-full rounded-lg bg-[#192841] py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#111c2f]"
+          className="mt-[23px] w-full rounded-lg bg-[#192841] py-[9px] text-[13px] font-semibold text-white shadow-sm transition-all hover:bg-[#111c2f]"
           type="button"
         >
           Áp dụng
