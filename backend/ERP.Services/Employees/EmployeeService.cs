@@ -11,7 +11,10 @@ using ERP.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
 using FirebaseAdmin.Auth;
+using ERP.DTOs.Auth;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using System.Security.Claims;
 using EmployeeEntity = ERP.Entities.Models.Employees;
 
 namespace ERP.Services.Employees
@@ -22,13 +25,20 @@ namespace ERP.Services.Employees
         private readonly IFirebaseService _firebaseService;
         private readonly IUserService _userService;
         private readonly ILogger<EmployeeService> _logger;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public EmployeeService(IUnitOfWork unitOfWork, IFirebaseService firebaseService, IUserService userService, ILogger<EmployeeService> logger)
+        public EmployeeService(
+            IUnitOfWork unitOfWork, 
+            IFirebaseService firebaseService, 
+            IUserService userService, 
+            ILogger<EmployeeService> logger,
+            IHttpContextAccessor httpContextAccessor)
         {
             _unitOfWork = unitOfWork;
             _firebaseService = firebaseService;
             _userService = userService;
             _logger = logger;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         private async Task<PaginatedListDto<EmployeeDto>> GetPagedListLegacyAsync(EmployeeFilterDto filter)
@@ -353,6 +363,18 @@ namespace ERP.Services.Employees
             var accessGroup = await _unitOfWork.Repository<Roles>().GetByIdAsync(dto.AccessGroupId.Value);
             if (accessGroup == null || !accessGroup.is_active)
                 throw new Exception($"Nhóm truy cập ID {dto.AccessGroupId} không tồn tại hoặc đã ngừng hoạt động.");
+
+            // Constraint: Only Admin can create Admin
+            if (dto.AccessGroupId.Value == AuthSecurityConstants.RoleAdminId)
+            {
+                var currentUser = _httpContextAccessor.HttpContext?.User;
+                var isAdmin = currentUser?.IsInRole(AuthSecurityConstants.RoleAdmin) ?? false;
+                
+                if (!isAdmin)
+                {
+                    throw new Exception("Bạn không có quyền tạo tài khoản với nhóm truy cập Quản trị.");
+                }
+            }
 
             if (string.IsNullOrWhiteSpace(dto.Password) || dto.Password.Length <= 6)
                 throw new Exception("Mật khẩu phải dài hơn 6 ký tự.");
