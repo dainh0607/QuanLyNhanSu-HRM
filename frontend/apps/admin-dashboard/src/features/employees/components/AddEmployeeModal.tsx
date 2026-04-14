@@ -560,7 +560,10 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
       }, 1000);
     } catch (error: any) {
       console.error('Submit error:', error);
-      showToast(error.Message || 'Có lỗi xảy ra khi tạo nhân viên', 'error');
+      
+      // Ưu tiên hiển thị message lỗi cụ thể từ backend
+      const serverMessage = error?.Message || error?.message;
+      showToast(serverMessage || 'Có lỗi xảy ra khi tạo nhân viên', 'error');
       
       if (error?.errors && typeof error.errors === 'object') {
         const backendErrors: Record<string, string> = {};
@@ -611,7 +614,13 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
           </button>
         </div>
 
-        <div className="px-8 py-6">
+        <form 
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSubmit();
+          }}
+        >
+          <div className="px-8 py-6">
           {/* Banner */}
           <div className="bg-[#f8f9fa] rounded-[20px] p-6 flex gap-6 mb-8 border border-gray-100 items-center">
             <div className="w-20 h-20 flex-shrink-0 bg-white rounded-2xl p-2 shadow-sm">
@@ -765,6 +774,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
             {/* Link Mở rộng */}
             <div className="pt-2">
               <button 
+                type="button"
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="text-sm font-bold text-[#192841] hover:opacity-80 flex items-center gap-0.5 transition-all"
               >
@@ -887,6 +897,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
         {/* Footer */}
         <div className="px-8 py-5 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/50">
           <button 
+            type="button"
             onClick={onClose}
             disabled={submitting}
             className="px-6 py-2.5 border border-gray-200 rounded-lg text-sm font-bold text-gray-600 hover:bg-white hover:border-gray-300 transition-all shadow-sm disabled:opacity-50"
@@ -894,14 +905,15 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
             Hủy
           </button>
           <button 
-            onClick={handleSubmit}
+            type="submit"
             disabled={submitting}
             className="px-8 py-2.5 bg-[#192841] text-white text-sm font-bold rounded-lg hover:bg-[#253a5c] transition-all shadow-md shadow-[#192841]/20 flex items-center gap-2 disabled:opacity-70"
           >
             {submitting && <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>}
             Tạo mới
           </button>
-        </div>
+          </div>
+        </form>
       </div>
       {ToastComponent}
     </div>

@@ -18,7 +18,6 @@ interface UseShiftTabAssignOptions {
   branchOptions: SelectOption[];
   notify: (message: string, type?: "success" | "error" | "info") => void;
   onSuccess?: () => void;
-  useMockFallback: boolean;
 }
 
 interface UseShiftTabAssignResult {
@@ -68,7 +67,6 @@ export const useShiftTabAssign = ({
   branchOptions,
   notify,
   onSuccess,
-  useMockFallback,
 }: UseShiftTabAssignOptions): UseShiftTabAssignResult => {
   const [filters, setFilters] = useState<ShiftTabAssignFilters>({
     branchId: resolveInitialBranchId(initialBranchId, branchOptions),
@@ -123,7 +121,6 @@ export const useShiftTabAssign = ({
       const response = await shiftTabAssignService.getShiftTabs(
         filters.branchId,
         filters.weekStartDate,
-        useMockFallback,
       );
       setTabs(response);
       const nextActiveKey =
@@ -211,7 +208,6 @@ export const useShiftTabAssign = ({
           branchName: activeTab.branchName,
           employeeIds: selectedEmployeeIds,
         },
-        useMockFallback,
       );
       notify("Đã thêm nhân viên vào ca thành công.", "success");
       setPickerTarget(null);
@@ -236,7 +232,6 @@ export const useShiftTabAssign = ({
     try {
       await shiftTabAssignService.removeAssignedShift(
         removeTarget.employee.assignmentId,
-        useMockFallback,
       );
       setTabs((current) =>
         current.map((tab) =>

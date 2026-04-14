@@ -379,18 +379,19 @@ export const updateRuntimeShiftTemplate = (
   });
 };
 
+export const isRuntimeShiftTemplateDeleted = (shiftId: number): boolean =>
+  deletedRuntimeShiftTemplateIds.has(shiftId);
+
+export const markRuntimeShiftTemplateDeleted = (shiftId: number): void => {
+  runtimeShiftTemplates = runtimeShiftTemplates.filter((item) => item.shiftId !== shiftId);
+  deletedRuntimeShiftTemplateIds.add(shiftId);
+  persistRuntimeShiftTemplates();
+  persistDeletedRuntimeShiftTemplateIds();
+};
+
 export const deleteRuntimeShiftTemplate = (shiftId: number): boolean => {
   const exists = getMergedShiftTemplates().some((item) => item.shiftId === shiftId);
-  const beforeCount = runtimeShiftTemplates.length;
-  runtimeShiftTemplates = runtimeShiftTemplates.filter((item) => item.shiftId !== shiftId);
-  if (exists) {
-    deletedRuntimeShiftTemplateIds.add(shiftId);
-  }
-
-  if (runtimeShiftTemplates.length !== beforeCount || exists) {
-    persistRuntimeShiftTemplates();
-    persistDeletedRuntimeShiftTemplateIds();
-  }
+  markRuntimeShiftTemplateDeleted(shiftId);
   return exists;
 };
 

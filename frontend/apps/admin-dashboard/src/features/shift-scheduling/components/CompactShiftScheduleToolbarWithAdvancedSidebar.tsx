@@ -1,4 +1,4 @@
-﻿import { SCHEDULE_VIEW_OPTIONS } from "../data/constants";
+import { SCHEDULE_VIEW_OPTIONS } from "../data/constants";
 import type {
   SelectOption,
   ShiftScheduleFilters,
@@ -6,6 +6,7 @@ import type {
 } from "../types";
 import FilterSelect from "./FilterSelect";
 import IconActionButton from "./IconActionButton";
+import ShiftBulkActionsBar from "./ShiftBulkActionsBar";
 
 interface CompactShiftScheduleToolbarWithAdvancedSidebarProps {
   filters: ShiftScheduleFilters;
@@ -34,6 +35,13 @@ interface CompactShiftScheduleToolbarWithAdvancedSidebarProps {
   isAdvancedFilterOpen: boolean;
   activeAdvancedFilterCount: number;
   onToggleAdvancedFilter: () => void;
+  draftCount: number;
+  publishedCount: number;
+  isBulkProcessing: boolean;
+  onPublishAll: () => void;
+  onApproveAll: () => void;
+  onPublishAndApproveAll: () => void;
+  onDeleteUnconfirmed: () => void;
 }
 
 export const CompactShiftScheduleToolbarWithAdvancedSidebar = ({
@@ -60,6 +68,13 @@ export const CompactShiftScheduleToolbarWithAdvancedSidebar = ({
   isAdvancedFilterOpen,
   activeAdvancedFilterCount,
   onToggleAdvancedFilter,
+  draftCount,
+  publishedCount,
+  isBulkProcessing,
+  onPublishAll,
+  onApproveAll,
+  onPublishAndApproveAll,
+  onDeleteUnconfirmed,
 }: CompactShiftScheduleToolbarWithAdvancedSidebarProps) => {
   return (
     <section className="space-y-3">
@@ -206,6 +221,17 @@ export const CompactShiftScheduleToolbarWithAdvancedSidebar = ({
               </div>
             </div>
           </div>
+
+          {/* Nút Công bố / Chấp thuận - hiện khi có ca nháp hoặc chờ duyệt */}
+          <ShiftBulkActionsBar
+            draftCount={draftCount}
+            publishedCount={publishedCount}
+            isProcessing={isBulkProcessing}
+            onPublishAll={onPublishAll}
+            onApproveAll={onApproveAll}
+            onPublishAndApproveAll={onPublishAndApproveAll}
+            onDeleteUnconfirmed={onDeleteUnconfirmed}
+          />
         </div>
       </div>
 

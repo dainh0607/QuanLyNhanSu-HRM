@@ -107,7 +107,7 @@ const generateOtp = async (dto: GenerateOtpDto) =>
       method: 'POST',
       body: JSON.stringify(dto),
     },
-    "KhĂ´ng thá»ƒ gá»­i mĂ£ xĂ¡c thá»±c",
+    "Không thể gửi mã xác thực",
   );
 
 const verifyOtpRaw = async (dto: VerifyOtpDto) =>
@@ -117,7 +117,7 @@ const verifyOtpRaw = async (dto: VerifyOtpDto) =>
       method: 'POST',
       body: JSON.stringify(dto),
     },
-    "XĂ¡c thá»±c mĂ£ OTP tháº¥t báº¡i",
+    "Xác thực mã OTP thất bại",
   );
 
 const verifyOtp = async (dto: VerifyOtpDto) => normalizeSignerAuthResponse(await verifyOtpRaw(dto));

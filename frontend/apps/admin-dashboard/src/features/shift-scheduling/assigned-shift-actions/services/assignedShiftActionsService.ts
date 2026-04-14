@@ -1,14 +1,5 @@
 import { authService } from "../../../../services/authService";
 import { API_URL, requestJson } from "../../../../services/employee/core";
-import {
-  assignMockShiftToEmployee,
-  createMockShiftTemplateAndAssign,
-  deleteMockShiftAssignment,
-  getMockAvailableShiftCatalog,
-  getMockShiftAssignmentStatus,
-  markMockShiftAssignmentStatus,
-  refreshMockShiftAssignmentAttendance,
-} from "../../data/mockWeeklyShiftSchedule";
 import { registerRuntimeShiftTemplate } from "../../open-shift/openShiftRuntimeStore";
 import type { AttendanceStatus } from "../../types";
 import { formatTime, getHoursBetween, parseIsoDate } from "../../utils/week";
@@ -68,7 +59,62 @@ interface ShiftOptionApiItem {
   Color?: string | null;
   note?: string | null;
   Note?: string | null;
+  branch_ids?: Array<number | string> | null;
+  BranchIds?: Array<number | string> | null;
 }
+
+interface ShiftCreateResponse {
+  id?: number;
+  Id?: number;
+  shiftId?: number;
+  ShiftId?: number;
+}
+
+const normalizeShiftCode = (value: string): string =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .replace(/_{2,}/g, "_")
+    .toUpperCase()
+    .slice(0, 20) || "SHIFT_TEMPLATE";
+
+const toTimeSpanValue = (value: string): string =>
+  /^\d{2}:\d{2}:\d{2}$/.test(value) ? value : `${value}:00`;
+
+const toPositiveNumber = (value: string): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+};
+
+const getPrimaryBranchId = (
+  values?: Array<number | string> | null,
+): number | null => {
+  const firstValue = values?.[0];
+  if (firstValue === undefined || firstValue === null) {
+    return null;
+  }
+
+  const branchId = Number(firstValue);
+  return Number.isFinite(branchId) ? branchId : null;
+};
+
+const buildShiftCreatePayload = (
+  payload: DirectShiftTemplatePayload,
+): Record<string, unknown> => ({
+  ShiftCode: normalizeShiftCode(`${payload.name}_${payload.startTime}_${payload.endTime}`),
+  ShiftName: payload.name,
+  StartTime: toTimeSpanValue(payload.startTime),
+  EndTime: toTimeSpanValue(payload.endTime),
+  GracePeriodIn: toPositiveNumber(payload.allowedLateCheckInMinutes),
+  GracePeriodOut: toPositiveNumber(payload.allowedEarlyCheckOutMinutes),
+  MinCheckinBefore: 0,
+  IsOvernight: payload.isCrossNight,
+  Color: "#134BBA",
+  ShiftTypeId: 1,
+  Note: "Tao tu bang xep ca tuan",
+});
 
 const sameDate = (left: string, right: string): boolean => {
   const leftDate = new Date(left);
@@ -132,90 +178,6 @@ const buildMockMapPoint = (
   };
 };
 
-const createMockAttendanceHistory = (
-  context: AssignedShiftActionContext,
-  status: string,
-): ShiftAttendanceHistoryItem[] => {
-  const { shift } = context;
-  const date = shift.date;
-
-  const createItem = (
-    idSuffix: string,
-    time: string,
-    type: "IN" | "OUT",
-    deviceType: string,
-    reason?: string,
-  ): ShiftAttendanceHistoryItem => ({
-    id: `${getContextKey(context)}-${idSuffix}`,
-    timestamp: `${date}T${time}:00`,
-    recordType: type,
-    deviceType,
-    imageUrl: deviceType === "Mobile" ? MOBILE_IMAGE_PLACEHOLDER : null,
-    reason: reason ?? null,
-    isPinned: type === "IN",
-  });
-
-  switch (status) {
-    case "onTime":
-      return [
-        createItem("in", shift.startTime || "08:00", "IN", "Biometric", "Check-in đúng giờ"),
-        createItem("out", shift.endTime || "17:00", "OUT", "Biometric", "Hoàn tất ca"),
-      ];
-    case "lateEarly":
-      return [
-        createItem("in", "08:17", "IN", "Mobile", "Vào trễ 17 phút"),
-        createItem("out", "16:42", "OUT", "Mobile", "Ra sớm 18 phút"),
-      ];
-    case "missingCheck":
-      return [createItem("in", shift.startTime || "09:00", "IN", "Web", "Thiếu bản ghi ra ca")];
-    case "businessTrip":
-      return [
-        createItem("in", shift.startTime || "08:00", "IN", "Mobile", "Check-in ngoài hiện trường"),
-        createItem("out", shift.endTime || "17:00", "OUT", "Mobile", "Hoàn thành công tác"),
-      ];
-    default:
-      return [];
-  }
-};
-
-const resolveStatus = (context: AssignedShiftActionContext): string =>
-  getMockShiftAssignmentStatus(context.shift.sourceId, context.shift.attendanceStatus) ??
-  context.shift.attendanceStatus;
-
-const createMockShiftAssignmentDetail = (
-  context: AssignedShiftActionContext,
-): ShiftAssignmentDetail => {
-  const status = resolveStatus(context);
-  const attendanceHistory = sortHistoryAscending(createMockAttendanceHistory(context, status));
-  const mapPoints = attendanceHistory
-    .filter((item) => item.deviceType === "Mobile")
-    .map((item, index) => buildMockMapPoint(context, index, item));
-  const currentUser = authService.getCurrentUser();
-  const canEditTime =
-    !currentUser ||
-    currentUser.roles?.some((role) => role === "Admin" || role === "Manager");
-
-  return {
-    employee: context.employee,
-    shift: {
-      ...context.shift,
-      attendanceStatus: status as AttendanceStatus,
-    },
-    date: context.shift.date,
-    branchName:
-      context.shift.branchName ??
-      context.employee.branchName ??
-      "Chưa xác định chi nhánh",
-    shiftLengthHours: getHoursBetween(context.shift.startTime, context.shift.endTime),
-    workUnits: 1,
-    actualCheckIn: findActualTime(attendanceHistory, "IN"),
-    actualCheckOut: findActualTime(attendanceHistory, "OUT"),
-    canEditTime,
-    attendanceHistory,
-    mapPoints,
-  };
-};
-
 const mapShiftOption = (item: ShiftOptionApiItem): AvailableShiftOption | null => {
   const id = item.id ?? item.Id;
   const shiftId = item.shift_id ?? item.ShiftId ?? id;
@@ -233,7 +195,11 @@ const mapShiftOption = (item: ShiftOptionApiItem): AvailableShiftOption | null =
     name,
     startTime,
     endTime,
-    branchId: item.branch_id ?? item.BranchId ?? null,
+    branchId:
+      item.branch_id ??
+      item.BranchId ??
+      getPrimaryBranchId(item.branch_ids ?? item.BranchIds) ??
+      null,
     branchName: item.branch_name ?? item.BranchName ?? null,
     color: item.color ?? item.Color ?? null,
     note: item.note ?? item.Note ?? null,
@@ -266,268 +232,155 @@ export const assignedShiftActionsService = {
   async getShiftAssignmentDetail(
     context: AssignedShiftActionContext,
   ): Promise<ShiftAssignmentDetail> {
-    const fallback = createMockShiftAssignmentDetail(context);
+    const history = await loadAttendanceHistory(context.employee.id);
+    const datedHistory = filterHistoryByShiftDate(history, context.shift.date);
+    
+    const currentUser = authService.getCurrentUser();
+    const canEditTime =
+      !currentUser ||
+      currentUser.roles?.some((role) => role === "Admin" || role === "Manager");
 
-    try {
-      const history = await loadAttendanceHistory(context.employee.id);
-      const datedHistory = filterHistoryByShiftDate(history, context.shift.date);
-      if (!datedHistory.length) {
-        return fallback;
-      }
+    const detail: ShiftAssignmentDetail = {
+      employee: context.employee,
+      shift: context.shift,
+      date: context.shift.date,
+      branchName: context.shift.branchName ?? context.employee.branchName ?? "Chưa xác định",
+      shiftLengthHours: getHoursBetween(context.shift.startTime, context.shift.endTime),
+      workUnits: 1,
+      actualCheckIn: findActualTime(datedHistory, "IN"),
+      actualCheckOut: findActualTime(datedHistory, "OUT"),
+      canEditTime,
+      attendanceHistory: datedHistory,
+      mapPoints: datedHistory
+        .filter((item) => item.deviceType === "Mobile")
+        .map((item, index) => buildMockMapPoint(context, index, item)),
+    };
 
-      return {
-        ...fallback,
-        attendanceHistory: datedHistory,
-        actualCheckIn: findActualTime(datedHistory, "IN"),
-        actualCheckOut: findActualTime(datedHistory, "OUT"),
-        mapPoints: fallback.mapPoints,
-      };
-    } catch {
-      return fallback;
-    }
+    return detail;
   },
 
   async getAvailableShifts(
     context: AssignedShiftActionContext,
-    useMockFallback: boolean,
   ): Promise<AvailableShiftOption[]> {
-    try {
-      const url = new URL(`${API_URL}/shifts`);
-      if (context.shift.branchId) {
-        url.searchParams.set("branchId", String(context.shift.branchId));
-      }
-      url.searchParams.set("isActive", "true");
-
-      const response = await requestJson<ShiftOptionApiItem[]>(
-        url.toString(),
-        { method: "GET" },
-        "Không thể tải danh sách ca làm",
-      );
-
-      const mappedOptions = response
-        .map((item) => mapShiftOption(item))
-        .filter((item): item is AvailableShiftOption => Boolean(item));
-
-      if (mappedOptions.length > 0) {
-        return mappedOptions;
-      }
-    } catch {
-      if (!useMockFallback) {
-        throw new Error("Không thể tải danh sách ca làm.");
-      }
+    const url = new URL(`${API_URL}/shifts`);
+    if (context.shift.branchId) {
+      url.searchParams.set("branchId", String(context.shift.branchId));
     }
+    url.searchParams.set("isActive", "true");
 
-    return getMockAvailableShiftCatalog(context.shift.branchId).map((item) => ({
-      id: item.id,
-      shiftId: item.shift_id,
-      name: item.shift_name,
-      startTime: item.start_time,
-      endTime: item.end_time,
-      branchId: item.branch_id ?? null,
-      branchName: item.branch_name ?? null,
-      color: item.color ?? null,
-      note: item.note ?? null,
-    }));
+    const response = await requestJson<ShiftOptionApiItem[]>(
+      url.toString(),
+      { method: "GET" },
+      "Không thể tải danh sách ca làm",
+    );
+
+    return response
+      .map((item) => mapShiftOption(item))
+      .filter((item): item is AvailableShiftOption => Boolean(item));
   },
 
   async assignExistingShift(
     context: AssignedShiftActionContext,
     shift: AvailableShiftOption,
-    useMockFallback: boolean,
   ): Promise<void> {
-    try {
-      await requestJson(
-        `${API_URL}/shift-assignments`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            employee_id: context.employee.id,
-            shift_id: shift.shiftId,
-            assignment_date: context.shift.date,
-            note: shift.note ?? null,
-          }),
-        },
-        "Không thể gán ca làm",
-      );
-      return;
-    } catch {
-      if (!useMockFallback) {
-        throw new Error("Không thể gán ca làm.");
-      }
-    }
-
-    assignMockShiftToEmployee({
-      employeeId: context.employee.id,
-      assignmentDate: context.shift.date,
-      shift: {
-        id: shift.id,
-        shift_id: shift.shiftId,
-        shift_name: shift.name,
-        start_time: shift.startTime,
-        end_time: shift.endTime,
-        branch_id: shift.branchId ?? null,
-        branch_name: shift.branchName ?? null,
-        color: shift.color ?? null,
-        note: shift.note ?? null,
+    await requestJson(
+      `${API_URL}/shift-assignments`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          employee_id: context.employee.id,
+          shift_id: shift.shiftId,
+          assignment_date: context.shift.date,
+          note: shift.note ?? null,
+        }),
       },
-    });
+      "Không thể gán ca làm",
+    );
   },
 
   async createShiftTemplateAndAssign(
     context: AssignedShiftActionContext,
     payload: DirectShiftTemplatePayload,
-    useMockFallback: boolean,
   ): Promise<void> {
-    try {
-      const createdShift = await requestJson<{ id?: number; Id?: number }>(
-        `${API_URL}/shifts`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            shift_name: payload.name,
-            start_time: payload.startTime,
-            end_time: payload.endTime,
-            is_cross_night: payload.isCrossNight,
-            branch_ids: payload.branchIds.map(Number),
-            department_ids: payload.departmentIds.map(Number),
-            job_title_ids: payload.jobTitleIds.map(Number),
-            repeat_days: payload.repeatDays,
-            break_duration_minutes: payload.breakDurationMinutes
-              ? Number(payload.breakDurationMinutes)
-              : 0,
-            allowed_late_check_in_minutes: payload.allowedLateCheckInMinutes
-              ? Number(payload.allowedLateCheckInMinutes)
-              : 0,
-            allowed_early_check_out_minutes: payload.allowedEarlyCheckOutMinutes
-              ? Number(payload.allowedEarlyCheckOutMinutes)
-              : 0,
-            note: "Tạo từ bảng xếp ca tuần",
-          }),
-        },
-        "Không thể tạo ca làm mới",
-      );
+    const createdShift = await requestJson<ShiftCreateResponse>(
+      `${API_URL}/shifts`,
+      {
+        method: "POST",
+        body: JSON.stringify(buildShiftCreatePayload(payload)),
+      },
+      "Không thể tạo ca làm mới",
+    );
 
-      const createdShiftId = createdShift.id ?? createdShift.Id;
-      if (!createdShiftId) {
-        throw new Error("Không nhận được mã ca làm mới.");
-      }
-
-      await requestJson(
-        `${API_URL}/shift-assignments`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            employee_id: context.employee.id,
-            shift_id: createdShiftId,
-            assignment_date: context.shift.date,
-          }),
-        },
-        "Không thể gán ca làm mới",
-      );
-      return;
-    } catch {
-      if (!useMockFallback) {
-        throw new Error("Không thể tạo và gán trực tiếp ca làm.");
-      }
+    const createdShiftId =
+      createdShift.shiftId ?? createdShift.ShiftId ?? createdShift.id ?? createdShift.Id;
+    if (!createdShiftId) {
+      throw new Error("Không nhận được mã ca làm mới.");
     }
 
-    createMockShiftTemplateAndAssign({
-      employeeId: context.employee.id,
-      assignmentDate: context.shift.date,
-      name: payload.name,
-      startTime: payload.startTime,
-      endTime: payload.endTime,
-      branchId: payload.branchIds[0]
-        ? Number(payload.branchIds[0])
-        : context.shift.branchId ?? null,
-    });
-    registerRuntimeShiftTemplate(payload);
+    await requestJson(
+      `${API_URL}/shift-assignments`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          employee_id: context.employee.id,
+          shift_id: createdShiftId,
+          assignment_date: context.shift.date,
+        }),
+      },
+      "Không thể gán ca làm mới",
+    );
   },
 
   async refreshAttendance(
     context: AssignedShiftActionContext,
-    useMockFallback: boolean,
   ): Promise<void> {
-    try {
-      await requestJson(
-        `${API_URL}/shift-assignments/${context.shift.sourceId}/refresh-attendance`,
-        { method: "POST" },
-        "Không thể tải lại dữ liệu chấm công",
-      );
-      return;
-    } catch {
-      if (!useMockFallback || !context.shift.sourceId) {
-        throw new Error("Không thể tải lại dữ liệu chấm công.");
-      }
-    }
-
-    refreshMockShiftAssignmentAttendance(context.shift.sourceId);
+    await requestJson(
+      `${API_URL}/shift-assignments/${context.shift.sourceId}/refresh-attendance`,
+      { method: "POST" },
+      "Không thể tải lại dữ liệu chấm công",
+    );
   },
 
   async deleteAssignedShift(
     context: AssignedShiftActionContext,
-    useMockFallback: boolean,
   ): Promise<void> {
-    try {
-      await requestJson(
-        `${API_URL}/shift-assignments/${context.shift.sourceId}`,
-        { method: "DELETE" },
-        "Không thể xóa ca làm",
-      );
-      return;
-    } catch {
-      if (!useMockFallback || !context.shift.sourceId) {
-        throw new Error("Không thể xóa ca làm.");
-      }
-    }
-
-    deleteMockShiftAssignment(context.shift.sourceId);
+    await requestJson(
+      `${API_URL}/shift-assignments/${context.shift.sourceId}`,
+      { method: "DELETE" },
+      "Không thể xóa ca làm",
+    );
   },
 
   async createLeaveRequest(
     context: AssignedShiftActionContext,
     values: LeaveRequestFormValues,
-    useMockFallback: boolean,
   ): Promise<void> {
     const resolvedRange = getLeaveTimeRange(values);
     const approvalStatus = isLeaveRequestAutoApproved() ? "approved" : "pending";
 
-    try {
-      await requestJson(
-        `${API_URL}/leave-requests`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            employee_id: context.employee.id,
-            shift_assignment_id: context.shift.sourceId ?? null,
-            shift_id: context.shift.shiftId ?? null,
-            leave_date: values.startDate,
-            duration_type: values.durationType,
-            leave_reason_code: values.leaveReasonCode,
-            leave_reason: values.reason,
-            handover_employee_id: values.handoverEmployeeId
-              ? Number(values.handoverEmployeeId)
-              : null,
-            contact_phone: values.phoneNumber || null,
-            discussion_content: values.discussionContent || null,
-            start_time: resolvedRange?.startTime ?? values.startTime,
-            end_time: resolvedRange?.endTime ?? values.endTime,
-            approval_status: approvalStatus,
-          }),
-        },
-        "Không thể tạo yêu cầu nghỉ phép",
-      );
-      return;
-    } catch {
-      if (!useMockFallback || !context.shift.sourceId) {
-        throw new Error("Không thể tạo yêu cầu nghỉ phép.");
-      }
-    }
-
-    markMockShiftAssignmentStatus(
-      context.shift.sourceId,
-      getLeaveRequestAttendanceStatus(values.leaveReasonCode || "annualLeave"),
+    await requestJson(
+      `${API_URL}/leave-requests`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          employee_id: context.employee.id,
+          shift_assignment_id: context.shift.sourceId ?? null,
+          shift_id: context.shift.shiftId ?? null,
+          leave_date: values.startDate,
+          duration_type: values.durationType,
+          leave_reason_code: values.leaveReasonCode,
+          leave_reason: values.reason,
+          handover_employee_id: values.handoverEmployeeId
+            ? Number(values.handoverEmployeeId)
+            : null,
+          contact_phone: values.phoneNumber || null,
+          discussion_content: values.discussionContent || null,
+          start_time: resolvedRange?.startTime ?? values.startTime,
+          end_time: resolvedRange?.endTime ?? values.endTime,
+          approval_status: approvalStatus,
+        }),
+      },
+      "Không thể tạo yêu cầu nghỉ phép",
     );
   },
 };
-

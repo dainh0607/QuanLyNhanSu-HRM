@@ -6,14 +6,12 @@ import {
   WORKING_DAYS_OPTIONS,
   WORKING_HOURS_OPTIONS,
 } from "../data/constants";
-import { createMockWeeklyShiftScheduleApiResponse } from "../data/mockWeeklyShiftSchedule";
 import { getRuntimeOpenShiftsForWeek } from "../open-shift/openShiftRuntimeStore";
 import { getRuntimeQuickAddedEmployees } from "../quick-add-employees/stores/quickAddEmployeesRuntimeStore";
 import type {
   EmployeeListApiItem,
   MetadataOptionApiItem,
   PagedApiResponse,
-  ScheduleDataSource,
   SelectOption,
   ShiftScheduleFilters,
   ShiftScheduleLookups,
@@ -37,9 +35,18 @@ const buildEmptyCellMap = (weekStartDate: string): Record<string, WeeklySchedule
     }),
   );
 
-const appendIfValue = (url: URL, key: string, value: string): void => {
-  if (value.trim()) {
-    url.searchParams.set(key, value.trim());
+/**
+ * Helper to get a value from either snake_case OR camelCase property
+ */
+const getVal = <T>(obj: any, snakeKey: string, camelKey: string): T | undefined => {
+  return obj[snakeKey] !== undefined ? obj[snakeKey] : (obj[camelKey] !== undefined ? obj[camelKey] : undefined);
+};
+
+const appendIfValue = (url: URL, key: string, value: string | number | undefined): void => {
+  if (value === undefined) return;
+  const strValue = String(value).trim();
+  if (strValue) {
+    url.searchParams.set(key, strValue);
   }
 };
 
@@ -121,78 +128,83 @@ const normalizeAttendanceStatus = (value?: string | null): WeeklyScheduleShift["
 const normalizeEmployee = (
   employee: WeeklyScheduleApiEmployee,
 ): WeeklyScheduleEmployee => {
+  const fullName = getVal<string>(employee, "full_name", "fullName");
+  const employeeCode = getVal<string>(employee, "employee_code", "employeeCode");
+
   return {
     id: employee.id,
-    fullName: employee.full_name?.trim() || `Nhân viên #${employee.id}`,
-    avatar: employee.avatar ?? null,
-    employeeCode: employee.employee_code ?? null,
-    regionId: employee.region_id ?? null,
-    regionName: employee.region_name ?? null,
-    branchId: employee.branch_id ?? null,
-    branchName: employee.branch_name ?? null,
-    departmentId: employee.department_id ?? null,
-    departmentName: employee.department_name ?? null,
-    jobTitleId: employee.job_title_id ?? null,
-    jobTitleName: employee.job_title_name ?? null,
-    accessGroupId: employee.access_group_id ?? null,
-    accessGroupName: employee.access_group_name ?? null,
-    genderCode: employee.gender_code ?? null,
-    isActive: employee.is_active ?? true,
+    fullName: fullName?.trim() || `Nhân viên #${employee.id}`,
+    avatar: getVal<string>(employee, "avatar", "avatar") ?? null,
+    employeeCode: employeeCode ?? null,
+    regionId: getVal<number>(employee, "region_id", "regionId") ?? null,
+    regionName: getVal<string>(employee, "region_name", "regionName") ?? null,
+    branchId: getVal<number>(employee, "branch_id", "branchId") ?? null,
+    branchName: getVal<string>(employee, "branch_name", "branchName") ?? null,
+    departmentId: getVal<number>(employee, "department_id", "departmentId") ?? null,
+    departmentName: getVal<string>(employee, "department_name", "departmentName") ?? null,
+    jobTitleId: getVal<number>(employee, "job_title_id", "jobTitleId") ?? null,
+    jobTitleName: getVal<string>(employee, "job_title_name", "jobTitleName") ?? null,
+    accessGroupId: getVal<number>(employee, "access_group_id", "accessGroupId") ?? null,
+    accessGroupName: getVal<string>(employee, "access_group_name", "accessGroupName") ?? null,
+    genderCode: getVal<string>(employee, "gender_code", "genderCode") ?? null,
+    isActive: getVal<boolean>(employee, "is_active", "isActive") ?? true,
   };
 };
 
 const createShiftFromAssignment = (assignment: WeeklyScheduleApiAssignment): WeeklyScheduleShift => {
-  const attendanceStatus = normalizeAttendanceStatus(assignment.attendance_status);
+  const attendanceStatus = normalizeAttendanceStatus(getVal<string>(assignment, "attendance_status", "attendanceStatus"));
 
   return {
     id: `assignment-${assignment.id}`,
     sourceId: assignment.id,
-    shiftId: assignment.shift_id ?? null,
-    shiftName: assignment.shift_name?.trim() || "Ca chưa đặt tên",
-    startTime: assignment.start_time ?? "",
-    endTime: assignment.end_time ?? "",
-    date: assignment.assignment_date,
+    shiftId: getVal<number>(assignment, "shift_id", "shiftId") ?? null,
+    shiftName: getVal<string>(assignment, "shift_name", "shiftName")?.trim() || "Ca chưa đặt tên",
+    startTime: getVal<string>(assignment, "start_time", "startTime") ?? "",
+    endTime: getVal<string>(assignment, "end_time", "endTime") ?? "",
+    date: assignment.assignment_date || (assignment as any).assignmentDate,
     attendanceStatus,
     note: assignment.note,
     color: assignment.color,
-    isPublished: assignment.is_published ?? true,
-    branchId: assignment.branch_id ?? null,
-    branchName: assignment.branch_name ?? null,
-    jobTitleId: assignment.job_title_id ?? null,
-    jobTitleName: assignment.job_title_name ?? null,
-    projectId: assignment.project_id ?? null,
-    projectName: assignment.project_name ?? null,
+    isPublished: getVal<boolean>(assignment, "is_published", "isPublished") ?? true,
+    branchId: getVal<number>(assignment, "branch_id", "branchId") ?? null,
+    branchName: getVal<string>(assignment, "branch_name", "branchName") ?? null,
+    jobTitleId: getVal<number>(assignment, "job_title_id", "jobTitleId") ?? null,
+    jobTitleName: getVal<string>(assignment, "job_title_name", "jobTitleName") ?? null,
+    projectId: getVal<string>(assignment, "project_id", "projectId") ?? null,
+    projectName: getVal<string>(assignment, "project_name", "projectName") ?? null,
     statusLabel: ATTENDANCE_STATUS_META[attendanceStatus].label,
+    assignmentStatus: (getVal<string>(assignment, "status", "status") as any) || (getVal<boolean>(assignment, "is_published", "isPublished") ? "approved" : "draft"),
   };
 };
 
 const createShiftFromOpenShift = (openShift: WeeklyScheduleApiOpenShift): WeeklyScheduleShift => {
+  const status = getVal<string>(openShift, "status", "status");
   const attendanceStatus =
-    openShift.status?.trim().toLowerCase() === "locked" ? "locked" : "upcoming";
+    status?.trim().toLowerCase() === "locked" ? "locked" : "upcoming";
 
   return {
     id: `open-shift-${openShift.id}`,
     sourceId: openShift.id,
-    shiftId: openShift.shift_id ?? null,
-    shiftName: openShift.shift_name?.trim() || "Ca mở",
-    startTime: openShift.start_time ?? "",
-    endTime: openShift.end_time ?? "",
-    date: openShift.open_date,
+    shiftId: getVal<number>(openShift, "shift_id", "shiftId") ?? null,
+    shiftName: getVal<string>(openShift, "shift_name", "shiftName")?.trim() || "Ca mở",
+    startTime: getVal<string>(openShift, "start_time", "startTime") ?? "",
+    endTime: getVal<string>(openShift, "end_time", "endTime") ?? "",
+    date: openShift.open_date || (openShift as any).openDate,
     attendanceStatus,
     color: openShift.color,
     isPublished: true,
     isOpenShift: true,
-    requiredQuantity: openShift.required_quantity ?? 0,
-    assignedQuantity: openShift.assigned_quantity ?? 0,
-    branchId: openShift.branch_id ?? null,
-    branchName: openShift.branch_name ?? null,
-    departmentId: openShift.department_id ?? null,
-    jobTitleId: openShift.job_title_id ?? null,
-    jobTitleName: openShift.job_title_name ?? null,
+    requiredQuantity: getVal<number>(openShift, "required_quantity", "requiredQuantity") ?? 0,
+    assignedQuantity: getVal<number>(openShift, "assigned_quantity", "assignedQuantity") ?? 0,
+    branchId: getVal<number>(openShift, "branch_id", "branchId") ?? null,
+    branchName: getVal<string>(openShift, "branch_name", "branchName") ?? null,
+    departmentId: getVal<number>(openShift, "department_id", "departmentId") ?? null,
+    jobTitleId: getVal<number>(openShift, "job_title_id", "jobTitleId") ?? null,
+    jobTitleName: getVal<string>(openShift, "job_title_name", "jobTitleName") ?? null,
     statusLabel:
       attendanceStatus === "locked"
         ? ATTENDANCE_STATUS_META.locked.label
-        : `Cần ${openShift.required_quantity ?? 0} nhân sự`,
+        : `Cần ${getVal<number>(openShift, "required_quantity", "requiredQuantity") ?? 0} nhân sự`,
   };
 };
 
@@ -381,26 +393,29 @@ const applyClientFilters = (
 
 const transformApiResponse = (
   response: WeeklyScheduleApiResponse,
-  dataSource: ScheduleDataSource,
   filters: ShiftScheduleFilters,
 ): WeeklyScheduleGridData => {
-  const weekStartDate = response.week_start_date || filters.weekStartDate;
+  const weekStartDate = getVal<string>(response, "week_start_date", "weekStartDate") || filters.weekStartDate;
   const employeesFromResponse = (response.employees ?? []).map(normalizeEmployee);
+  const assignments = response.assignments ?? [];
 
   const employeesFromAssignments = Array.from(
     new Map(
-      (response.assignments ?? [])
-        .filter((assignment) => assignment.employee_id > 0)
+      assignments
+        .filter((assignment) => {
+          const empId = getVal<number>(assignment, "employee_id", "employeeId");
+          return empId !== undefined && empId > 0;
+        })
         .map((assignment) => {
           const employee: WeeklyScheduleApiEmployee = {
-            id: assignment.employee_id,
-            full_name: assignment.employee_name,
-            avatar: assignment.employee_avatar,
-            employee_code: assignment.employee_code,
-            branch_id: assignment.branch_id,
-            branch_name: assignment.branch_name,
-            job_title_id: assignment.job_title_id,
-            job_title_name: assignment.job_title_name,
+            id: getVal<number>(assignment, "employee_id", "employeeId")!,
+            full_name: getVal<string>(assignment, "employee_name", "employeeName"),
+            avatar: getVal<string>(assignment, "employee_avatar", "employeeAvatar"),
+            employee_code: getVal<string>(assignment, "employee_code", "employeeCode"),
+            branch_id: getVal<number>(assignment, "branch_id", "branchId"),
+            branch_name: getVal<string>(assignment, "branch_name", "branchName"),
+            job_title_id: getVal<number>(assignment, "job_title_id", "jobTitleId"),
+            job_title_name: getVal<string>(assignment, "job_title_name", "jobTitleName"),
             is_active: true,
           };
 
@@ -421,13 +436,15 @@ const transformApiResponse = (
   }));
 
   const rowsByEmployeeId = new Map(rows.map((row) => [row.employee.id, row]));
-  for (const assignment of response.assignments ?? []) {
-    const row = rowsByEmployeeId.get(assignment.employee_id);
+  for (const assignment of assignments) {
+    const empId = getVal<number>(assignment, "employee_id", "employeeId");
+    const row = empId !== undefined ? rowsByEmployeeId.get(empId) : null;
     if (!row) {
       continue;
     }
 
-    const cell = row.cells[assignment.assignment_date];
+    const date = assignment.assignment_date || (assignment as any).assignmentDate;
+    const cell = row.cells[date];
     if (!cell) {
       continue;
     }
@@ -436,8 +453,10 @@ const transformApiResponse = (
   }
 
   const openShiftCells = buildEmptyCellMap(weekStartDate);
-  for (const openShift of response.open_shifts ?? []) {
-    const cell = openShiftCells[openShift.open_date];
+  const openShifts = getVal<WeeklyScheduleApiOpenShift[]>(response, "open_shifts", "openShifts") ?? [];
+  for (const openShift of openShifts) {
+    const date = openShift.open_date || (openShift as any).openDate;
+    const cell = openShiftCells[date];
     if (!cell) {
       continue;
     }
@@ -453,8 +472,10 @@ const transformApiResponse = (
       openShiftCells,
       totalEmployees: uniqueEmployees.length,
       totalOpenShifts: Object.values(openShiftCells).reduce((total, cell) => total + cell.shifts.length, 0),
-      dataSource,
-      lastUpdatedAt: response.last_updated_at ?? new Date().toISOString(),
+      lastUpdatedAt: getVal<string>(response, "last_updated_at", "lastUpdatedAt") ?? new Date().toISOString(),
+      draftCount: getVal<number>(response, "draftCount", "draftCount") ?? 0,
+      publishedCount: getVal<number>(response, "publishedCount", "publishedCount") ?? 0,
+      approvedCount: getVal<number>(response, "approvedCount", "approvedCount") ?? 0,
     },
     filters,
   );
@@ -481,31 +502,19 @@ const getScheduleEndpointUrl = (filters: ShiftScheduleFilters): string => {
 };
 
 const getWeeklySchedule = async (filters: ShiftScheduleFilters): Promise<WeeklyScheduleGridData> => {
-  try {
-    const response = await requestJson<WeeklyScheduleApiResponse>(
-      getScheduleEndpointUrl(filters),
-      { method: "GET" },
-      "Không thể tải bảng xếp ca tuần",
-    );
+  const response = await requestJson<WeeklyScheduleApiResponse>(
+    getScheduleEndpointUrl(filters),
+    { method: "GET" },
+    "Không thể tải bảng xếp ca tuần",
+  );
 
-    return transformApiResponse(
-      {
-        ...response,
-        employees: mergeRuntimeEmployees(response.employees),
-      },
-      "api",
-      filters,
-    );
-  } catch (error) {
-    console.warn("Weekly schedule endpoint is unavailable, falling back to mock data.", error);
-    const mockResponse = createMockWeeklyShiftScheduleApiResponse(filters.weekStartDate);
-    mockResponse.employees = mergeRuntimeEmployees(mockResponse.employees);
-    mockResponse.open_shifts = [
-      ...(mockResponse.open_shifts ?? []),
-      ...getRuntimeOpenShiftsForWeek(filters.weekStartDate),
-    ];
-    return transformApiResponse(mockResponse, "mock", filters);
-  }
+  return transformApiResponse(
+    {
+      ...response,
+      employees: mergeRuntimeEmployees(response.employees),
+    },
+    filters,
+  );
 };
 
 const loadMetadataOptions = async (endpoint: string, allLabel: string): Promise<SelectOption[]> => {
@@ -572,4 +581,44 @@ const getLookups = async (): Promise<ShiftScheduleLookups & { employees: SelectO
 export const weeklyShiftScheduleService = {
   getWeeklySchedule,
   getLookups,
+};
+
+interface ShiftBulkActionPayload {
+  weekStartDate: string;
+  assignmentIds?: number[];
+}
+
+interface ShiftBulkActionResult {
+  affectedCount: number;
+  message: string;
+}
+
+const callBulkAction = async (
+  endpoint: string,
+  payload: ShiftBulkActionPayload,
+  fallback: string,
+): Promise<ShiftBulkActionResult> => {
+  const response = await requestJson<ShiftBulkActionResult>(
+    `${API_URL}/shift-assignments/${endpoint}`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        WeekStartDate: payload.weekStartDate,
+        AssignmentIds: payload.assignmentIds ?? null,
+      }),
+    },
+    fallback,
+  );
+  return response;
+};
+
+export const shiftBulkActionsService = {
+  publishAll: (weekStartDate: string, ids?: number[]) =>
+    callBulkAction("bulk-publish", { weekStartDate, assignmentIds: ids }, "Không thể công bố ca làm"),
+  approveAll: (weekStartDate: string, ids?: number[]) =>
+    callBulkAction("bulk-approve", { weekStartDate, assignmentIds: ids }, "Không thể chấp thuận ca làm"),
+  publishAndApproveAll: (weekStartDate: string, ids?: number[]) =>
+    callBulkAction("bulk-publish-approve", { weekStartDate, assignmentIds: ids }, "Không thể công bố & chấp thuận"),
+  deleteUnconfirmed: (weekStartDate: string) =>
+    callBulkAction("bulk-delete-unconfirmed", { weekStartDate }, "Không thể xóa ca chưa xác nhận"),
 };

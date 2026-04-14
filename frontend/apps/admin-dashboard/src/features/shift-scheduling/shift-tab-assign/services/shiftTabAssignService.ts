@@ -1,11 +1,5 @@
 import { employeeListService } from "../../../../services/employee/list";
 import { API_URL, requestJson } from "../../../../services/employee/core";
-import {
-  assignMockShiftToEmployee,
-  deleteMockShiftAssignment,
-  getMockAvailableShiftCatalog,
-  getMockEmployeeById,
-} from "../../data/mockWeeklyShiftSchedule";
 import { getRuntimeShiftTemplateCatalog } from "../../open-shift/openShiftRuntimeStore";
 import { weeklyShiftScheduleService } from "../../services/weeklyShiftScheduleService";
 import type { ShiftScheduleGridData } from "../../types";
@@ -37,6 +31,8 @@ interface ShiftCatalogApiItem {
   BranchId?: number | null;
   branch_name?: string | null;
   BranchName?: string | null;
+  branch_ids?: Array<number | string> | null;
+  BranchIds?: Array<number | string> | null;
 }
 
 const DEFAULT_SCHEDULE_FILTERS: ShiftTabAssignScheduleFilters = {
@@ -84,19 +80,28 @@ const createEmptyDays = (weekStartDate: string): ShiftTabAssignDay[] =>
     };
   });
 
-const createMockPhone = (employeeId: number): string =>
-  `0${String(900000000 + (employeeId % 100000000)).slice(0, 9)}`;
-
 const toAssignableEmployee = (
   employee: ShiftScheduleGridData["employees"][number],
 ): ShiftTabAssignableEmployee => ({
   id: employee.id,
   fullName: employee.fullName,
   avatar: employee.avatar ?? null,
-  phone: createMockPhone(employee.id),
+  phone: "N/A",
   branchId: employee.branchId ?? null,
   branchName: employee.branchName ?? null,
 });
+
+const getPrimaryBranchId = (
+  values?: Array<number | string> | null,
+): number | null => {
+  const firstValue = values?.[0];
+  if (firstValue === undefined || firstValue === null) {
+    return null;
+  }
+
+  const branchId = Number(firstValue);
+  return Number.isFinite(branchId) ? branchId : null;
+};
 
 const mapShiftCatalogItem = (item: ShiftCatalogApiItem): ShiftTabAssignTab | null => {
   const shiftId = item.shift_id ?? item.ShiftId ?? item.id ?? item.Id ?? null;
@@ -114,7 +119,11 @@ const mapShiftCatalogItem = (item: ShiftCatalogApiItem): ShiftTabAssignTab | nul
     shiftName,
     startTime,
     endTime,
-    branchId: item.branch_id ?? item.BranchId ?? null,
+    branchId:
+      item.branch_id ??
+      item.BranchId ??
+      getPrimaryBranchId(item.branch_ids ?? item.BranchIds) ??
+      null,
     branchName: item.branch_name ?? item.BranchName ?? null,
     days: [],
   };
@@ -122,33 +131,22 @@ const mapShiftCatalogItem = (item: ShiftCatalogApiItem): ShiftTabAssignTab | nul
 
 const loadShiftCatalog = async (
   branchId: string,
-  useMockFallback: boolean,
 ): Promise<ShiftTabAssignTab[]> => {
-  try {
-    const url = new URL(`${API_URL}/shifts`);
-    url.searchParams.set("isActive", "true");
-    if (branchId) {
-      url.searchParams.set("branchId", branchId);
-    }
-
-    const response = await requestJson<ShiftCatalogApiItem[]>(
-      url.toString(),
-      { method: "GET" },
-      "Không thể tải danh sách ca làm",
-    );
-
-    const mapped = response
-      .map((item) => mapShiftCatalogItem(item))
-      .filter((item): item is ShiftTabAssignTab => Boolean(item));
-
-    if (mapped.length > 0) {
-      return mapped;
-    }
-  } catch {
-    if (!useMockFallback) {
-      throw new Error("Không thể tải danh sách ca làm.");
-    }
+  const url = new URL(`${API_URL}/shifts`);
+  url.searchParams.set("isActive", "true");
+  if (branchId) {
+    url.searchParams.set("branchId", branchId);
   }
+
+  const response = await requestJson<ShiftCatalogApiItem[]>(
+    url.toString(),
+    { method: "GET" },
+    "Không thể tải danh sách ca làm",
+  );
+
+  const mapped = response
+    .map((item) => mapShiftCatalogItem(item))
+    .filter((item): item is ShiftTabAssignTab => Boolean(item));
 
   const branchNumber = branchId ? Number(branchId) : null;
   const runtimeCatalog = getRuntimeShiftTemplateCatalog()
@@ -166,18 +164,7 @@ const loadShiftCatalog = async (
       days: [],
     }));
 
-  const mockCatalog = getMockAvailableShiftCatalog(branchNumber).map<ShiftTabAssignTab>((item) => ({
-    key: getTabKey(item.shift_id, item.shift_name, item.start_time, item.end_time),
-    shiftId: item.shift_id,
-    shiftName: item.shift_name,
-    startTime: item.start_time,
-    endTime: item.end_time,
-    branchId: item.branch_id ?? null,
-    branchName: item.branch_name ?? null,
-    days: [],
-  }));
-
-  const merged = [...runtimeCatalog, ...mockCatalog];
+  const merged = [...runtimeCatalog, ...mapped];
   const seen = new Set<string>();
   return merged.filter((item) => {
     if (seen.has(item.key)) {
@@ -209,7 +196,7 @@ const enrichPhones = async (
           id: employee.id,
           fullName: employee.fullName,
           avatar: employee.avatar ?? null,
-          phone: employee.phone || createMockPhone(employee.id),
+          phone: employee.phone || "N/A",
           branchId: employee.branchId ?? null,
           branchName: employee.branchName ?? null,
         },
@@ -225,13 +212,12 @@ const enrichPhones = async (
 const buildTabsFromSchedule = async (
   branchId: string,
   weekStartDate: string,
-  useMockFallback: boolean,
 ): Promise<ShiftTabAssignTab[]> => {
   const scheduleData = await weeklyShiftScheduleService.getWeeklySchedule(
     createScheduleFilters(branchId, weekStartDate),
   );
   const employeeMap = await enrichPhones(branchId, scheduleData);
-  const seededTabs = await loadShiftCatalog(branchId, useMockFallback);
+  const seededTabs = await loadShiftCatalog(branchId);
   const tabsByKey = new Map<string, ShiftTabAssignTab>(
     seededTabs.map((tab) => [
       tab.key,
@@ -283,7 +269,7 @@ const buildTabsFromSchedule = async (
           employeeId: row.employee.id,
           fullName: employee.fullName,
           avatar: employee.avatar ?? null,
-          phone: employee.phone ?? createMockPhone(row.employee.id),
+          phone: employee.phone || "N/A",
           branchId: employee.branchId ?? null,
           branchName: employee.branchName ?? null,
         });
@@ -313,9 +299,8 @@ export const shiftTabAssignService = {
   async getShiftTabs(
     branchId: string,
     weekStartDate: string,
-    useMockFallback: boolean,
   ): Promise<ShiftTabAssignTab[]> {
-    return buildTabsFromSchedule(branchId, weekStartDate, useMockFallback);
+    return buildTabsFromSchedule(branchId, weekStartDate);
   },
 
   async getAvailableEmployees(
@@ -338,7 +323,7 @@ export const shiftTabAssignService = {
           id: employee.id,
           fullName: employee.fullName,
           avatar: employee.avatar ?? null,
-          phone: employee.phone || createMockPhone(employee.id),
+          phone: employee.phone || "N/A",
           branchId: employee.branchId ?? null,
           branchName: employee.branchName ?? null,
         }))
@@ -366,83 +351,40 @@ export const shiftTabAssignService = {
       branchName?: string | null;
       employeeIds: number[];
     },
-    useMockFallback: boolean,
   ): Promise<void> {
-    try {
+    if (params.employeeIds.length === 0) {
+      return;
+    }
+
+    if (params.shiftId === null) {
+      throw new Error("Không thể gán ca vì thiếu mã ca làm.");
+    }
+
+    for (const employeeId of params.employeeIds) {
       await requestJson(
-        `${API_URL}/shift-assignments/bulk-assign`,
+        `${API_URL}/shift-assignments`,
         {
           method: "POST",
           body: JSON.stringify({
+            employee_id: employeeId,
             shift_id: params.shiftId,
-            date: params.date,
-            user_ids: params.employeeIds,
+            assignment_date: params.date,
+            note: `Gán từ tab xếp ca ${params.shiftName}`,
           }),
         },
         "Không thể gán ca hàng loạt",
       );
-      return;
-    } catch {
-      if (!useMockFallback) {
-        throw new Error("Không thể gán ca hàng loạt.");
-      }
     }
-
-    const fallbackShift = {
-      id: params.shiftId ?? Date.now(),
-      shift_id: params.shiftId ?? Date.now(),
-      shift_name: params.shiftName,
-      start_time: params.startTime,
-      end_time: params.endTime,
-      branch_id: params.branchId ?? null,
-      branch_name: params.branchName ?? null,
-      note: "Gán từ modal Xếp ca.",
-      color: "#134BBA",
-    };
-
-    params.employeeIds.forEach((employeeId) => {
-      assignMockShiftToEmployee({
-        employeeId,
-        assignmentDate: params.date,
-        shift: fallbackShift,
-      });
-    });
   },
 
   async removeAssignedShift(
     assignmentId: number,
-    useMockFallback: boolean,
   ): Promise<void> {
-    try {
-      await requestJson(
-        `${API_URL}/shift-assignments/${assignmentId}`,
-        { method: "DELETE" },
-        "Không thể xóa nhân viên khỏi ca",
-      );
-      return;
-    } catch {
-      if (!useMockFallback) {
-        throw new Error("Không thể xóa nhân viên khỏi ca.");
-      }
-    }
-
-    deleteMockShiftAssignment(assignmentId);
-  },
-
-  getMockAssignableEmployee(employeeId: number): ShiftTabAssignableEmployee | null {
-    const employee = getMockEmployeeById(employeeId);
-    if (!employee) {
-      return null;
-    }
-
-    return {
-      id: employee.id,
-      fullName: employee.full_name ?? `Nhân viên #${employee.id}`,
-      avatar: employee.avatar ?? null,
-      phone: createMockPhone(employee.id),
-      branchId: employee.branch_id ?? null,
-      branchName: employee.branch_name ?? null,
-    };
+    await requestJson(
+      `${API_URL}/shift-assignments/${assignmentId}`,
+      { method: "DELETE" },
+      "Không thể xóa nhân viên khỏi ca",
+    );
   },
 };
 

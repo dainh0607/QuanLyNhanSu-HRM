@@ -15,9 +15,6 @@ const PAGE_LINE_LIMIT = 34;
 
 const sanitizePdfText = (value: string) =>
   value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^\x20-\x7E]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 

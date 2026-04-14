@@ -13,7 +13,6 @@ export const ShiftTabAssignModal = ({
   initialBranchId,
   initialWeekStartDate,
   branchOptions,
-  useMockFallback,
   onClose,
   onSuccess,
   notify,
@@ -34,7 +33,6 @@ export const ShiftTabAssignModal = ({
     branchOptions: resolvedBranchOptions,
     notify,
     onSuccess,
-    useMockFallback,
   });
 
   return (

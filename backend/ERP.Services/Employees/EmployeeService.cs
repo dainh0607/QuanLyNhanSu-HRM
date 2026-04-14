@@ -11,6 +11,7 @@ using ERP.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
 using FirebaseAdmin.Auth;
+using Microsoft.Extensions.Logging;
 using EmployeeEntity = ERP.Entities.Models.Employees;
 
 namespace ERP.Services.Employees
@@ -20,12 +21,14 @@ namespace ERP.Services.Employees
         private readonly IUnitOfWork _unitOfWork;
         private readonly IFirebaseService _firebaseService;
         private readonly IUserService _userService;
+        private readonly ILogger<EmployeeService> _logger;
 
-        public EmployeeService(IUnitOfWork unitOfWork, IFirebaseService firebaseService, IUserService userService)
+        public EmployeeService(IUnitOfWork unitOfWork, IFirebaseService firebaseService, IUserService userService, ILogger<EmployeeService> logger)
         {
             _unitOfWork = unitOfWork;
             _firebaseService = firebaseService;
             _userService = userService;
+            _logger = logger;
         }
 
         private async Task<PaginatedListDto<EmployeeDto>> GetPagedListLegacyAsync(EmployeeFilterDto filter)
@@ -429,8 +432,9 @@ namespace ERP.Services.Employees
                 }
                 return MapToDto(employee);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Lỗi khi tạo nhân viên. Payload: {EmployeeCode}, {Email}", dto.EmployeeCode, dto.Email);
                 await _unitOfWork.RollbackTransactionAsync();
                 throw;
             }

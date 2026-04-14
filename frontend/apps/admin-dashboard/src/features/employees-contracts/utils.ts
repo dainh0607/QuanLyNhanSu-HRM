@@ -109,6 +109,15 @@ export const resolveContractStatus = (
       : null;
 
   if (
+    normalizedStatus.includes("effective") ||
+    normalizedStatus.includes("active") ||
+    normalizedStatus.includes("dang hieu luc") ||
+    normalizedStatus.includes("ang hieu luc") // Handle partial/corrupted
+  ) {
+    return "effective";
+  }
+
+  if (
     normalizedStatus.includes("expired") ||
     normalizedStatus.includes("het han")
   ) {
@@ -119,6 +128,7 @@ export const resolveContractStatus = (
     normalizedStatus.includes("pending") ||
     normalizedStatus.includes("draft") ||
     normalizedStatus.includes("cho ky") ||
+    normalizedStatus.includes("cho k") || // Handle partial/corrupted
     normalizedStatus.includes("waiting")
   ) {
     return "pending";

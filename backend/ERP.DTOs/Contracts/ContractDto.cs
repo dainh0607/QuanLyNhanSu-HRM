@@ -42,6 +42,11 @@ namespace ERP.DTOs.Contracts
         public string? ContractNumber { get; set; } // May be generated later
         public int? ContractTypeId { get; set; }
         public int? TemplateId { get; set; }
+        public string? SignedBy { get; set; }
+        public DateTime? SignDate { get; set; }
+        public DateTime? ExpiryDate { get; set; }
+        public string? TaxType { get; set; }
+        public string? Attachment { get; set; }
         public string? Note { get; set; }
         public DateTime? EffectiveDate { get; set; }
     }

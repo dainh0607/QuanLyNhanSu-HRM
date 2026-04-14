@@ -25,6 +25,10 @@ namespace ERP.Entities.Models
         [Column("is_published")]
         public bool is_published { get; set; }
 
+        [Column("status")]
+        [MaxLength(20)]
+        public string status { get; set; } = "draft";
+
         [Column("created_by")]
         public int created_by { get; set; }
 

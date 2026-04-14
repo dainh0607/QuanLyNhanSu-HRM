@@ -78,6 +78,21 @@ export interface ContractCreatePayload {
   Status: string;
 }
 
+export interface ContractUpdatePayload {
+  ContractNumber: string;
+  ContractTypeId?: number;
+  SignDate?: string | null;
+  EffectiveDate?: string | null;
+  ExpiryDate?: string | null;
+  SignedBy: string;
+  TaxType: string;
+  Attachment?: string | null;
+  Status?: string;
+  IsElectronic?: boolean;
+  Note?: string;
+  TemplateId?: number;
+}
+
 export interface ContractsPagedResponse extends PaginatedResponse<ContractListItem> {}
 
 export interface ContractsDashboardData {
@@ -220,6 +235,11 @@ export interface ElectronicContractDraftDto {
   ContractNumber?: string;
   ContractTypeId?: number;
   TemplateId?: number;
+  SignedBy?: string;
+  SignDate?: string;
+  ExpiryDate?: string;
+  TaxType?: string;
+  Attachment?: string;
   Note?: string;
   EffectiveDate?: string;
 }

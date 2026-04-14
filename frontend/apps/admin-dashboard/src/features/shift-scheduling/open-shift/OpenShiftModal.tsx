@@ -9,7 +9,6 @@ interface OpenShiftModalProps {
   selectedDate: string | null;
   onClose: () => void;
   onSuccess: () => void;
-  useMockFallback: boolean;
 }
 
 const EMPTY_FORM_DATA: OpenShiftFormData = {
@@ -54,7 +53,6 @@ export const OpenShiftModal = ({
   selectedDate,
   onClose,
   onSuccess,
-  useMockFallback,
 }: OpenShiftModalProps) => {
   const [formData, setFormData] = useState<OpenShiftFormData>(EMPTY_FORM_DATA);
   const [isLoadingData, setIsLoadingData] = useState(false);
@@ -237,8 +235,6 @@ export const OpenShiftModal = ({
           requiredQuantity: Number(quantity),
           autoPublish,
         },
-        formData.targets,
-        useMockFallback,
       );
 
       onSuccess();

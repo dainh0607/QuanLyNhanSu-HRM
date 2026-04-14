@@ -1,6 +1,5 @@
-﻿import { authService } from "../../../../services/authService";
+import { authService } from "../../../../services/authService";
 import { employeeService } from "../../../../services/employeeService";
-import { isNotFoundError } from "../../../../services/employee/core";
 import { registerRuntimeQuickAddedEmployee } from "../stores/quickAddEmployeesRuntimeStore";
 import type {
   QuickAddEmployeeCatalogData,
@@ -159,24 +158,6 @@ const extractErrorMessage = (
   return fallbackMessage;
 };
 
-const shouldUseMockCreateFallback = (error: unknown): boolean => {
-  if (isNotFoundError(error)) {
-    return true;
-  }
-
-  if (error instanceof Error) {
-    const httpError = error as Error & { status?: number };
-    if (httpError.status === 0 || httpError.status === 404) {
-      return true;
-    }
-
-    const message = error.message.toLowerCase();
-    return message.includes("khong the ket noi") || message.includes("not found");
-  }
-
-  return false;
-};
-
 const buildRuntimeEmployee = ({
   apiEmployee,
   employeeCode,
@@ -268,7 +249,6 @@ export const quickAddEmployeesService = {
   async createEmployees(
     payload: QuickAddEmployeesSubmitPayload,
     catalog: QuickAddEmployeeCatalogData,
-    useMockFallback: boolean,
   ): Promise<QuickAddEmployeesCreateResult> {
     const branchOption = catalog.branches.find((item) => item.value === payload.branchId) ?? null;
     let createdCount = 0;
@@ -305,24 +285,11 @@ export const quickAddEmployeesService = {
           accessGroupName: accessGroupOption?.label ?? null,
         });
         createdCount += 1;
-        continue;
       } catch (error) {
-        if (!useMockFallback || !shouldUseMockCreateFallback(error)) {
-          throw new Error(
-            extractErrorMessage(error, `Không thể thêm nhân viên ở dòng ${index + 1}.`),
-          );
-        }
+        throw new Error(
+          extractErrorMessage(error, `Không thể thêm nhân viên ở dòng ${index + 1}.`),
+        );
       }
-
-      buildRuntimeEmployee({
-        employeeCode,
-        fullName: row.fullName.trim(),
-        branchId: payload.branchId,
-        branchName: branchOption?.label ?? null,
-        accessGroupId: row.accessGroupId,
-        accessGroupName: accessGroupOption?.label ?? null,
-      });
-      createdCount += 1;
     }
 
     this.rememberSelectedBranch(payload.branchId);

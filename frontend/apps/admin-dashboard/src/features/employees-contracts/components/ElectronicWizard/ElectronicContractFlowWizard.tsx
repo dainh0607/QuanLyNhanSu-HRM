@@ -150,6 +150,9 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
     setIsSubmitting(false);
     setStepTwoReady(false);
     setStepFourReady(false);
+    setContractId(null);
+    setContractSigners([]);
+    setPdfSourceLabel('Há»£p Ä‘á»“ng Ä‘iá»‡n tá»­.pdf');
 
     if (pdfUrlRef.current) {
       URL.revokeObjectURL(pdfUrlRef.current);
@@ -217,6 +220,43 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
     setStepTwoReady(false);
     setStepFourReady(false);
   }, [contractTypeLabel, formValues, selectedEmployee]);
+
+  const loadPersistedPdfSnapshot = useCallback(async (targetContractId: number) => {
+    if (pdfUrlRef.current) {
+      URL.revokeObjectURL(pdfUrlRef.current);
+      pdfUrlRef.current = null;
+    }
+
+    setPdfSourceUrl(null);
+    setStepTwoReady(false);
+    setStepFourReady(false);
+
+    const baseTitle =
+      formValues.templateName ||
+      formValues.attachmentName ||
+      `Há»£p Ä‘á»“ng Ä‘iá»‡n tá»­ ${formValues.contractNumber || ''}`.trim();
+
+    const previewLabel =
+      formValues.attachmentFile && isPdfFile(formValues.attachmentFile.name, formValues.attachmentFile.type)
+        ? formValues.attachmentFile.name
+        : formValues.attachmentName && !isPdfFile(formValues.attachmentName)
+          ? `${formValues.attachmentName} - báº£n xem trÆ°á»›c PDF`
+          : `${baseTitle || 'Há»£p Ä‘á»“ng Ä‘iá»‡n tá»­'}.pdf`;
+
+    try {
+      const previewBlob = await contractsService.getContractPreviewBlob(targetContractId);
+      const nextUrl = URL.createObjectURL(previewBlob);
+      pdfUrlRef.current = nextUrl;
+      setPdfSourceLabel(previewLabel);
+      setPdfSourceUrl(nextUrl);
+      return;
+    } catch (error) {
+      console.error('Failed to load backend contract preview:', error);
+    }
+
+    buildPdfSnapshot();
+    showToast('KhĂ´ng thá»ƒ táº£i báº£n xem trÆ°á»›c tá»« há»‡ thá»‘ng. Äang dĂ¹ng báº£n xem trÆ°á»›c táº¡m thá»i.', 'info');
+  }, [buildPdfSnapshot, formValues, showToast]);
 
   const updateErrors = (updater: (previousErrors: Record<string, string>) => Record<string, string>) => {
     setErrors((previousErrors) => updater(previousErrors));
@@ -302,7 +342,7 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
 
     if (!normalizedContractNumber) {
       nextErrors.contractNumber = 'Số hợp đồng là bắt buộc.';
-    } else if (await contractsService.checkContractNumberExists(normalizedContractNumber)) {
+    } else if (await contractsService.checkContractNumberExists(normalizedContractNumber, contractId ?? undefined)) {
       nextErrors.contractNumber = 'Số hợp đồng đã tồn tại.';
     }
 
@@ -463,6 +503,52 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
     }
   };
 
+  const buildDraftNote = () =>
+    `Táº¡o tá»« trĂ¬nh thuáº­t thuáº­t kĂ½ Ä‘iá»‡n tá»­ - Máº«u: ${formValues.templateName || 'Tá»‡p táº£i lĂªn'}`;
+
+  const buildElectronicDraftPayload = () => ({
+    EmployeeId: Number(formValues.employeeId),
+    ContractNumber: formValues.contractNumber,
+    ContractTypeId: Number(formValues.contractTypeId),
+    TemplateId: formValues.templateId ? Number(formValues.templateId) : undefined,
+    SignedBy: formValues.signedBy,
+    SignDate: formValues.signDate || undefined,
+    ExpiryDate: formValues.expiryDate || undefined,
+    TaxType: formValues.taxType,
+    Attachment: formValues.attachmentUrl || undefined,
+    Note: buildDraftNote(),
+  });
+
+  const buildElectronicDraftUpdatePayload = () => ({
+    ContractNumber: formValues.contractNumber,
+    ContractTypeId: Number(formValues.contractTypeId),
+    SignDate: formValues.signDate || undefined,
+    EffectiveDate: formValues.signDate || undefined,
+    ExpiryDate: formValues.expiryDate || undefined,
+    SignedBy: formValues.signedBy,
+    TaxType: formValues.taxType,
+    Attachment: formValues.attachmentUrl || undefined,
+    Status: 'Draft',
+    IsElectronic: true,
+    Note: buildDraftNote(),
+    TemplateId: formValues.templateId ? Number(formValues.templateId) : undefined,
+  });
+
+  const persistElectronicDraft = async () => {
+    if (contractId) {
+      await contractsService.updateContract(contractId, buildElectronicDraftUpdatePayload());
+      return contractId;
+    }
+
+    const response = await contractsService.createElectronicDraft(buildElectronicDraftPayload());
+    if (!response.id) {
+      throw new Error('KhĂ´ng nháº­n Ä‘Æ°á»£c ID báº£n nhĂ¡p tá»« há»‡ thá»‘ng.');
+    }
+
+    setContractId(response.id);
+    return response.id;
+  };
+
   const handleSubmit = async () => {
     if (!contractId) {
       showToast('Lỗi: Không tìm thấy ID hợp đồng. Vui lòng bắt đầu lại.', 'error');
@@ -511,6 +597,7 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
             values={formValues}
             errors={errors}
             isUploadingAttachment={isUploadingAttachment}
+            isEmployeeLocked={contractId !== null}
             employeeOptions={employeeOptions}
             signerOptions={signerOptions}
             contractTypeOptions={contractTypeOptions}
@@ -625,16 +712,12 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
                     
                     if (Object.keys(nextErrors).length === 0) {
                       // Call Step 1 API
-                      const response = await contractsService.createElectronicDraft({
-                        EmployeeId: Number(formValues.employeeId),
-                        ContractNumber: formValues.contractNumber,
-                        ContractTypeId: Number(formValues.contractTypeId),
-                        TemplateId: formValues.templateId ? Number(formValues.templateId) : undefined,
+                      const persistedContractId = await persistElectronicDraft();
+                      /*
                         Note: `Tạo từ trình thuật thuật ký điện tử - Mẫu: ${formValues.templateName || 'Tệp tải lên'}`,
-                      });
                       
-                      setContractId(response.id);
-                      buildPdfSnapshot();
+                      */
+                      await loadPersistedPdfSnapshot(persistedContractId);
                       setCurrentStep(2);
                     }
                   } catch (error) {

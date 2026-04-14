@@ -36,7 +36,6 @@ export interface ShiftTemplateListResponse {
   totalCount: number;
   page: number;
   pageSize: number;
-  dataSource: "api" | "mock";
 }
 
 export interface ShiftTemplateListQuery extends ShiftTemplateListFilters {

@@ -23,17 +23,23 @@ namespace ERP.Services.Contracts
         private readonly IEmailService _emailService;
         private readonly IConfiguration _configuration;
         private readonly IContractNotificationService _notificationService;
+        private readonly IStorageService _storageService;
+        private readonly IPdfService _pdfService;
 
         public SignerService(
             IUnitOfWork unitOfWork,
             IEmailService emailService,
             IConfiguration configuration,
-            IContractNotificationService notificationService)
+            IContractNotificationService notificationService,
+            IStorageService storageService,
+            IPdfService pdfService)
         {
             _unitOfWork = unitOfWork;
             _emailService = emailService;
             _configuration = configuration;
             _notificationService = notificationService;
+            _storageService = storageService;
+            _pdfService = pdfService;
         }
 
         public async Task<bool> GenerateOtpAsync(GenerateOtpDto dto)
@@ -137,11 +143,19 @@ namespace ERP.Services.Contracts
                 };
             }
 
-            var assignedPositionIds = await _unitOfWork.Repository<ContractSignerPositions>()
+            if (signer.Contract == null) throw new Exception("Khong tim thay hop dong can ky.");
+
+            var assignedPositions = await _unitOfWork.Repository<ContractSignerPositions>()
                 .AsQueryable()
                 .Where(position => position.signer_id == signerId)
-                .Select(position => position.Id)
+                .OrderBy(position => position.page_number)
+                .ThenBy(position => position.y_pos)
+                .ThenBy(position => position.x_pos)
                 .ToListAsync();
+
+            var assignedPositionIds = assignedPositions
+                .Select(position => position.Id)
+                .ToList();
 
             if (assignedPositionIds.Count == 0)
             {
@@ -168,10 +182,37 @@ namespace ERP.Services.Contracts
                 throw new Exception("Ban can hoan tat tat ca vi tri ky duoc gan truoc khi gui.");
             }
 
+            var signedPdfBytes = await LoadContractPdfBytesAsync(signer.Contract);
+
+            foreach (var position in assignedPositions)
+            {
+                if (!submittedFieldMap.TryGetValue(position.Id, out var submittedField))
+                {
+                    continue;
+                }
+
+                var signatureImageBytes = DecodeSignatureImage(submittedField.SignatureDataUrl);
+                signedPdfBytes = await _pdfService.StampSignatureAsync(
+                    signedPdfBytes,
+                    signatureImageBytes,
+                    position.page_number,
+                    position.x_pos,
+                    position.y_pos,
+                    position.width,
+                    position.height);
+            }
+
+            signer.Contract.attachment = await _storageService.SaveFileAsync(
+                signedPdfBytes,
+                $"{signer.Contract.contract_number}_{DateTime.UtcNow:yyyyMMddHHmmss}_signed.pdf",
+                "application/pdf");
+            signer.Contract.UpdatedAt = DateTime.UtcNow;
+
             signer.status = "Signed";
             signer.signed_at = DateTime.UtcNow;
             signer.UpdatedAt = DateTime.UtcNow;
 
+            _unitOfWork.Repository<ContractEntity>().Update(signer.Contract);
             _unitOfWork.Repository<ContractSigners>().Update(signer);
             await _unitOfWork.SaveChangesAsync();
 
@@ -206,6 +247,59 @@ namespace ERP.Services.Contracts
                 ContractFullySigned = !hasPendingSigner,
                 NotifiedNextSigner = notifiedNextSigner
             };
+        }
+
+        private async Task<byte[]> LoadContractPdfBytesAsync(ContractEntity contract)
+        {
+            if (!string.IsNullOrWhiteSpace(contract.attachment))
+            {
+                return await _storageService.GetFileAsync(contract.attachment);
+            }
+
+            var contractForPdf = await _unitOfWork.Repository<ContractEntity>()
+                .AsQueryable()
+                .Include(item => item.Employee)
+                    .ThenInclude(employee => employee.Department)
+                .Include(item => item.Employee)
+                    .ThenInclude(employee => employee.JobTitle)
+                .Include(item => item.Template)
+                .FirstOrDefaultAsync(item => item.Id == contract.Id);
+
+            if (contractForPdf == null)
+            {
+                throw new Exception("Khong tim thay hop dong can dong dau chu ky.");
+            }
+
+            if (contractForPdf.Template == null)
+            {
+                throw new Exception("Hop dong dien tu chua co file PDF goc hoac mau noi dung de ky.");
+            }
+
+            return await _pdfService.GenerateContractPdfAsync(contractForPdf);
+        }
+
+        private static byte[] DecodeSignatureImage(string signatureDataUrl)
+        {
+            if (string.IsNullOrWhiteSpace(signatureDataUrl))
+            {
+                throw new Exception("Du lieu chu ky khong hop le.");
+            }
+
+            var base64Payload = signatureDataUrl;
+            var commaIndex = signatureDataUrl.IndexOf(',');
+            if (commaIndex >= 0)
+            {
+                base64Payload = signatureDataUrl[(commaIndex + 1)..];
+            }
+
+            try
+            {
+                return Convert.FromBase64String(base64Payload);
+            }
+            catch (FormatException ex)
+            {
+                throw new Exception("Khong the doc du lieu anh chu ky.", ex);
+            }
         }
 
         private string GenerateSignerToken(ContractSigners signer)

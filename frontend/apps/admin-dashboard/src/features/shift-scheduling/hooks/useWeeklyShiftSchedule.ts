@@ -1,4 +1,4 @@
-﻿import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { useToast } from "../../../hooks/useToast";
 import {
@@ -76,7 +76,6 @@ export const useWeeklyShiftSchedule = (): UseWeeklyShiftScheduleResult => {
     DEFAULT_SHIFT_SCHEDULE_SETTINGS,
   );
   const deferredSearchTerm = useDeferredValue(filters.searchTerm);
-  const dataSourceRef = useRef<ShiftScheduleGridData["dataSource"] | null>(null);
 
   const effectiveFilters = useMemo<ShiftScheduleFilters>(
     () => ({
@@ -119,15 +118,6 @@ export const useWeeklyShiftSchedule = (): UseWeeklyShiftScheduleResult => {
     try {
       const response = await weeklyShiftScheduleService.getWeeklySchedule(effectiveFilters);
       setData(response);
-
-      if (dataSourceRef.current !== response.dataSource && response.dataSource === "mock") {
-        showToast(
-          "Chưa có endpoint xếp ca tuần từ BE, hệ thống đang hiển thị dữ liệu mẫu để hoàn thiện giao diện.",
-          "info",
-        );
-      }
-
-      dataSourceRef.current = response.dataSource;
     } catch (error) {
       console.error("Failed to reload weekly shift schedule:", error);
       showToast("Không thể tải bảng xếp ca tuần. Vui lòng thử lại.", "error");

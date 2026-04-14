@@ -31,7 +31,7 @@ namespace ERP.Services.Common
                     page.Size(PageSizes.A4);
                     page.Margin(2, Unit.Centimetre);
                     page.PageColor(Colors.White);
-                    page.DefaultTextStyle(x => x.FontSize(12).FontFamily(Fonts.Verdana));
+                    page.DefaultTextStyle(x => x.FontSize(12).FontFamily(Fonts.Tahoma));
 
                     page.Header().Text("HỢP ĐỒNG LAO ĐỘNG").SemiBold().FontSize(20).FontColor(Colors.Blue.Medium).AlignCenter();
 
@@ -162,10 +162,21 @@ namespace ERP.Services.Common
                     ImageData imageData = ImageDataFactory.Create(signatureImageBytes);
                     iText.Layout.Element.Image signatureImage = new iText.Layout.Element.Image(imageData);
 
+                    var pageSize = page.GetPageSize();
+                    var useNormalizedCoordinates =
+                        xCoordinate >= 0 && xCoordinate <= 1 &&
+                        yCoordinate >= 0 && yCoordinate <= 1 &&
+                        (!width.HasValue || (width.Value >= 0 && width.Value <= 1)) &&
+                        (!height.HasValue || (height.Value >= 0 && height.Value <= 1));
+
                     // Set dimensions
-                    float imageWidth = width ?? 100; // Default width 100 points
-                    float imageHeight = height ?? 50; // Default height 50 points
-                    
+                    float imageWidth = useNormalizedCoordinates
+                        ? (width ?? 0.24f) * pageSize.GetWidth()
+                        : width ?? 100;
+                    float imageHeight = useNormalizedCoordinates
+                        ? (height ?? 0.08f) * pageSize.GetHeight()
+                        : height ?? 50;
+
                     // If only width is provided, scale height proportionally
                     if (width.HasValue && !height.HasValue)
                     {
@@ -186,9 +197,15 @@ namespace ERP.Services.Common
                     using iText.Layout.Document document = new iText.Layout.Document(pdfDoc, 
                         new iText.Kernel.Geom.PageSize(page.GetPageSize().GetWidth(), page.GetPageSize().GetHeight()));
 
-                    // Add the image at the specified coordinates
-                    // Note: PDF coordinates originate from bottom-left corner
-                    signatureImage.SetFixedPosition(pageNumber, xCoordinate, yCoordinate, imageWidth);
+                    // Support both PDF points (bottom-left origin) and normalized UI coordinates (top-left origin).
+                    float finalX = useNormalizedCoordinates
+                        ? xCoordinate * pageSize.GetWidth()
+                        : xCoordinate;
+                    float finalY = useNormalizedCoordinates
+                        ? pageSize.GetHeight() - (yCoordinate * pageSize.GetHeight()) - imageHeight
+                        : yCoordinate;
+
+                    signatureImage.SetFixedPosition(pageNumber, finalX, finalY, imageWidth);
                     document.Add(signatureImage);
 
                     document.Close();

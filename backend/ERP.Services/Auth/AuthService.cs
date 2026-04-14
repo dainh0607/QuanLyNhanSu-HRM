@@ -88,7 +88,7 @@ namespace ERP.Services.Auth
                     }
                 }
 
-                UserRecord firebaseUser;
+                FirebaseUserDto firebaseUser;
                 var userArgs = new UserRecordArgs
                 {
                     Email = dto.Email,
@@ -369,26 +369,29 @@ namespace ERP.Services.Auth
 
                 try
                 {
-                    if (FirebaseAdmin.FirebaseApp.DefaultInstance != null)
+                    if (FirebaseAdmin.FirebaseApp.DefaultInstance != null || _configuration.GetValue<bool>("Firebase:BypassAuth"))
                     {
-                        var firebaseUser = await FirebaseAuth.DefaultInstance.GetUserAsync(uid);
+                        var firebaseUser = await _firebaseService.GetUserAsync(uid);
 
-                        if (!string.IsNullOrWhiteSpace(firebaseUser.Email))
+                        if (firebaseUser != null)
                         {
-                            userInfo.Email = firebaseUser.Email;
-                        }
+                            if (!string.IsNullOrWhiteSpace(firebaseUser.Email))
+                            {
+                                userInfo.Email = firebaseUser.Email;
+                            }
 
-                        if (!string.IsNullOrWhiteSpace(firebaseUser.DisplayName))
-                        {
-                            userInfo.FullName = firebaseUser.DisplayName;
-                        }
+                            if (!string.IsNullOrWhiteSpace(firebaseUser.DisplayName))
+                            {
+                                userInfo.FullName = firebaseUser.DisplayName;
+                            }
 
-                        if (!string.IsNullOrWhiteSpace(firebaseUser.PhoneNumber))
-                        {
-                            userInfo.PhoneNumber = firebaseUser.PhoneNumber;
-                        }
+                            if (!string.IsNullOrWhiteSpace(firebaseUser.PhoneNumber))
+                            {
+                                userInfo.PhoneNumber = firebaseUser.PhoneNumber;
+                            }
 
-                        userInfo.PhotoUrl = firebaseUser.PhotoUrl;
+                            userInfo.PhotoUrl = firebaseUser.PhotoUrl;
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -456,12 +459,9 @@ namespace ERP.Services.Auth
             {
                 _logger.LogInformation("Starting Firebase to Local DB synchronization...");
 
-                var pagedEnumerable = FirebaseAuth.DefaultInstance.ListUsersAsync(null);
-                var enumerator = pagedEnumerable.GetAsyncEnumerator();
-
-                while (await enumerator.MoveNextAsync())
+                var fbUsers = await _firebaseService.ListAllUsersAsync();
+                foreach (var fbUser in fbUsers)
                 {
-                    var fbUser = enumerator.Current;
                     var localUser = await _context.Users
                         .Include(u => u.Employee)
                         .FirstOrDefaultAsync(u => u.firebase_uid == fbUser.Uid || u.Employee.email == fbUser.Email);
@@ -680,14 +680,8 @@ namespace ERP.Services.Auth
             }
         }
 
-        public async Task<string> CreateFirebaseUserAsync(string email, string password, string displayName, int employeeId)
+        private async Task<string> CreateFirebaseUserInternalAsync(string email, string password, string displayName)
         {
-            if (FirebaseAdmin.FirebaseApp.DefaultInstance == null)
-            {
-                _logger.LogWarning("Firebase App not initialized. Skipping CreateFirebaseUserAsync.");
-                return "bypass-uid-" + Guid.NewGuid().ToString("N")[..8];
-            }
-
             var userArgs = new UserRecordArgs
             {
                 Email = email,
@@ -696,7 +690,13 @@ namespace ERP.Services.Auth
                 Disabled = false
             };
 
-            var firebaseUser = await FirebaseAuth.DefaultInstance.CreateUserAsync(userArgs);
+            var firebaseUser = await _firebaseService.CreateUserAsync(userArgs);
+            return firebaseUser.Uid;
+        }
+
+        public async Task<string> CreateFirebaseUserAsync(string email, string password, string displayName, int employeeId)
+        {
+            var firebaseUid = await CreateFirebaseUserInternalAsync(email, password, displayName);
 
             var employeeCode = await _context.Employees
                 .Where(employee => employee.Id == employeeId)
@@ -707,7 +707,7 @@ namespace ERP.Services.Auth
             {
                 employee_id = employeeId,
                 username = BuildInternalUsername(employeeCode, employeeId),
-                firebase_uid = firebaseUser.Uid,
+                firebase_uid = firebaseUid,
                 is_active = true,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -728,7 +728,7 @@ namespace ERP.Services.Auth
             _context.UserRoles.Add(userRole);
             await _context.SaveChangesAsync();
 
-            return firebaseUser.Uid;
+            return firebaseUid;
         }
 
         public string GenerateInternalToken(UserInfoDto user, string sessionId)
