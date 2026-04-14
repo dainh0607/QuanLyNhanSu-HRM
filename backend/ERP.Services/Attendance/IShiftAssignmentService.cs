@@ -23,5 +23,6 @@ namespace ERP.Services.Attendance
         Task<ShiftBulkActionResultDto> ApproveAssignmentsAsync(string weekStartDate, List<int>? assignmentIds);
         Task<ShiftBulkActionResultDto> PublishAndApproveAssignmentsAsync(string weekStartDate, List<int>? assignmentIds);
         Task<ShiftBulkActionResultDto> DeleteUnconfirmedAssignmentsAsync(string weekStartDate);
+        Task<ShiftCountersDto> GetShiftCountersAsync(string startDateStr, string endDateStr, int? branchId = null);
     }
 }
