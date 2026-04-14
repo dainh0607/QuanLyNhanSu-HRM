@@ -440,6 +440,79 @@ namespace ERP.Services.Employees
             }
         }
 
+        public async Task<int> CreateBulkAsync(EmployeeBulkCreateDto dto)
+        {
+            if (await _unitOfWork.Repository<Branches>().GetByIdAsync(dto.BranchId) == null)
+                throw new Exception($"Chi nhánh ID {dto.BranchId} không tồn tại.");
+
+            var createdFirebaseUids = new List<string>();
+            await _unitOfWork.BeginTransactionAsync();
+
+            try
+            {
+                int count = 0;
+                foreach (var item in dto.Employees)
+                {
+                    if (string.IsNullOrWhiteSpace(item.FullName)) continue;
+
+                    var accessGroup = await _unitOfWork.Repository<Roles>().GetByIdAsync(item.AccessGroupId);
+                    if (accessGroup == null || !accessGroup.is_active)
+                        throw new Exception($"Nhóm truy cập ID {item.AccessGroupId} cho nhân viên '{item.FullName}' không tồn tại hoặc đã ngừng hoạt động.");
+
+                    string nextCode = await GenerateNextEmployeeCodeAsync("NV");
+                    string defaultEmail = $"{nextCode.ToLower()}@nexahrm.local";
+                    string defaultPassword = "NexaHR" + new Random().Next(1000, 9999) + "!";
+
+                    var employee = new EmployeeEntity
+                    {
+                        employee_code = nextCode,
+                        full_name = item.FullName,
+                        email = defaultEmail,
+                        phone = item.Phone,
+                        branch_id = dto.BranchId,
+                        is_active = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+
+                    await _unitOfWork.Repository<EmployeeEntity>().AddAsync(employee);
+                    await _unitOfWork.SaveChangesAsync();
+
+                    var userArgs = new UserRecordArgs()
+                    {
+                        Email = defaultEmail,
+                        Password = defaultPassword,
+                        DisplayName = item.FullName,
+                        PhoneNumber = !string.IsNullOrWhiteSpace(item.Phone) ? item.Phone : null,
+                        Disabled = false
+                    };
+                    
+                    var firebaseUser = await _firebaseService.CreateUserAsync(userArgs);
+                    createdFirebaseUids.Add(firebaseUser.Uid);
+
+                    var user = await _userService.CreateLocalUserAsync(employee.Id, userArgs.Email, firebaseUser.Uid);
+                    await _userService.AssignRoleAsync(user.Id, item.AccessGroupId);
+
+                    count++;
+                }
+
+                await _unitOfWork.CommitTransactionAsync();
+                return count;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi tạo hàng loạt nhân viên.");
+                await _unitOfWork.RollbackTransactionAsync();
+
+                foreach (var uid in createdFirebaseUids)
+                {
+                    try { await _firebaseService.DeleteUserAsync(uid); } catch { }
+                }
+
+                throw;
+            }
+        }
+
         public async Task<bool> UpdateAsync(int id, EmployeeUpdateDto dto)
         {
             var employee = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(id);

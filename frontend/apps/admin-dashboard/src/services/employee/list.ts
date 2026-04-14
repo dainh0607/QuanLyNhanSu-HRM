@@ -7,6 +7,7 @@ import {
 } from "./helpers";
 import type {
   EmployeeCreatePayload,
+  EmployeeBulkCreatePayload,
   EmployeeExportFileResult,
   EmployeeFullProfile,
   EmployeeListFilters,
@@ -149,6 +150,22 @@ const createEmployee = async (dto: EmployeeCreatePayload): Promise<unknown> => {
   }
 };
 
+const bulkCreateEmployees = async (dto: EmployeeBulkCreatePayload): Promise<{ message: string; count: number }> => {
+  try {
+    return await requestJson<{ message: string; count: number }>(
+      `${API_URL}/employees/bulk`,
+      {
+        method: "POST",
+        body: JSON.stringify(dto),
+      },
+      "Error bulk creating employees",
+    );
+  } catch (error) {
+    console.error("Bulk Create Employees Error:", error);
+    throw error;
+  }
+};
+
 const checkEmployeeCodeExists = async (
   employeeCode: string,
   excludeEmployeeId?: number,
@@ -218,6 +235,7 @@ export const employeeListService = {
   deleteEmployee,
   getNextEmployeeCode,
   createEmployee,
+  bulkCreateEmployees,
   checkEmployeeCodeExists,
   checkEmployeeEmailExists,
 };

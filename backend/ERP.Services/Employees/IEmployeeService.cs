@@ -14,6 +14,7 @@ namespace ERP.Services.Employees
         Task<EmployeeFullProfileDto?> GetFullProfileAsync(int id);
         Task<EmployeeDto?> GetByCodeAsync(string code);
         Task<EmployeeDto> CreateAsync(EmployeeCreateDto dto);
+        Task<int> CreateBulkAsync(EmployeeBulkCreateDto dto);
         Task<bool> UpdateAsync(int id, EmployeeUpdateDto dto);
         Task<bool> DeleteAsync(int id);
         Task<string> GenerateNextEmployeeCodeAsync(string prefix = "NV");
