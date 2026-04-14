@@ -47,7 +47,7 @@ const normalizeUser = (user?: User | null): User | null => {
 
   return {
     ...user,
-    role: user.roles?.includes("Admin") ? "admin" : "user",
+    role: user.roles?.includes("Quản trị") ? "admin" : "user",
   };
 };
 

@@ -866,58 +866,125 @@ namespace ERP.Services.Auth
 
         private async Task EnsureLoginRolesAsync(int userId, string email)
         {
-            var adminRoleId = await EnsureRoleExistsAsync("Admin", "System Administrator");
-            var managerRoleId = await EnsureRoleExistsAsync("Manager", "Manager");
-            var activeRoleIds = await _context.UserRoles
-                .Where(ur => ur.user_id == userId && ur.is_active)
-                .Select(ur => ur.role_id)
-                .ToListAsync();
-
-            var isMasterEmail = IsMasterEmail(email);
-            var defaultRoleId = isMasterEmail ? adminRoleId : managerRoleId;
-
-            if (activeRoleIds.Count == 0)
+            try
             {
-                _context.UserRoles.Add(new UserRoles
-                {
-                    user_id = userId,
-                    role_id = defaultRoleId,
-                    is_active = true,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                });
+                // 1. Rename existing legacy roles if they exist
+                var legacyRoles = await _context.Roles
+                    .Where(r => r.name == "Admin" || r.name == "Manager" || r.name == "User")
+                    .ToListAsync();
 
-                await _context.SaveChangesAsync();
-                return;
+                foreach (var legacyRole in legacyRoles)
+                {
+                    if (legacyRole.name == "Admin") legacyRole.name = AuthSecurityConstants.RoleAdmin;
+                    else if (legacyRole.name == "Manager") legacyRole.name = AuthSecurityConstants.RoleDeptManager;
+                    else if (legacyRole.name == "User") legacyRole.name = AuthSecurityConstants.RoleEmployee;
+
+                    legacyRole.UpdatedAt = DateTime.UtcNow;
+                }
+
+                if (legacyRoles.Any())
+                {
+                    await _context.SaveChangesAsync();
+                }
+
+                // 2. Ensure all 7 predefined roles exist with correct IDs
+                await EnsureRoleExistsAsync(AuthSecurityConstants.RoleAdmin, "Quản trị hệ thống cao nhất", AuthSecurityConstants.RoleAdminId);
+                await EnsureRoleExistsAsync(AuthSecurityConstants.RoleDirector, "Thành viên Ban giám đốc", AuthSecurityConstants.RoleDirectorId);
+                await EnsureRoleExistsAsync(AuthSecurityConstants.RoleRegionManager, "Quản lý theo vùng/miền", AuthSecurityConstants.RoleRegionManagerId);
+                await EnsureRoleExistsAsync(AuthSecurityConstants.RoleBranchManager, "Quản lý tại chi nhánh", AuthSecurityConstants.RoleBranchManagerId);
+                await EnsureRoleExistsAsync(AuthSecurityConstants.RoleDeptManager, "Quản lý phòng ban/bộ phận", AuthSecurityConstants.RoleDeptManagerId);
+                await EnsureRoleExistsAsync(AuthSecurityConstants.RoleModuleAdmin, "Quản trị các phân hệ nghiệp vụ", AuthSecurityConstants.RoleModuleAdminId);
+                await EnsureRoleExistsAsync(AuthSecurityConstants.RoleEmployee, "Nhân viên chính thức", AuthSecurityConstants.RoleEmployeeId);
+
+                // 3. Logic assigning default role for new users
+                var activeRoleIds = await _context.UserRoles
+                    .Where(ur => ur.user_id == userId && ur.is_active)
+                    .Select(ur => ur.role_id)
+                    .ToListAsync();
+
+                var isMasterEmail = IsMasterEmail(email);
+                var defaultRoleId = isMasterEmail ? AuthSecurityConstants.RoleAdminId : AuthSecurityConstants.RoleEmployeeId;
+
+                if (activeRoleIds.Count == 0)
+                {
+                    _context.UserRoles.Add(new UserRoles
+                    {
+                        user_id = userId,
+                        role_id = defaultRoleId,
+                        is_active = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+
+                    await _context.SaveChangesAsync();
+                    return;
+                }
+
+                if (isMasterEmail && !activeRoleIds.Contains(AuthSecurityConstants.RoleAdminId))
+                {
+                    _context.UserRoles.Add(new UserRoles
+                    {
+                        user_id = userId,
+                        role_id = AuthSecurityConstants.RoleAdminId,
+                        is_active = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+
+                    await _context.SaveChangesAsync();
+                }
             }
-
-            if (isMasterEmail && !activeRoleIds.Contains(adminRoleId))
+            catch (Exception ex)
             {
-                _context.UserRoles.Add(new UserRoles
-                {
-                    user_id = userId,
-                    role_id = adminRoleId,
-                    is_active = true,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                });
-
-                await _context.SaveChangesAsync();
+                _logger.LogError(ex, "Error synchronizing roles during login");
             }
         }
 
-        private async Task<int> EnsureRoleExistsAsync(string roleName, string description)
+        private async Task<int> EnsureRoleExistsAsync(string roleName, string description, int? roleId = null)
         {
-            var existingRole = await _context.Roles
-                .FirstOrDefaultAsync(role =>
-                    role.name == roleName ||
-                    role.name.ToLower() == roleName.ToLower());
+            Roles? existingRole = null;
+
+            // 1. Try find by ID
+            if (roleId.HasValue)
+            {
+                existingRole = await _context.Roles.FirstOrDefaultAsync(r => r.Id == roleId.Value);
+            }
+
+            // 2. Try find by Name (including old English names)
+            if (existingRole == null)
+            {
+                var lowerName = roleName.ToLower();
+                // Map old names to new ones if searching for the first time
+                var oldNames = new List<string> { lowerName };
+                if (lowerName == "quản trị") oldNames.Add("admin");
+                if (lowerName == "ban giám đốc") oldNames.Add("manager");
+                if (lowerName == "nhân viên") oldNames.Add("user");
+
+                existingRole = await _context.Roles
+                    .FirstOrDefaultAsync(role => oldNames.Contains(role.name.ToLower()));
+            }
 
             if (existingRole != null)
             {
+                bool needsUpdate = false;
+                if (existingRole.name != roleName)
+                {
+                    existingRole.name = roleName;
+                    needsUpdate = true;
+                }
+                if (existingRole.description != description)
+                {
+                    existingRole.description = description;
+                    needsUpdate = true;
+                }
                 if (!existingRole.is_active)
                 {
                     existingRole.is_active = true;
+                    needsUpdate = true;
+                }
+
+                if (needsUpdate)
+                {
                     existingRole.UpdatedAt = DateTime.UtcNow;
                     await _context.SaveChangesAsync();
                 }
@@ -927,6 +994,7 @@ namespace ERP.Services.Auth
 
             var role = new Roles
             {
+                // We don't set ID here to avoid IDENTITY constraint issues
                 name = roleName,
                 description = description,
                 is_active = true,

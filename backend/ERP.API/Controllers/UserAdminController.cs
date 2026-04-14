@@ -10,7 +10,7 @@ namespace ERP.API.Controllers
 {
     [ApiController]
     [Route("api/user-admin")]
-    [Authorize(Roles = "Manager,Admin")]
+    [Authorize(Roles = "Ban giám đốc,Quản trị")]
     public class UserAdminController : ControllerBase
     {
         private readonly IUserService _userService;
@@ -67,7 +67,7 @@ namespace ERP.API.Controllers
         /// DANGEROUS: Wipes all users from the Firebase project. 
         /// </summary>
         [HttpDelete("nuke-firebase")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Quản trị")]
         public async Task<IActionResult> DeleteAllFirebaseUsers()
         {
             try

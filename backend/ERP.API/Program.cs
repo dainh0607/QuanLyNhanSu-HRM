@@ -148,6 +148,7 @@ builder.Services.AddScoped<IFirebaseService, FirebaseService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IClaimsTransformation, FirebaseClaimsTransformation>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IEmployeeProfileService, EmployeeProfileService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();

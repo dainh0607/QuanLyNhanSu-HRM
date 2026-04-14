@@ -12,9 +12,13 @@ namespace ERP.Entities.Seeding
 
             // 1. Roles
             modelBuilder.Entity<Roles>().HasData(
-                new Roles { Id = 1, name = "Admin", description = "System Administrator", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
-                new Roles { Id = 2, name = "Manager", description = "Department Manager", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
-                new Roles { Id = 3, name = "User", description = "Regular Employee", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate }
+                new Roles { Id = 1, name = "Quản trị", description = "Quản trị hệ thống cao nhất", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new Roles { Id = 2, name = "Ban giám đốc", description = "Thành viên Ban giám đốc", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new Roles { Id = 3, name = "Quản lý vùng", description = "Quản lý theo vùng/miền", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new Roles { Id = 4, name = "Quản lý chi nhánh", description = "Quản lý tại chi nhánh", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new Roles { Id = 5, name = "Quản lý bộ phận", description = "Quản lý phòng ban/bộ phận", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new Roles { Id = 6, name = "Quản trị phân hệ", description = "Quản trị các phân hệ nghiệp vụ", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new Roles { Id = 7, name = "Nhân viên", description = "Nhân viên chính thức", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate }
             );
 
             // 2. Genders
