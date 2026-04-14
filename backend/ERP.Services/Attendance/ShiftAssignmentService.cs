@@ -300,5 +300,29 @@ namespace ERP.Services.Attendance
                 Message = $"Đã xóa {assignments.Count} ca làm chưa xác nhận."
             };
         }
+
+        public async Task<ShiftCountersDto> GetShiftCountersAsync(string startDateStr, string endDateStr, int? branchId = null)
+        {
+            if (!DateTime.TryParse(startDateStr, out var startDate) || !DateTime.TryParse(endDateStr, out var endDate))
+                throw new Exception("Ngày tháng không hợp lệ.");
+
+            var query = _unitOfWork.Repository<ShiftAssignments>()
+                .AsQueryable()
+                .Where(a => a.assignment_date >= startDate && a.assignment_date <= endDate);
+
+            if (branchId.HasValue)
+            {
+                query = query.Include(a => a.Employee).Where(a => a.Employee != null && a.Employee.branch_id == branchId.Value);
+            }
+
+            var draftCount = await query.CountAsync(a => a.status == "draft");
+            var pendingApprovalCount = await query.CountAsync(a => a.status == "published");
+
+            return new ShiftCountersDto
+            {
+                PendingPublishCount = draftCount,
+                PendingApprovalCount = pendingApprovalCount
+            };
+        }
     }
 }

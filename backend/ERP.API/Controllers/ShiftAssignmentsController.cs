@@ -151,5 +151,19 @@ namespace ERP.API.Controllers
                 return BadRequest(new { Message = ex.Message });
             }
         }
+
+        [HttpGet("counters")]
+        public async Task<IActionResult> GetShiftCounters([FromQuery] string startDate, [FromQuery] string endDate, [FromQuery] int? branchId = null)
+        {
+            try
+            {
+                var result = await _assignmentService.GetShiftCountersAsync(startDate, endDate, branchId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
     }
 }
