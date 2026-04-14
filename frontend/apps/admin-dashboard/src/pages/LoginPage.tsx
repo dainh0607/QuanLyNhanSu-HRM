@@ -18,11 +18,11 @@ const FacebookIcon = () => (
 );
 
 interface LoginPageProps {
-  onNavigateToRegister?: () => void;
+  onNavigateToActivation?: () => void;
   onLoginSuccess?: () => void;
 }
 
-const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister, onLoginSuccess }) => {
+const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToActivation, onLoginSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [email, setEmail] = useState('');
@@ -36,9 +36,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister, onLoginSucc
 
     const trimmedEmail = email.trim();
 
-    if (!trimmedEmail.toLowerCase().endsWith('@gmail.com')) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setError('Vui long nhap dung email cong viec.');
+      return;
+      /*
       setError('Tài khoản phải có đuôi @gmail.com.');
       return;
+      */
     }
 
     if (password.length < 8) {
@@ -181,12 +185,27 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister, onLoginSucc
           </button>
         </div>
 
+        <div className="login-info-box">
+          Tai khoan admin-dashboard duoc cap boi Workspace Owner provisioning trong SuperAdmin.
+        </div>
+
         <p className="login-footer">
+          Da nhan activation link cho Workspace Owner?{' '}
+          <button
+            type="button"
+            className="activation-link"
+            onClick={onNavigateToActivation}
+          >
+            Mo trang kich hoat
+          </button>
+        </p>
+
+        <p className="legacy-signup-footer">
           Bạn chưa có tài khoản?{' '}
           <button
             type="button"
-            className="signup-link"
-            onClick={onNavigateToRegister}
+            className="activation-link"
+            onClick={onNavigateToActivation}
           >
             Đăng ký ngay
           </button>

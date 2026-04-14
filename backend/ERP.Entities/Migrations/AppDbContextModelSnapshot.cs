@@ -4847,27 +4847,63 @@ namespace ERP.Entities.Migrations
                             Id = 1,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            description = "System Administrator",
+                            description = "Quản trị hệ thống cao nhất",
                             is_active = true,
-                            name = "Admin"
+                            name = "Quản trị"
                         },
                         new
                         {
                             Id = 2,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            description = "Department Manager",
+                            description = "Thành viên Ban giám đốc",
                             is_active = true,
-                            name = "Manager"
+                            name = "Ban giám đốc"
                         },
                         new
                         {
                             Id = 3,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            description = "Regular Employee",
+                            description = "Quản lý theo vùng/miền",
                             is_active = true,
-                            name = "User"
+                            name = "Quản lý vùng"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            description = "Quản lý tại chi nhánh",
+                            is_active = true,
+                            name = "Quản lý chi nhánh"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            description = "Quản lý phòng ban/bộ phận",
+                            is_active = true,
+                            name = "Quản lý bộ phận"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            description = "Quản trị các phân hệ nghiệp vụ",
+                            is_active = true,
+                            name = "Quản trị phân hệ"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            description = "Nhân viên chính thức",
+                            is_active = true,
+                            name = "Nhân viên"
                         });
                 });
 
