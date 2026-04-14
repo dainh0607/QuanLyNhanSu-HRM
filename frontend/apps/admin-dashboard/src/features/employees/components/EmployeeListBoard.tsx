@@ -9,6 +9,7 @@ import { DEFAULT_COLUMNS } from '../data/mockData';
 import type { ColumnConfig, Employee } from '../types';
 import AddEmployeeModal from './AddEmployeeModal';
 import BasicInfoExportModal from './BasicInfoExportModal';
+import BulkAddEmployeeModal from './BulkAddEmployeeModal';
 import ColumnConfigSidebar from './ColumnConfigSidebar';
 import EmployeeActionBar from './EmployeeActionBar';
 import EmployeeDataTable from './EmployeeDataTable';
@@ -57,6 +58,7 @@ const EmployeeListBoard: React.FC<EmployeeListProps> = ({ onSelectEmployee }) =>
   const [isColumnConfigOpen, setIsColumnConfigOpen] = useState<boolean>(false);
   const [isPaginationEnabled, setIsPaginationEnabled] = useState<boolean>(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
+  const [isBulkAddModalOpen, setIsBulkAddModalOpen] = useState<boolean>(false);
   const [isBasicInfoExportOpen, setIsBasicInfoExportOpen] = useState<boolean>(false);
   const [isExportingBasicInfo, setIsExportingBasicInfo] = useState<boolean>(false);
 
@@ -194,6 +196,7 @@ const EmployeeListBoard: React.FC<EmployeeListProps> = ({ onSelectEmployee }) =>
     >
       <ExportPageToolbar
         onAddEmployee={() => setIsAddModalOpen(true)}
+        onAddBulkEmployee={() => setIsBulkAddModalOpen(true)}
         onOpenBasicInfoExport={() => setIsBasicInfoExportOpen(true)}
       />
 
@@ -257,6 +260,15 @@ const EmployeeListBoard: React.FC<EmployeeListProps> = ({ onSelectEmployee }) =>
       <AddEmployeeModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
+        onSuccess={() => {
+          void fetchEmployees();
+        }}
+      />
+
+      <BulkAddEmployeeModal
+        isOpen={isBulkAddModalOpen}
+        onClose={() => setIsBulkAddModalOpen(false)}
+        defaultBranchId={listFilters.branchId}
         onSuccess={() => {
           void fetchEmployees();
         }}

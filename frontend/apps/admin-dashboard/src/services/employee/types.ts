@@ -147,6 +147,17 @@ export interface EmployeeCreatePayload {
   avatar?: string | null;
 }
 
+export interface EmployeeBulkItemPayload {
+  fullName: string;
+  phone?: string | null;
+  accessGroupId: number;
+}
+
+export interface EmployeeBulkCreatePayload {
+  branchId: number;
+  employees: EmployeeBulkItemPayload[];
+}
+
 export interface EmployeeEditBasicInfoPayload {
   id?: number;
   fullName: string;

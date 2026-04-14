@@ -4,7 +4,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import { EmployeeList } from './features/employees';
 import { ContractsManagementPage, SigningPortalPage } from './features/employees-contracts';
-import { ShiftTemplateManagementPage, WeeklyShiftSchedulePage } from './features/shift-scheduling';
+import { WeeklyShiftSchedulePage } from './features/shift-scheduling';
 import { EmployeeDetail } from './features/employee-detail/EmployeeDetailViewIntegrated';
 import type { PersonalTabKey } from './features/employee-detail/edit-modal/types';
 import type { Employee } from './features/employees/types';
@@ -500,7 +500,7 @@ const EmployeeDetailRoute = () => {
         console.error(`Failed to load employee ${parsedEmployeeId}:`, error);
         if (isMounted) {
           setEmployee(null);
-          setLoadError("Không thể tải thông tin nhân sự. Vui lòng thử lại.");
+          setLoadError("Khong the tai thong tin nhan su. Vui long thu lai.");
         }
       } finally {
         if (isMounted) {
@@ -545,10 +545,10 @@ const EmployeeDetailRoute = () => {
           </button>
 
           <h1 className="text-xl font-semibold text-slate-900">
-            Không mở được hồ sơ nhân sự
+            Khong mo duoc ho so nhan su
           </h1>
           <p className="mt-3 text-sm leading-6 text-slate-600">
-            {loadError ?? "Không thể tải dữ liệu cho trang chi tiết này."}
+            {loadError ?? "Khong the tai du lieu cho trang chi tiet nay."}
           </p>
 
           <div className="mt-6 flex gap-3">
@@ -619,26 +619,6 @@ const WeeklyShiftSchedulingRoute = ({
         }}
       />
       <WeeklyShiftSchedulePage />
-    </div>
-  );
-};
-
-const ShiftTemplateManagementRoute = ({
-  user,
-  onLogout,
-}: {
-  user: User | null;
-  onLogout: () => Promise<void>;
-}) => {
-  return (
-    <div className="min-h-screen bg-[#f8fafc]">
-      <Header
-        user={user}
-        onLogout={() => {
-          void onLogout();
-        }}
-      />
-      <ShiftTemplateManagementPage />
     </div>
   );
 };
@@ -770,16 +750,6 @@ function RoutedApp() {
           element={
             isAuthenticated ? (
               <WeeklyShiftSchedulingRoute user={user} onLogout={handleLogout} />
-            ) : (
-              <Navigate to="/login" replace state={{ from: loginRedirectPath }} />
-            )
-          }
-        />
-        <Route
-          path="/working-day/timekeeping/shift-templates"
-          element={
-            isAuthenticated ? (
-              <ShiftTemplateManagementRoute user={user} onLogout={handleLogout} />
             ) : (
               <Navigate to="/login" replace state={{ from: loginRedirectPath }} />
             )

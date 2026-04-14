@@ -97,6 +97,23 @@ namespace ERP.API.Controllers
             }
         }
 
+        [HttpPost("bulk")]
+        [Authorize(Roles = "Manager,Admin")]
+        public async Task<IActionResult> BulkCreate([FromBody] EmployeeBulkCreateDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                var count = await _employeeService.CreateBulkAsync(dto);
+                return Ok(new { Message = $"Đã thêm thành công {count} nhân viên", Count = count });
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
         [HttpPut("{id}")]
         [Authorize(Roles = "Manager,Admin")]
         public async Task<IActionResult> Update(int id, [FromBody] EmployeeUpdateDto dto)
