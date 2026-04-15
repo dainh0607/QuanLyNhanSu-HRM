@@ -34,14 +34,15 @@ const JobStatusForm: React.FC<JobStatusFormProps> = ({ data, errors, onFieldChan
     }
   };
 
-  const handleAddRule = () => {
-    const newRule: LateEarlyRule = {
-      id: crypto.randomUUID(),
+  const handleAddRule = (type: 'LATE' | 'EARLY' | 'TOTAL' = 'TOTAL') => {
+    const newRule: LateEarlyRule & { type?: string } = {
+      id: Math.random().toString(36).substr(2, 9),
+      type: type,
       startDate: '',
       endDate: '',
       minutes: '0'
     };
-    onFieldChange('lateEarlyDetailedRules', [...data.lateEarlyDetailedRules, newRule]);
+    onFieldChange('lateEarlyDetailedRules', [...data.lateEarlyDetailedRules, newRule as any]);
   };
 
   const handleRemoveRule = (id: string) => {
@@ -54,44 +55,44 @@ const JobStatusForm: React.FC<JobStatusFormProps> = ({ data, errors, onFieldChan
     ));
   };
 
-  const renderRuleBox = (rule: LateEarlyRule) => (
-    <div key={rule.id} className="mt-4 p-6 rounded-[20px] bg-white border border-slate-100 shadow-sm relative animate-in fade-in slide-in-from-top-2 duration-300">
+  const renderRuleBox = (rule: LateEarlyRule & { type?: string }) => (
+    <div key={rule.id} className="relative mt-4 rounded-[24px] border border-slate-100 bg-white p-6 pt-10 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
       <button 
         onClick={() => handleRemoveRule(rule.id)}
-        className="absolute right-4 top-4 text-slate-300 hover:text-rose-500 transition-colors"
+        className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-300 shadow-sm transition-all hover:bg-rose-50 hover:text-rose-500"
       >
-        <span className="material-symbols-outlined text-[20px]">cancel</span>
+        <span className="material-symbols-outlined text-[18px]">close</span>
       </button>
 
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-[140px_1fr] items-center gap-4">
-          <label className="text-[14px] font-bold text-slate-900">
-            Khoảng thời gian<span className="text-rose-500 ml-1">*</span>
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
+          <label className="text-sm font-bold text-slate-800">
+            Khoảng thời gian <span className="text-rose-500">*</span>
           </label>
-          <div className="flex items-center gap-3 bg-[#f8fafc] rounded-xl border border-slate-100 p-1 pr-3">
+          <div className="flex items-center gap-3">
             <DatePickerInput
               value={rule.startDate}
               onChange={(v) => handleRuleChange(rule.id, 'startDate', v)}
-              className="border-0 bg-transparent shadow-none"
+              className="h-11 flex-1 !rounded-xl !border-none !bg-[#F8FAFC] !px-4 !text-sm !outline-none"
               placeholder="Ngày bắt đầu"
             />
-            <span className="text-slate-300 font-medium">~</span>
+            <span className="text-slate-400">~</span>
             <DatePickerInput
               value={rule.endDate}
               onChange={(v) => handleRuleChange(rule.id, 'endDate', v)}
-              className="border-0 bg-transparent shadow-none"
+              className="h-11 flex-1 !rounded-xl !border-none !bg-[#F8FAFC] !px-4 !text-sm !outline-none"
               placeholder="Ngày kết thúc"
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-[140px_1fr] items-center gap-4">
-          <label className="text-[14px] font-bold text-slate-900">Số phút</label>
+        <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] items-center gap-4">
+          <label className="text-sm font-bold text-slate-800">Số phút</label>
           <input
             type="text"
             value={rule.minutes}
             onChange={(e) => handleRuleChange(rule.id, 'minutes', e.target.value.replace(/\D/g, ''))}
-            className="w-full h-11 px-4 rounded-xl bg-[#f8fafc] border border-slate-100 text-[14px] focus:bg-white focus:border-emerald-300 transition-all outline-none"
+            className="h-11 w-full rounded-xl border-none bg-[#F8FAFC] px-4 text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500/10"
             placeholder="1"
           />
         </div>
@@ -185,116 +186,143 @@ const JobStatusForm: React.FC<JobStatusFormProps> = ({ data, errors, onFieldChan
           </div>
         </FormRow>
 
-        <div className="py-8">
-          <label className="text-[15px] font-bold text-slate-900 mb-4 block group flex items-center gap-2">
-            <span className={`material-symbols-outlined text-[20px] ${!isTotalMode ? 'text-emerald-500' : 'text-slate-200'}`}>rule</span>
-            Đặc lệ Đi muộn/Về sớm (Chi tiết)
-          </label>
-          <div className="rounded-[24px] border border-slate-100 bg-[#f8fafc]/50 p-6 lg:p-8">
-            <div className="space-y-6">
-              {/* Option 1: Total */}
-              <div className="flex items-start gap-4">
+        <div className="py-10">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="h-6 w-1 rounded-full bg-emerald-500"></div>
+            <h4 className="text-[17px] font-bold text-slate-800">Đi muộn/Về sớm</h4>
+          </div>
+
+          <div className="rounded-[32px] border border-slate-100 bg-white p-8 shadow-sm">
+            <div className="space-y-10">
+              {/* Chế độ 1: Tổng thời gian */}
+              <div className="flex items-start gap-5">
                 <div 
                   onClick={() => handleModeChange(true)}
-                  className={`flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg transition-all ${
+                  className={`mt-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg transition-all ${
                     isTotalMode ? 'bg-emerald-500 shadow-lg shadow-emerald-500/20' : 'bg-white ring-1 ring-slate-200 hover:ring-emerald-300'
                   }`}
                 >
-                  {isTotalMode && <span className="material-symbols-outlined text-[16px] text-white">check</span>}
+                  {isTotalMode && <span className="material-symbols-outlined text-[16px] text-white font-bold">check</span>}
                 </div>
                 <div className="flex-1">
-                  <span className="text-[14px] font-bold text-slate-700">Tổng thời gian đi muộn và về sớm</span>
+                  <span className="text-[15px] font-bold text-slate-800">Tổng thời gian đi muộn và về sớm</span>
                   {isTotalMode && (
-                    <div className="mt-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                      <div>
-                        <label className="text-[13px] font-bold text-slate-900 block mb-2">Tổng số phút được đi muộn và về sớm</label>
-                        <p className="text-[12px] text-slate-400 mb-4 leading-relaxed">
-                          Thời gian cho phép nhân viên đi muộn và về sớm. Ví dụ: cho phép nhân viên đi muộn và về sớm 60 phút, nhân viên đi muộn 40 phút thì nhân viên chỉ được về sớm 20 phút.
-                        </p>
+                    <div className="mt-6 space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="space-y-4">
+                        <div className="space-y-1">
+                          <label className="text-[14px] font-bold text-slate-900">Cho phép đi trễ sau (phút)</label>
+                          <p className="text-[12px] leading-relaxed text-slate-400 max-w-2xl">
+                            Thời gian cho phép nhân viên đi muộn và về sớm. Ví dụ: cho phép nhân viên đi muộn và về sớm 60 phút, nhân viên đi muộn 40 phút thì nhân viên chỉ được về sớm 20 phút.
+                          </p>
+                        </div>
                         <div className="relative group max-w-[500px]">
                           <input
                             type="text"
                             value={data.lateEarlyAllowed}
                             onChange={(e) => onFieldChange('lateEarlyAllowed', e.target.value.replace(/\D/g, ''))}
-                            className={`${getFieldClassName(Boolean(errors.lateEarlyAllowed))} bg-white border-slate-200 shadow-sm group-hover:border-emerald-300 transition-all`}
+                            className="h-12 w-full rounded-2xl border-none bg-[#EDF2F9] px-4 pr-20 text-[15px] font-black text-slate-700 outline-none transition-all focus:ring-2 focus:ring-emerald-500/20"
                             placeholder="0"
                           />
                           <button 
-                            onClick={handleAddRule}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-500 text-[13px] font-bold hover:text-emerald-600 transition-colors"
+                            onClick={() => handleAddRule('TOTAL')}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 text-emerald-500 text-[13px] font-bold hover:text-emerald-600 transition-colors"
                           >
+                            <span className="material-symbols-outlined text-[18px]">add</span>
                             Thêm
                           </button>
                         </div>
                       </div>
                       
                       {/* Rules under total mode */}
-                      {data.lateEarlyDetailedRules.map(renderRuleBox)}
+                      <div className="space-y-4">
+                        {data.lateEarlyDetailedRules
+                          .filter(r => (r as any).type === 'TOTAL' || !(r as any).type)
+                          .map(renderRuleBox)}
+                      </div>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Option 2: Detailed */}
-              <div className="flex items-start gap-4">
+              {/* Chế độ 2: Chi tiết từng loại */}
+              <div className="flex items-start gap-5">
                 <div 
                   onClick={() => handleModeChange(false)}
-                  className={`flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg transition-all ${
+                  className={`mt-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg transition-all ${
                     !isTotalMode ? 'bg-emerald-500 shadow-lg shadow-emerald-500/20' : 'bg-white ring-1 ring-slate-200 hover:ring-emerald-300'
                   }`}
                 >
-                  {!isTotalMode && <span className="material-symbols-outlined text-[16px] text-white">check</span>}
+                  {!isTotalMode && <span className="material-symbols-outlined text-[16px] text-white font-bold">check</span>}
                 </div>
                 <div className="flex-1">
-                  <span className="text-[14px] font-bold text-slate-700">Thời gian đi muộn, về sớm</span>
+                  <span className="text-[15px] font-bold text-slate-800">Thời gian đi muộn, về sớm</span>
                   {!isTotalMode && (
-                    <div className="mt-6 space-y-8 animate-in fade-in slide-in-from-top-2 duration-300">
-                      <div>
-                        <label className="text-[13px] font-bold text-slate-900 block mb-2">Cho phép đi trễ sau (phút)</label>
-                        <p className="text-[12px] text-slate-400 mb-4 leading-relaxed">
-                          Thời gian cho phép nhân viên đi muộn và về sớm.
-                        </p>
+                    <div className="mt-8 space-y-10 animate-in fade-in slide-in-from-top-2 duration-300">
+                      {/* Đi trễ */}
+                      <div className="space-y-4">
+                        <div className="space-y-1">
+                          <label className="text-[14px] font-bold text-slate-900">Cho phép đi trễ sau (phút)</label>
+                          <p className="text-[12px] leading-relaxed text-slate-400">
+                            Thời gian cho phép nhân viên đi muộn và về sớm.
+                          </p>
+                        </div>
                         <div className="relative group max-w-[500px]">
                           <input
                             type="text"
                             value={data.lateAllowedMinutes}
                             onChange={(e) => onFieldChange('lateAllowedMinutes', e.target.value.replace(/\D/g, ''))}
-                            className={`${getFieldClassName(Boolean(errors.lateAllowedMinutes))} bg-white border-slate-200 shadow-sm group-hover:border-emerald-300 transition-all`}
+                            className="h-12 w-full rounded-2xl border-none bg-[#EDF2F9] px-4 pr-20 text-[15px] font-black text-slate-700 outline-none transition-all focus:ring-2 focus:ring-emerald-500/20"
                             placeholder="0"
                           />
                           <button 
-                            onClick={handleAddRule}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-500 text-[13px] font-bold hover:text-emerald-600 transition-colors"
+                            onClick={() => handleAddRule('LATE')}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 text-emerald-500 text-[13px] font-bold hover:text-emerald-600 transition-colors"
                           >
+                            <span className="material-symbols-outlined text-[18px]">add</span>
                             Thêm
                           </button>
                         </div>
+                        
+                        {/* Rules for Late */}
+                        <div className="space-y-4">
+                          {data.lateEarlyDetailedRules
+                            .filter(r => (r as any).type === 'LATE')
+                            .map(renderRuleBox)}
+                        </div>
                       </div>
 
-                      <div>
-                        <label className="text-[13px] font-bold text-slate-900 block mb-2">Cho phép về sớm trước (phút)</label>
-                        <p className="text-[12px] text-slate-400 mb-4 leading-relaxed">
-                          Thời gian cho phép nhân viên đi muộn và về sớm.
-                        </p>
+                      {/* Về sớm */}
+                      <div className="space-y-4">
+                        <div className="space-y-1">
+                          <label className="text-[14px] font-bold text-slate-900">Cho phép về sớm trước (phút)</label>
+                          <p className="text-[12px] leading-relaxed text-slate-400">
+                            Thời gian cho phép nhân viên đi muộn và về sớm.
+                          </p>
+                        </div>
                         <div className="relative group max-w-[500px]">
                           <input
                             type="text"
                             value={data.earlyAllowedMinutes}
                             onChange={(e) => onFieldChange('earlyAllowedMinutes', e.target.value.replace(/\D/g, ''))}
-                            className={`${getFieldClassName(Boolean(errors.earlyAllowedMinutes))} bg-white border-slate-200 shadow-sm group-hover:border-emerald-300 transition-all`}
+                            className="h-12 w-full rounded-2xl border-none bg-[#EDF2F9] px-4 pr-20 text-[15px] font-black text-slate-700 outline-none transition-all focus:ring-2 focus:ring-emerald-500/20"
                             placeholder="0"
                           />
                           <button 
-                            onClick={handleAddRule}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-500 text-[13px] font-bold hover:text-emerald-600 transition-colors"
+                            onClick={() => handleAddRule('EARLY')}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 text-emerald-500 text-[13px] font-bold hover:text-emerald-600 transition-colors"
                           >
+                            <span className="material-symbols-outlined text-[18px]">add</span>
                             Thêm
                           </button>
                         </div>
-                      </div>
 
-                      {/* Rules under detailed mode */}
-                      {data.lateEarlyDetailedRules.map(renderRuleBox)}
+                        {/* Rules for Early */}
+                        <div className="space-y-4">
+                          {data.lateEarlyDetailedRules
+                            .filter(r => (r as any).type === 'EARLY')
+                            .map(renderRuleBox)}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>

@@ -93,3 +93,12 @@ export const getEmptyValueMode = (
   label: string,
   firstEmptyLabel: string | null,
 ): 'prompt' | 'dash' => (label === firstEmptyLabel ? 'prompt' : 'dash');
+
+export const formatCurrency = (value?: number | null): string => {
+  if (value === undefined || value === null) return EMPTY_VALUE;
+
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+  }).format(value);
+};

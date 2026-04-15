@@ -117,6 +117,62 @@ export interface EmployeeEducationProfile {
   note?: string;
 }
 
+export interface EmployeePromotionHistoryProfile {
+  id: number;
+  effectiveDate: string;
+  decisionType?: string;
+  contractType?: string;
+  decisionNumber?: string;
+  workStatus?: string;
+  branchName?: string;
+  departmentName?: string;
+  jobTitleName?: string;
+  paymentMethod?: string;
+  salaryGrade?: string;
+  salaryAmount?: number;
+  allowance?: string;
+  note?: string;
+}
+
+export interface EmployeeWorkHistoryProfile {
+  companyName: string;
+  jobTitle: string;
+  workDuration: string;
+  startDate?: string;
+  endDate?: string;
+  isCurrent: boolean;
+}
+
+export interface EmployeeSalaryAllowanceProfile {
+  paymentMethod?: string;
+  salaryGrade?: string;
+  baseSalary?: number;
+  allowances: Array<{ id: number; name: string; amount: number }>;
+  otherIncomes: Array<{ id: number; name: string; amount: number }>;
+}
+
+export interface EmployeeContractProfile {
+  id: number;
+  contractNumber?: string;
+  contractType?: string;
+  signDate?: string;
+  effectiveDate?: string;
+  expiryDate?: string;
+  signedBy?: string;
+  status?: string;
+  isElectronic: boolean;
+  attachment?: string;
+}
+
+export interface EmployeeInsuranceProfile {
+  id: number;
+  socialInsuranceNumber?: string;
+  healthInsuranceNumber?: string;
+  issueDate?: string;
+  issuePlace?: string;
+  note?: string;
+}
+
 export interface EmployeeFullProfile {
   basicInfo: EmployeeProfileBasicInfo;
   addresses: EmployeeAddressProfile[];
@@ -125,6 +181,11 @@ export interface EmployeeFullProfile {
   healthRecord?: EmployeeHealthRecordProfile | null;
   dependents: EmployeeDependentProfile[];
   education: EmployeeEducationProfile[];
+  promotionHistory: EmployeePromotionHistoryProfile[];
+  workHistory: EmployeeWorkHistoryProfile[];
+  salaryInfo?: EmployeeSalaryAllowanceProfile | null;
+  contracts: EmployeeContractProfile[];
+  insurances: EmployeeInsuranceProfile[];
 }
 
 export interface EmployeeCreatePayload {
@@ -388,3 +449,83 @@ export interface EmployeeEditJobInfoPayload {
   isActive: boolean;
   isDepartmentHead: boolean;
 }
+
+export interface EmployeeEditPromotionHistoryItemPayload {
+  id?: string;
+  effectiveDate: string;
+  decisionType: string;
+  contractType: string;
+  documentNumber: string;
+  jobStatus: string;
+  city: string;
+  district: string;
+  branch: string;
+  department: string;
+  jobTitle: string;
+  paymentMethod: string;
+  salaryLevelName: string;
+  salaryAmount: string;
+  allowance: string;
+  otherIncome: string;
+  note: string;
+}
+
+export type EmployeeEditPromotionHistoryPayload = EmployeeEditPromotionHistoryItemPayload[];
+
+export interface EmployeeEditWorkHistoryItemPayload {
+  id?: string;
+  startDate: string;
+  endDate: string;
+  industry?: string;
+  company: string;
+  position: string;
+  workDuration: string;
+  isCurrent: boolean;
+  note: string;
+}
+
+export type EmployeeEditWorkHistoryPayload = EmployeeEditWorkHistoryItemPayload[];
+
+export interface EmployeeEditSalaryAllowancePayload {
+  paymentMethod: string;
+  salaryLevelName: string;
+  salaryAmount: string;
+  salaryChanges: Array<{
+    id?: string;
+    paymentMethod: string;
+    amount: string;
+    salaryLevelName: string;
+    duration: string;
+  }>;
+  allowances: Array<{
+    id?: string;
+    name: string;
+    amount: string;
+  }>;
+  otherIncomes: Array<{
+    id?: string;
+    name: string;
+    amount: string;
+  }>;
+}
+
+export interface EmployeeEditContractItemPayload {
+  id?: string;
+  employeeName: string;
+  documentNumber: string;
+  contractType: string;
+  signDate: string;
+  expiryDate: string;
+  status: string;
+}
+
+export type EmployeeEditContractPayload = EmployeeEditContractItemPayload[];
+
+export interface EmployeeEditInsuranceItemPayload {
+  id?: string;
+  employeeName: string;
+  socialInsuranceNumber: string;
+  healthInsuranceNumber: string;
+}
+
+export type EmployeeEditInsurancePayload = EmployeeEditInsuranceItemPayload[];

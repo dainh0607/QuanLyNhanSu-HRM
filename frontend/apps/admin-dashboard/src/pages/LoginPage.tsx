@@ -36,15 +36,15 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToRegister, onLoginSucc
 
     const trimmedEmail = email.trim();
 
-    if (!trimmedEmail.toLowerCase().endsWith('@gmail.com')) {
-      setError('Tài khoản phải có đuôi @gmail.com.');
-      return;
-    }
+   // if (!trimmedEmail.toLowerCase().endsWith('@gmail.com')) {
+    //  setError('Tài khoản phải có đuôi @gmail.com.');
+    //  return;
+   // }
 
-    if (password.length < 8) {
-      setError('Mật khẩu phải có ít nhất 8 ký tự.');
-      return;
-    }
+    //if (password.length < 8) {
+    //  setError('Mật khẩu phải có ít nhất 8 ký tự.');
+    //  return;
+    //}
 
     setLoading(true);
 

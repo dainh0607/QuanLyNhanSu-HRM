@@ -8,9 +8,14 @@ import type {
   EmployeeEditEmergencyContactPayload,
   EmployeeEditHealthPayload,
   EmployeeEditIdentityPayload,
+  EmployeeEditContractPayload,
+  EmployeeEditInsurancePayload,
   EmployeeEditJobInfoPayload,
   EmployeeEditJobStatusPayload,
   EmployeeEditPermanentAddressPayload,
+  EmployeeEditPromotionHistoryPayload,
+  EmployeeEditSalaryAllowancePayload,
+  EmployeeEditWorkHistoryPayload,
   EmployeeFullProfile,
 } from '../../../services/employeeService';
 import type { Employee } from '../../employees/types';
@@ -37,10 +42,11 @@ export type PersonalFormMap = {
 export type WorkFormMap = {
   jobStatus: EmployeeEditJobStatusPayload;
   jobInfo: EmployeeEditJobInfoPayload;
-  promotionHistory: EmployeeEditPlaceholderPayload;
-  workHistory: EmployeeEditPlaceholderPayload;
-  salaryAllowance: EmployeeEditPlaceholderPayload;
-  contract: EmployeeEditPlaceholderPayload;
+  promotionHistory: EmployeeEditPromotionHistoryPayload;
+  workHistory: EmployeeEditWorkHistoryPayload;
+  salaryAllowance: EmployeeEditSalaryAllowancePayload;
+  contract: EmployeeEditContractPayload;
+  insurance: EmployeeEditInsurancePayload;
 };
 
 export interface TabState<TForm> {

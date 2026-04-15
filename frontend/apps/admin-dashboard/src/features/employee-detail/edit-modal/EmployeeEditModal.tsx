@@ -96,6 +96,18 @@ const WORK_TAB_LOADERS: Partial<{
 }> = {
   jobStatus: employeeService.getEmployeeEditJobStatus,
   jobInfo: employeeService.getEmployeeEditJobInfo,
+  promotionHistory: async () => [],
+  workHistory: async () => [],
+  salaryAllowance: async () => ({
+    paymentMethod: '',
+    salaryLevelName: '',
+    salaryAmount: '',
+    salaryChanges: [],
+    allowances: [],
+    otherIncomes: [],
+  }),
+  contract: async () => [],
+  insurance: async () => [],
 };
 
 const WORK_TAB_SAVERS: Partial<{
@@ -103,6 +115,11 @@ const WORK_TAB_SAVERS: Partial<{
 }> = {
   jobStatus: employeeService.updateEmployeeEditJobStatus,
   jobInfo: employeeService.updateEmployeeEditJobInfo,
+  promotionHistory: async () => ({ success: true }),
+  workHistory: async () => ({ success: true }),
+  salaryAllowance: async () => ({ success: true }),
+  contract: async () => ({ success: true }),
+  insurance: async () => ({ success: true }),
 };
 
 const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
@@ -447,39 +464,20 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
     });
   };
 
-  const updateWorkTabData = <K extends WorkTabKey, F extends keyof WorkFormMap[K]>(
-    tabKey: K,
-    field: F,
-    value: WorkFormMap[K][F],
-  ) => {
-    setWorkForms((prev) => {
-      const nextTab = prev[tabKey];
-      const nextErrors = { ...nextTab.errors };
-      delete nextErrors[String(field)];
-
-      return {
-        ...prev,
-        [tabKey]: {
-          ...nextTab,
-          data: {
-            ...nextTab.data,
-            [field]: value,
-          },
-          isDirty: !formsEqual(
-            {
-              ...nextTab.data,
-              [field]: value,
-            },
-            nextTab.initialData,
-          ),
-          errors: nextErrors,
-        },
-      };
-    });
-  };
-
   const replaceTabData = <K extends PersonalTabKey>(tabKey: K, data: PersonalFormMap[K]) => {
     setPersonalForms((prev) => ({
+      ...prev,
+      [tabKey]: {
+        ...prev[tabKey],
+        data,
+        isDirty: !formsEqual(data, prev[tabKey].initialData),
+        errors: {},
+      },
+    }));
+  };
+
+  const replaceWorkTabData = <K extends WorkTabKey>(tabKey: K, data: WorkFormMap[K]) => {
+    setWorkForms((prev) => ({
       ...prev,
       [tabKey]: {
         ...prev[tabKey],
@@ -965,7 +963,13 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
                     activeTab={activeWorkTab}
                     data={activeWorkState.data}
                     errors={activeWorkState.errors}
-                    onFieldChange={(field: any, value: any) => (updateWorkTabData as any)(activeWorkTab, field, value)}
+                    onFieldChange={(field: any, value: any) => {
+                      if (field === activeWorkTab) {
+                        replaceWorkTabData(activeWorkTab, value);
+                      } else {
+                        (updateWorkTabData as any)(activeWorkTab, field, value);
+                      }
+                    }}
                     metadata={{
                       regions: metadata.regions,
                       branches: metadata.branches,
@@ -973,6 +977,8 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
                       jobTitles: metadata.jobTitles,
                       accessGroups: metadata.accessGroups,
                     }}
+                    profile={profile}
+                    onRefreshTab={loadWorkTab}
                   />
                 ) : (
                   <SectionPlaceholder

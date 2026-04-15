@@ -338,10 +338,18 @@ export const buildWorkSeedForms = (
       isActive: Boolean(getRecordValue(basicInfoRecord, ['isActive'])),
       isDepartmentHead: Boolean(getRecordValue(basicInfoRecord, ['isDepartmentHead'])),
     },
-    promotionHistory: {},
-    workHistory: {},
-    salaryAllowance: {},
-    contract: {},
+    promotionHistory: [],
+    workHistory: [],
+    salaryAllowance: {
+      paymentMethod: '',
+      salaryLevelName: '',
+      salaryAmount: '',
+      salaryChanges: [],
+      allowances: [],
+      otherIncomes: [],
+    },
+    contract: [],
+    insurance: [],
   };
 };
 
@@ -365,6 +373,7 @@ export const createWorkFormsState = (seed: WorkFormMap): WorkFormsState => ({
   workHistory: createTabState(seed.workHistory),
   salaryAllowance: createTabState(seed.salaryAllowance),
   contract: createTabState(seed.contract),
+  insurance: createTabState(seed.insurance),
 });
 
 export const buildDependentClientSignature = (

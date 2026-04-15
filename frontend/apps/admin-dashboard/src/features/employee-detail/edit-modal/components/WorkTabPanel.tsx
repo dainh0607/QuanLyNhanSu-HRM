@@ -6,10 +6,16 @@ import type {
   JobTitleMetadata,
   RegionMetadata,
 } from '../../../../services/employee/types';
+import type { EmployeeFullProfile } from '../../../../services/employee/types';
 import SectionPlaceholder from './SectionPlaceholder';
 import type { WorkFormMap, WorkTabKey } from '../types';
 import JobStatusForm from '../forms/JobStatusForm';
 import JobInfoForm from '../forms/JobInfoForm';
+import PromotionHistoryForm from '../forms/PromotionHistoryForm';
+import WorkHistoryForm from '../forms/WorkHistoryForm';
+import SalaryAllowanceForm from '../forms/SalaryAllowanceForm';
+import ContractForm from '../forms/ContractForm';
+import InsuranceForm from '../forms/InsuranceForm';
 
 interface WorkTabPanelProps {
   employeeId?: number;
@@ -24,6 +30,8 @@ interface WorkTabPanelProps {
     jobTitles: JobTitleMetadata[];
     accessGroups: AccessGroupMetadata[];
   };
+  profile?: EmployeeFullProfile | null;
+  onRefreshTab: (tab: WorkTabKey) => Promise<void>;
 }
 
 const WorkTabPanel: React.FC<WorkTabPanelProps> = ({
@@ -33,6 +41,8 @@ const WorkTabPanel: React.FC<WorkTabPanelProps> = ({
   errors,
   onFieldChange,
   metadata,
+  profile,
+  onRefreshTab,
 }) => {
   switch (activeTab) {
     case 'jobStatus':
@@ -51,6 +61,47 @@ const WorkTabPanel: React.FC<WorkTabPanelProps> = ({
           errors={errors}
           onFieldChange={onFieldChange as any}
           metadata={metadata}
+        />
+      );
+    case 'promotionHistory':
+      return (
+        <PromotionHistoryForm
+          data={data as WorkFormMap['promotionHistory']}
+          errors={errors}
+          onChange={(val) => onFieldChange('promotionHistory', val)}
+        />
+      );
+    case 'workHistory':
+      return (
+        <WorkHistoryForm
+          data={data as WorkFormMap['workHistory']}
+          errors={errors}
+          onChange={(val) => onFieldChange('workHistory', val)}
+        />
+      );
+    case 'salaryAllowance':
+      return (
+        <SalaryAllowanceForm
+          data={data as WorkFormMap['salaryAllowance']}
+          onFieldChange={(field, val) => onFieldChange(field as any, val)}
+        />
+      );
+    case 'contract':
+      return (
+        <ContractForm
+          data={data as WorkFormMap['contract']}
+          errors={errors}
+          onRefresh={() => onRefreshTab('contract')}
+          onChange={(val) => onFieldChange('contract', val)}
+        />
+      );
+    case 'insurance':
+      return (
+        <InsuranceForm
+          data={data as WorkFormMap['insurance']}
+          errors={errors}
+          profile={profile}
+          onChange={(val) => onFieldChange('insurance', val)}
         />
       );
     default:
