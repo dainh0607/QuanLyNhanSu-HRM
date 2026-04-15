@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { employeeService, type EmployeeCreatePayload } from '../../../services/employeeService';
+import { authService, type User } from '../../../services/authService';
 import { useToast } from '../../../hooks/useToast';
 import {
   DEFAULT_PHONE_COUNTRY_VALUE,
@@ -55,38 +56,48 @@ interface MetadataLoadingState {
   accessGroups: boolean;
 }
 
-const DEFAULT_ACCESS_GROUP_KEYS = ['nhan vien', 'nhân viên', 'employee', 'user', 'staff'] as const;
+const DEFAULT_ACCESS_GROUP_KEYS = ['nhan vien', 'nhân viên', 'employee', 'user', 'staff', 'member'] as const;
 const ACCESS_GROUP_PRESETS = [
+  {
+    key: 'admin',
+    label: 'Quản trị',
+    order: 0,
+    aliases: ['quan tri', 'quản trị', 'admin', 'administrator', 'system admin'],
+  },
+  {
+    key: 'director',
+    label: 'Ban giám đốc',
+    order: 1,
+    aliases: ['ban giam doc', 'ban giám đốc', 'director', 'board of director', 'bod'],
+  },
   {
     key: 'regionalManager',
     label: 'Quản lý vùng',
-    order: 1,
-    aliases: [
-      'quan ly vung',
-      'regional manager',
-      'regionalmanager',
-      'region manager',
-      'regionmanager',
-      'area manager',
-      'manager region',
-    ],
+    order: 2,
+    aliases: ['quan ly vung', 'regional manager', 'regionalmanager', 'region manager'],
   },
   {
     key: 'branchManager',
     label: 'Quản lý chi nhánh',
-    order: 2,
+    order: 3,
     aliases: ['quan ly chi nhanh', 'branch manager', 'branchmanager', 'manager branch'],
   },
   {
-    key: 'manager',
-    label: 'Quản lý',
-    order: 0,
-    aliases: ['quan ly', 'manager'],
+    key: 'deptManager',
+    label: 'Quản lý bộ phận',
+    order: 4,
+    aliases: ['quan ly bo phan', 'department manager', 'dept manager', 'manager dept'],
+  },
+  {
+    key: 'moduleAdmin',
+    label: 'Quản trị phân hệ',
+    order: 5,
+    aliases: ['quan tri phan he', 'module admin', 'moduleadmin'],
   },
   {
     key: 'employee',
     label: 'Nhân viên',
-    order: 3,
+    order: 6,
     aliases: [...DEFAULT_ACCESS_GROUP_KEYS],
   },
 ] as const;
@@ -299,6 +310,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [hasLoadedOrganizationMetadata, setHasLoadedOrganizationMetadata] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const hasUserEditedEmployeeCodeRef = useRef(false);
 
   // Form State
@@ -330,6 +342,9 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
     setMetadata(INITIAL_METADATA);
     setMetadataLoading(INITIAL_METADATA_LOADING_STATE);
     try {
+      // Lấy thông tin user hiện tại
+      setCurrentUser(authService.getCurrentUser());
+
       setMetadataLoading((prev) => ({
         ...prev,
         accessGroups: true,
@@ -560,7 +575,10 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
       }, 1000);
     } catch (error: any) {
       console.error('Submit error:', error);
-      showToast(error.Message || 'Có lỗi xảy ra khi tạo nhân viên', 'error');
+      
+      // Ưu tiên hiển thị message lỗi cụ thể từ backend
+      const serverMessage = error?.Message || error?.message;
+      showToast(serverMessage || 'Có lỗi xảy ra khi tạo nhân viên', 'error');
       
       if (error?.errors && typeof error.errors === 'object') {
         const backendErrors: Record<string, string> = {};
@@ -611,7 +629,13 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
           </button>
         </div>
 
-        <div className="px-8 py-6">
+        <form 
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSubmit();
+          }}
+        >
+          <div className="px-8 py-6">
           {/* Banner */}
           <div className="bg-[#f8f9fa] rounded-[20px] p-6 flex gap-6 mb-8 border border-gray-100 items-center">
             <div className="w-20 h-20 flex-shrink-0 bg-white rounded-2xl p-2 shadow-sm">
@@ -667,7 +691,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
                   placeholder="Nhập địa chỉ email" 
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  className={`w-full h-11 px-4 border rounded-xl text-sm focus:outline-none focus:ring-4 transition-all ${errors.email ? 'border-red-400 bg-red-50/30 ring-red-100' : 'border-gray-200 focus:border-[#192841] focus:ring-[#192841]/5'}`}
+                  className={`w-full h-[43px] px-[15px] border rounded-xl text-[13px] focus:outline-none focus:ring-4 transition-all ${errors.email ? 'border-red-400 bg-red-50/30 ring-red-100' : 'border-gray-200 focus:border-[#192841] focus:ring-[#192841]/5'}`}
                 />
                 {errors.email && <p className="text-[11px] font-medium text-red-500 pl-1">{errors.email}</p>}
               </div>
@@ -728,9 +752,17 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
                     className={`w-full h-11 px-4 border rounded-xl text-sm appearance-none bg-white focus:outline-none focus:ring-4 transition-all pr-10 cursor-pointer disabled:bg-gray-50/50 disabled:text-gray-400 disabled:cursor-not-allowed ${errors.accessGroupId ? 'border-red-400 bg-red-50/30 ring-red-100' : 'border-gray-200 focus:border-[#192841] focus:ring-[#192841]/5'}`}
                   >
                     <option value="">{loading || metadataLoading.accessGroups ? 'Đang tải...' : 'Chọn nhóm truy cập'}</option>
-                    {metadata.accessGroups.map(g => (
-                      <option key={g.id} value={String(g.id)}>{g.name}</option>
-                    ))}
+                    {metadata.accessGroups
+                      .filter(g => {
+                        // Ràng buộc: Chỉ Quản trị mới được tạo Quản trị (ID 1)
+                        if (g.id === 1) {
+                          return currentUser?.role === 'admin';
+                        }
+                        return true;
+                      })
+                      .map(g => (
+                        <option key={g.id} value={String(g.id)}>{g.name}</option>
+                      ))}
                   </select>
                   <span className="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-focus-within:rotate-180 transition-transform text-[20px]">expand_more</span>
                 </div>
@@ -765,6 +797,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
             {/* Link Mở rộng */}
             <div className="pt-2">
               <button 
+                type="button"
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="text-sm font-bold text-[#192841] hover:opacity-80 flex items-center gap-0.5 transition-all"
               >
@@ -806,7 +839,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
                     <select 
                       value={formData.branchId}
                       onChange={(e) => handleInputChange('branchId', e.target.value)}
-                      className="w-full h-11 px-4 border border-gray-200 rounded-xl text-sm appearance-none bg-white focus:outline-none focus:border-[#192841] focus:ring-4 focus:ring-[#192841]/5 transition-all pr-10 disabled:bg-gray-50/50 disabled:text-gray-400 cursor-pointer disabled:cursor-not-allowed"
+                      className="w-full h-11 px-4 border border-gray-200 rounded-xl text-sm appearance-none bg-white focus:outline-none focus:ring-4 transition-all pr-10 disabled:bg-gray-50/50 disabled:text-gray-400 cursor-pointer disabled:cursor-not-allowed"
                       disabled={metadataLoading.branches || (shouldFilterBranchesByRegion && !formData.regionId)}
                     >
                       <option value="">{metadataLoading.branches ? 'Đang tải...' : shouldFilterBranchesByRegion && !formData.regionId ? 'Chọn vùng trước' : 'Chọn chi nhánh'}</option>
@@ -885,23 +918,25 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
         </div>
 
         {/* Footer */}
-        <div className="px-8 py-5 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/50">
+        <div className="p-[23px] border-t bg-gray-50 rounded-b-2xl flex justify-end gap-3">
           <button 
+            type="button"
             onClick={onClose}
             disabled={submitting}
-            className="px-6 py-2.5 border border-gray-200 rounded-lg text-sm font-bold text-gray-600 hover:bg-white hover:border-gray-300 transition-all shadow-sm disabled:opacity-50"
+            className="px-[31px] py-[9px] border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-600 hover:bg-white hover:border-gray-300 transition-all shadow-sm disabled:opacity-50"
           >
             Hủy
           </button>
           <button 
-            onClick={handleSubmit}
+            type="submit"
             disabled={submitting}
             className="px-8 py-2.5 bg-[#192841] text-white text-sm font-bold rounded-lg hover:bg-[#253a5c] transition-all shadow-md shadow-[#192841]/20 flex items-center gap-2 disabled:opacity-70"
           >
             {submitting && <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>}
             Tạo mới
           </button>
-        </div>
+          </div>
+        </form>
       </div>
       {ToastComponent}
     </div>

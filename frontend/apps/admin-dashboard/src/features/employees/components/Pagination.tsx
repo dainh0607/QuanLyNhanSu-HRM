@@ -57,10 +57,10 @@ const Pagination: React.FC<PaginationProps> = ({ totalRecords, currentPage, reco
 
   return (
     <div
-      className="px-4 py-4 border-t border-gray-200 bg-white flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0"
+      className="px-[15px] py-[15px] border-t border-gray-200 bg-white flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0"
       data-purpose="pagination-footer"
     >
-      <div className="text-sm text-gray-500">
+      <div className="text-[13px] text-gray-500">
         Hiển thị <span className="font-medium text-gray-900">{startRec}-{endRec}</span> trong tổng số{' '}
         <span className="font-medium text-gray-900">{totalRecords}</span> bản ghi
       </div>
@@ -83,14 +83,14 @@ const Pagination: React.FC<PaginationProps> = ({ totalRecords, currentPage, reco
         {/* Page numbers */}
         {pageNumbers.map((page, idx) =>
           page === '...' ? (
-            <span key={`ellipsis-${idx}`} className="px-2 py-1 text-sm text-gray-400 select-none">
+            <span key={`ellipsis-${idx}`} className="px-2 py-1 text-[13px] text-gray-400 select-none">
               ...
             </span>
           ) : (
             <button
               key={page}
               onClick={() => onPageChange(page)}
-              className={`min-w-[32px] h-8 px-2 text-sm font-medium rounded transition-colors ${
+              className={`min-w-[31px] h-[31px] px-2 text-[13px] font-medium rounded transition-colors ${
                 page === currentPage
                   ? 'bg-emerald-50 text-emerald-700 font-bold border border-emerald-200'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'

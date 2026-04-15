@@ -103,5 +103,4 @@ export interface ShiftCopyModalProps {
   notify: (message: string, type?: "success" | "error" | "info") => void;
   onClose: () => void;
   onSuccess?: () => void;
-  useMockFallback: boolean;
 }

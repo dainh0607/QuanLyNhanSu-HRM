@@ -4,12 +4,14 @@ using ERP.DTOs.Contracts;
 using ERP.Services.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ERP.API.Authorization;
 
 namespace ERP.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
+    [HasPermission("Contracts", "View")]
     public class ContractsController : ControllerBase
     {
         private readonly IContractService _contractService;
@@ -49,7 +51,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Manager,Admin")]
+        [HasPermission("Contracts", "Manage")]
         public async Task<IActionResult> Create([FromBody] ContractCreateDto dto)
         {
             var success = await _contractService.CreateAsync(dto);
@@ -58,7 +60,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("manual")]
-        [Authorize(Roles = "Manager,Admin")]
+        [HasPermission("Contracts", "Manage")]
         public async Task<IActionResult> CreateManual([FromBody] ContractCreateDto dto)
         {
             var success = await _contractService.CreateAsync(dto);
@@ -67,7 +69,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("electronic/draft")]
-        [Authorize(Roles = "User,Manager,Admin")]
+        [HasPermission("Contracts", "Manage")]
         public async Task<IActionResult> CreateElectronicDraft([FromBody] ElectronicContractDraftDto dto)
         {
             var id = await _contractService.CreateElectronicDraftAsync(dto);
@@ -76,7 +78,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("electronic/step3")]
-        [Authorize(Roles = "Manager,Admin")]
+        [HasPermission("Contracts", "Manage")]
         public async Task<IActionResult> SaveStep3Signers([FromBody] ContractStep3Dto dto)
         {
             try
@@ -91,7 +93,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("electronic/step4")]
-        [Authorize(Roles = "Manager,Admin")]
+        [HasPermission("Contracts", "Manage")]
         public async Task<IActionResult> SaveStep4Positions([FromBody] ContractStep4Dto dto)
         {
             try
@@ -107,7 +109,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("electronic/submit")]
-        [Authorize(Roles = "Manager,Admin")]
+        [HasPermission("Contracts", "Manage")]
         public async Task<IActionResult> SubmitElectronicContract([FromBody] ContractSubmitDto dto)
         {
             try
@@ -122,7 +124,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Manager,Admin")]
+        [HasPermission("Contracts", "Manage")]
         public async Task<IActionResult> Update(int id, [FromBody] ContractUpdateDto dto)
         {
             var success = await _contractService.UpdateAsync(id, dto);
@@ -131,7 +133,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Manager,Admin")]
+        [HasPermission("Contracts", "Manage")]
         public async Task<IActionResult> Delete(int id)
         {
             var success = await _contractService.DeleteAsync(id);
@@ -140,7 +142,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpGet("export")]
-        [Authorize(Roles = "Manager,Admin")]
+        [HasPermission("Contracts", "Manage")]
         public async Task<IActionResult> Export([FromQuery] ContractFilterDto filter)
         {
             var bytes = await _contractService.ExportToCsvAsync(filter);
@@ -148,7 +150,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("bulk-delete")]
-        [Authorize(Roles = "Manager,Admin")]
+        [HasPermission("Contracts", "Manage")]
         public async Task<IActionResult> BulkDelete([FromBody] int[] ids)
         {
             var count = await _contractService.DeleteMultipleAsync(ids);

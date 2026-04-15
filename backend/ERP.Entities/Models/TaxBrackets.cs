@@ -5,8 +5,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ERP.Entities.Models
 {
     [Table("TaxBrackets")]
-    public class TaxBrackets : BaseEntity
+    public class TaxBrackets : BaseEntity, ERP.Entities.Interfaces.ITenantEntity
     {
+        [Column("tenant_id")]
+        public int? tenant_id { get; set; }
+
         [Column("from_income")]
         public decimal from_income { get; set; }
 

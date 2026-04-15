@@ -5,8 +5,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ERP.Entities.Models
 {
     [Table("ShiftAssignments")]
-    public class ShiftAssignments : AuditableEntity
+    public class ShiftAssignments : AuditableEntity, ERP.Entities.Interfaces.ITenantEntity
     {
+        [Column("tenant_id")]
+        public int? tenant_id { get; set; }
+
         [Column("employee_id")]
         public int employee_id { get; set; }
 
@@ -24,6 +27,10 @@ namespace ERP.Entities.Models
 
         [Column("is_published")]
         public bool is_published { get; set; }
+
+        [Column("status")]
+        [MaxLength(20)]
+        public string status { get; set; } = "draft";
 
         [Column("created_by")]
         public int created_by { get; set; }

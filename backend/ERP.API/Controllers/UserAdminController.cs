@@ -5,12 +5,14 @@ using ERP.Services.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using ERP.API.Authorization;
 
 namespace ERP.API.Controllers
 {
     [ApiController]
     [Route("api/user-admin")]
-    [Authorize(Roles = "Manager,Admin")]
+    [Authorize]
+    [HasPermission("User", "Manage")]
     public class UserAdminController : ControllerBase
     {
         private readonly IUserService _userService;
@@ -67,7 +69,7 @@ namespace ERP.API.Controllers
         /// DANGEROUS: Wipes all users from the Firebase project. 
         /// </summary>
         [HttpDelete("nuke-firebase")]
-        [Authorize(Roles = "Admin")]
+        [HasPermission("System", "Nuke")]
         public async Task<IActionResult> DeleteAllFirebaseUsers()
         {
             try

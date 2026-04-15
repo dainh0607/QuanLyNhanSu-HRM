@@ -14,6 +14,7 @@ namespace ERP.DTOs.Auth
     public class UserInfoDto
     {
         public int UserId { get; set; }
+        public int? TenantId { get; set; }
         public int EmployeeId { get; set; }
         public string Email { get; set; }
         public string FullName { get; set; }

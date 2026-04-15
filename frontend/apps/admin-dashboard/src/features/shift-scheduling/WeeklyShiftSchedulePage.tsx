@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import FilterSidebar, {
   type EmployeeFilterKey,
@@ -23,6 +23,8 @@ import type {
   ShiftScheduleSettings,
 } from "./types";
 import { addDays, getWeekLabel, parseIsoDate, startOfWeek, toIsoDate } from "./utils/week";
+import DeleteUnconfirmedModal from "./components/DeleteUnconfirmedModal";
+import { shiftBulkActionsService } from "./services/weeklyShiftScheduleService";
 
 const filterPublishedData = (
   data: ShiftScheduleGridData | null,
@@ -80,11 +82,12 @@ export const WeeklyShiftSchedulePage = () => {
   const [isQuickAddEmployeesOpen, setIsQuickAddEmployeesOpen] = useState<boolean>(false);
   const [isShiftAssignOpen, setIsShiftAssignOpen] = useState<boolean>(false);
   const [isShiftCopyOpen, setIsShiftCopyOpen] = useState<boolean>(false);
+  const [isBulkProcessing, setIsBulkProcessing] = useState<boolean>(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
 
   const assignedShiftQuickActions = useAssignedShiftQuickActions({
     notify,
     reload,
-    useMockFallback: data?.dataSource === "mock",
   });
 
   const advancedSidebarFilters = useMemo<EmployeeFilterState>(
@@ -267,6 +270,46 @@ export const WeeklyShiftSchedulePage = () => {
               isAdvancedFilterOpen={isAdvancedFilterOpen}
               activeAdvancedFilterCount={activeAdvancedFilterCount}
               onToggleAdvancedFilter={() => setIsAdvancedFilterOpen((prev) => !prev)}
+              draftCount={data?.draftCount ?? 0}
+              publishedCount={data?.publishedCount ?? 0}
+              isBulkProcessing={isBulkProcessing}
+              onPublishAll={async () => {
+                setIsBulkProcessing(true);
+                try {
+                  const result = await shiftBulkActionsService.publishAll(filters.weekStartDate);
+                  notify(result.message, "success");
+                  void reload();
+                } catch {
+                  notify("Lỗi khi công bố ca làm việc.", "error");
+                } finally {
+                  setIsBulkProcessing(false);
+                }
+              }}
+              onApproveAll={async () => {
+                setIsBulkProcessing(true);
+                try {
+                  const result = await shiftBulkActionsService.approveAll(filters.weekStartDate);
+                  notify(result.message, "success");
+                  void reload();
+                } catch {
+                  notify("Lỗi khi chấp thuận ca làm việc.", "error");
+                } finally {
+                  setIsBulkProcessing(false);
+                }
+              }}
+              onPublishAndApproveAll={async () => {
+                setIsBulkProcessing(true);
+                try {
+                  const result = await shiftBulkActionsService.publishAndApproveAll(filters.weekStartDate);
+                  notify(result.message, "success");
+                  void reload();
+                } catch {
+                  notify("Lỗi khi công bố & chấp thuận ca làm.", "error");
+                } finally {
+                  setIsBulkProcessing(false);
+                }
+              }}
+              onDeleteUnconfirmed={() => setIsDeleteModalOpen(true)}
             />
 
             <div className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -333,7 +376,6 @@ export const WeeklyShiftSchedulePage = () => {
       <OpenShiftModal
         isOpen={Boolean(selectedOpenShiftDate)}
         selectedDate={selectedOpenShiftDate}
-        useMockFallback={data?.dataSource === "mock"}
         onClose={() => setSelectedOpenShiftDate(null)}
         onSuccess={() => {
           setSelectedOpenShiftDate(null);
@@ -360,7 +402,6 @@ export const WeeklyShiftSchedulePage = () => {
       <QuickAddEmployeesModal
         isOpen={isQuickAddEmployeesOpen}
         preferredBranchId={filters.branchId}
-        useMockFallback={data?.dataSource === "mock"}
         onClose={() => setIsQuickAddEmployeesOpen(false)}
         onSuccess={(createdCount) => {
           setIsQuickAddEmployeesOpen(false);
@@ -374,7 +415,6 @@ export const WeeklyShiftSchedulePage = () => {
         initialBranchId={filters.branchId}
         initialWeekStartDate={filters.weekStartDate}
         branchOptions={lookups.branches}
-        useMockFallback={data?.dataSource === "mock"}
         notify={notify}
         onClose={() => setIsShiftAssignOpen(false)}
         onSuccess={() => {
@@ -387,12 +427,31 @@ export const WeeklyShiftSchedulePage = () => {
         initialBranchId={filters.branchId}
         initialWeekStartDate={filters.weekStartDate}
         branchOptions={lookups.branches}
-        useMockFallback={data?.dataSource === "mock"}
         notify={notify}
         onClose={() => setIsShiftCopyOpen(false)}
         onSuccess={() => {
           setIsShiftCopyOpen(false);
           void reload();
+        }}
+      />
+
+      <DeleteUnconfirmedModal
+        isOpen={isDeleteModalOpen}
+        totalCount={(data?.draftCount ?? 0) + (data?.publishedCount ?? 0)}
+        isProcessing={isBulkProcessing}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={async () => {
+          setIsBulkProcessing(true);
+          try {
+            const result = await shiftBulkActionsService.deleteUnconfirmed(filters.weekStartDate);
+            notify(result.message, "success");
+            setIsDeleteModalOpen(false);
+            void reload();
+          } catch {
+            notify("Lỗi khi xóa ca chưa xác nhận.", "error");
+          } finally {
+            setIsBulkProcessing(false);
+          }
         }}
       />
 

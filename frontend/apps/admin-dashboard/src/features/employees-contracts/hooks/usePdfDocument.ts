@@ -23,7 +23,7 @@ export const usePdfDocument = (
     if (!sourceUrl) {
       setPdfDocument(null);
       setIsLoading(false);
-      setError('KhĂ´ng thá»ƒ táº£i tá»‡p há»£p Ä‘á»“ng, vui lĂ²ng thá»­ láº¡i');
+      setError('Không thể tải tệp hợp đồng, vui lòng thử lại');
       return;
     }
 
@@ -65,7 +65,7 @@ export const usePdfDocument = (
 
         if (isMounted) {
           setPdfDocument(null);
-          setError('KhĂ´ng thá»ƒ táº£i tá»‡p há»£p Ä‘á»“ng, vui lĂ²ng thá»­ láº¡i');
+          setError('Không thể tải tệp hợp đồng, vui lòng thử lại');
         }
       })
       .finally(() => {

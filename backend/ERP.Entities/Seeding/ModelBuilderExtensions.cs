@@ -12,9 +12,13 @@ namespace ERP.Entities.Seeding
 
             // 1. Roles
             modelBuilder.Entity<Roles>().HasData(
-                new Roles { Id = 1, name = "Admin", description = "System Administrator", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
-                new Roles { Id = 2, name = "Manager", description = "Department Manager", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
-                new Roles { Id = 3, name = "User", description = "Regular Employee", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate }
+                new Roles { Id = 1, name = "Admin", description = "System Administrator", is_active = true, is_system_role = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new Roles { Id = 2, name = "Manager", description = "Executive Board / Manager", is_active = true, is_system_role = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new Roles { Id = 3, name = "Regional Manager", description = "Regional Manager", is_active = true, is_system_role = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new Roles { Id = 4, name = "Branch Manager", description = "Branch Manager", is_active = true, is_system_role = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new Roles { Id = 5, name = "Department Head", description = "Department/Unit Head", is_active = true, is_system_role = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new Roles { Id = 6, name = "Module Admin", description = "Module Specialist Admin", is_active = true, is_system_role = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new Roles { Id = 7, name = "Staff", description = "Regular Employee Staff", is_active = true, is_system_role = true, CreatedAt = seedDate, UpdatedAt = seedDate }
             );
 
             // 2. Genders
@@ -157,6 +161,123 @@ namespace ERP.Entities.Seeding
                 new TaxBrackets { Id = 5, from_income = 32000001m, to_income = 52000000m, tax_rate = 25m, effective_date = seedDate },
                 new TaxBrackets { Id = 6, from_income = 52000001m, to_income = 80000000m, tax_rate = 30m, effective_date = seedDate },
                 new TaxBrackets { Id = 7, from_income = 80000001m, to_income = null, tax_rate = 35m, effective_date = seedDate }
+            );
+
+            // FIX #1, #2, #3, #4: RBAC Authorization Seed Data
+            
+            // 19. Role Scopes (Define scope levels for each role)
+            modelBuilder.Entity<RoleScopes>().HasData(
+                // Role 1: Quản trị (System Admin)
+                new RoleScopes { Id = 1, role_id = 1, scope_level = "TENANT", is_hierarchical = false, is_active = true, created_at = seedDate },
+                // Role 2: Ban giám đốc (Executive)
+                new RoleScopes { Id = 2, role_id = 2, scope_level = "TENANT", is_hierarchical = true, is_active = true, created_at = seedDate },
+                // Role 3: Quản lý vùng (Regional Manager)
+                new RoleScopes { Id = 3, role_id = 3, scope_level = "REGION", is_hierarchical = true, is_active = true, created_at = seedDate },
+                // Role 4: Quản lý chi nhánh (Branch Manager)
+                new RoleScopes { Id = 4, role_id = 4, scope_level = "BRANCH", is_hierarchical = true, is_active = true, created_at = seedDate },
+                // Role 5: Quản lý bộ phận (Department Manager)
+                new RoleScopes { Id = 5, role_id = 5, scope_level = "DEPARTMENT", is_hierarchical = true, is_active = true, created_at = seedDate },
+                // Role 6: Quản trị phân hệ (Module Admin) - Cross-region for specific modules
+                new RoleScopes { Id = 6, role_id = 6, scope_level = "CROSS_REGION", is_hierarchical = false, 
+                    cross_region_modules = "Payroll,Attendance", is_active = true, created_at = seedDate },
+                // Role 7: Nhân viên (Standard User)
+                new RoleScopes { Id = 7, role_id = 7, scope_level = "PERSONAL", is_hierarchical = false, is_active = true, created_at = seedDate }
+            );
+
+            // 20. Resource Permissions (Map resources to roles)
+            modelBuilder.Entity<ResourcePermissions>().HasData(
+                // Quản trị (System Admin) - Full access
+                new ResourcePermissions { Id = 1, role_id = 1, resource_name = "Employees", scope_level = "TENANT", is_active = true, created_at = seedDate },
+                new ResourcePermissions { Id = 2, role_id = 1, resource_name = "Payroll", scope_level = "TENANT", is_active = true, created_at = seedDate },
+                new ResourcePermissions { Id = 3, role_id = 1, resource_name = "Attendance", scope_level = "TENANT", is_active = true, created_at = seedDate },
+                new ResourcePermissions { Id = 4, role_id = 1, resource_name = "Contracts", scope_level = "TENANT", is_active = true, created_at = seedDate },
+                // Ban giám đốc (Executive) - Full access
+                new ResourcePermissions { Id = 5, role_id = 2, resource_name = "Employees", scope_level = "TENANT", is_active = true, created_at = seedDate },
+                new ResourcePermissions { Id = 6, role_id = 2, resource_name = "Payroll", scope_level = "TENANT", is_active = true, created_at = seedDate },
+                new ResourcePermissions { Id = 7, role_id = 2, resource_name = "Attendance", scope_level = "TENANT", is_active = true, created_at = seedDate },
+                // Quản lý vùng (Regional Manager) - Region access
+                new ResourcePermissions { Id = 8, role_id = 3, resource_name = "Employees", scope_level = "REGION", is_active = true, created_at = seedDate },
+                new ResourcePermissions { Id = 9, role_id = 3, resource_name = "Payroll", scope_level = "REGION", is_active = true, created_at = seedDate },
+                new ResourcePermissions { Id = 10, role_id = 3, resource_name = "Attendance", scope_level = "REGION", is_active = true, created_at = seedDate },
+                // Quản lý chi nhánh (Branch Manager) - Branch access
+                new ResourcePermissions { Id = 11, role_id = 4, resource_name = "Employees", scope_level = "BRANCH", is_active = true, created_at = seedDate },
+                new ResourcePermissions { Id = 12, role_id = 4, resource_name = "Payroll", scope_level = "BRANCH", is_active = true, created_at = seedDate },
+                new ResourcePermissions { Id = 13, role_id = 4, resource_name = "Attendance", scope_level = "BRANCH", is_active = true, created_at = seedDate },
+                // Quản lý bộ phận (Department Manager) - Department access
+                new ResourcePermissions { Id = 14, role_id = 5, resource_name = "Employees", scope_level = "DEPARTMENT", is_active = true, created_at = seedDate },
+                new ResourcePermissions { Id = 15, role_id = 5, resource_name = "Attendance", scope_level = "DEPARTMENT", is_active = true, created_at = seedDate },
+                // Quản trị phân hệ (Module Admin) - Cross-region for specific modules
+                new ResourcePermissions { Id = 16, role_id = 6, resource_name = "Payroll", scope_level = "CROSS_REGION", is_active = true, created_at = seedDate },
+                new ResourcePermissions { Id = 17, role_id = 6, resource_name = "Attendance", scope_level = "CROSS_REGION", is_active = true, created_at = seedDate },
+                // Nhân viên (Standard User) - Personal access
+                new ResourcePermissions { Id = 18, role_id = 7, resource_name = "MyProfile", scope_level = "PERSONAL", is_active = true, created_at = seedDate }
+            );
+
+            // 21. Action Permissions (Map CRUD actions to roles and scopes)
+            modelBuilder.Entity<ActionPermissions>().HasData(
+                // System Admin - Full CRUD on all resources
+                new ActionPermissions { Id = 1, role_id = 1, action = "CREATE", resource = "EMPLOYEE", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 2, role_id = 1, action = "READ", resource = "EMPLOYEE", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 3, role_id = 1, action = "UPDATE", resource = "EMPLOYEE", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 4, role_id = 1, action = "DELETE", resource = "EMPLOYEE", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                
+                // System Admin - Full Management Access
+                new ActionPermissions { Id = 24, role_id = 1, action = "Manage", resource = "System", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 25, role_id = 1, action = "READ", resource = "RBAC", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 26, role_id = 1, action = "UPDATE", resource = "RBAC", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                
+                // Executive - Full access within tenant
+                new ActionPermissions { Id = 5, role_id = 2, action = "READ", resource = "EMPLOYEE", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 6, role_id = 2, action = "APPROVE", resource = "REQUEST", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                
+                // Regional Manager - Region-scoped CRUD
+                new ActionPermissions { Id = 7, role_id = 3, action = "CREATE", resource = "EMPLOYEE", allowed_scope = "SAME_REGION", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 8, role_id = 3, action = "READ", resource = "EMPLOYEE", allowed_scope = "SAME_REGION", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 9, role_id = 3, action = "UPDATE", resource = "EMPLOYEE", allowed_scope = "SAME_REGION", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 10, role_id = 3, action = "TRANSFER_EMPLOYEE", resource = "EMPLOYEE", allowed_scope = "SAME_REGION", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 11, role_id = 3, action = "APPROVE", resource = "REQUEST", allowed_scope = "SAME_REGION", is_active = true, created_at = seedDate },
+                
+                // Branch Manager - Branch-scoped operations
+                new ActionPermissions { Id = 12, role_id = 4, action = "CREATE", resource = "EMPLOYEE", allowed_scope = "SAME_BRANCH", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 13, role_id = 4, action = "READ", resource = "EMPLOYEE", allowed_scope = "SAME_BRANCH", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 14, role_id = 4, action = "UPDATE", resource = "EMPLOYEE", allowed_scope = "SAME_BRANCH", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 15, role_id = 4, action = "APPROVE", resource = "REQUEST", allowed_scope = "SAME_BRANCH", is_active = true, created_at = seedDate },
+                
+                // Department Manager - Department-scoped operations
+                new ActionPermissions { Id = 16, role_id = 5, action = "READ", resource = "EMPLOYEE", allowed_scope = "SAME_DEPARTMENT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 17, role_id = 5, action = "ASSIGN_TASK", resource = "EMPLOYEE", allowed_scope = "SAME_DEPARTMENT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 18, role_id = 5, action = "APPROVE", resource = "LEAVE", allowed_scope = "SAME_DEPARTMENT", is_active = true, created_at = seedDate },
+                
+                // Module Admin - Cross-region for specific resources
+                new ActionPermissions { Id = 19, role_id = 6, action = "READ", resource = "PAYROLL", allowed_scope = "CROSS_REGION", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 20, role_id = 6, action = "READ", resource = "ATTENDANCE", allowed_scope = "CROSS_REGION", is_active = true, created_at = seedDate },
+                
+                // Standard User - Personal operations
+                new ActionPermissions { Id = 21, role_id = 7, action = "READ", resource = "MYPROFILE", allowed_scope = "PERSONAL", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 22, role_id = 7, action = "UPDATE", resource = "MYPROFILE", allowed_scope = "PERSONAL", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 23, role_id = 7, action = "CREATE", resource = "REQUEST", allowed_scope = "PERSONAL", is_active = true, created_at = seedDate }
+            );
+
+            // 22. Request Type Approvers (Approval chains for each request type)
+            modelBuilder.Entity<RequestTypeApprovers>().HasData(
+                // Leave Request approval chain
+                new RequestTypeApprovers { Id = 1, request_type_id = 1, role_id = 5, approval_level = 1, 
+                    max_approval_days = 2, is_mandatory = true, approver_scope = "SAME_DEPARTMENT", 
+                    is_active = true, created_at = seedDate },
+                new RequestTypeApprovers { Id = 2, request_type_id = 1, role_id = 4, approval_level = 2, 
+                    max_approval_days = 30, is_mandatory = false, approver_scope = "SAME_BRANCH", 
+                    is_active = true, created_at = seedDate },
+                new RequestTypeApprovers { Id = 3, request_type_id = 1, role_id = 2, approval_level = 3, 
+                    max_approval_days = null, is_mandatory = false, approver_scope = "SAME_TENANT", 
+                    is_active = true, created_at = seedDate },
+                
+                // Overtime Request
+                new RequestTypeApprovers { Id = 4, request_type_id = 2, role_id = 5, approval_level = 1, 
+                    max_approval_days = 1, is_mandatory = true, approver_scope = "SAME_DEPARTMENT", 
+                    is_active = true, created_at = seedDate },
+                new RequestTypeApprovers { Id = 5, request_type_id = 2, role_id = 4, approval_level = 2, 
+                    max_approval_days = null, is_mandatory = false, approver_scope = "SAME_BRANCH", 
+                    is_active = true, created_at = seedDate }
             );
         }
     }

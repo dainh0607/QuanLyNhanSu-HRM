@@ -82,6 +82,47 @@ namespace ERP.API.Controllers
             return Ok(user);
         }
 
+        [HttpGet("super-admin/bootstrap-status")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetBootstrapStatus()
+        {
+            var isBootstrapped = await _authService.IsSystemBootstrappedAsync();
+            return Ok(new { isBootstrapped });
+        }
+
+        [HttpPost("super-admin/bootstrap")]
+        [AllowAnonymous]
+        public async Task<IActionResult> BootstrapSystem()
+        {
+            var result = await _authService.BootstrapSystemAsync();
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+            return Ok(result);
+        }
+
+        [HttpGet("super-admin/me")]
+        [Authorize(Policy = AuthSecurityConstants.SuperAdminPolicyName)]
+        public async Task<IActionResult> GetCurrentSuperAdminUser()
+        {
+            var userIdValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+
+            if (!int.TryParse(userIdValue, out var userId))
+            {
+                return Unauthorized();
+            }
+
+            var user = await _authService.GetUserByIdAsync(userId);
+            if (user == null)
+            {
+                return NotFound(new { Message = "User not found in system" });
+            }
+
+            return Ok(user);
+        }
+
         [HttpPost("refresh")]
         [AllowAnonymous]
         public async Task<IActionResult> RefreshSession()
@@ -364,6 +405,8 @@ namespace ERP.API.Controllers
             {
                 Success = result.Success,
                 Message = result.Message,
+                IdToken = result.IdToken,
+                CsrfToken = result.CsrfToken,
                 ExpiresIn = result.ExpiresIn,
                 User = result.User
             };

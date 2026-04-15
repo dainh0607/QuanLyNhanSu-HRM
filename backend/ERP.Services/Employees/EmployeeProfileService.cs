@@ -6,20 +6,51 @@ using ERP.DTOs.Employees.Profile;
 using ERP.Entities.Models;
 using ERP.Repositories.Interfaces;
 using EmployeeEntity = ERP.Entities.Models.Employees;
+using ERP.Services.Authorization;
+using ERP.Entities.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Services.Employees
 {
     public class EmployeeProfileService : IEmployeeProfileService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IAuthorizationService _authService;
+        private readonly ICurrentUserContext _userContext;
 
-        public EmployeeProfileService(IUnitOfWork unitOfWork)
+        public EmployeeProfileService(IUnitOfWork unitOfWork,
+            IAuthorizationService authService,
+            ICurrentUserContext userContext)
         {
             _unitOfWork = unitOfWork;
+            _authService = authService;
+            _userContext = userContext;
+        }
+
+        private async Task EnsureEmployeeAccess(int employeeId)
+        {
+            var currentUserId = _userContext.UserId ?? 0;
+            if (currentUserId <= 0) return; // Skip if no user context (e.g. system tasks)
+
+            var canAccess = await _authService.CanAccessEmployee(currentUserId, employeeId);
+            if (!canAccess)
+            {
+                // Also allowed if viewing own profile
+                var userAccount = await _unitOfWork.Repository<Users>().AsQueryable()
+                    .Where(u => u.Id == currentUserId)
+                    .Select(u => new { u.employee_id })
+                    .FirstOrDefaultAsync();
+
+                if (userAccount?.employee_id != employeeId)
+                {
+                    throw new UnauthorizedAccessException("Bạn không có quyền truy cập thông tin nhân viên này.");
+                }
+            }
         }
 
         public async Task<bool> UpdateBankAccountsAsync(int employeeId, List<BankAccountDto> dtos)
         {
+            await EnsureEmployeeAccess(employeeId);
             var existing = await _unitOfWork.Repository<BankAccounts>().FindAsync(x => x.employee_id == employeeId);
             _unitOfWork.Repository<BankAccounts>().RemoveRange(existing);
 
@@ -38,6 +69,7 @@ namespace ERP.Services.Employees
 
         public async Task<bool> UpdateEmergencyContactsAsync(int employeeId, List<EmergencyContactDto> dtos)
         {
+            await EnsureEmployeeAccess(employeeId);
             var existing = await _unitOfWork.Repository<EmergencyContacts>().FindAsync(x => x.employee_id == employeeId);
             _unitOfWork.Repository<EmergencyContacts>().RemoveRange(existing);
 
@@ -57,6 +89,7 @@ namespace ERP.Services.Employees
 
         public async Task<bool> UpdateHealthRecordAsync(int employeeId, HealthRecordDto dto)
         {
+            await EnsureEmployeeAccess(employeeId);
             var existing = (await _unitOfWork.Repository<HealthRecords>().FindAsync(x => x.employee_id == employeeId)).FirstOrDefault();
             
             if (existing != null)
@@ -91,6 +124,7 @@ namespace ERP.Services.Employees
 
         public async Task<bool> UpdateAddressesAsync(int employeeId, AddressProfileUpdateDto dto)
         {
+            await EnsureEmployeeAccess(employeeId);
             var employee = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(employeeId);
             if (employee == null) return false;
 
@@ -176,6 +210,7 @@ namespace ERP.Services.Employees
 
         public async Task<bool> UpdateEducationAsync(int employeeId, List<EducationDto> dtos)
         {
+            await EnsureEmployeeAccess(employeeId);
             var existing = await _unitOfWork.Repository<Education>().FindAsync(x => x.employee_id == employeeId);
             _unitOfWork.Repository<Education>().RemoveRange(existing);
 
@@ -195,6 +230,7 @@ namespace ERP.Services.Employees
 
         public async Task<bool> UpdateSkillsAsync(int employeeId, List<EmployeeSkillDto> dtos)
         {
+            await EnsureEmployeeAccess(employeeId);
             var existing = await _unitOfWork.Repository<EmployeeSkills>().FindAsync(x => x.employee_id == employeeId);
             _unitOfWork.Repository<EmployeeSkills>().RemoveRange(existing);
 
@@ -211,6 +247,7 @@ namespace ERP.Services.Employees
 
         public async Task<bool> UpdateCertificatesAsync(int employeeId, List<EmployeeCertificateDto> dtos)
         {
+            await EnsureEmployeeAccess(employeeId);
             var existing = await _unitOfWork.Repository<EmployeeCertificates>().FindAsync(x => x.employee_id == employeeId);
             _unitOfWork.Repository<EmployeeCertificates>().RemoveRange(existing);
 
@@ -228,6 +265,7 @@ namespace ERP.Services.Employees
 
         public async Task<bool> UpdateDependentsAsync(int employeeId, List<DependentDto> dtos)
         {
+            await EnsureEmployeeAccess(employeeId);
             var existing = await _unitOfWork.Repository<Dependents>().FindAsync(x => x.employee_id == employeeId);
             _unitOfWork.Repository<Dependents>().RemoveRange(existing);
 
@@ -251,6 +289,7 @@ namespace ERP.Services.Employees
 
         public async Task<bool> UpdateIdentityInfoAsync(int employeeId, IdentityInfoDto dto)
         {
+            await EnsureEmployeeAccess(employeeId);
             var emp = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(employeeId);
             if (emp == null) return false;
 
@@ -268,6 +307,7 @@ namespace ERP.Services.Employees
 
         public async Task<bool> UpdateContactInfoAsync(int employeeId, ContactInfoDto dto)
         {
+            await EnsureEmployeeAccess(employeeId);
             var emp = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(employeeId);
             if (emp == null) return false;
 
@@ -284,6 +324,7 @@ namespace ERP.Services.Employees
 
         public async Task<bool> UpdateBasicInfoAsync(int employeeId, BasicInfoDto dto)
         {
+            await EnsureEmployeeAccess(employeeId);
             var emp = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(employeeId);
             if (emp == null) return false;
 
@@ -319,6 +360,7 @@ namespace ERP.Services.Employees
 
         public async Task<bool> UpdateAvatarAsync(int employeeId, string? avatar)
         {
+            await EnsureEmployeeAccess(employeeId);
             var emp = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(employeeId);
             if (emp == null) return false;
 
@@ -330,6 +372,7 @@ namespace ERP.Services.Employees
       
         public async Task<bool> UpdateWorkHistoryAsync(int employeeId, List<WorkHistoryDto> dtos)
         {
+            await EnsureEmployeeAccess(employeeId);
             var existing = await _unitOfWork.Repository<WorkHistory>().FindAsync(x => x.employee_id == employeeId);
             _unitOfWork.Repository<WorkHistory>().RemoveRange(existing);
     
@@ -357,6 +400,7 @@ namespace ERP.Services.Employees
         /// </summary>
         public async Task<OtherInfoDto?> GetOtherInfoAsync(int employeeId)
         {
+            await EnsureEmployeeAccess(employeeId);
             var emp = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(employeeId);
             if (emp == null) return null;
 
@@ -375,6 +419,7 @@ namespace ERP.Services.Employees
 
         public async Task<OtherInfoDto?> GetOtherInfoDetailsAsync(int employeeId)
         {
+            await EnsureEmployeeAccess(employeeId);
             var emp = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(employeeId);
             if (emp == null) return null;
 
@@ -399,6 +444,7 @@ namespace ERP.Services.Employees
         /// </summary>
         public async Task<bool> UpdateOtherInfoAsync(int employeeId, OtherInfoDto dto)
         {
+            await EnsureEmployeeAccess(employeeId);
             var emp = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(employeeId);
             if (emp == null) return false;
 

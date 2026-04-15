@@ -10,6 +10,9 @@ namespace ERP.DTOs.Attendance
         public List<WeeklyScheduleApiAssignmentDto> Assignments { get; set; } = new();
         public List<WeeklyScheduleApiOpenShiftDto> OpenShifts { get; set; } = new();
         public DateTime? LastUpdatedAt { get; set; }
+        public int DraftCount { get; set; }
+        public int PublishedCount { get; set; }
+        public int ApprovedCount { get; set; }
     }
 
     public class WeeklyScheduleApiEmployeeDto
@@ -46,6 +49,7 @@ namespace ERP.DTOs.Attendance
         public string AssignmentDate { get; set; } = string.Empty;
         public string? AttendanceStatus { get; set; }
         public string? Note { get; set; }
+        public string? Status { get; set; }
         public string? Color { get; set; }
         public bool IsPublished { get; set; }
         public int? BranchId { get; set; }

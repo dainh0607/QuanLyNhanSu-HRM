@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -147,12 +147,12 @@ namespace ERP.Services.Contracts
             {
                 TotalContracts = allContracts.Count,
                 ActiveContracts = allContracts.Count(c => c.status == "Active"),
-                PendingSignatureCount = allContracts.Count(c => c.status == "Draft"), // "Chá» kĂ½"
+                PendingSignatureCount = allContracts.Count(c => c.status == "Draft"), // "Chờ ký"
                 ExpiredContracts = allContracts.Count(c => c.status == "Expired" || (c.expiry_date.HasValue && c.expiry_date < today)),
                 ExpiringSoon = allContracts.Count(c => c.status == "Active" && c.expiry_date.HasValue && c.expiry_date >= today && c.expiry_date <= expiringThreshold),
                 DraftContracts = allContracts.Count(c => c.status == "Draft"),
-                ProbationContracts = allContracts.Count(c => c.ContractType != null && c.ContractType.name.Contains("Thá»­ viá»‡c")),
-                OfficialContracts = allContracts.Count(c => c.ContractType != null && c.ContractType.name.Contains("ChĂ­nh thá»©c"))
+                ProbationContracts = allContracts.Count(c => c.ContractType != null && c.ContractType.name.Contains("Thử việc")),
+                OfficialContracts = allContracts.Count(c => c.ContractType != null && c.ContractType.name.Contains("Chính thức"))
             };
         }
 
@@ -167,9 +167,9 @@ namespace ERP.Services.Contracts
             // Header - Using semicolon (';') for Vietnamese Excel compatibility
             var headers = new[] 
             { 
-                "STT", "MĂ£ nhĂ¢n viĂªn", "Há» vĂ  tĂªn", "Sá»‘ há»£p Ä‘á»“ng", "Loáº¡i há»£p Ä‘á»“ng", 
-                "Tráº¡ng thĂ¡i", "NgĂ y kĂ½", "NgĂ y hiá»‡u lá»±c", "NgĂ y háº¿t háº¡n", 
-                "Chi nhĂ¡nh", "PhĂ²ng ban", "NgÆ°á»i kĂ½", "Loáº¡i thuáº¿ TNCN" 
+                "STT", "Mã nhân viên", "Họ và tên", "Số hợp đồng", "Loại hợp đồng", 
+                "Trạng thái", "Ngày ký", "Ngày hiệu lực", "Ngày hết hạn", 
+                "Chi nhánh", "Phòng ban", "Người ký", "Loại thuế TNCN" 
             };
             sb.AppendLine(string.Join(";", headers.Select(EscapeCsv)));
 
@@ -237,28 +237,40 @@ namespace ERP.Services.Contracts
 
         private static string MapStatusToLabel(string status)
         {
-            return status switch
-            {
-                "Active" => "Äang hiá»‡u lá»±c",
-                "Expired" => "Háº¿t háº¡n",
-                "Draft" => "Chá» kĂ½",
-                "Terminated" => "ÄĂ£ cháº¥m dá»©t",
-                "Cancelled" => "ÄĂ£ há»§y",
-                _ => status
-            };
+            if (string.IsNullOrEmpty(status)) return "Chờ ký";
+
+            string s = status.ToLower();
+
+            // Detect Vietnamese or English variants
+            if (s.Contains("active") || s.Contains("effective") || s.Contains("hiá»‡u") || s.Contains("hiệu")) 
+                return "Đang hiệu lực";
+            
+            if (s.Contains("expired") || s.Contains("háº¿t") || s.Contains("hết")) 
+                return "Hết hạn";
+
+            if (s.Contains("draft") || s.Contains("pending") || s.Contains("waiting") || s.Contains("chá»") || s.Contains("ký")) 
+                return "Chờ ký";
+
+            if (s.Contains("terminate") || s.Contains("cháº¥m") || s.Contains("dứt")) 
+                return "Đã chấm dứt";
+
+            if (s.Contains("cancel") || s.Contains("há»§y") || s.Contains("hủy")) 
+                return "Đã hủy";
+
+            return status;
         }
 
         private static string MapStatusToColor(string status)
         {
-            return status switch
-            {
-                "Active" => "success",
-                "Expired" => "error",
-                "Draft" => "warning",
-                "Terminated" => "default",
-                "Cancelled" => "error",
-                _ => "default"
-            };
+            if (string.IsNullOrEmpty(status)) return "default";
+
+            string s = status.ToLower();
+            if (s.Contains("active") || s.Contains("effective") || s.Contains("hiá»‡u")) return "success";
+            if (s.Contains("expired") || s.Contains("háº¿t")) return "error";
+            if (s.Contains("draft") || s.Contains("signing") || s.Contains("pending") || s.Contains("chá»")) return "warning";
+            if (s.Contains("cancel") || s.Contains("há»§y")) return "error";
+
+            return "default";
         }
 
         public async Task<IEnumerable<ContractDto>> GetByEmployeeIdAsync(int employeeId)
@@ -324,13 +336,13 @@ namespace ERP.Services.Contracts
                 .FirstOrDefaultAsync(c => c.contract_number == dto.ContractNumber);
             if (existingContract != null)
             {
-                throw new System.Exception($"Sá»‘ há»£p Ä‘á»“ng '{dto.ContractNumber}' Ä‘Ă£ tá»“n táº¡i trĂªn há»‡ thá»‘ng.");
+                throw new System.Exception($"Số hợp đồng '{dto.ContractNumber}' đã tồn tại trên hệ thống.");
             }
 
             // 2. Validation: Expiry Date >= Sign Date (AC 3)
             if (dto.SignDate.HasValue && dto.ExpiryDate.HasValue && dto.ExpiryDate < dto.SignDate)
             {
-                throw new System.Exception("NgĂ y háº¿t háº¡n khĂ´ng Ä‘Æ°á»£c nhá» hÆ¡n ngĂ y kĂ½.");
+                throw new System.Exception("Ngày hết hạn không được nhỏ hơn ngày ký.");
             }
 
             // 3. Validation: Overlapping dates (Existing logic)
@@ -338,7 +350,7 @@ namespace ERP.Services.Contracts
             var startDate = dto.EffectiveDate ?? dto.SignDate ?? DateTime.UtcNow;
             if (await CheckOverlappingContractAsync(dto.EmployeeId, startDate, dto.ExpiryDate))
             {
-                throw new System.Exception("NhĂ¢n viĂªn nĂ y Ä‘Ă£ cĂ³ há»£p Ä‘á»“ng khĂ¡c hiá»‡u lá»±c trong khoáº£ng thá»i gian nĂ y.");
+                throw new System.Exception("Nhân viên này đã có hợp đồng khác hiệu lực trong khoảng thời gian này.");
             }
 
             var contract = new Entities.Models.Contracts
@@ -369,14 +381,16 @@ namespace ERP.Services.Contracts
                 employee_id = dto.EmployeeId,
                 contract_number = dto.ContractNumber ?? $"DRAFT-{Guid.NewGuid().ToString().Substring(0, 8)}",
                 contract_type_id = dto.ContractTypeId,
-                effective_date = dto.EffectiveDate ?? DateTime.UtcNow,
+                sign_date = dto.SignDate,
+                effective_date = dto.EffectiveDate ?? dto.SignDate ?? DateTime.UtcNow,
+                expiry_date = dto.ExpiryDate,
                 status = "Draft",
                 is_electronic = true,
                 note = dto.Note ?? "",
                 template_id = dto.TemplateId,
-                attachment = "", // Required field, set to empty for draft
-                signed_by = "",  // Required field
-                tax_type = ""    // Required field
+                attachment = dto.Attachment ?? "",
+                signed_by = dto.SignedBy ?? "",
+                tax_type = dto.TaxType ?? ""
             };
 
             await _unitOfWork.Repository<Entities.Models.Contracts>().AddAsync(contract);
@@ -419,7 +433,7 @@ namespace ERP.Services.Contracts
             
             if (await CheckOverlappingContractAsync(contract.employee_id, newStartDate, newEndDate, id))
             {
-                throw new Exception("Cáº­p nháº­t tháº¥t báº¡i: Khoáº£ng thá»i gian hiá»‡u lá»±c má»›i bá»‹ chá»“ng chĂ©o vá»›i há»£p Ä‘á»“ng khĂ¡c.");
+                throw new Exception("Cập nhật thất bại: Khoảng thời gian hiệu lực mới bị chồng chéo với hợp đồng khác.");
             }
 
             contract.contract_number = dto.ContractNumber;
@@ -465,20 +479,29 @@ namespace ERP.Services.Contracts
                 .Include(c => c.Template)
                 .FirstOrDefaultAsync(c => c.Id == id);
 
-            if (contract == null) throw new Exception("KhĂ´ng tĂ¬m tháº¥y há»£p Ä‘á»“ng.");
+            if (contract == null) throw new Exception("Không tìm thấy hợp đồng.");
+
+            if (!string.IsNullOrWhiteSpace(contract.attachment))
+            {
+                return await LoadContractAttachmentAsync(contract);
+            }
 
             if (contract.is_electronic)
             {
-                // Generate PDF from Template
+                if (contract.Template == null)
+                {
+                    throw new Exception("Há»£p Ä‘á»“ng Ä‘iá»‡n tá»­ chÆ°a cĂ³ file PDF hoáº·c máº«u ná»™i dung Ä‘á»ƒ xem.");
+                }
+
                 var content = await _pdfService.GenerateContractPdfAsync(contract);
                 return (content, "application/pdf", $"Preview_{contract.contract_number}.pdf");
             }
-            else
+            if (!contract.is_electronic)
             {
                 // Return Physical File
                 if (string.IsNullOrEmpty(contract.attachment))
                 {
-                    throw new Exception("Há»£p Ä‘á»“ng nĂ y khĂ´ng cĂ³ tá»‡p Ä‘Ă­nh kĂ¨m Ä‘á»ƒ xem trÆ°á»›c.");
+                    throw new Exception("Hợp đồng này không có tệp đính kèm để xem trước.");
                 }
 
                 // Extract relative path from URL
@@ -494,12 +517,56 @@ namespace ERP.Services.Contracts
 
                 if (!File.Exists(filePath))
                 {
-                    throw new Exception("Tá»‡p Ä‘Ă­nh kĂ¨m khĂ´ng tá»“n táº¡i trĂªn há»‡ thá»‘ng.");
+                    throw new Exception("Tệp đính kèm không tồn tại trên hệ thống.");
                 }
 
                 var content = await File.ReadAllBytesAsync(filePath);
                 return (content, "application/pdf", fileName);
             }
+
+            throw new Exception("Há»£p Ä‘á»“ng nĂ y khĂ´ng cĂ³ tá»‡p Ä‘Ă­nh kĂ¨m Ä‘á»ƒ xem trÆ°á»›c.");
+        }
+
+        private async Task<(byte[] content, string contentType, string fileName)> LoadContractAttachmentAsync(Entities.Models.Contracts contract)
+        {
+            var content = await _storageService.GetFileAsync(contract.attachment);
+            var fileName = ResolveStoredFileName(contract.attachment, $"Contract_{contract.contract_number}.pdf");
+            var contentType = ResolveContentType(fileName);
+            return (content, contentType, fileName);
+        }
+
+        private static string ResolveStoredFileName(string? attachment, string fallbackFileName)
+        {
+            if (string.IsNullOrWhiteSpace(attachment))
+            {
+                return fallbackFileName;
+            }
+
+            if (Uri.TryCreate(attachment, UriKind.Absolute, out var absoluteUri))
+            {
+                return Path.GetFileName(absoluteUri.LocalPath);
+            }
+
+            var normalizedPath = attachment
+                .Trim()
+                .TrimStart('~')
+                .TrimStart('/', '\\')
+                .Replace('/', Path.DirectorySeparatorChar)
+                .Replace('\\', Path.DirectorySeparatorChar);
+
+            var fileName = Path.GetFileName(normalizedPath);
+            return string.IsNullOrWhiteSpace(fileName) ? fallbackFileName : fileName;
+        }
+
+        private static string ResolveContentType(string fileName)
+        {
+            return Path.GetExtension(fileName).ToLowerInvariant() switch
+            {
+                ".pdf" => "application/pdf",
+                ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                ".doc" => "application/msword",
+                _ => "application/octet-stream",
+            };
         }
 
         public async Task<List<ContractSignerDto>> SaveElectronicSignersAsync(ContractStep3Dto dto)
@@ -509,8 +576,8 @@ namespace ERP.Services.Contracts
                 .Include(c => c.Signers)
                 .FirstOrDefaultAsync(c => c.Id == dto.ContractId);
 
-            if (contract == null) throw new Exception("KhĂ´ng tĂ¬m tháº¥y há»£p Ä‘á»“ng.");
-            if (!contract.is_electronic) throw new Exception("Há»£p Ä‘á»“ng nĂ y khĂ´ng pháº£i lĂ  há»£p Ä‘á»“ng Ä‘iá»‡n tá»­.");
+            if (contract == null) throw new Exception("Không tìm thấy hợp đồng.");
+            if (!contract.is_electronic) throw new Exception("Hợp đồng này không phải là hợp đồng điện tử.");
 
             // 1. Remove existing signers
             var signerRepo = _unitOfWork.Repository<ContractSigners>();
@@ -569,7 +636,7 @@ namespace ERP.Services.Contracts
                 .ToListAsync();
 
             if (signerIds == null || !signerIds.Any()) 
-                throw new Exception("KhĂ´ng tĂ¬m tháº¥y danh sĂ¡ch ngÆ°á»i kĂ½ cho há»£p Ä‘á»“ng nĂ y.");
+                throw new Exception("Không tìm thấy danh sách người ký cho hợp đồng này.");
 
             var positionRepo = _unitOfWork.Repository<ContractSignerPositions>();
 
@@ -587,7 +654,7 @@ namespace ERP.Services.Contracts
             foreach (var posDto in dto.Positions)
             {
                 if (!signerIds.Contains(posDto.SignerId))
-                    throw new Exception($"NgÆ°á»i kĂ½ (ID: {posDto.SignerId}) khĂ´ng thuá»™c há»£p Ä‘á»“ng nĂ y.");
+                    throw new Exception($"Người ký (ID: {posDto.SignerId}) không thuộc hợp đồng này.");
 
                 var newPos = new ContractSignerPositions
                 {
@@ -615,44 +682,53 @@ namespace ERP.Services.Contracts
                 .Include(c => c.Signers)
                 .FirstOrDefaultAsync(c => c.Id == contractId);
 
-            if (contract == null) throw new Exception("KhĂ´ng tĂ¬m tháº¥y há»£p Ä‘á»“ng.");
-            if (!contract.is_electronic) throw new Exception("Há»£p Ä‘á»“ng nĂ y khĂ´ng pháº£i lĂ  há»£p Ä‘á»“ng Ä‘iá»‡n tá»­.");
+            if (contract == null) throw new Exception("Không tìm thấy hợp đồng.");
+            if (!contract.is_electronic) throw new Exception("Hợp đồng này không phải là hợp đồng điện tử.");
             
             if (contract.Signers == null || !contract.Signers.Any())
             {
-                throw new Exception("Há»£p Ä‘á»“ng Ä‘iá»‡n tá»­ chÆ°a cĂ³ ngÆ°á»i kĂ½ Ä‘á»ƒ phĂ¡t hĂ nh.");
+                throw new Exception("Hợp đồng điện tử chưa có người ký để phát hành.");
             }
 
-            // 1. Generate final PDF
-            var pdfBytes = await _pdfService.GenerateContractPdfAsync(contract);
-            
-            // 2. Upload to storage
-            using (var ms = new System.IO.MemoryStream(pdfBytes))
+            // 1. Ensure the contract has a PDF source before starting the signing workflow
+            if (string.IsNullOrWhiteSpace(contract.attachment))
             {
-                var fileName = $"{contract.contract_number}_{Guid.NewGuid().ToString().Substring(0, 8)}.pdf";
-                var fileUrl = await _storageService.UploadFileAsync(ms, fileName, "application/pdf");
-                contract.attachment = fileUrl;
+                if (contract.Template == null)
+                {
+                    throw new Exception("Há»£p Ä‘á»“ng Ä‘iá»‡n tá»­ chÆ°a cĂ³ tá»‡p PDF hoáº·c máº«u ná»™i dung Ä‘á»ƒ phĂ¡t hĂ nh.");
+                }
+
+                var pdfBytes = await _pdfService.GenerateContractPdfAsync(contract);
+                using (var ms = new System.IO.MemoryStream(pdfBytes))
+                {
+                    var fileName = $"{contract.contract_number}_{Guid.NewGuid().ToString().Substring(0, 8)}.pdf";
+                    contract.attachment = await _storageService.UploadFileAsync(ms, fileName, "application/pdf");
+                }
+            }
+            else
+            {
+                await _storageService.GetFileAsync(contract.attachment);
             }
 
-            // 3. Update Status
+            // 2. Update Status
             contract.status = "PendingSignature";
             contract.UpdatedAt = DateTime.UtcNow;
 
             _unitOfWork.Repository<Entities.Models.Contracts>().Update(contract);
             await _unitOfWork.SaveChangesAsync();
 
-            // 4. Handle first signer notification via NotificationService
+            // 3. Handle first signer notification via NotificationService
             var notificationSent = await _notificationService.NotifyNextSignerAsync(contract.Id);
 
             return new ElectronicContractSubmitResultDto
             {
                 Message = notificationSent 
-                    ? "Há»£p Ä‘á»“ng Ä‘Ă£ Ä‘Æ°á»£c gá»­i vĂ  báº¯t Ä‘áº§u quy trĂ¬nh kĂ½ duyá»‡t." 
-                    : "Há»£p Ä‘á»“ng Ä‘Ă£ Ä‘Æ°á»£c phĂ¡t hĂ nh, nhÆ°ng chÆ°a gá»­i Ä‘Æ°á»£c email cho ngÆ°á»i kĂ½ Ä‘áº§u tiĂªn.",
+                    ? "Hợp đồng đã được gửi và bắt đầu quy trình ký duyệt." 
+                    : "Hợp đồng đã được phát hành, nhưng chưa gửi được email cho người ký đầu tiên.",
                 NotificationSent = notificationSent,
                 WarningMessage = notificationSent 
                     ? null 
-                    : "Há»£p Ä‘á»“ng Ä‘Ă£ Ä‘Æ°á»£c phĂ¡t hĂ nh, nhÆ°ng email má»i kĂ½ chÆ°a Ä‘Æ°á»£c gá»­i. Vui lĂ²ng kiá»ƒm tra cáº¥u hĂ¬nh email á»©ng dá»¥ng."
+                    : "Hợp đồng đã được phát hành, nhưng email mời ký chưa được gửi. Vui lòng kiểm tra cấu hình email ứng dụng."
             };
         }
     }

@@ -1,0 +1,88 @@
+### Variables
+@baseUrl = http://localhost:5122/api
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNyIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWVpZGVudGlmaWVyIjoiMjciLCJlbWFpbCI6Imtmcm9nMTExMUBnbWFpbC5jb20iLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9lbWFpbGFkZHJlc3MiOiJrZnJvZzExMTFAZ21haWwuY29tIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZSI6Imtmcm9nMTExMSIsImp0aSI6Ijg1ODY5Yjc2LWFkZDItNDMwNS05YzhkLWYyNDgzMGQ3ZDJkZiIsIlNlc3Npb25JZCI6IjY0NmRkOWEzYzA5MTQxMWViYjYxODhiODU0MWE1YjIxIiwiVG9rZW5UeXBlIjoiQWNjZXNzIiwidGVuYW50X2lkIjoiIiwiRW1wbG95ZWVJZCI6IjI3IiwiRW1wbG95ZWVDb2RlIjoiRU1QXzAwRkExMzBGOEQzMTQ2RjYiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJNYW5hZ2VyIiwiZXhwIjoxNzc2MjE3MjY0LCJpc3MiOiJOZXhhSFJNIiwiYXVkIjoiTmV4YUhSTV9DbGllbnQifQ.n_2u2hNNsl4p_Pp2Bn4KRcWWj9Ucifjp-e9fBnXguNo
+### 1. Lấy danh sách Vai trò (Roles) - Yêu cầu quyền System:Manage
+GET {{baseUrl}}/auth-mgmt/roles
+Authorization: Bearer {{token}}
+X-Bypass-CSRF: true
+
+### 2. Lấy danh sách gợi ý Permission (Actions, Resources, Scopes)
+GET {{baseUrl}}/auth-mgmt/lookups
+Authorization: Bearer {{token}}
+X-Bypass-CSRF: true
+
+### 3. Tạo một Vai trò mới (Custom Role)
+# @name createRole
+POST {{baseUrl}}/auth-mgmt/roles
+Authorization: Bearer {{token}}
+X-Bypass-CSRF: true
+Content-Type: application/json
+
+{
+    "name": "Quản lý Nhân sự Miền Nam",
+    "description": "Có quyền quản lý nhân sự nhưng chỉ giới hạn trong các chi nhánh Miền Nam",
+    "isActive": true,
+    "scopeLevel": "REGION"
+}
+
+### Lưu ID của Role vừa tạo (Ví dụ: 10)
+@newRoleId = 10
+
+### 4. Lấy chi tiết Vai trò và các Quyền hiện tại
+GET {{baseUrl}}/auth-mgmt/roles/{{newRoleId}}/permissions
+Authorization: Bearer {{token}}
+X-Bypass-CSRF: true
+
+### 5. Cập nhật Mapping Quyền cho Vai trò vừa tạo
+PUT {{baseUrl}}/auth-mgmt/roles/{{newRoleId}}/permissions
+Authorization: Bearer {{token}}
+X-Bypass-CSRF: true
+Content-Type: application/json
+
+{
+    "roleId": {{newRoleId}},
+    "actions": [
+        {
+            "action": "READ",
+            "resource": "EMPLOYEE",
+            "allowedScope": "SAME_REGION",
+            "description": "Xem danh sách nhân viên trong vùng"
+        },
+        {
+            "action": "UPDATE",
+            "resource": "EMPLOYEE",
+            "allowedScope": "SAME_REGION",
+            "description": "Cập nhật thông tin nhân viên trong vùng"
+        }
+    ],
+    "resources": [
+        {
+            "resourceName": "Employees",
+            "scopeLevel": "REGION"
+        }
+    ]
+}
+
+### 6. Gán Vai trò cho một Nhân viên cụ thể kèm theo Scope (RegionId = 3)
+POST {{baseUrl}}/auth-mgmt/user-roles/assign
+Authorization: Bearer {{token}}
+X-Bypass-CSRF: true
+Content-Type: application/json
+
+{
+    "userId": 2,
+    "roleId": {{newRoleId}},
+    "regionId": 3,
+    "validFrom": "2026-04-14T00:00:00Z",
+    "assignmentReason": "Bổ nhiệm Quản lý HR khu vực Miền Nam"
+}
+
+### 7. Kiểm tra các Vai trò đang áp dụng cho một Nhân viên
+GET {{baseUrl}}/auth-mgmt/user-roles/2
+Authorization: Bearer {{token}}
+X-Bypass-CSRF: true
+
+### 8. Xóa Vai trò (Chỉ thực hiện được nếu không có user nào đang sử dụng và không phải Role hệ thống)
+DELETE {{baseUrl}}/auth-mgmt/roles/{{newRoleId}}
+Authorization: Bearer {{token}}
+X-Bypass-CSRF: true

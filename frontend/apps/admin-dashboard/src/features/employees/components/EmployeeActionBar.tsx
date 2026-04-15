@@ -65,24 +65,24 @@ const EmployeeActionBar: React.FC<EmployeeActionBarProps> = ({
       <div className="flex min-w-[300px] flex-1 items-center space-x-3">
         <button
           onClick={onToggleFilter}
-          className="group flex shrink-0 items-center rounded-lg border border-gray-300 bg-white px-3 py-2 transition-colors hover:bg-gray-50"
+          className="group flex shrink-0 items-center rounded-lg border border-gray-300 bg-white px-[11px] py-[7px] transition-colors hover:bg-gray-50"
           type="button"
         >
-          <span className="material-symbols-outlined text-[20px] text-gray-400 group-hover:text-[#152238]">
+          <span className="material-symbols-outlined text-[19px] text-gray-400 group-hover:text-[#152238]">
             tune
           </span>
           {activeFilterCount > 0 ? (
-            <span className="ml-1.5 rounded bg-[#134BBA]/10 px-1.5 py-0.5 text-[10px] font-bold text-[#134BBA]">
+            <span className="ml-1.5 rounded bg-[#134BBA]/10 px-[5px] py-[1px] text-[9px] font-bold text-[#134BBA]">
               {activeFilterCount}
             </span>
           ) : null}
         </button>
 
         <button
-          className="ml-1 flex shrink-0 items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-500 transition-colors hover:bg-gray-50 hover:text-[#152238]"
+          className="ml-1 flex shrink-0 items-center rounded-lg border border-gray-300 bg-white px-[11px] py-[7px] text-gray-500 transition-colors hover:bg-gray-50 hover:text-[#152238]"
           type="button"
         >
-          <span className="material-symbols-outlined text-[20px]">sort</span>
+          <span className="material-symbols-outlined text-[19px]">sort</span>
         </button>
 
         <div className="relative max-w-md flex-1">
@@ -100,7 +100,7 @@ const EmployeeActionBar: React.FC<EmployeeActionBarProps> = ({
             type="text"
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
-            className="block w-full rounded-lg border border-gray-300 py-2 pl-10 pr-3 text-sm placeholder-gray-400 focus:border-[#134BBA] focus:ring-[#134BBA]"
+            className="block w-full rounded-lg border border-gray-300 py-[7px] pl-[39px] pr-[11px] text-[13px] placeholder-gray-400 focus:border-[#134BBA] focus:ring-[#134BBA]"
             placeholder="Tìm kiếm theo Họ tên, Mã NV, SĐT, Email..."
           />
         </div>
@@ -108,14 +108,14 @@ const EmployeeActionBar: React.FC<EmployeeActionBarProps> = ({
         <div className="relative" ref={statusRef}>
           <button
             onClick={() => setIsStatusOpen((prev) => !prev)}
-            className="flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium transition-colors hover:bg-gray-50"
+            className="flex items-center rounded-lg border border-gray-300 bg-white px-[11px] py-[7px] text-[13px] font-medium transition-colors hover:bg-gray-50"
             type="button"
           >
-            <span className="material-symbols-outlined mr-2 text-[18px] text-gray-500">
+            <span className="material-symbols-outlined mr-2 text-[17px] text-gray-500">
               filter_alt
             </span>
             <span>{selectedStatusLabel}</span>
-            <svg className="ml-2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="ml-2 h-[15px] w-[15px] text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 d="M19 9l-7 7-7-7"
                 strokeLinecap="round"
@@ -134,7 +134,7 @@ const EmployeeActionBar: React.FC<EmployeeActionBarProps> = ({
                     onStatusChange(statusOption.value);
                     setIsStatusOpen(false);
                   }}
-                  className={`w-full px-4 py-2 text-left text-sm transition-colors ${
+                  className={`w-full px-[15px] py-[7px] text-left text-[13px] transition-colors ${
                     selectedStatus === statusOption.value
                       ? 'bg-[#134BBA]/8 font-semibold text-[#134BBA]'
                       : 'text-gray-700 hover:bg-[#134BBA]/5 hover:text-[#134BBA]'
@@ -151,20 +151,20 @@ const EmployeeActionBar: React.FC<EmployeeActionBarProps> = ({
 
       <div className="flex items-center space-x-2">
         <button
-          className="flex shrink-0 items-center justify-center rounded-lg border border-gray-300 bg-white p-2 text-gray-400 shadow-sm transition-all hover:border-gray-400 hover:text-[#152238] hover:shadow active:scale-95"
+          className="flex shrink-0 items-center justify-center rounded-lg border border-gray-300 bg-white p-[7px] text-gray-400 shadow-sm transition-all hover:border-gray-400 hover:text-[#152238] hover:shadow active:scale-95"
           title="Sơ đồ tổ chức"
           type="button"
         >
-          <span className="material-symbols-outlined text-[20px]">account_tree</span>
+          <span className="material-symbols-outlined text-[19px]">account_tree</span>
         </button>
 
         <div className="group relative">
           <button
-            className="flex shrink-0 items-center justify-center rounded-lg border border-gray-300 bg-white p-2 text-gray-400 shadow-sm transition-all hover:border-gray-400 hover:text-[#152238] hover:shadow active:scale-95"
+            className="flex shrink-0 items-center justify-center rounded-lg border border-gray-300 bg-white p-[7px] text-gray-400 shadow-sm transition-all hover:border-gray-400 hover:text-[#152238] hover:shadow active:scale-95"
             title="Hồ sơ sơ đồ"
             type="button"
           >
-            <span className="material-symbols-outlined text-[20px]">assignment_ind</span>
+            <span className="material-symbols-outlined text-[19px]">assignment_ind</span>
           </button>
 
           <div className="absolute right-0 top-full z-[9999] hidden pt-1.5 group-hover:block">
@@ -172,19 +172,19 @@ const EmployeeActionBar: React.FC<EmployeeActionBarProps> = ({
               <button
                 type="button"
                 onClick={() => navigate('/personnel/contracts')}
-                className="block w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
+                className="block w-full px-[15px] py-[7px] text-left text-[13px] text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
               >
                 Hợp đồng
               </button>
               <button
                 type="button"
-                className="block w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
+                className="block w-full px-[15px] py-[7px] text-left text-[13px] text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
               >
                 Bảo hiểm
               </button>
               <button
                 type="button"
-                className="block w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
+                className="block w-full px-[15px] py-[7px] text-left text-[13px] text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
               >
                 Tài sản
               </button>
@@ -194,11 +194,11 @@ const EmployeeActionBar: React.FC<EmployeeActionBarProps> = ({
 
         <button
           onClick={onToggleColumnConfig}
-          className="flex shrink-0 items-center justify-center rounded-lg border border-gray-300 bg-white p-2 text-gray-400 shadow-sm transition-all hover:border-gray-400 hover:text-[#152238] hover:shadow active:scale-95"
+          className="flex shrink-0 items-center justify-center rounded-lg border border-gray-300 bg-white p-[7px] text-gray-400 shadow-sm transition-all hover:border-gray-400 hover:text-[#152238] hover:shadow active:scale-95"
           title="Tùy chỉnh cột"
           type="button"
         >
-          <span className="material-symbols-outlined text-[20px]">menu</span>
+          <span className="material-symbols-outlined text-[19px]">menu</span>
         </button>
       </div>
     </div>

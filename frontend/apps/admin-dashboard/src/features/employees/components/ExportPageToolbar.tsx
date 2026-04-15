@@ -2,11 +2,13 @@ import React from 'react';
 
 interface ExportPageToolbarProps {
   onAddEmployee?: () => void;
+  onAddBulkEmployee?: () => void;
   onOpenBasicInfoExport?: () => void;
 }
 
 const ExportPageToolbar: React.FC<ExportPageToolbarProps> = ({
   onAddEmployee,
+  onAddBulkEmployee,
   onOpenBasicInfoExport,
 }) => {
   return (
@@ -96,6 +98,7 @@ const ExportPageToolbar: React.FC<ExportPageToolbarProps> = ({
                   </button>
                   <button
                     type="button"
+                    onClick={onAddBulkEmployee}
                     className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-[#192841]/5 hover:text-[#192841] transition-colors"
                   >
                     Thêm hàng loạt

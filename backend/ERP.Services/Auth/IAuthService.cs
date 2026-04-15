@@ -31,5 +31,15 @@ namespace ERP.Services.Auth
         /// Kiểm tra tính hợp lệ của token mời
         /// </summary>
         Task<InvitationValidationDto> ValidateInvitationTokenAsync(string token);
+
+        /// <summary>
+        /// Kiểm tra xem hệ thống đã được khởi tạo (bootstrap) chưa
+        /// </summary>
+        Task<bool> IsSystemBootstrappedAsync();
+
+        /// <summary>
+        /// Khởi tạo hệ thống với tài khoản admin đầu tiên
+        /// </summary>
+        Task<AuthResponseDto> BootstrapSystemAsync();
     }
 }

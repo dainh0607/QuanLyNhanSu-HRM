@@ -20,7 +20,7 @@ export type AttendanceStatus =
 
 export type AttendanceStatusFilter = AttendanceStatus | "all";
 export type EmployeeStatusFilter = "active" | "all";
-export type ScheduleDataSource = "api" | "mock";
+export type ShiftAssignmentStatus = "draft" | "published" | "approved";
 
 export interface SelectOption {
   value: string;
@@ -88,6 +88,7 @@ export interface WeeklyScheduleShift {
   projectId?: string | null;
   projectName?: string | null;
   statusLabel?: string;
+  assignmentStatus?: ShiftAssignmentStatus;
 }
 
 export interface WeeklyScheduleCell {
@@ -107,8 +108,10 @@ export interface WeeklyScheduleGridData {
   openShiftCells: Record<string, WeeklyScheduleCell>;
   totalEmployees: number;
   totalOpenShifts: number;
-  dataSource: ScheduleDataSource;
   lastUpdatedAt: string;
+  draftCount: number;
+  publishedCount: number;
+  approvedCount: number;
 }
 
 export type ShiftScheduleGridData = WeeklyScheduleGridData;
@@ -162,68 +165,115 @@ export interface PagedApiResponse<T> {
 export interface WeeklyScheduleApiEmployee {
   id: number;
   full_name?: string | null;
+  fullName?: string | null;
   avatar?: string | null;
   employee_code?: string | null;
+  employeeCode?: string | null;
   region_id?: number | null;
+  regionId?: number | null;
   region_name?: string | null;
+  regionName?: string | null;
   branch_id?: number | null;
+  branchId?: number | null;
   branch_name?: string | null;
+  branchName?: string | null;
   department_id?: number | null;
+  departmentId?: number | null;
   department_name?: string | null;
+  departmentName?: string | null;
   job_title_id?: number | null;
+  jobTitleId?: number | null;
   job_title_name?: string | null;
+  jobTitleName?: string | null;
   access_group_id?: number | null;
+  accessGroupId?: number | null;
   access_group_name?: string | null;
+  accessGroupName?: string | null;
   gender_code?: string | null;
+  genderCode?: string | null;
   is_active?: boolean;
+  isActive?: boolean;
 }
 
 export interface WeeklyScheduleApiAssignment {
   id: number;
   employee_id: number;
+  employeeId?: number;
   shift_id?: number | null;
+  shiftId?: number | null;
   assignment_date: string;
+  assignmentDate?: string;
   is_published?: boolean;
+  isPublished?: boolean;
   note?: string | null;
   attendance_status?: string | null;
+  attendanceStatus?: string | null;
   employee_name?: string | null;
+  employeeName?: string | null;
   employee_avatar?: string | null;
+  employeeAvatar?: string | null;
   employee_code?: string | null;
+  employeeCode?: string | null;
   branch_id?: number | null;
+  branchId?: number | null;
   branch_name?: string | null;
+  branchName?: string | null;
   job_title_id?: number | null;
+  jobTitleId?: number | null;
   job_title_name?: string | null;
+  jobTitleName?: string | null;
   project_id?: string | null;
+  projectId?: string | null;
   project_name?: string | null;
+  projectName?: string | null;
   shift_name?: string | null;
+  shiftName?: string | null;
   start_time?: string | null;
+  startTime?: string | null;
   end_time?: string | null;
+  endTime?: string | null;
   color?: string | null;
 }
 
 export interface WeeklyScheduleApiOpenShift {
   id: number;
   shift_id?: number | null;
+  shiftId?: number | null;
   branch_id?: number | null;
+  branchId?: number | null;
   branch_name?: string | null;
+  branchName?: string | null;
   department_id?: number | null;
+  departmentId?: number | null;
   job_title_id?: number | null;
+  jobTitleId?: number | null;
   job_title_name?: string | null;
+  jobTitleName?: string | null;
   required_quantity?: number | null;
+  requiredQuantity?: number | null;
   assigned_quantity?: number | null;
+  assignedQuantity?: number | null;
   status?: string | null;
   open_date: string;
+  openDate?: string;
   close_date?: string | null;
+  closeDate?: string | null;
   shift_name?: string | null;
+  shiftName?: string | null;
   start_time?: string | null;
+  startTime?: string | null;
   end_time?: string | null;
+  endTime?: string | null;
   color?: string | null;
 }
 
 export interface WeeklyScheduleApiResponse {
-  week_start_date: string;
+  week_start_date?: string;
+  weekStartDate?: string;
   employees?: WeeklyScheduleApiEmployee[];
   assignments?: WeeklyScheduleApiAssignment[];
   open_shifts?: WeeklyScheduleApiOpenShift[];
+  openShifts?: WeeklyScheduleApiOpenShift[];
   last_updated_at?: string;
+  lastUpdatedAt?: string;
 }

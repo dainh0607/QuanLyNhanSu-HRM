@@ -4,7 +4,6 @@ import type {
   WeeklyScheduleApiOpenShift,
   WeeklyScheduleApiResponse,
 } from "../types";
-import { getRuntimeQuickAddedEmployees } from "../quick-add-employees/stores/quickAddEmployeesRuntimeStore";
 import { addDays, parseIsoDate, startOfWeek, toIsoDate } from "../utils/week";
 
 const baseEmployees: WeeklyScheduleApiEmployee[] = [
@@ -123,20 +122,6 @@ export interface MockShiftCatalogItem {
   repeat_days?: string[];
   color?: string | null;
   note?: string | null;
-}
-
-export interface MockShiftCopyItem {
-  employeeId: number;
-  shiftId?: number | null;
-  shiftName: string;
-  startTime: string;
-  endTime: string;
-  dayOffset: number;
-  branchId?: number | null;
-  branchName?: string | null;
-  note?: string | null;
-  color?: string | null;
-  isPublished?: boolean;
 }
 
 const baseAssignmentTemplates: AssignmentTemplate[] = [
@@ -266,33 +251,6 @@ const getRuntimeAssignmentsForWeek = (weekStartDate: string): WeeklyScheduleApiA
     }));
 };
 
-const getAllAssignmentsForWeek = (weekStartDate: string): WeeklyScheduleApiAssignment[] => [
-  ...baseAssignmentTemplates
-    .filter((template) => !deletedAssignmentIds.has(template.id))
-    .map((template) => buildAssignment(weekStartDate, template)),
-  ...getRuntimeAssignmentsForWeek(weekStartDate),
-];
-
-const hasMatchingAssignment = (
-  assignments: WeeklyScheduleApiAssignment[],
-  candidate: {
-    employeeId: number;
-    assignmentDate: string;
-    shiftName: string;
-    startTime: string;
-    endTime: string;
-  },
-): boolean =>
-  assignments.some(
-    (assignment) =>
-      assignment.employee_id === candidate.employeeId &&
-      assignment.assignment_date === candidate.assignmentDate &&
-      (assignment.shift_name ?? "") === candidate.shiftName &&
-      (assignment.start_time ?? "") === candidate.startTime &&
-      (assignment.end_time ?? "") === candidate.endTime &&
-      !deletedAssignmentIds.has(assignment.id),
-  );
-
 const resolveAssignmentById = (assignmentId: number): WeeklyScheduleApiAssignment | null => {
   const runtimeAssignment = runtimeAssignments.find((assignment) => assignment.id === assignmentId);
   if (runtimeAssignment) {
@@ -314,7 +272,7 @@ const resolveAssignmentById = (assignmentId: number): WeeklyScheduleApiAssignmen
 export const getMockEmployeeById = (
   employeeId: number,
 ): WeeklyScheduleApiEmployee | undefined =>
-  [...getRuntimeQuickAddedEmployees(), ...baseEmployees].find((employee) => employee.id === employeeId);
+  baseEmployees.find((employee) => employee.id === employeeId);
 
 export const getMockShiftAssignmentStatus = (
   assignmentId: number | undefined,
@@ -448,75 +406,6 @@ export const createMockShiftTemplate = ({
   return createdTemplates;
 };
 
-export const copyMockShiftAssignments = ({
-  sourceItems,
-  targetWeekStartDates,
-  mergeMode = "merge",
-}: {
-  sourceItems: MockShiftCopyItem[];
-  targetWeekStartDates: string[];
-  mergeMode?: "merge" | "overwrite";
-}): { copiedCount: number; skippedCount: number } => {
-  let copiedCount = 0;
-  let skippedCount = 0;
-
-  targetWeekStartDates.forEach((targetWeekStartDate) => {
-    let existingAssignments = getAllAssignmentsForWeek(targetWeekStartDate);
-
-    sourceItems.forEach((item) => {
-      const assignmentDate = toIsoDate(
-        addDays(parseIsoDate(targetWeekStartDate), item.dayOffset),
-      );
-
-      const candidate = {
-        employeeId: item.employeeId,
-        assignmentDate,
-        shiftName: item.shiftName,
-        startTime: item.startTime,
-        endTime: item.endTime,
-      };
-
-      if (mergeMode === "merge" && hasMatchingAssignment(existingAssignments, candidate)) {
-        skippedCount += 1;
-        return;
-      }
-
-      if (mergeMode === "overwrite") {
-        runtimeAssignments = runtimeAssignments.filter(
-          (assignment) =>
-            !(
-              assignment.employee_id === item.employeeId &&
-              assignment.assignment_date === assignmentDate
-            ),
-        );
-        existingAssignments = getAllAssignmentsForWeek(targetWeekStartDate);
-      }
-
-      const createdAssignment = assignMockShiftToEmployee({
-        employeeId: item.employeeId,
-        assignmentDate,
-        shift: {
-          id: item.shiftId ?? Date.now(),
-          shift_id: item.shiftId ?? Date.now(),
-          shift_name: item.shiftName,
-          start_time: item.startTime,
-          end_time: item.endTime,
-          branch_id: item.branchId ?? null,
-          branch_name: item.branchName ?? null,
-          color: item.color ?? "#134BBA",
-          note: item.note ?? "Sao chép ca từ tuần nguồn.",
-        },
-      });
-
-      createdAssignment.is_published = item.isPublished ?? true;
-      copiedCount += 1;
-      existingAssignments = [...existingAssignments, createdAssignment];
-    });
-  });
-
-  return { copiedCount, skippedCount };
-};
-
 export const deleteMockShiftAssignment = (assignmentId: number): boolean => {
   const previousRuntimeLength = runtimeAssignments.length;
   runtimeAssignments = runtimeAssignments.filter((assignment) => assignment.id !== assignmentId);
@@ -561,7 +450,10 @@ export const createMockWeeklyShiftScheduleApiResponse = (
   week_start_date: weekStartDate,
   employees: baseEmployees,
   assignments: [
-    ...getAllAssignmentsForWeek(weekStartDate),
+    ...baseAssignmentTemplates
+      .filter((template) => !deletedAssignmentIds.has(template.id))
+      .map((template) => buildAssignment(weekStartDate, template)),
+    ...getRuntimeAssignmentsForWeek(weekStartDate),
   ],
   open_shifts: baseOpenShiftTemplates.map((template) => ({
     ...template,

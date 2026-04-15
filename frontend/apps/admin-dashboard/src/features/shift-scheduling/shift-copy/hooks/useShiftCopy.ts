@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { SelectOption } from "../../types";
 import {
   addDays,
@@ -129,7 +129,6 @@ export const useShiftCopy = ({
   notify,
   onClose,
   onSuccess,
-  useMockFallback,
 }: Pick<
   ShiftCopyModalProps,
   | "isOpen"
@@ -138,7 +137,6 @@ export const useShiftCopy = ({
   | "notify"
   | "onClose"
   | "onSuccess"
-  | "useMockFallback"
 > & { branchOptions: SelectOption[] }): UseShiftCopyResult => {
   const [catalog, setCatalog] = useState<ShiftCopyCatalogData>(EMPTY_CATALOG);
   const [isCatalogLoading, setIsCatalogLoading] = useState(false);
@@ -337,7 +335,6 @@ export const useShiftCopy = ({
           mergeMode: "merge",
           previewItems: preview.items,
         },
-        useMockFallback,
       );
 
       const successMessage =

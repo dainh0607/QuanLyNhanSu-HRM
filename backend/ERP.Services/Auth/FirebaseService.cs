@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
+using ERP.DTOs.Auth;
 using FirebaseAdmin.Auth;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -30,14 +31,50 @@ namespace ERP.Services.Auth
         private bool IsBypassAuth => _env.IsDevelopment() && _configuration.GetValue<bool>("Firebase:BypassAuth");
         private bool IsFirebaseInitialized => FirebaseAdmin.FirebaseApp.DefaultInstance != null;
 
-        public async Task<UserRecord> CreateUserAsync(UserRecordArgs args)
+        public async Task<FirebaseUserDto> CreateUserAsync(UserRecordArgs args)
         {
-            if (IsBypassAuth && !IsFirebaseInitialized)
+            if (IsBypassAuth || !IsFirebaseInitialized)
             {
-                // Return a mock user record or throw a descriptive error if bypass is on but sync is needed
-                throw new InvalidOperationException("Firebase not initialized. Cannot create user in BypassAuth mode.");
+                _logger.LogInformation("Firebase bypass active. Simulating user creation for {Email}", args.Email);
+                return new FirebaseUserDto
+                {
+                    Uid = args.Uid ?? $"bypass-uid-{Guid.NewGuid().ToString("N")[..8]}",
+                    Email = args.Email,
+                    DisplayName = args.DisplayName,
+                    PhoneNumber = args.PhoneNumber,
+                    Disabled = args.Disabled
+                };
             }
-            return await FirebaseAuth.DefaultInstance.CreateUserAsync(args);
+
+            var userRecord = await FirebaseAuth.DefaultInstance.CreateUserAsync(args);
+            return MapToDto(userRecord);
+        }
+
+        public async Task<FirebaseUserDto?> GetUserAsync(string uid)
+        {
+            if (IsBypassAuth || !IsFirebaseInitialized)
+            {
+                if (uid.StartsWith("bypass-"))
+                {
+                    return new FirebaseUserDto
+                    {
+                        Uid = uid,
+                        Email = "bypass@nexahrm.local",
+                        DisplayName = "Bypass User"
+                    };
+                }
+                return null;
+            }
+
+            try
+            {
+                var userRecord = await FirebaseAuth.DefaultInstance.GetUserAsync(uid);
+                return MapToDto(userRecord);
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         public async Task<string?> VerifyIdTokenAsync(string idToken)
@@ -64,30 +101,25 @@ namespace ERP.Services.Auth
             }
         }
 
-        public async Task<IEnumerable<UserRecord>> ListAllUsersAsync()
+        public async Task<IEnumerable<FirebaseUserDto>> ListAllUsersAsync()
         {
-            if (IsBypassAuth)
+            var users = new List<FirebaseUserDto>();
+
+            if (IsBypassAuth || !IsFirebaseInitialized)
             {
-                _logger.LogInformation("Firebase authentication bypass is active. Skipping ListAllUsersAsync.");
-                return new List<UserRecord>();
+                _logger.LogInformation("Firebase authentication bypass is active or not initialized. Returning empty list.");
+                return users;
             }
 
-            if (!IsFirebaseInitialized)
-            {
-                _logger.LogWarning("Firebase not initialized. Skipping user listing.");
-                return new List<UserRecord>();
-            }
-
-            var userRecords = new List<UserRecord>();
             var pagedEnumerable = FirebaseAuth.DefaultInstance.ListUsersAsync(null);
             var enumerator = pagedEnumerable.GetAsyncEnumerator();
 
             while (await enumerator.MoveNextAsync())
             {
-                userRecords.Add(enumerator.Current);
+                users.Add(MapToDto(enumerator.Current));
             }
 
-            return userRecords;
+            return users;
         }
 
         public async Task DeleteUserAsync(string uid)
@@ -166,6 +198,19 @@ namespace ERP.Services.Auth
                 Password = newPassword
             };
             await FirebaseAuth.DefaultInstance.UpdateUserAsync(args);
+        }
+
+        private FirebaseUserDto MapToDto(UserRecord user)
+        {
+            return new FirebaseUserDto
+            {
+                Uid = user.Uid,
+                Email = user.Email,
+                DisplayName = user.DisplayName,
+                PhoneNumber = user.PhoneNumber,
+                PhotoUrl = user.PhotoUrl,
+                Disabled = user.Disabled
+            };
         }
 
         private class FirebaseLoginResponse

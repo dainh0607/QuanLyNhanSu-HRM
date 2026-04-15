@@ -6,20 +6,53 @@ using ERP.DTOs.Attendance;
 using ERP.Entities.Models;
 using ERP.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using ERP.Services.Authorization;
+using ERP.Entities.Interfaces;
 
 namespace ERP.Services.Attendance
 {
     public class ShiftService : IShiftService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IAuthorizationService _authService;
+        private readonly ICurrentUserContext _userContext;
 
-        public ShiftService(IUnitOfWork unitOfWork)
+        public ShiftService(IUnitOfWork unitOfWork,
+            IAuthorizationService authService,
+            ICurrentUserContext userContext)
         {
             _unitOfWork = unitOfWork;
+            _authService = authService;
+            _userContext = userContext;
+        }
+
+        private async Task EnsureBranchAccess(int branchId)
+        {
+            var currentUserId = _userContext.UserId ?? 0;
+            if (currentUserId <= 0) return;
+
+            var canAccess = await _authService.CanAccessBranch(currentUserId, branchId);
+            if (!canAccess)
+            {
+                throw new UnauthorizedAccessException("Bạn không có quyền truy cập dữ liệu của chi nhánh này.");
+            }
+        }
+
+        private async Task EnsureEmployeeAccess(int employeeId)
+        {
+            var currentUserId = _userContext.UserId ?? 0;
+            if (currentUserId <= 0) return;
+
+            var canAccess = await _authService.CanAccessEmployee(currentUserId, employeeId);
+            if (!canAccess)
+            {
+                throw new UnauthorizedAccessException("Bạn không có quyền truy cập dữ liệu của nhân viên này.");
+            }
         }
 
         public async Task<WeeklyShiftScheduleDto> GetWeeklyScheduleAsync(int branchId, DateTime startDate)
         {
+            await EnsureBranchAccess(branchId);
             var endDate = startDate.AddDays(6);
             var today = DateTime.Today;
 
@@ -96,6 +129,7 @@ namespace ERP.Services.Attendance
 
         public async Task<ShiftAttendanceDetailDto> GetShiftAttendanceDetailAsync(int employeeId, DateTime date)
         {
+            await EnsureEmployeeAccess(employeeId);
             var startDate = date.Date;
             var endDate = startDate.AddDays(1);
 
@@ -138,6 +172,7 @@ namespace ERP.Services.Attendance
 
         public async Task<bool> DeleteShiftAssignmentAsync(int employeeId, DateTime date)
         {
+            await EnsureEmployeeAccess(employeeId);
             var assignment = await _unitOfWork.Repository<ShiftAssignments>()
                 .AsQueryable()
                 .FirstOrDefaultAsync(a => a.employee_id == employeeId && a.assignment_date.Date == date.Date);
@@ -282,6 +317,7 @@ namespace ERP.Services.Attendance
             {
                 foreach (var bid in dto.BranchIds)
                 {
+                    await EnsureBranchAccess(bid);
                     foreach (var did in dto.DepartmentIds)
                     {
                         foreach (var pid in dto.PositionIds)

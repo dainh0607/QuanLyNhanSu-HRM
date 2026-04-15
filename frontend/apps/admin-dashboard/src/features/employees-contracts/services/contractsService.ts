@@ -1,6 +1,6 @@
 import { authFetch } from '../../../services/authService';
 import { employeeService } from '../../../services/employeeService';
-import { API_URL, requestJson } from '../../../services/employee/core';
+import { API_URL, requestBlob, requestJson } from '../../../services/employee/core';
 import type { Employee } from '../../employees/types';
 import {
   buildContractSummaryFromDto,
@@ -27,12 +27,17 @@ import type {
   ContractStep3Dto,
   ContractStep4Dto,
   ContractSignerDto,
+  ContractUpdatePayload,
   ElectronicContractSubmitResult,
 } from '../types';
 
 interface UploadedDocumentResponse {
   fileUrl?: string;
   FileUrl?: string;
+  pdfUrl?: string;
+  PdfUrl?: string;
+  originalUrl?: string;
+  OriginalUrl?: string;
 }
 
 interface ContractSignerApiResponse {
@@ -63,6 +68,22 @@ interface SaveStep3SignersResponse {
   Message?: string;
 }
 
+interface ElectronicContractDraftResponse {
+  id?: number;
+  Id?: number;
+  message?: string;
+  Message?: string;
+}
+
+interface ElectronicContractSubmitResultApi {
+  message?: string | null;
+  Message?: string | null;
+  warningMessage?: string | null;
+  WarningMessage?: string | null;
+  notificationSent?: boolean;
+  NotificationSent?: boolean;
+}
+
 const EMPLOYEE_PAGE_SIZE = 100;
 const CONTRACT_COLLECTION_PAGE_SIZE = 100;
 
@@ -76,6 +97,21 @@ const normalizeContractSigner = (signer: ContractSignerApiResponse): ContractSig
   signatureToken: signer.signatureToken ?? signer.SignatureToken ?? undefined,
   note: signer.note ?? signer.Note ?? undefined,
   userId: signer.userId ?? signer.UserId ?? undefined,
+});
+
+const normalizeElectronicDraftResponse = (
+  response: ElectronicContractDraftResponse,
+): { id: number; message?: string } => ({
+  id: response.id ?? response.Id ?? 0,
+  message: response.message ?? response.Message ?? undefined,
+});
+
+const normalizeElectronicSubmitResult = (
+  response: ElectronicContractSubmitResultApi,
+): ElectronicContractSubmitResult => ({
+  message: response.message ?? response.Message ?? undefined,
+  warningMessage: response.warningMessage ?? response.WarningMessage ?? undefined,
+  notificationSent: response.notificationSent ?? response.NotificationSent ?? undefined,
 });
 
 const createEmployeeOptions = (employees: Employee[]) =>
@@ -372,7 +408,7 @@ const uploadAttachment = async (file: File) => {
   }
 
   const data = (await response.json()) as UploadedDocumentResponse;
-  return data.FileUrl ?? data.fileUrl ?? "";
+  return data.PdfUrl ?? data.pdfUrl ?? data.FileUrl ?? data.fileUrl ?? "";
 };
 
 const createRegularContract = async (payload: ContractCreatePayload) =>
@@ -394,6 +430,21 @@ const createElectronicContract = async (payload: ContractCreatePayload) =>
     },
     'Tạo hợp đồng điện tử thất bại',
   );
+
+const getContractPreviewBlob = async (id: number) => {
+  const { blob } = await requestBlob(
+    `${API_URL}/contracts/preview/${id}`,
+    { method: 'GET' },
+    'Không thể tải bản xem trước hợp đồng',
+  );
+
+  const contentType = blob.type?.toLowerCase() ?? '';
+  if (contentType && !contentType.includes('pdf')) {
+    throw new Error('Bản xem trước hiện tại không phải là file PDF.');
+  }
+
+  return blob;
+};
 
 export const contractsService = {
   getContractsPage,
@@ -420,6 +471,15 @@ export const contractsService = {
   uploadAttachment: (file: File) => uploadAttachment(file),
   createRegularContract,
   createElectronicContract,
+  updateContract: (id: number, payload: ContractUpdatePayload) =>
+    requestJson<{ message?: string }>(
+      `${API_URL}/contracts/${id}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      },
+      'Cập nhật hợp đồng thất bại',
+    ),
   deleteContract: (id: number) =>
     requestJson<{ message?: string }>(
       `${API_URL}/contracts/${id}`,
@@ -460,14 +520,14 @@ export const contractsService = {
       "Không thể tải danh sách mẫu hợp đồng",
     ),
   createElectronicDraft: (payload: ElectronicContractDraftDto) =>
-    requestJson<{ id: number; message?: string }>(
+    requestJson<ElectronicContractDraftResponse>(
       `${API_URL}/contracts/electronic/draft`,
       {
         method: 'POST',
         body: JSON.stringify(payload),
       },
       'Lưu bản nháp thất bại',
-    ),
+    ).then(normalizeElectronicDraftResponse),
   saveStep3Signers: (payload: ContractStep3Dto) =>
     requestJson<{ Signers: ContractSignerDto[]; message?: string }>(
       `${API_URL}/contracts/electronic/step3`,
@@ -487,14 +547,15 @@ export const contractsService = {
       'Lưu vị trí chữ ký thất bại',
     ),
   submitElectronicContract: (id: number) =>
-    requestJson<ElectronicContractSubmitResult>(
+    requestJson<ElectronicContractSubmitResultApi>(
       `${API_URL}/contracts/electronic/submit`,
       {
         method: 'POST',
         body: JSON.stringify({ contractId: id }),
       },
       'Gửi hợp đồng thất bại',
-    ),
+    ).then(normalizeElectronicSubmitResult),
+  getContractPreviewBlob,
 };
 
 export const saveElectronicContractStep3Signers = async (payload: ContractStep3Dto) => {

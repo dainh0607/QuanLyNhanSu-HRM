@@ -64,7 +64,6 @@ export interface ShiftTabAssignModalProps {
   initialBranchId?: string;
   initialWeekStartDate: string;
   branchOptions: SelectOption[];
-  useMockFallback: boolean;
   onClose: () => void;
   onSuccess?: () => void;
   notify: (message: string, type?: "success" | "error" | "info") => void;

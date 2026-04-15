@@ -99,7 +99,7 @@ export const useShiftTemplateManagement = (): UseShiftTemplateManagementResult =
     setIsLoading(true);
 
     try {
-      const response = await shiftTemplateManagementService.getShiftTemplates(query, true);
+      const response = await shiftTemplateManagementService.getShiftTemplates(query);
       setItems(response.items);
       setTotalCount(response.totalCount);
 
@@ -154,7 +154,6 @@ export const useShiftTemplateManagement = (): UseShiftTemplateManagementResult =
           page: 1,
           pageSize: Math.max(totalCount, PAGE_SIZE),
         },
-        true,
       );
       showToast(`Đã xuất file ${result.recordCount} mẫu ca.`, "success");
     } catch (error) {
@@ -170,7 +169,7 @@ export const useShiftTemplateManagement = (): UseShiftTemplateManagementResult =
       setIsEditLoading(true);
 
       void shiftTemplateManagementService
-        .getShiftTemplateDetail(item.id, true)
+        .getShiftTemplateDetail(item.id)
         .then((detail) => {
           setEditingTemplate({ ...item, ...detail, id: Number(detail.id ?? item.id), shiftId: item.shiftId });
           setIsEditModalOpen(true);
@@ -196,7 +195,6 @@ export const useShiftTemplateManagement = (): UseShiftTemplateManagementResult =
           values,
           existing: editingTemplate,
         },
-        true,
       );
     },
     [editingTemplate],
@@ -209,7 +207,7 @@ export const useShiftTemplateManagement = (): UseShiftTemplateManagementResult =
 
     setIsDeleting(true);
     try {
-      await shiftTemplateManagementService.deleteShiftTemplate(deletingTemplate.id, true);
+      await shiftTemplateManagementService.deleteShiftTemplate(deletingTemplate.id);
       setDeletingTemplate(null);
       showToast("Đã xóa ca làm thành công.", "success");
       await loadTemplates();

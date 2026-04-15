@@ -40,6 +40,19 @@ let pendingAuthCheck: Promise<User | null> | null = null;
 let lastAuthCheckAt = 0;
 let lastAuthCheckResult: User | null | undefined;
 
+const ADMIN_ACCESS_ROLES = new Set([
+  "Quản trị",
+  "Admin",
+  "Manager",
+  "WorkspaceOwner",
+  "Workspace Owner",
+  "Owner",
+]);
+
+export const hasAdministrativeAccess = (
+  user?: { roles?: string[] } | null,
+): boolean => Boolean(user?.roles?.some((role) => ADMIN_ACCESS_ROLES.has(role)));
+
 const normalizeUser = (user?: User | null): User | null => {
   if (!user) {
     return null;
@@ -47,7 +60,10 @@ const normalizeUser = (user?: User | null): User | null => {
 
   return {
     ...user,
-    role: user.roles?.includes("Admin") ? "admin" : "user",
+    /*
+    role: user.roles?.includes("Quản trị") ? "admin" : "user",
+    */
+    role: hasAdministrativeAccess(user) ? "admin" : "user",
   };
 };
 
@@ -272,6 +288,13 @@ export const authService = {
   },
 
   register: async (userData: unknown): Promise<AuthResponse> => {
+    void userData;
+    return {
+      success: false,
+      message:
+        "Public signup is disabled. Workspace Owner accounts must be provisioned from SuperAdmin.",
+    };
+    /*
     try {
       const payload = JSON.stringify(userData);
       const response = await fetch(`${API_URL}/auth/sign-up`, {
@@ -303,6 +326,7 @@ export const authService = {
         message: "Không thể kết nối tới máy chủ.",
       };
     }
+    */
   },
 
   changePassword: async (payload: ChangePasswordPayload): Promise<AuthResponse> => {

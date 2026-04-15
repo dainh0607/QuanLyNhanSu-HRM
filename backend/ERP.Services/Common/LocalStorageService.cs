@@ -82,19 +82,7 @@ namespace ERP.Services.Common
         {
             try
             {
-                // If filePath is a URL, extract the file name
-                string actualPath;
-                if (filePath.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || 
-                    filePath.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-                {
-                    var fileName = Path.GetFileName(new Uri(filePath).LocalPath);
-                    var webRoot = string.IsNullOrEmpty(_environment.WebRootPath) ? Path.Combine(_environment.ContentRootPath, "wwwroot") : _environment.WebRootPath;
-                    actualPath = Path.Combine(webRoot, UploadFolder, fileName);
-                }
-                else
-                {
-                    actualPath = filePath;
-                }
+                var actualPath = ResolveStoragePath(filePath);
 
                 if (!File.Exists(actualPath))
                 {
@@ -107,6 +95,43 @@ namespace ERP.Services.Common
             {
                 throw new Exception($"Error reading file: {ex.Message}", ex);
             }
+        }
+
+        private string ResolveStoragePath(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+            {
+                throw new ArgumentException("File path cannot be empty.", nameof(filePath));
+            }
+
+            var webRoot = string.IsNullOrEmpty(_environment.WebRootPath)
+                ? Path.Combine(_environment.ContentRootPath, "wwwroot")
+                : _environment.WebRootPath;
+
+            if (Uri.TryCreate(filePath, UriKind.Absolute, out var absoluteUri))
+            {
+                var fileName = Path.GetFileName(absoluteUri.LocalPath);
+                return Path.Combine(webRoot, UploadFolder, fileName);
+            }
+
+            if (Path.IsPathRooted(filePath) && File.Exists(filePath))
+            {
+                return filePath;
+            }
+
+            var normalizedPath = filePath
+                .Trim()
+                .TrimStart('~')
+                .TrimStart('/', '\\')
+                .Replace('/', Path.DirectorySeparatorChar)
+                .Replace('\\', Path.DirectorySeparatorChar);
+
+            if (normalizedPath.StartsWith($"{UploadFolder}{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
+            {
+                return Path.Combine(webRoot, normalizedPath);
+            }
+
+            return Path.Combine(webRoot, UploadFolder, Path.GetFileName(normalizedPath));
         }
     }
 }

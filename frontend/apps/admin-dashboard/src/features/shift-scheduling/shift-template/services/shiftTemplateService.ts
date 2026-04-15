@@ -1,6 +1,5 @@
-﻿import { employeeService } from "../../../../services/employeeService";
+import { employeeService } from "../../../../services/employeeService";
 import { API_URL, requestJson } from "../../../../services/employee/core";
-import { createMockShiftTemplate } from "../../data/mockWeeklyShiftSchedule";
 import { registerRuntimeShiftTemplate } from "../../open-shift/openShiftRuntimeStore";
 import type {
   ShiftTemplateCatalogData,
@@ -11,7 +10,37 @@ import type {
 interface ShiftCreateResponse {
   id?: number;
   Id?: number;
+  templateId?: number;
+  TemplateId?: number;
 }
+
+const WEEKDAY_TO_BACKEND_VALUE: Record<string, number> = {
+  mon: 1,
+  tue: 2,
+  wed: 3,
+  thu: 4,
+  fri: 5,
+  sat: 6,
+  sun: 7,
+};
+
+const toNumericIdList = (values: string[]): number[] =>
+  Array.from(
+    new Set(
+      values
+        .map((value) => Number(value))
+        .filter((value) => Number.isFinite(value) && value > 0),
+    ),
+  );
+
+const toRepeatDayList = (values: string[]): number[] =>
+  Array.from(
+    new Set(
+      values
+        .map((value) => WEEKDAY_TO_BACKEND_VALUE[value])
+        .filter((value): value is number => Number.isFinite(value)),
+    ),
+  );
 
 const sortOptions = <T extends { label: string }>(options: T[]): T[] =>
   [...options].sort((left, right) => left.label.localeCompare(right.label, "vi"));
@@ -122,50 +151,29 @@ export const shiftTemplateService = {
 
   async createShiftTemplate(
     payload: ShiftTemplateSubmitPayload,
-    useMockFallback: boolean,
   ): Promise<void> {
-    try {
-      const response = await requestJson<ShiftCreateResponse>(
-        `${API_URL}/shifts`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            shift_name: payload.name,
-            start_time: payload.startTime,
-            end_time: payload.endTime,
-            is_cross_night: payload.isCrossNight,
-            branch_ids: payload.branchIds.map(Number),
-            department_ids: payload.departmentIds.map(Number),
-            job_title_ids: payload.jobTitleIds.map(Number),
-            repeat_days: payload.repeatDays,
-            break_duration_minutes: payload.breakDurationMinutes
-              ? Number(payload.breakDurationMinutes)
-              : 0,
-            allowed_late_check_in_minutes: payload.allowedLateCheckInMinutes
-              ? Number(payload.allowedLateCheckInMinutes)
-              : 0,
-            allowed_early_check_out_minutes: payload.allowedEarlyCheckOutMinutes
-              ? Number(payload.allowedEarlyCheckOutMinutes)
-              : 0,
-          }),
-        },
-        "Không thể tạo ca làm mới",
-      );
-      registerRuntimeShiftTemplate(payload, response.id ?? response.Id);
-      return;
-    } catch (error) {
-      if (!useMockFallback) {
-        throw error;
-      }
-    }
-
-    createMockShiftTemplate({
-      name: payload.name,
-      startTime: payload.startTime,
-      endTime: payload.endTime,
-      branchIds: payload.branchIds.map(Number).filter(Number.isFinite),
-    });
-    registerRuntimeShiftTemplate(payload);
+    const response = await requestJson<ShiftCreateResponse>(
+      `${API_URL}/shift-templates`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          TemplateName: payload.name,
+          StartTime: payload.startTime,
+          EndTime: payload.endTime,
+          IsCrossNight: payload.isCrossNight,
+          BranchIds: toNumericIdList(payload.branchIds),
+          DepartmentIds: toNumericIdList(payload.departmentIds),
+          PositionIds: toNumericIdList(payload.jobTitleIds),
+          RepeatDays: toRepeatDayList(payload.repeatDays),
+          Note: null,
+        }),
+      },
+      "Không thể tạo mẫu ca làm mới",
+    );
+    registerRuntimeShiftTemplate(
+      payload,
+      response.templateId ?? response.TemplateId ?? response.id ?? response.Id,
+    );
   },
 };
 

@@ -315,7 +315,18 @@
   color: rgba(255, 255, 255, 0.5);
 }
 
-.login-footer .signup-link {
+.login-info-box {
+  margin-top: 16px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 210, 255, 0.14);
+  background: rgba(0, 210, 255, 0.08);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.login-footer .activation-link {
   color: #00d4ff;
   text-decoration: none;
   font-weight: 500;
@@ -327,9 +338,13 @@
   font-family: inherit;
 }
 
-.login-footer .signup-link:hover {
+.login-footer .activation-link:hover {
   color: #33e0ff;
   text-shadow: 0 0 10px rgba(0, 210, 255, 0.3);
+}
+
+.legacy-signup-footer {
+  display: none;
 }
 
 @media (max-width: 480px) {

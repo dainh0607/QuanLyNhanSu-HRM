@@ -1,4 +1,4 @@
-﻿import ActionModalShell from "../assigned-shift-actions/ActionModalShell";
+import ActionModalShell from "../assigned-shift-actions/ActionModalShell";
 import { getWeekLabel } from "../utils/week";
 import ShiftCopyDepartmentQuickSelectModal from "./components/ShiftCopyDepartmentQuickSelectModal";
 import ShiftCopyReviewStep from "./components/ShiftCopyReviewStep";
@@ -16,7 +16,6 @@ export const ShiftCopyModal = ({
   notify,
   onClose,
   onSuccess,
-  useMockFallback,
 }: ShiftCopyModalProps) => {
   const controller = useShiftCopy({
     isOpen,
@@ -26,7 +25,6 @@ export const ShiftCopyModal = ({
     notify,
     onClose,
     onSuccess,
-    useMockFallback,
   });
 
   const nextWeekLabel = getWeekLabel(

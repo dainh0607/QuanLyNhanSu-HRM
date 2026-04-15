@@ -5,8 +5,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ERP.Entities.Models
 {
     [Table("AssetAllocations")]
-    public class AssetAllocations : BaseEntity
+    public class AssetAllocations : BaseEntity, ERP.Entities.Interfaces.ITenantEntity
     {
+        [Column("tenant_id")]
+        public int? tenant_id { get; set; }
+
         [Column("asset_id")]
         public int asset_id { get; set; }
 

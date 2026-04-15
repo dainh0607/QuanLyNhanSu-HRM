@@ -10,7 +10,7 @@ namespace ERP.Services.Auth
         Task<UserInfoDto?> GetByUidAsync(string uid);
         Task<Users?> GetLocalUserByEmailOrUidAsync(string email, string uid);
         Task<int> SyncWithFirebaseAsync();
-        Task<Users> CreateLocalUserAsync(int employeeId, string email, string firebaseUid);
-        Task AssignRoleAsync(int userId, int roleId);
+        Task<Users> CreateLocalUserAsync(int employeeId, string email, string firebaseUid, int? tenantId = null);
+        Task AssignRoleAsync(int userId, int roleId, int? tenantId = null, string? assignmentReason = null);
     }
 }

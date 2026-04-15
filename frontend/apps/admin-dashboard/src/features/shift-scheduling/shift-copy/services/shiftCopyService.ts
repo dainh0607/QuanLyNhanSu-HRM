@@ -1,9 +1,5 @@
-﻿import { employeeService } from "../../../../services/employeeService";
+import { employeeService } from "../../../../services/employeeService";
 import { API_URL, requestJson } from "../../../../services/employee/core";
-import {
-  copyMockShiftAssignments,
-  type MockShiftCopyItem,
-} from "../../data/mockWeeklyShiftSchedule";
 import { weeklyShiftScheduleService } from "../../services/weeklyShiftScheduleService";
 import { formatTimeRange, getDayHeader, getWeekLabel, parseIsoDate } from "../../utils/week";
 import type { ShiftScheduleFilters, SelectOption, WeeklyScheduleRow } from "../../types";
@@ -165,21 +161,6 @@ const buildPreviewSummary = (
   };
 };
 
-const toMockCopyItems = (previewItems: ShiftCopyPreviewItem[]): MockShiftCopyItem[] =>
-  previewItems.map((item) => ({
-    employeeId: item.employeeId,
-    shiftId: item.shiftId ?? null,
-    shiftName: item.shiftName,
-    startTime: item.startTime,
-    endTime: item.endTime,
-    dayOffset: item.dayOffset,
-    branchId: item.branchId ?? null,
-    branchName: item.branchName ?? null,
-    note: item.note ?? null,
-    color: item.color ?? null,
-    isPublished: item.isPublished ?? true,
-  }));
-
 export const shiftCopyService = {
   async getCatalogData(branchOptions: SelectOption[]): Promise<ShiftCopyCatalogData> {
     const cleanedBranchOptions = sortOptions(
@@ -260,42 +241,29 @@ export const shiftCopyService = {
 
   async copyShifts(
     payload: ShiftCopyCopyPayload,
-    useMockFallback: boolean,
   ): Promise<ShiftCopyCopyResult> {
-    try {
-      const response = await requestJson<{ copiedCount?: number; skippedCount?: number }>(
-        `${API_URL}/shift-assignments/copy`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            source_week_start_date: payload.sourceWeekStartDate,
-            target_week_start_dates: payload.targetWeekStartDates,
-            branch_ids: payload.branchIds.map(Number),
-            department_ids: payload.departmentIds.map(Number),
-            employee_ids: payload.employeeIds.map(Number),
-            assignment_ids: payload.previewItems.map((item) => item.assignmentId),
-            merge_mode: payload.mergeMode,
-          }),
-        },
-        "Không thể sao chép ca làm",
-      );
+    const response = await requestJson<{ copiedCount?: number; skippedCount?: number }>(
+      `${API_URL}/shift-assignments/copy`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          source_week_start_date: payload.sourceWeekStartDate,
+          target_week_start_dates: payload.targetWeekStartDates,
+          branch_ids: payload.branchIds.map(Number),
+          department_ids: payload.departmentIds.map(Number),
+          employee_ids: payload.employeeIds.map(Number),
+          assignment_ids: payload.previewItems.map((item) => item.assignmentId),
+          merge_mode: payload.mergeMode,
+        }),
+      },
+      "Không thể sao chép ca làm",
+    );
 
-      return {
-        copiedCount:
-          response.copiedCount ?? payload.previewItems.length * payload.targetWeekStartDates.length,
-        skippedCount: response.skippedCount ?? 0,
-      };
-    } catch (error) {
-      if (!useMockFallback) {
-        throw error;
-      }
-    }
-
-    return copyMockShiftAssignments({
-      sourceItems: toMockCopyItems(payload.previewItems),
-      targetWeekStartDates: payload.targetWeekStartDates,
-      mergeMode: payload.mergeMode,
-    });
+    return {
+      copiedCount:
+        response.copiedCount ?? payload.previewItems.length * payload.targetWeekStartDates.length,
+      skippedCount: response.skippedCount ?? 0,
+    };
   },
 };
 

@@ -1,14 +1,12 @@
 import {
   API_URL,
-  isNotFoundError,
-  parseDownloadFilename,
-  requestBlob,
   requestJson,
 } from "../../../../services/employee/core";
 import {
-  deleteRuntimeShiftTemplate,
   getRuntimeShiftTemplateById,
   getRuntimeShiftTemplateCatalog,
+  isRuntimeShiftTemplateDeleted,
+  markRuntimeShiftTemplateDeleted,
   toShiftTemplateInitialData,
   updateRuntimeShiftTemplate,
 } from "../../open-shift/openShiftRuntimeStore";
@@ -26,26 +24,16 @@ import type {
 interface ShiftTemplateApiItem {
   id?: number;
   Id?: number;
-  shift_id?: number;
-  ShiftId?: number;
+  template_name?: string | null;
+  TemplateName?: string | null;
   shift_name?: string | null;
   ShiftName?: string | null;
   name?: string | null;
   Name?: string | null;
-  code?: string | null;
-  Code?: string | null;
-  shift_code?: string | null;
-  ShiftCode?: string | null;
-  keyword?: string | null;
-  Keyword?: string | null;
   start_time?: string | null;
   StartTime?: string | null;
   end_time?: string | null;
   EndTime?: string | null;
-  display_order?: number | null;
-  DisplayOrder?: number | null;
-  sort_order?: number | null;
-  SortOrder?: number | null;
   is_active?: boolean | null;
   IsActive?: boolean | null;
   status?: string | null;
@@ -54,34 +42,25 @@ interface ShiftTemplateApiItem {
   BranchIds?: Array<number | string> | null;
   department_ids?: Array<number | string> | null;
   DepartmentIds?: Array<number | string> | null;
+  position_ids?: Array<number | string> | null;
+  PositionIds?: Array<number | string> | null;
   job_title_ids?: Array<number | string> | null;
   JobTitleIds?: Array<number | string> | null;
-  repeat_days?: string[] | null;
-  RepeatDays?: string[] | null;
-  break_duration_minutes?: number | string | null;
-  BreakDurationMinutes?: number | string | null;
-  allowed_late_check_in_minutes?: number | string | null;
-  AllowedLateCheckInMinutes?: number | string | null;
-  allowed_early_check_out_minutes?: number | string | null;
-  AllowedEarlyCheckOutMinutes?: number | string | null;
+  repeat_days?: Array<number | string> | null;
+  RepeatDays?: Array<number | string> | null;
   note?: string | null;
   Note?: string | null;
 }
 
-interface PaginatedApiResponse<T> {
-  items?: T[];
-  Items?: T[];
-  totalCount?: number;
-  TotalCount?: number;
-  total?: number;
-  Total?: number;
-  page?: number;
-  Page?: number;
-  pageSize?: number;
-  PageSize?: number;
-}
-
-const DEFAULT_EXPORT_FILE_NAME = "danh-sach-ca.xlsx";
+const API_REPEAT_DAY_TO_ID: Record<number, string> = {
+  1: "mon",
+  2: "tue",
+  3: "wed",
+  4: "thu",
+  5: "fri",
+  6: "sat",
+  7: "sun",
+};
 
 const normalizeSearchText = (value: string): string =>
   value
@@ -98,6 +77,30 @@ const toStringArray = (values?: Array<number | string> | null): string[] =>
         .map((value) => String(value))
         .filter((value) => value.trim().length > 0)
     : [];
+
+const normalizeTimeValue = (value?: string | null): string | null => {
+  if (!value) {
+    return null;
+  }
+
+  return value.length >= 5 ? value.slice(0, 5) : value;
+};
+
+const toRepeatDayIds = (values?: Array<number | string> | null): string[] =>
+  Array.from(
+    new Set(
+      (values ?? [])
+        .map((value) => {
+          if (typeof value === "string" && Number.isNaN(Number(value))) {
+            return value;
+          }
+
+          const parsedValue = Number(value);
+          return API_REPEAT_DAY_TO_ID[parsedValue] ?? null;
+        })
+        .filter((value): value is string => Boolean(value)),
+    ),
+  );
 
 const normalizeCode = (value: string): string =>
   value
@@ -125,58 +128,50 @@ const normalizeStatus = (
     return true;
   }
 
-  return normalizedStatus !== "inactive" && normalizedStatus !== "disabled" && normalizedStatus !== "stopped";
+  return normalizedStatus !== "inactive" && normalizedStatus !== "disabled";
 };
 
 const mapApiItemToListItem = (
   item: ShiftTemplateApiItem,
   index: number,
 ): ShiftTemplateListItem | null => {
-  const id = Number(item.id ?? item.Id ?? item.shift_id ?? item.ShiftId);
-  const name = item.shift_name ?? item.ShiftName ?? item.name ?? item.Name;
-  const startTime = item.start_time ?? item.StartTime;
-  const endTime = item.end_time ?? item.EndTime;
+  const id = Number(item.id ?? item.Id);
+  const name =
+    item.template_name ??
+    item.TemplateName ??
+    item.shift_name ??
+    item.ShiftName ??
+    item.name ??
+    item.Name;
+  const startTime = normalizeTimeValue(item.start_time ?? item.StartTime);
+  const endTime = normalizeTimeValue(item.end_time ?? item.EndTime);
 
   if (!Number.isFinite(id) || !name?.trim() || !startTime || !endTime) {
     return null;
   }
 
-  const code =
-    item.code ??
-    item.Code ??
-    item.shift_code ??
-    item.ShiftCode ??
-    item.keyword ??
-    item.Keyword ??
-    normalizeCode(name);
-  const displayOrder = Number(
-    item.display_order ?? item.DisplayOrder ?? item.sort_order ?? item.SortOrder ?? index + 1,
-  );
-  const isActive = normalizeStatus(item.is_active ?? item.IsActive, item.status ?? item.Status);
-
   return {
     id,
-    shiftId: Number(item.shift_id ?? item.ShiftId ?? id),
+    shiftId: id,
     name: name.trim(),
-    code,
+    code: normalizeCode(name),
     startTime,
     endTime,
     durationHours: getHoursBetween(startTime, endTime),
-    displayOrder: Number.isFinite(displayOrder) ? displayOrder : index + 1,
-    isActive,
+    displayOrder: index + 1,
+    isActive: normalizeStatus(item.is_active ?? item.IsActive, item.status ?? item.Status),
     branchIds: toStringArray(item.branch_ids ?? item.BranchIds),
     departmentIds: toStringArray(item.department_ids ?? item.DepartmentIds),
-    jobTitleIds: toStringArray(item.job_title_ids ?? item.JobTitleIds),
-    repeatDays: item.repeat_days ?? item.RepeatDays ?? [],
-    breakDurationMinutes: String(
-      item.break_duration_minutes ?? item.BreakDurationMinutes ?? 0,
+    jobTitleIds: toStringArray(
+      item.position_ids ??
+        item.PositionIds ??
+        item.job_title_ids ??
+        item.JobTitleIds,
     ),
-    allowedLateCheckInMinutes: String(
-      item.allowed_late_check_in_minutes ?? item.AllowedLateCheckInMinutes ?? 0,
-    ),
-    allowedEarlyCheckOutMinutes: String(
-      item.allowed_early_check_out_minutes ?? item.AllowedEarlyCheckOutMinutes ?? 0,
-    ),
+    repeatDays: toRepeatDayIds(item.repeat_days ?? item.RepeatDays),
+    breakDurationMinutes: "0",
+    allowedLateCheckInMinutes: "0",
+    allowedEarlyCheckOutMinutes: "0",
     note: item.note ?? item.Note ?? null,
   };
 };
@@ -202,6 +197,41 @@ const mapRuntimeItemToListItem = (
   allowedLateCheckInMinutes: item.allowedLateCheckInMinutes,
   allowedEarlyCheckOutMinutes: item.allowedEarlyCheckOutMinutes,
 });
+
+const mergeRuntimeOverlay = (item: ShiftTemplateListItem): ShiftTemplateListItem => {
+  const runtimeItem = getRuntimeShiftTemplateById(item.id);
+  if (!runtimeItem) {
+    return item;
+  }
+
+  return {
+    ...item,
+    ...mapRuntimeItemToListItem(runtimeItem),
+    id: item.id,
+    shiftId: item.shiftId,
+  };
+};
+
+const buildListUrl = (): URL => new URL(`${API_URL}/shift-templates`);
+
+const buildFallbackItems = (): ShiftTemplateListItem[] =>
+  getRuntimeShiftTemplateCatalog().map((item) => mapRuntimeItemToListItem(item));
+
+const mergeApiItemsWithRuntime = (
+  items: ShiftTemplateListItem[],
+): ShiftTemplateListItem[] => {
+  const apiIds = new Set(items.map((item) => item.id));
+  const runtimeOnlyItems = buildFallbackItems().filter(
+    (item) => item.id >= 1700 && !apiIds.has(item.id),
+  );
+
+  return [
+    ...items
+      .filter((item) => !isRuntimeShiftTemplateDeleted(item.id))
+      .map((item) => mergeRuntimeOverlay(item)),
+    ...runtimeOnlyItems,
+  ];
+};
 
 const doesShiftMatchTimeRange = (
   item: ShiftTemplateListItem,
@@ -290,175 +320,74 @@ const paginateItems = (
     totalCount,
     page: safePage,
     pageSize: safePageSize,
-    dataSource: "mock",
+    dataSource: "api",
   };
 };
 
-const buildListUrl = (filters: ShiftTemplateListQuery): URL => {
-  const url = new URL(`${API_URL}/shifts`);
-  url.searchParams.set("page", String(filters.page));
-  url.searchParams.set("pageSize", String(filters.pageSize));
-
-  if (filters.searchTerm) {
-    url.searchParams.set("keyword", filters.searchTerm);
-  }
-  if (filters.timeFrom) {
-    url.searchParams.set("timeFrom", filters.timeFrom);
-  }
-  if (filters.timeTo) {
-    url.searchParams.set("timeTo", filters.timeTo);
-  }
-  if (filters.status !== "all") {
-    url.searchParams.set("status", filters.status);
-  }
-
-  return url;
-};
-
-const buildFallbackItems = (): ShiftTemplateListItem[] =>
-  getRuntimeShiftTemplateCatalog().map((item) => mapRuntimeItemToListItem(item));
-
-const shouldUseFallback = (error: unknown): boolean => {
-  if (isNotFoundError(error)) {
-    return true;
-  }
-
-  if (error instanceof Error) {
-    const httpError = error as Error & { status?: number };
-    return httpError.status === 0 || httpError.status === 404;
-  }
-
-  return false;
-};
-
 const toExportRows = (items: ShiftTemplateListItem[]): Array<Array<string | number>> => [
-  ["STT", "Tên ca làm", "Từ khóa", "Giờ công", "Thời gian", "Thứ tự hiển thị", "Trạng thái"],
+  ["STT", "Ten ca lam", "Tu khoa", "Gio cong", "Thoi gian", "Thu tu hien thi", "Trang thai"],
   ...items.map((item, index) => [
     index + 1,
     item.name,
     item.code,
     `${item.startTime} - ${item.endTime}`,
-    `${formatDurationValue(item.durationHours)} giờ`,
+    `${formatDurationValue(item.durationHours)} gio`,
     item.displayOrder,
-    item.isActive ? "Hoạt động" : "Ngừng hoạt động",
+    item.isActive ? "Hoat dong" : "Ngung hoat dong",
   ]),
 ];
 
 export const shiftTemplateManagementService = {
   async getShiftTemplates(
     filters: ShiftTemplateListQuery,
-    useMockFallback: boolean,
   ): Promise<ShiftTemplateListResponse> {
-    try {
-      const response = await requestJson<PaginatedApiResponse<ShiftTemplateApiItem> | ShiftTemplateApiItem[]>(
-        buildListUrl(filters).toString(),
-        { method: "GET" },
-        "Không thể tải danh sách ca làm",
-      );
+    const response = await requestJson<ShiftTemplateApiItem[]>(
+      buildListUrl().toString(),
+      { method: "GET" },
+      "Khong the tai danh sach ca lam",
+    );
 
-      const itemsSource = Array.isArray(response)
-        ? response
-        : response.items ?? response.Items ?? [];
-      const items = itemsSource
-        .map((item, index) => mapApiItemToListItem(item, index))
-        .filter((item): item is ShiftTemplateListItem => Boolean(item));
-
-      if (Array.isArray(response)) {
-        const fallback = paginateItems(applyFilters(items, filters), filters);
-        return {
-          ...fallback,
-          dataSource: "api",
-        };
-      }
-
-      return {
-        items,
-        totalCount: Number(
-          response.totalCount ?? response.TotalCount ?? response.total ?? response.Total ?? items.length,
-        ),
-        page: Number(response.page ?? response.Page ?? filters.page),
-        pageSize: Number(response.pageSize ?? response.PageSize ?? filters.pageSize),
-        dataSource: "api",
-      };
-    } catch (error) {
-      if (!useMockFallback || !shouldUseFallback(error)) {
-        throw error;
-      }
-    }
-
-    return paginateItems(applyFilters(buildFallbackItems(), filters), filters);
+    const items = response
+      .map((item, index) => mapApiItemToListItem(item, index))
+      .filter((item): item is ShiftTemplateListItem => Boolean(item));
+    const mergedItems = mergeApiItemsWithRuntime(items);
+    
+    return paginateItems(applyFilters(mergedItems, filters), filters);
   },
 
   async getShiftTemplateDetail(
     templateId: number,
-    useMockFallback: boolean,
   ): Promise<ShiftTemplateInitialData> {
-    try {
-      const response = await requestJson<ShiftTemplateApiItem>(
-        `${API_URL}/shifts/${templateId}`,
-        { method: "GET" },
-        "Không thể tải chi tiết ca làm",
-      );
-      const mapped = mapApiItemToListItem(response, 0);
-      if (mapped) {
-        return mapped;
-      }
-    } catch (error) {
-      if (!useMockFallback || !shouldUseFallback(error)) {
-        throw error;
-      }
+    if (isRuntimeShiftTemplateDeleted(templateId)) {
+      throw new Error("Khong tim thay ca lam can chinh sua.");
     }
 
     const runtimeTemplate = getRuntimeShiftTemplateById(templateId);
-    if (!runtimeTemplate) {
-      throw new Error("Không tìm thấy ca làm cần chỉnh sửa.");
+    if (runtimeTemplate) {
+      return toShiftTemplateInitialData(runtimeTemplate);
     }
 
-    return toShiftTemplateInitialData(runtimeTemplate);
+    const response = await requestJson<ShiftTemplateApiItem[]>(
+      buildListUrl().toString(),
+      { method: "GET" },
+      "Khong the tai chi tiet ca lam",
+    );
+    const mapped = response
+      .map((item, index) => mapApiItemToListItem(item, index))
+      .filter((item): item is ShiftTemplateListItem => Boolean(item))
+      .find((item) => item.id === templateId);
+
+    if (mapped) {
+      return mapped;
+    }
+
+    throw new Error("Khong tim thay ca lam can chinh sua.");
   },
 
   async updateShiftTemplate(
     payload: ShiftTemplateUpdatePayload,
-    useMockFallback: boolean,
   ): Promise<void> {
     const { id, values, existing } = payload;
-
-    try {
-      await requestJson(
-        `${API_URL}/shifts/${id}`,
-        {
-          method: "PUT",
-          body: JSON.stringify({
-            shift_name: values.name,
-            start_time: values.startTime,
-            end_time: values.endTime,
-            is_cross_night: values.isCrossNight,
-            branch_ids: values.branchIds.map(Number),
-            department_ids: values.departmentIds.map(Number),
-            job_title_ids: values.jobTitleIds.map(Number),
-            repeat_days: values.repeatDays,
-            break_duration_minutes: values.breakDurationMinutes
-              ? Number(values.breakDurationMinutes)
-              : 0,
-            allowed_late_check_in_minutes: values.allowedLateCheckInMinutes
-              ? Number(values.allowedLateCheckInMinutes)
-              : 0,
-            allowed_early_check_out_minutes: values.allowedEarlyCheckOutMinutes
-              ? Number(values.allowedEarlyCheckOutMinutes)
-              : 0,
-            code: existing.code,
-            display_order: existing.displayOrder,
-            is_active: existing.isActive,
-          }),
-        },
-        "Không thể cập nhật ca làm",
-      );
-    } catch (error) {
-      if (!useMockFallback || !shouldUseFallback(error)) {
-        throw error;
-      }
-    }
-
     updateRuntimeShiftTemplate(id, values, {
       code: existing.code,
       displayOrder: existing.displayOrder,
@@ -469,71 +398,18 @@ export const shiftTemplateManagementService = {
 
   async deleteShiftTemplate(
     templateId: number,
-    useMockFallback: boolean,
   ): Promise<void> {
-    try {
-      await requestJson(
-        `${API_URL}/shifts/${templateId}`,
-        { method: "DELETE" },
-        "Không thể xóa ca làm",
-      );
-    } catch (error) {
-      if (!useMockFallback || !shouldUseFallback(error)) {
-        throw error;
-      }
-    }
-
-    if (!deleteRuntimeShiftTemplate(templateId)) {
-      throw new Error("Không tìm thấy ca làm để xóa.");
-    }
+    markRuntimeShiftTemplateDeleted(templateId);
   },
 
   async exportShiftTemplates(
     filters: ShiftTemplateListQuery,
-    useMockFallback: boolean,
   ): Promise<ShiftTemplateListExportResult> {
-    try {
-      const url = new URL(`${API_URL}/shifts/export`);
-      if (filters.searchTerm) {
-        url.searchParams.set("keyword", filters.searchTerm);
-      }
-      if (filters.timeFrom) {
-        url.searchParams.set("timeFrom", filters.timeFrom);
-      }
-      if (filters.timeTo) {
-        url.searchParams.set("timeTo", filters.timeTo);
-      }
-      if (filters.status !== "all") {
-        url.searchParams.set("status", filters.status);
-      }
-
-      const { blob, headers } = await requestBlob(
-        url.toString(),
-        { method: "GET" },
-        "Không thể xuất file danh sách ca",
-      );
-      const fileName = parseDownloadFilename(
-        headers.get("content-disposition"),
-        DEFAULT_EXPORT_FILE_NAME,
-      );
-      triggerBlobDownload(blob, fileName);
-
-      return {
-        fileName,
-        recordCount: Math.max(filters.pageSize, 0),
-      };
-    } catch (error) {
-      if (!useMockFallback || !shouldUseFallback(error)) {
-        throw error;
-      }
-    }
-
     const listResponse = await this.getShiftTemplates(
       { ...filters, page: 1, pageSize: 5000 },
-      true,
     );
     const fileName = `danh-sach-ca-${new Date().toISOString().slice(0, 10)}.xlsx`;
-    const blob = createXlsxBlob(toExportRows(listResponse.items), "Danh sách ca");
+    const blob = createXlsxBlob(toExportRows(listResponse.items), "Danh sach ca");
     triggerBlobDownload(blob, fileName);
 
     return {

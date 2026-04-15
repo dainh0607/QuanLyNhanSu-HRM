@@ -6,6 +6,7 @@ interface ElectronicContractInfoStepProps {
   values: ElectronicContractFormValues;
   errors: Record<string, string>;
   isUploadingAttachment: boolean;
+  isEmployeeLocked: boolean;
   employeeOptions: SelectOption[];
   signerOptions: SelectOption[];
   contractTypeOptions: SelectOption[];
@@ -50,6 +51,7 @@ const ElectronicContractInfoStep: React.FC<ElectronicContractInfoStepProps> = ({
   values,
   errors,
   isUploadingAttachment,
+  isEmployeeLocked,
   employeeOptions,
   signerOptions,
   contractTypeOptions,
@@ -66,9 +68,19 @@ const ElectronicContractInfoStep: React.FC<ElectronicContractInfoStepProps> = ({
           options={employeeOptions}
           placeholder="Chọn nhân viên"
           searchPlaceholder="Tìm theo tên hoặc mã nhân viên"
-          onChange={(value) => onFieldChange('employeeId', value)}
+          onChange={(value) => {
+            if (!isEmployeeLocked) {
+              onFieldChange('employeeId', value);
+            }
+          }}
+          disabled={isEmployeeLocked}
           error={errors.employeeId}
         />
+        {isEmployeeLocked ? (
+          <p className="mt-2 text-xs text-slate-500">
+            Nhan vien da duoc khoa sau khi luu ban nhap. Dong popup va tao lai neu can doi nhan vien.
+          </p>
+        ) : null}
       </FieldShell>
 
       <FieldShell label="Số hợp đồng" required error={errors.contractNumber}>

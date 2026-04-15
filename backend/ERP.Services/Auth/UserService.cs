@@ -41,6 +41,7 @@ namespace ERP.Services.Auth
             return new UserInfoDto
             {
                 UserId = localUser.Id,
+                TenantId = localUser.tenant_id,
                 EmployeeId = localUser.employee_id,
                 Email = localUser.username,
                 FullName = localUser.Employee?.full_name ?? localUser.username,
@@ -64,6 +65,7 @@ namespace ERP.Services.Auth
             return new UserInfoDto
             {
                 UserId = localUser.Id,
+                TenantId = localUser.tenant_id,
                 EmployeeId = localUser.Employee?.Id ?? 0,
                 Email = localUser.Employee?.email ?? localUser.username,
                 FullName = localUser.Employee?.full_name ?? localUser.username,
@@ -113,12 +115,29 @@ namespace ERP.Services.Auth
                             try
                             {
                                 var employeeCode = fbUser.Email?.Split('@')[0].ToUpper() ?? "EMP_" + Guid.NewGuid().ToString().Substring(0, 8);
+                                
+                                // Get default tenant or create one
+                                var defaultTenant = await _context.Tenants.FirstOrDefaultAsync() ?? 
+                                    new Tenants { 
+                                        name = "Default Work space", 
+                                        code = "DEFAULT",
+                                        is_active = true,
+                                        CreatedAt = DateTime.UtcNow
+                                    };
+                                
+                                if (defaultTenant.Id == 0)
+                                {
+                                    _context.Tenants.Add(defaultTenant);
+                                    await _context.SaveChangesAsync();
+                                }
+                                
                                 var newEmployee = new EmployeeEntity
                                 {
                                     employee_code = employeeCode,
                                     full_name = fbUser.DisplayName ?? fbUser.Email,
                                     email = fbUser.Email,
                                     phone = fbUser.PhoneNumber,
+                                    tenant_id = defaultTenant.Id,
                                     is_active = true,
                                     CreatedAt = DateTime.UtcNow,
                                     UpdatedAt = DateTime.UtcNow
@@ -126,19 +145,22 @@ namespace ERP.Services.Auth
                                 _context.Employees.Add(newEmployee);
                                 await _context.SaveChangesAsync();
 
+                                await Task.CompletedTask; // Placeholder for logic
+                                
                                 var newUser = new Users
                                 {
                                     employee_id = newEmployee.Id,
                                     username = fbUser.Email,
                                     firebase_uid = fbUser.Uid,
                                     is_active = true,
+                                    tenant_id = defaultTenant.Id, // FIX: Assign tenant immediately
                                     CreatedAt = DateTime.UtcNow,
                                     UpdatedAt = DateTime.UtcNow
                                 };
                                 _context.Users.Add(newUser);
                                 await _context.SaveChangesAsync();
 
-                                await AssignRoleInternalAsync(newUser.Id, targetRoleId);
+                                await AssignRoleInternalAsync(newUser.Id, targetRoleId, defaultTenant.Id, "Firebase Sync");
                                 await transaction.CommitAsync();
                                 syncCount++;
                             }
@@ -154,7 +176,7 @@ namespace ERP.Services.Auth
                         var currentRoles = await GetUserRoleIdsAsync(localUser.Id);
                         if (!currentRoles.Contains(targetRoleId))
                         {
-                            await AssignRoleInternalAsync(localUser.Id, targetRoleId);
+                            await AssignRoleInternalAsync(localUser.Id, targetRoleId, localUser.tenant_id, "Firebase Sync (Update)");
                             syncCount++;
                         }
                     }
@@ -167,7 +189,7 @@ namespace ERP.Services.Auth
             return syncCount;
         }
 
-        public async Task<Users> CreateLocalUserAsync(int employeeId, string email, string firebaseUid)
+        public async Task<Users> CreateLocalUserAsync(int employeeId, string email, string firebaseUid, int? tenantId = null)
         {
             var user = new Users
             {
@@ -175,6 +197,7 @@ namespace ERP.Services.Auth
                 username = email,
                 firebase_uid = firebaseUid,
                 is_active = true,
+                tenant_id = tenantId,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -183,17 +206,19 @@ namespace ERP.Services.Auth
             return user;
         }
 
-        public async Task AssignRoleAsync(int userId, int roleId)
+        public async Task AssignRoleAsync(int userId, int roleId, int? tenantId = null, string? assignmentReason = null)
         {
-            await AssignRoleInternalAsync(userId, roleId);
+            await AssignRoleInternalAsync(userId, roleId, tenantId, assignmentReason);
         }
 
-        private async Task AssignRoleInternalAsync(int userId, int roleId)
+        private async Task AssignRoleInternalAsync(int userId, int roleId, int? tenantId = null, string? assignmentReason = null)
         {
             var userRole = new UserRoles
             {
                 user_id = userId,
                 role_id = roleId,
+                tenant_id = tenantId,
+                assignment_reason = assignmentReason ?? "System Assignment",
                 is_active = true,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow

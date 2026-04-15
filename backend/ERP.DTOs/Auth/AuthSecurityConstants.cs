@@ -11,5 +11,24 @@ namespace ERP.DTOs.Auth
         public const string AccessTokenType = "Access";
         public const string RefreshTokenType = "Refresh";
         public const string SignerTokenType = "Signer";
+        public const string SuperAdminPolicyName = "SuperAdminOnly";
+
+        // Access Groups (Roles)
+        public const string RoleAdmin = "Admin";
+        public const string RoleDirector = "Manager";
+        public const string RoleRegionManager = "Regional Manager";
+        public const string RoleBranchManager = "Branch Manager";
+        public const string RoleDeptManager = "Department Head";
+        public const string RoleModuleAdmin = "Module Admin";
+        public const string RoleEmployee = "Staff";
+
+        // Access Group IDs
+        public const int RoleAdminId = 1;
+        public const int RoleDirectorId = 2;
+        public const int RoleRegionManagerId = 3;
+        public const int RoleBranchManagerId = 4;
+        public const int RoleDeptManagerId = 5;
+        public const int RoleModuleAdminId = 6;
+        public const int RoleEmployeeId = 7;
     }
 }

@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import QuickAddEmployeeRow from "./components/QuickAddEmployeeRow";
 import { createSampleEmployeeData } from "./data/sampleEmployees";
 import { quickAddEmployeesService } from "./services/quickAddEmployeesService";
@@ -11,7 +11,6 @@ import type {
 interface QuickAddEmployeesModalProps {
   isOpen: boolean;
   preferredBranchId?: string;
-  useMockFallback: boolean;
   onClose: () => void;
   onSuccess: (createdCount: number) => void;
 }
@@ -66,7 +65,6 @@ const normalizeNameInput = (value: string): string =>
 export const QuickAddEmployeesModal = ({
   isOpen,
   preferredBranchId,
-  useMockFallback,
   onClose,
   onSuccess,
 }: QuickAddEmployeesModalProps) => {
@@ -325,7 +323,6 @@ export const QuickAddEmployeesModal = ({
           rows: payloadRows,
         },
         catalog,
-        useMockFallback,
       );
 
       onSuccess(result.createdCount);

@@ -4,12 +4,14 @@ using ERP.DTOs.Attendance;
 using ERP.Services.Attendance;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ERP.API.Authorization;
 
 namespace ERP.API.Controllers
 {
     [ApiController]
     [Route("api/shift-templates")]
     [Authorize]
+    [HasPermission("Attendance", "View")]
     public class ShiftTemplatesController : ControllerBase
     {
         private readonly IShiftTemplateService _templateService;
@@ -27,6 +29,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost]
+        [HasPermission("Attendance", "Update")]
         public async Task<IActionResult> CreateTemplate([FromBody] ShiftTemplateCreateDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);

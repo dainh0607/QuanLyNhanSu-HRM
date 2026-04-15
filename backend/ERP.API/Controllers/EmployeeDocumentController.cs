@@ -5,12 +5,14 @@ using ERP.Services.Employees;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using ERP.API.Authorization;
 
 namespace ERP.API.Controllers
 {
     [ApiController]
     [Route("api/employee-documents")]
     [Authorize]
+    [HasPermission("Employee", "View")]
     public class EmployeeDocumentController : ControllerBase
     {
         private readonly IEmployeeDocumentService _documentService;
@@ -21,7 +23,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("{employeeId}/upload")]
-        [Authorize(Roles = "Manager,Admin")]
+        [HasPermission("Employee", "Update")]
         public async Task<IActionResult> Upload(int employeeId, [FromForm] DocumentUploadDto dto, IFormFile file)
         {
             if (file == null || file.Length == 0)
@@ -44,7 +46,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpDelete("{documentId}")]
-        [Authorize(Roles = "Manager,Admin")]
+        [HasPermission("Employee", "Update")]
         public async Task<IActionResult> Delete(int documentId)
         {
             var success = await _documentService.DeleteDocumentAsync(documentId);

@@ -8,27 +8,66 @@ using ERP.DTOs.JobTitles;
 using ERP.DTOs.Regions;
 using ERP.Entities.Models;
 using ERP.Repositories.Interfaces;
+using ERP.Services.Authorization;
+using ERP.Entities.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Services.Organization
 {
     public class OrganizationService : IOrganizationService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IAuthorizationService _authService;
+        private readonly ICurrentUserContext _userContext;
 
-        public OrganizationService(IUnitOfWork unitOfWork)
+        public OrganizationService(IUnitOfWork unitOfWork,
+            IAuthorizationService authService,
+            ICurrentUserContext userContext)
         {
             _unitOfWork = unitOfWork;
+            _authService = authService;
+            _userContext = userContext;
+        }
+
+        private async Task EnsureBranchAccess(int branchId)
+        {
+            var currentUserId = _userContext.UserId ?? 0;
+            if (currentUserId <= 0) return;
+            if (!await _authService.CanAccessBranch(currentUserId, branchId))
+                throw new UnauthorizedAccessException("Bạn không có quyền truy cập chi nhánh này.");
+        }
+
+        private async Task EnsureRegionAccess(int regionId)
+        {
+            var currentUserId = _userContext.UserId ?? 0;
+            if (currentUserId <= 0) return;
+            if (!await _authService.CanAccessRegion(currentUserId, regionId))
+                throw new UnauthorizedAccessException("Bạn không có quyền truy cập vùng này.");
         }
 
         #region Branches
         public async Task<IEnumerable<BranchDto>> GetBranchesAsync()
         {
             var branches = await _unitOfWork.Repository<Branches>().GetAllAsync();
+            var currentUserId = _userContext.UserId ?? 0;
+
+            if (currentUserId > 0)
+            {
+                var filtered = new List<Branches>();
+                foreach (var b in branches)
+                {
+                    if (await _authService.CanAccessBranch(currentUserId, b.Id))
+                        filtered.Add(b);
+                }
+                return filtered.Select(b => new BranchDto { Id = b.Id, Name = b.name, Code = b.code, Address = b.address });
+            }
+
             return branches.Select(b => new BranchDto { Id = b.Id, Name = b.name, Code = b.code, Address = b.address });
         }
 
         public async Task<BranchDto?> GetBranchByIdAsync(int id)
         {
+            await EnsureBranchAccess(id);
             var b = await _unitOfWork.Repository<Branches>().GetByIdAsync(id);
             return b == null ? null : new BranchDto { Id = b.Id, Name = b.name, Code = b.code, Address = b.address };
         }
@@ -43,6 +82,7 @@ namespace ERP.Services.Organization
 
         public async Task<bool> UpdateBranchAsync(int id, BranchUpdateDto dto)
         {
+            await EnsureBranchAccess(id);
             var b = await _unitOfWork.Repository<Branches>().GetByIdAsync(id);
             if (b == null) return false;
             b.name = dto.Name;
@@ -53,6 +93,7 @@ namespace ERP.Services.Organization
 
         public async Task<bool> DeleteBranchAsync(int id)
         {
+            await EnsureBranchAccess(id);
             var b = await _unitOfWork.Repository<Branches>().GetByIdAsync(id);
             if (b == null) return false;
             _unitOfWork.Repository<Branches>().Remove(b);
@@ -69,6 +110,12 @@ namespace ERP.Services.Organization
 
         public async Task<DepartmentDto?> GetDepartmentByIdAsync(int id)
         {
+            var currentUserId = _userContext.UserId ?? 0;
+            if (currentUserId > 0)
+            {
+                if (!await _authService.CanAccessDepartment(currentUserId, id))
+                    throw new UnauthorizedAccessException("Bạn không có quyền truy cập phòng ban này.");
+            }
             var d = await _unitOfWork.Repository<Departments>().GetByIdAsync(id);
             return d == null ? null : new DepartmentDto { Id = d.Id, Name = d.name, Code = d.code, ParentId = d.parent_id };
         }
@@ -143,11 +190,25 @@ namespace ERP.Services.Organization
         public async Task<IEnumerable<RegionDto>> GetRegionsAsync()
         {
             var regions = await _unitOfWork.Repository<Regions>().GetAllAsync();
+            var currentUserId = _userContext.UserId ?? 0;
+
+            if (currentUserId > 0)
+            {
+                var filtered = new List<Regions>();
+                foreach (var r in regions)
+                {
+                    if (await _authService.CanAccessRegion(currentUserId, r.Id))
+                        filtered.Add(r);
+                }
+                return filtered.Select(r => new RegionDto { Id = r.Id, Name = r.name, Code = r.code });
+            }
+
             return regions.Select(r => new RegionDto { Id = r.Id, Name = r.name, Code = r.code });
         }
 
         public async Task<RegionDto?> GetRegionByIdAsync(int id)
         {
+            await EnsureRegionAccess(id);
             var r = await _unitOfWork.Repository<Regions>().GetByIdAsync(id);
             return r == null ? null : new RegionDto { Id = r.Id, Name = r.name, Code = r.code };
         }
@@ -162,6 +223,7 @@ namespace ERP.Services.Organization
 
         public async Task<bool> UpdateRegionAsync(int id, RegionUpdateDto dto)
         {
+            await EnsureRegionAccess(id);
             var r = await _unitOfWork.Repository<Regions>().GetByIdAsync(id);
             if (r == null) return false;
             r.name = dto.Name;
@@ -171,6 +233,7 @@ namespace ERP.Services.Organization
 
         public async Task<bool> DeleteRegionAsync(int id)
         {
+            await EnsureRegionAccess(id);
             var r = await _unitOfWork.Repository<Regions>().GetByIdAsync(id);
             if (r == null) return false;
             _unitOfWork.Repository<Regions>().Remove(r);

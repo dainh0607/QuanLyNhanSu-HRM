@@ -1,4 +1,4 @@
-﻿import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { assignedShiftActionsService } from "../services/assignedShiftActionsService";
 import type {
   AssignedShiftActionContext,
@@ -12,7 +12,6 @@ import type {
 interface UseAssignedShiftQuickActionsOptions {
   notify: (message: string, type?: "success" | "error" | "info") => void;
   reload: () => Promise<void>;
-  useMockFallback: boolean;
 }
 
 export interface UseAssignedShiftQuickActionsResult {
@@ -51,7 +50,6 @@ const getContextKey = (context: AssignedShiftActionContext): string =>
 export const useAssignedShiftQuickActions = ({
   notify,
   reload,
-  useMockFallback,
 }: UseAssignedShiftQuickActionsOptions): UseAssignedShiftQuickActionsResult => {
   const [detailContext, setDetailContext] = useState<AssignedShiftActionContext | null>(null);
   const [detailData, setDetailData] = useState<ShiftAssignmentDetail | null>(null);
@@ -121,7 +119,7 @@ export const useAssignedShiftQuickActions = ({
       setAvailableShifts([]);
 
       void assignedShiftActionsService
-        .getAvailableShifts(context, useMockFallback)
+        .getAvailableShifts(context)
         .then((response) => setAvailableShifts(response))
         .catch((error) => {
           console.error("Failed to load available shifts.", error);
@@ -129,7 +127,7 @@ export const useAssignedShiftQuickActions = ({
         })
         .finally(() => setIsAvailableShiftsLoading(false));
     },
-    [notify, useMockFallback],
+    [notify],
   );
 
   const handleOpenLeaveRequest = useCallback((context: AssignedShiftActionContext) => {
@@ -140,7 +138,7 @@ export const useAssignedShiftQuickActions = ({
     (context: AssignedShiftActionContext) => {
       void (async () => {
         try {
-          await assignedShiftActionsService.refreshAttendance(context, useMockFallback);
+          await assignedShiftActionsService.refreshAttendance(context);
           notify("Đã tải lại dữ liệu chấm công cho ca làm.", "success");
           await reload();
 
@@ -153,7 +151,7 @@ export const useAssignedShiftQuickActions = ({
         }
       })();
     },
-    [detailDataKey, loadDetail, notify, reload, useMockFallback],
+    [detailDataKey, loadDetail, notify, reload],
   );
 
   const handleOpenMap = useCallback(
@@ -199,7 +197,6 @@ export const useAssignedShiftQuickActions = ({
           await assignedShiftActionsService.assignExistingShift(
             pickerContext,
             shift,
-            useMockFallback,
           );
           setPickerContext(null);
           notify("Đã gán thêm ca làm cho nhân viên.", "success");
@@ -212,7 +209,7 @@ export const useAssignedShiftQuickActions = ({
         }
       })();
     },
-    [notify, pickerContext, reload, useMockFallback],
+    [notify, pickerContext, reload],
   );
 
   const submitDirectShiftTemplate = useCallback(
@@ -226,7 +223,6 @@ export const useAssignedShiftQuickActions = ({
         await assignedShiftActionsService.createShiftTemplateAndAssign(
           templateContext,
           payload,
-          useMockFallback,
         );
         setTemplateContext(null);
         notify("Đã tạo ca làm mới và gán trực tiếp thành công.", "success");
@@ -239,7 +235,7 @@ export const useAssignedShiftQuickActions = ({
         setIsCreatingTemplate(false);
       }
     },
-    [notify, reload, templateContext, useMockFallback],
+    [notify, reload, templateContext],
   );
 
   const submitLeaveRequest = useCallback(
@@ -254,7 +250,6 @@ export const useAssignedShiftQuickActions = ({
           await assignedShiftActionsService.createLeaveRequest(
             leaveContext,
             values,
-            useMockFallback,
           );
           setLeaveContext(null);
           notify("Tạo yêu cầu nghỉ phép thành công", "success");
@@ -271,7 +266,7 @@ export const useAssignedShiftQuickActions = ({
         }
       })();
     },
-    [detailDataKey, leaveContext, loadDetail, notify, reload, useMockFallback],
+    [detailDataKey, leaveContext, loadDetail, notify, reload],
   );
 
   const confirmDelete = useCallback(() => {
@@ -284,7 +279,6 @@ export const useAssignedShiftQuickActions = ({
       try {
         await assignedShiftActionsService.deleteAssignedShift(
           deleteContext,
-          useMockFallback,
         );
         setDeleteContext(null);
         setDetailContext((current) =>
@@ -299,7 +293,7 @@ export const useAssignedShiftQuickActions = ({
         setIsDeleting(false);
       }
     })();
-  }, [deleteContext, notify, reload, useMockFallback]);
+  }, [deleteContext, notify, reload]);
 
   const openCreateNewShiftFlow = useCallback(() => {
     if (!pickerContext) {
