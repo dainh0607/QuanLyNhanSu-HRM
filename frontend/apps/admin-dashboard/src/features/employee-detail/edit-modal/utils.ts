@@ -12,6 +12,10 @@ import type {
   TabState,
   WorkFormMap,
   WorkFormsState,
+  LeaveFormMap,
+  LeaveFormsState,
+  AssetFormMap,
+  AssetFormsState,
 } from './types';
 
 export const toStringValue = (...values: Array<unknown>): string => {
@@ -374,6 +378,26 @@ export const createWorkFormsState = (seed: WorkFormMap): WorkFormsState => ({
   salaryAllowance: createTabState(seed.salaryAllowance),
   contract: createTabState(seed.contract),
   insurance: createTabState(seed.insurance),
+});
+
+export const buildLeaveSeedForms = (): LeaveFormMap => ({
+  leaveBalance: {
+    details: [],
+    paidLeaveDays: '0',
+    unpaidLeaveDays: '0',
+  },
+});
+
+export const createLeaveFormsState = (seed: LeaveFormMap): LeaveFormsState => ({
+  leaveBalance: createTabState(seed.leaveBalance),
+});
+
+export const buildAssetSeedForms = (): AssetFormMap => ({
+  assets: [],
+});
+
+export const createAssetFormsState = (seed: AssetFormMap): AssetFormsState => ({
+  assets: createTabState(seed.assets),
 });
 
 export const buildDependentClientSignature = (

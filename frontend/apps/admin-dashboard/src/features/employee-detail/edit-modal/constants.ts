@@ -34,6 +34,14 @@ export const WORK_TABS = [
   { key: 'insurance', label: 'Bảo hiểm' },
 ] as const;
 
+export const LEAVE_TABS = [
+  { key: 'leaveBalance', label: 'Quỹ nghỉ' },
+] as const;
+
+export const ASSET_TABS = [
+  { key: 'assets', label: 'Tài sản' },
+] as const;
+
 export const WORK_TAB_SUCCESS_MESSAGES = {
   jobStatus: 'Cập nhật tình trạng công việc thành công.',
   jobInfo: 'Cập nhật thông tin công việc thành công.',
@@ -42,6 +50,14 @@ export const WORK_TAB_SUCCESS_MESSAGES = {
   salaryAllowance: 'Cập nhật tiền lương/trợ cấp thành công.',
   contract: 'Cập nhật hợp đồng thành công.',
   insurance: 'Cập nhật bảo hiểm thành công.',
+} as const;
+
+export const LEAVE_TAB_SUCCESS_MESSAGES = {
+  leaveBalance: 'Cập nhật quỹ nghỉ thành công.',
+} as const;
+
+export const ASSET_TAB_SUCCESS_MESSAGES = {
+  assets: 'Cập nhật danh sách tài sản thành công.',
 } as const;
 export const SECTION_PLACEHOLDER_COPY = {
   work: 'Shell chỉnh sửa cho Công việc đã được dựng sẵn để nối form ở bước tiếp theo.',

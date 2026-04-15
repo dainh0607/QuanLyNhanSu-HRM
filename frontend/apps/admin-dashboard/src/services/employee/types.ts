@@ -532,6 +532,19 @@ export interface EmployeeEditContractItemPayload {
 
 export type EmployeeEditContractPayload = EmployeeEditContractItemPayload[];
 
+export interface AssetMetadata {
+  id: string;
+  name: string;
+  code: string;
+  totalQuantity: number;
+  availableQuantity: number;
+}
+
+export interface AssetLocationMetadata {
+  id: string;
+  name: string;
+}
+
 export interface EmployeeEditInsuranceItemPayload {
   id?: string;
   employeeName: string;
@@ -540,3 +553,39 @@ export interface EmployeeEditInsuranceItemPayload {
 }
 
 export type EmployeeEditInsurancePayload = EmployeeEditInsuranceItemPayload[];
+
+export interface EmployeeEditAssetItemPayload {
+  assetName: string;
+  assetCode: string;
+  issueCode: string;
+  quantity: string;
+  description: string;
+  issueDate: string;
+}
+
+export type EmployeeEditAssetPayload = EmployeeEditAssetItemPayload[];
+
+export interface EmployeeEditLeaveBalanceDetailItem {
+  leaveTypeName: string;
+  totalDays: string;
+  usedDays: string;
+  remainingDays: string;
+}
+
+export interface EmployeeEditLeaveBalancePayload {
+  details: EmployeeEditLeaveBalanceDetailItem[];
+  paidLeaveDays: string;
+  unpaidLeaveDays: string;
+}
+
+export interface EmployeeEditLeaveHistoryItemPayload {
+  id?: string;
+  leaveType: string;
+  startDate: string;
+  endDate: string;
+  duration: string;
+  status: string;
+  reason: string;
+}
+
+export type EmployeeEditLeaveHistoryPayload = EmployeeEditLeaveHistoryItemPayload[];
