@@ -125,7 +125,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(AuthSecurityConstants.SuperAdminPolicyName, policy =>
     {
         policy.RequireAuthenticatedUser();
-        policy.RequireRole(AuthSecurityConstants.RoleSuperAdmin);
+        policy.RequireRole(AuthSecurityConstants.RoleAdmin);
     });
 });
 
@@ -168,6 +168,7 @@ builder.Services.AddScoped<ERP.Services.Authorization.IAuthorizationManagementSe
 builder.Services.AddScoped<ERP.Services.Authorization.IBreakGlassService, ERP.Services.Authorization.BreakGlassService>();
 builder.Services.AddScoped<ERP.Services.Authorization.IPermissionAuditLogService, ERP.Services.Authorization.PermissionAuditLogService>();
 builder.Services.AddScoped<ERP.Services.Authorization.ILoginAttemptService, ERP.Services.Authorization.LoginAttemptService>();
+builder.Services.AddScoped<ERP.Services.Authorization.IScopedQueryHelper, ERP.Services.Authorization.ScopedQueryHelper>();
 
 builder.Services.AddScoped<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, ERP.API.Authorization.PermissionHandler>();
 builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationPolicyProvider, ERP.API.Authorization.PermissionPolicyProvider>();

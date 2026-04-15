@@ -1096,9 +1096,9 @@ namespace ERP.Services.Auth
             }
 
             if (IsMasterEmail(primaryEmail) &&
-                !roles.Contains(AuthSecurityConstants.RoleSuperAdmin, StringComparer.OrdinalIgnoreCase))
+                !roles.Contains(AuthSecurityConstants.RoleAdmin, StringComparer.OrdinalIgnoreCase))
             {
-                roles.Insert(0, AuthSecurityConstants.RoleSuperAdmin);
+                roles.Insert(0, AuthSecurityConstants.RoleAdmin);
             }
 
             return new UserInfoDto
@@ -1124,10 +1124,9 @@ namespace ERP.Services.Auth
 
             var allowedRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                AuthSecurityConstants.RoleSuperAdmin,
+                AuthSecurityConstants.RoleAdmin,
                 "Admin",
                 "Manager",
-                AuthSecurityConstants.RoleAdmin,
                 AuthSecurityConstants.RoleDirector,
                 AuthSecurityConstants.RoleRegionManager,
                 AuthSecurityConstants.RoleBranchManager,
@@ -1368,7 +1367,7 @@ namespace ERP.Services.Auth
             {
                 return await _context.UserRoles
                     .AnyAsync(ur => ur.is_active && 
-                        (ur.Role.name == AuthSecurityConstants.RoleSuperAdmin || ur.Role.name == "Quản trị" || ur.role_id == 1));
+                        (ur.Role.name == AuthSecurityConstants.RoleAdmin || ur.Role.name == "Quản trị" || ur.role_id == 1));
             }
             catch (Exception ex)
             {
@@ -1393,12 +1392,12 @@ namespace ERP.Services.Auth
 
                 _logger.LogInformation("Starting system bootstrap for {Email}", masterEmail);
 
-                var superAdminRole = await _context.Roles.FirstOrDefaultAsync(r => r.name == AuthSecurityConstants.RoleSuperAdmin);
+                var superAdminRole = await _context.Roles.FirstOrDefaultAsync(r => r.name == AuthSecurityConstants.RoleAdmin);
                 if (superAdminRole == null)
                 {
                     superAdminRole = new Roles 
                     { 
-                        name = AuthSecurityConstants.RoleSuperAdmin,
+                        name = AuthSecurityConstants.RoleAdmin,
                         description = "Hệ thống quản trị cao cấp (Super Admin)",
                         is_active = true,
                         CreatedAt = DateTime.UtcNow,
