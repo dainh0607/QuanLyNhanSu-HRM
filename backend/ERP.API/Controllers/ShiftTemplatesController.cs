@@ -28,6 +28,21 @@ namespace ERP.API.Controllers
             return Ok(templates);
         }
 
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetTemplateById(int id)
+        {
+            try
+            {
+                var template = await _templateService.GetTemplateByIdAsync(id);
+                if (template == null) return NotFound(new { Message = "KhĂ´ng tĂ¬m tháº¥y máº«u ca." });
+                return Ok(template);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
         [HttpPost]
         [HasPermission("Attendance", "Update")]
         public async Task<IActionResult> CreateTemplate([FromBody] ShiftTemplateCreateDto dto)
@@ -38,6 +53,40 @@ namespace ERP.API.Controllers
             {
                 var id = await _templateService.CreateTemplateAsync(dto);
                 return Ok(new { Message = "Tạo mẫu ca thành công", TemplateId = id });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpPut("{id}")]
+        [HasPermission("Attendance", "Update")]
+        public async Task<IActionResult> UpdateTemplate(int id, [FromBody] ShiftTemplateCreateDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                var success = await _templateService.UpdateTemplateAsync(id, dto);
+                if (!success) return NotFound(new { Message = "KhĂ´ng tĂ¬m tháº¥y máº«u ca." });
+                return Ok(new { Message = "Cáº­p nháº­t máº«u ca thĂ nh cĂ´ng." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpDelete("{id}")]
+        [HasPermission("Attendance", "Update")]
+        public async Task<IActionResult> DeleteTemplate(int id)
+        {
+            try
+            {
+                var success = await _templateService.DeleteTemplateAsync(id);
+                if (!success) return NotFound(new { Message = "KhĂ´ng tĂ¬m tháº¥y máº«u ca." });
+                return Ok(new { Message = "XĂ³a máº«u ca thĂ nh cĂ´ng." });
             }
             catch (Exception ex)
             {

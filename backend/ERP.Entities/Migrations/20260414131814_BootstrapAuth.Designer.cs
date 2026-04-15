@@ -4,6 +4,7 @@ using ERP.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ERP.Entities.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260414131814_BootstrapAuth")]
+    partial class BootstrapAuth
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,332 +24,6 @@ namespace ERP.Entities.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("ERP.Entities.Models.ActionPermissions", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("action")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("action");
-
-                    b.Property<string>("allowed_scope")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("allowed_scope");
-
-                    b.Property<string>("condition")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("condition");
-
-                    b.Property<DateTime>("created_at")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("description")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("description");
-
-                    b.Property<bool>("is_active")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_active");
-
-                    b.Property<string>("resource")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("resource");
-
-                    b.Property<int>("role_id")
-                        .HasColumnType("int")
-                        .HasColumnName("role_id");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<DateTime?>("updated_at")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("role_id");
-
-                    b.ToTable("ActionPermissions");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            action = "CREATE",
-                            allowed_scope = "SAME_TENANT",
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource = "EMPLOYEE",
-                            role_id = 1
-                        },
-                        new
-                        {
-                            Id = 2,
-                            action = "READ",
-                            allowed_scope = "SAME_TENANT",
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource = "EMPLOYEE",
-                            role_id = 1
-                        },
-                        new
-                        {
-                            Id = 3,
-                            action = "UPDATE",
-                            allowed_scope = "SAME_TENANT",
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource = "EMPLOYEE",
-                            role_id = 1
-                        },
-                        new
-                        {
-                            Id = 4,
-                            action = "DELETE",
-                            allowed_scope = "SAME_TENANT",
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource = "EMPLOYEE",
-                            role_id = 1
-                        },
-                        new
-                        {
-                            Id = 24,
-                            action = "Manage",
-                            allowed_scope = "SAME_TENANT",
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource = "System",
-                            role_id = 1
-                        },
-                        new
-                        {
-                            Id = 25,
-                            action = "READ",
-                            allowed_scope = "SAME_TENANT",
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource = "RBAC",
-                            role_id = 1
-                        },
-                        new
-                        {
-                            Id = 26,
-                            action = "UPDATE",
-                            allowed_scope = "SAME_TENANT",
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource = "RBAC",
-                            role_id = 1
-                        },
-                        new
-                        {
-                            Id = 5,
-                            action = "READ",
-                            allowed_scope = "SAME_TENANT",
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource = "EMPLOYEE",
-                            role_id = 2
-                        },
-                        new
-                        {
-                            Id = 6,
-                            action = "APPROVE",
-                            allowed_scope = "SAME_TENANT",
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource = "REQUEST",
-                            role_id = 2
-                        },
-                        new
-                        {
-                            Id = 7,
-                            action = "CREATE",
-                            allowed_scope = "SAME_REGION",
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource = "EMPLOYEE",
-                            role_id = 3
-                        },
-                        new
-                        {
-                            Id = 8,
-                            action = "READ",
-                            allowed_scope = "SAME_REGION",
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource = "EMPLOYEE",
-                            role_id = 3
-                        },
-                        new
-                        {
-                            Id = 9,
-                            action = "UPDATE",
-                            allowed_scope = "SAME_REGION",
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource = "EMPLOYEE",
-                            role_id = 3
-                        },
-                        new
-                        {
-                            Id = 10,
-                            action = "TRANSFER_EMPLOYEE",
-                            allowed_scope = "SAME_REGION",
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource = "EMPLOYEE",
-                            role_id = 3
-                        },
-                        new
-                        {
-                            Id = 11,
-                            action = "APPROVE",
-                            allowed_scope = "SAME_REGION",
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource = "REQUEST",
-                            role_id = 3
-                        },
-                        new
-                        {
-                            Id = 12,
-                            action = "CREATE",
-                            allowed_scope = "SAME_BRANCH",
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource = "EMPLOYEE",
-                            role_id = 4
-                        },
-                        new
-                        {
-                            Id = 13,
-                            action = "READ",
-                            allowed_scope = "SAME_BRANCH",
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource = "EMPLOYEE",
-                            role_id = 4
-                        },
-                        new
-                        {
-                            Id = 14,
-                            action = "UPDATE",
-                            allowed_scope = "SAME_BRANCH",
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource = "EMPLOYEE",
-                            role_id = 4
-                        },
-                        new
-                        {
-                            Id = 15,
-                            action = "APPROVE",
-                            allowed_scope = "SAME_BRANCH",
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource = "REQUEST",
-                            role_id = 4
-                        },
-                        new
-                        {
-                            Id = 16,
-                            action = "READ",
-                            allowed_scope = "SAME_DEPARTMENT",
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource = "EMPLOYEE",
-                            role_id = 5
-                        },
-                        new
-                        {
-                            Id = 17,
-                            action = "ASSIGN_TASK",
-                            allowed_scope = "SAME_DEPARTMENT",
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource = "EMPLOYEE",
-                            role_id = 5
-                        },
-                        new
-                        {
-                            Id = 18,
-                            action = "APPROVE",
-                            allowed_scope = "SAME_DEPARTMENT",
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource = "LEAVE",
-                            role_id = 5
-                        },
-                        new
-                        {
-                            Id = 19,
-                            action = "READ",
-                            allowed_scope = "CROSS_REGION",
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource = "PAYROLL",
-                            role_id = 6
-                        },
-                        new
-                        {
-                            Id = 20,
-                            action = "READ",
-                            allowed_scope = "CROSS_REGION",
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource = "ATTENDANCE",
-                            role_id = 6
-                        },
-                        new
-                        {
-                            Id = 21,
-                            action = "READ",
-                            allowed_scope = "PERSONAL",
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource = "MYPROFILE",
-                            role_id = 7
-                        },
-                        new
-                        {
-                            Id = 22,
-                            action = "UPDATE",
-                            allowed_scope = "PERSONAL",
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource = "MYPROFILE",
-                            role_id = 7
-                        },
-                        new
-                        {
-                            Id = 23,
-                            action = "CREATE",
-                            allowed_scope = "PERSONAL",
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource = "REQUEST",
-                            role_id = 7
-                        });
-                });
 
             modelBuilder.Entity("ERP.Entities.Models.AddressTypes", b =>
                 {
@@ -506,10 +183,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("int")
                         .HasColumnName("salary_id");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.HasKey("Id");
 
                     b.HasIndex("salary_id");
@@ -577,10 +250,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("return_date");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.HasKey("Id");
 
                     b.HasIndex("asset_id");
@@ -615,10 +284,6 @@ namespace ERP.Entities.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("description");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.Property<int>("total_quantity")
                         .HasColumnType("int")
@@ -672,10 +337,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("int")
                         .HasColumnName("radius_meters");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.HasKey("Id");
 
                     b.HasIndex("branch_id");
@@ -699,10 +360,6 @@ namespace ERP.Entities.Migrations
                     b.Property<int?>("machine_id")
                         .HasColumnType("int")
                         .HasColumnName("machine_id");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.Property<DateTime>("timestamp")
                         .HasColumnType("datetime2")
@@ -829,10 +486,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("int")
                         .HasColumnName("round_checkout_minutes");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.Property<string>("wifi_name")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -908,10 +561,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("source");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.Property<bool>("verified")
                         .HasColumnType("bit")
                         .HasColumnName("verified");
@@ -972,10 +621,6 @@ namespace ERP.Entities.Migrations
                     b.Property<bool>("require_face_out")
                         .HasColumnType("bit")
                         .HasColumnName("require_face_out");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.Property<bool>("track_location")
                         .HasColumnType("bit")
@@ -1112,10 +757,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("int")
                         .HasColumnName("employee_id");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.HasKey("Id");
 
                     b.HasIndex("employee_id");
@@ -1150,10 +791,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(200)")
                         .HasColumnName("name");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.HasKey("Id");
 
                     b.ToTable("Branches", (string)null);
@@ -1166,84 +803,6 @@ namespace ERP.Entities.Migrations
                             code = "HO",
                             name = "Trụ sở chính"
                         });
-                });
-
-            modelBuilder.Entity("ERP.Entities.Models.BreakGlassAccessLogs", b =>
-                {
-                    b.Property<int>("id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("id"));
-
-                    b.Property<string>("actions_performed")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("actions_performed");
-
-                    b.Property<DateTime?>("approval_time")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("approval_time");
-
-                    b.Property<int?>("approved_by_user_id")
-                        .HasColumnType("int")
-                        .HasColumnName("approved_by_user_id");
-
-                    b.Property<DateTime>("created_at")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("ip_address")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("ip_address");
-
-                    b.Property<bool>("is_account_locked_after")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_account_locked_after");
-
-                    b.Property<DateTime>("login_time")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("login_time");
-
-                    b.Property<DateTime?>("logout_time")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("logout_time");
-
-                    b.Property<string>("new_password_hash")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("new_password_hash");
-
-                    b.Property<DateTime?>("password_change_forced_at")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("password_change_forced_at");
-
-                    b.Property<bool>("password_changed_after_access")
-                        .HasColumnType("bit")
-                        .HasColumnName("password_changed_after_access");
-
-                    b.Property<string>("reason_for_access")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("reason_for_access");
-
-                    b.Property<string>("user_agent")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("user_agent");
-
-                    b.Property<int>("user_id")
-                        .HasColumnType("int")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("id");
-
-                    b.HasIndex("approved_by_user_id");
-
-                    b.HasIndex("user_id");
-
-                    b.ToTable("BreakGlassAccessLogs");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.Certificates", b =>
@@ -1271,10 +830,6 @@ namespace ERP.Entities.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("description");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -1429,10 +984,6 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.HasKey("Id");
 
                     b.ToTable("ContractTemplates");
@@ -1565,10 +1116,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("int")
                         .HasColumnName("template_id");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.HasKey("Id");
 
                     b.HasIndex("contract_type_id");
@@ -1679,10 +1226,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("status");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.Property<decimal>("total_work_hours")
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("total_work_hours");
@@ -1787,10 +1330,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("name");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.Property<string>("type")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -1830,10 +1369,6 @@ namespace ERP.Entities.Migrations
                     b.Property<int?>("parent_id")
                         .HasColumnType("int")
                         .HasColumnName("parent_id");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -1931,10 +1466,6 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("temporary_address");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -2181,10 +1712,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("note");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.HasKey("Id");
 
                     b.HasIndex("employee_id");
@@ -2268,10 +1795,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("start_date");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.HasKey("employee_id", "address_id");
 
                     b.HasIndex("address_id");
@@ -2300,10 +1823,6 @@ namespace ERP.Entities.Migrations
                     b.Property<DateTime?>("issue_date")
                         .HasColumnType("datetime2")
                         .HasColumnName("issue_date");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.HasKey("employee_id", "certificate_id");
 
@@ -2402,10 +1921,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("updated_at");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.HasKey("Id");
 
                     b.HasIndex("EmployeeId");
@@ -2495,10 +2010,6 @@ namespace ERP.Entities.Migrations
                     b.Property<int?>("level")
                         .HasColumnType("int")
                         .HasColumnName("level");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.HasKey("employee_id", "skill_id");
 
@@ -2722,10 +2233,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("tax_code");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.Property<string>("union_group")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
@@ -2893,10 +2400,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("height");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.Property<decimal?>("weight")
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("weight");
@@ -3004,10 +2507,6 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("social_insurance_no");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.Property<decimal?>("union_fee")
                         .HasColumnType("decimal(18,2)")
@@ -3276,10 +2775,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("status");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.HasKey("Id");
 
                     b.HasIndex("duration_type_id");
@@ -3385,70 +2880,6 @@ namespace ERP.Entities.Migrations
                     b.HasIndex("employee_id");
 
                     b.ToTable("LocationHistory", (string)null);
-                });
-
-            modelBuilder.Entity("ERP.Entities.Models.LoginAttempts", b =>
-                {
-                    b.Property<int>("id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("id"));
-
-                    b.Property<DateTime>("attempt_time")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("attempt_time");
-
-                    b.Property<DateTime>("created_at")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_at");
-
-                    b.Property<int>("failed_attempt_count")
-                        .HasColumnType("int")
-                        .HasColumnName("failed_attempt_count");
-
-                    b.Property<string>("ip_address")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("ip_address");
-
-                    b.Property<bool>("is_success")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_success");
-
-                    b.Property<DateTime?>("locked_until")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("locked_until");
-
-                    b.Property<string>("reason_for_failure")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
-                        .HasColumnName("reason_for_failure");
-
-                    b.Property<bool>("triggered_account_lockout")
-                        .HasColumnType("bit")
-                        .HasColumnName("triggered_account_lockout");
-
-                    b.Property<string>("user_agent")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("user_agent");
-
-                    b.Property<int>("user_id")
-                        .HasColumnType("int")
-                        .HasColumnName("user_id");
-
-                    b.Property<string>("username_attempted")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("username_attempted");
-
-                    b.HasKey("id");
-
-                    b.HasIndex("user_id");
-
-                    b.ToTable("LoginAttempts");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.MaritalStatuses", b =>
@@ -3575,10 +3006,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("int")
                         .HasColumnName("employee_id");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.Property<int>("total_absent_days")
                         .HasColumnType("int")
                         .HasColumnName("total_absent_days");
@@ -3682,10 +3109,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("status");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.HasKey("Id");
 
                     b.HasIndex("branch_id");
@@ -3721,10 +3144,6 @@ namespace ERP.Entities.Migrations
                     b.Property<int>("salary_id")
                         .HasColumnType("int")
                         .HasColumnName("salary_id");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -3807,10 +3226,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("int")
                         .HasColumnName("payroll_id");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.HasKey("Id");
 
                     b.HasIndex("deduction_id");
@@ -3853,10 +3268,6 @@ namespace ERP.Entities.Migrations
                     b.Property<int>("payroll_id")
                         .HasColumnType("int")
                         .HasColumnName("payroll_id");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -3901,10 +3312,6 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("status");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -3963,10 +3370,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("status");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.Property<decimal>("total_allowances")
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("total_allowances");
@@ -3982,80 +3385,6 @@ namespace ERP.Entities.Migrations
                     b.HasIndex("period_id");
 
                     b.ToTable("Payrolls", (string)null);
-                });
-
-            modelBuilder.Entity("ERP.Entities.Models.PermissionAuditLogs", b =>
-                {
-                    b.Property<int>("id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("id"));
-
-                    b.Property<string>("action_type")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("action_type");
-
-                    b.Property<DateTime>("created_at")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("ip_address")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("ip_address");
-
-                    b.Property<bool>("is_immutable")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_immutable");
-
-                    b.Property<int?>("old_role_id")
-                        .HasColumnType("int")
-                        .HasColumnName("old_role_id");
-
-                    b.Property<string>("old_scope_details")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("old_scope_details");
-
-                    b.Property<int>("performed_by_user_id")
-                        .HasColumnType("int")
-                        .HasColumnName("performed_by_user_id");
-
-                    b.Property<string>("reason")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("reason");
-
-                    b.Property<int?>("role_id")
-                        .HasColumnType("int")
-                        .HasColumnName("role_id");
-
-                    b.Property<string>("scope_details")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("scope_details");
-
-                    b.Property<int>("target_user_id")
-                        .HasColumnType("int")
-                        .HasColumnName("target_user_id");
-
-                    b.Property<string>("user_agent")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("user_agent");
-
-                    b.HasKey("id");
-
-                    b.HasIndex("performed_by_user_id");
-
-                    b.HasIndex("role_id");
-
-                    b.HasIndex("target_user_id");
-
-                    b.ToTable("PermissionAuditLogs");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.Permissions", b =>
@@ -4261,10 +3590,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("name");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.HasKey("Id");
 
                     b.ToTable("Regions", (string)null);
@@ -4326,10 +3651,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("int")
                         .HasColumnName("step_order");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.HasKey("Id");
 
                     b.HasIndex("request_id");
@@ -4365,10 +3686,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("int")
                         .HasColumnName("quantity");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.HasKey("Id");
 
                     b.HasIndex("borrow_id");
@@ -4401,10 +3718,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("start_date");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.HasKey("request_id");
 
                     b.ToTable("RequestBorrows", (string)null);
@@ -4420,10 +3733,6 @@ namespace ERP.Entities.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("reason");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.HasKey("request_id");
 
@@ -4452,10 +3761,6 @@ namespace ERP.Entities.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("reason");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.Property<string>("title")
                         .IsRequired()
@@ -4495,10 +3800,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("int")
                         .HasColumnName("expense_type_id");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.HasKey("request_id");
 
                     b.ToTable("RequestExpensePayments", (string)null);
@@ -4532,10 +3833,6 @@ namespace ERP.Entities.Migrations
                     b.Property<DateTime>("start_date")
                         .HasColumnType("datetime2")
                         .HasColumnName("start_date");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.HasKey("request_id");
 
@@ -4574,10 +3871,6 @@ namespace ERP.Entities.Migrations
                     b.Property<DateTime>("start_date")
                         .HasColumnType("datetime2")
                         .HasColumnName("start_date");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.HasKey("request_id");
 
@@ -4631,10 +3924,6 @@ namespace ERP.Entities.Migrations
                     b.Property<DateTime>("start_date")
                         .HasColumnType("datetime2")
                         .HasColumnName("start_date");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.HasKey("request_id");
 
@@ -4695,10 +3984,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("reason");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.Property<decimal>("total_amount")
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("total_amount");
@@ -4730,10 +4015,6 @@ namespace ERP.Entities.Migrations
                     b.Property<decimal>("quantity")
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("quantity");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.Property<decimal?>("total_amount")
                         .ValueGeneratedOnAddOrUpdate()
@@ -4772,10 +4053,6 @@ namespace ERP.Entities.Migrations
                     b.Property<decimal>("quantity")
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("quantity");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.Property<decimal?>("total_amount")
                         .ValueGeneratedOnAddOrUpdate()
@@ -4835,10 +4112,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("int")
                         .HasColumnName("request_type_id");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.Property<decimal>("total_amount")
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("total_amount");
@@ -4876,10 +4149,6 @@ namespace ERP.Entities.Migrations
                     b.Property<DateTime>("purchase_date")
                         .HasColumnType("datetime2")
                         .HasColumnName("purchase_date");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.Property<decimal>("total_amount")
                         .HasColumnType("decimal(18,2)")
@@ -4972,10 +4241,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("int")
                         .HasColumnName("request_type_id");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.Property<string>("title")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -5012,10 +4277,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("resignation_date");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.HasKey("request_id");
 
                     b.ToTable("RequestResignations", (string)null);
@@ -5043,10 +4304,6 @@ namespace ERP.Entities.Migrations
                     b.Property<int?>("reward_type_id")
                         .HasColumnType("int")
                         .HasColumnName("reward_type_id");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.Property<string>("title")
                         .IsRequired()
@@ -5083,10 +4340,6 @@ namespace ERP.Entities.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("reason");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.Property<string>("title")
                         .IsRequired()
@@ -5142,10 +4395,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("start_next_day");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.HasKey("request_id");
 
                     b.HasIndex("shift_id");
@@ -5171,10 +4420,6 @@ namespace ERP.Entities.Migrations
                     b.Property<int>("shift_id")
                         .HasColumnType("int")
                         .HasColumnName("shift_id");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.HasKey("request_id");
 
@@ -5206,152 +4451,11 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("int")
                         .HasColumnName("target_employee_id");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.HasKey("request_id");
 
                     b.HasIndex("shift_id");
 
                     b.ToTable("RequestShiftSwap", (string)null);
-                });
-
-            modelBuilder.Entity("ERP.Entities.Models.RequestTypeApprovers", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("approval_level")
-                        .HasColumnType("int")
-                        .HasColumnName("approval_level");
-
-                    b.Property<string>("approver_scope")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("approver_scope");
-
-                    b.Property<bool>("auto_approve_when_under_threshold")
-                        .HasColumnType("bit")
-                        .HasColumnName("auto_approve_when_under_threshold");
-
-                    b.Property<DateTime>("created_at")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("description")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("description");
-
-                    b.Property<bool>("is_active")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_active");
-
-                    b.Property<bool>("is_mandatory")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_mandatory");
-
-                    b.Property<decimal?>("max_approval_amount")
-                        .HasColumnType("decimal(18,2)")
-                        .HasColumnName("max_approval_amount");
-
-                    b.Property<int?>("max_approval_days")
-                        .HasColumnType("int")
-                        .HasColumnName("max_approval_days");
-
-                    b.Property<int>("request_type_id")
-                        .HasColumnType("int")
-                        .HasColumnName("request_type_id");
-
-                    b.Property<int>("role_id")
-                        .HasColumnType("int")
-                        .HasColumnName("role_id");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<DateTime?>("updated_at")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("request_type_id");
-
-                    b.HasIndex("role_id");
-
-                    b.ToTable("RequestTypeApprovers");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            approval_level = 1,
-                            approver_scope = "SAME_DEPARTMENT",
-                            auto_approve_when_under_threshold = false,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            is_mandatory = true,
-                            max_approval_days = 2,
-                            request_type_id = 1,
-                            role_id = 5
-                        },
-                        new
-                        {
-                            Id = 2,
-                            approval_level = 2,
-                            approver_scope = "SAME_BRANCH",
-                            auto_approve_when_under_threshold = false,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            is_mandatory = false,
-                            max_approval_days = 30,
-                            request_type_id = 1,
-                            role_id = 4
-                        },
-                        new
-                        {
-                            Id = 3,
-                            approval_level = 3,
-                            approver_scope = "SAME_TENANT",
-                            auto_approve_when_under_threshold = false,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            is_mandatory = false,
-                            request_type_id = 1,
-                            role_id = 2
-                        },
-                        new
-                        {
-                            Id = 4,
-                            approval_level = 1,
-                            approver_scope = "SAME_DEPARTMENT",
-                            auto_approve_when_under_threshold = false,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            is_mandatory = true,
-                            max_approval_days = 1,
-                            request_type_id = 2,
-                            role_id = 5
-                        },
-                        new
-                        {
-                            Id = 5,
-                            approval_level = 2,
-                            approver_scope = "SAME_BRANCH",
-                            auto_approve_when_under_threshold = false,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            is_mandatory = false,
-                            request_type_id = 2,
-                            role_id = 4
-                        });
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.RequestTypes", b =>
@@ -5495,10 +4599,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("start_date");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.Property<int?>("vehicle_type_id")
                         .HasColumnType("int")
                         .HasColumnName("vehicle_type_id");
@@ -5538,10 +4638,6 @@ namespace ERP.Entities.Migrations
                     b.Property<DateTime>("start_date")
                         .HasColumnType("datetime2")
                         .HasColumnName("start_date");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.HasKey("request_id");
 
@@ -5603,10 +4699,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("status");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.HasKey("Id");
 
                     b.HasIndex("approved_by");
@@ -5616,221 +4708,6 @@ namespace ERP.Entities.Migrations
                     b.HasIndex("request_type_id");
 
                     b.ToTable("Requests", (string)null);
-                });
-
-            modelBuilder.Entity("ERP.Entities.Models.ResourcePermissions", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("created_at")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("description")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("description");
-
-                    b.Property<bool>("is_active")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_active");
-
-                    b.Property<string>("resource_name")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("resource_name");
-
-                    b.Property<int>("role_id")
-                        .HasColumnType("int")
-                        .HasColumnName("role_id");
-
-                    b.Property<string>("scope_level")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("scope_level");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<DateTime?>("updated_at")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("role_id");
-
-                    b.ToTable("ResourcePermissions");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource_name = "Employees",
-                            role_id = 1,
-                            scope_level = "TENANT"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource_name = "Payroll",
-                            role_id = 1,
-                            scope_level = "TENANT"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource_name = "Attendance",
-                            role_id = 1,
-                            scope_level = "TENANT"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource_name = "Contracts",
-                            role_id = 1,
-                            scope_level = "TENANT"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource_name = "Employees",
-                            role_id = 2,
-                            scope_level = "TENANT"
-                        },
-                        new
-                        {
-                            Id = 6,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource_name = "Payroll",
-                            role_id = 2,
-                            scope_level = "TENANT"
-                        },
-                        new
-                        {
-                            Id = 7,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource_name = "Attendance",
-                            role_id = 2,
-                            scope_level = "TENANT"
-                        },
-                        new
-                        {
-                            Id = 8,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource_name = "Employees",
-                            role_id = 3,
-                            scope_level = "REGION"
-                        },
-                        new
-                        {
-                            Id = 9,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource_name = "Payroll",
-                            role_id = 3,
-                            scope_level = "REGION"
-                        },
-                        new
-                        {
-                            Id = 10,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource_name = "Attendance",
-                            role_id = 3,
-                            scope_level = "REGION"
-                        },
-                        new
-                        {
-                            Id = 11,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource_name = "Employees",
-                            role_id = 4,
-                            scope_level = "BRANCH"
-                        },
-                        new
-                        {
-                            Id = 12,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource_name = "Payroll",
-                            role_id = 4,
-                            scope_level = "BRANCH"
-                        },
-                        new
-                        {
-                            Id = 13,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource_name = "Attendance",
-                            role_id = 4,
-                            scope_level = "BRANCH"
-                        },
-                        new
-                        {
-                            Id = 14,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource_name = "Employees",
-                            role_id = 5,
-                            scope_level = "DEPARTMENT"
-                        },
-                        new
-                        {
-                            Id = 15,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource_name = "Attendance",
-                            role_id = 5,
-                            scope_level = "DEPARTMENT"
-                        },
-                        new
-                        {
-                            Id = 16,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource_name = "Payroll",
-                            role_id = 6,
-                            scope_level = "CROSS_REGION"
-                        },
-                        new
-                        {
-                            Id = 17,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource_name = "Attendance",
-                            role_id = 6,
-                            scope_level = "CROSS_REGION"
-                        },
-                        new
-                        {
-                            Id = 18,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            resource_name = "MyProfile",
-                            role_id = 7,
-                            scope_level = "PERSONAL"
-                        });
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.RewardTypes", b =>
@@ -5930,128 +4807,6 @@ namespace ERP.Entities.Migrations
                     b.ToTable("RolePermissions", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Entities.Models.RoleScopes", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("created_at")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("cross_region_modules")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("cross_region_modules");
-
-                    b.Property<string>("description")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("description");
-
-                    b.Property<bool>("is_active")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_active");
-
-                    b.Property<bool>("is_hierarchical")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_hierarchical");
-
-                    b.Property<int>("role_id")
-                        .HasColumnType("int")
-                        .HasColumnName("role_id");
-
-                    b.Property<string>("scope_level")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("scope_level");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<DateTime?>("updated_at")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("role_id");
-
-                    b.ToTable("RoleScopes");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            is_hierarchical = false,
-                            role_id = 1,
-                            scope_level = "TENANT"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            is_hierarchical = true,
-                            role_id = 2,
-                            scope_level = "TENANT"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            is_hierarchical = true,
-                            role_id = 3,
-                            scope_level = "REGION"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            is_hierarchical = true,
-                            role_id = 4,
-                            scope_level = "BRANCH"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            is_hierarchical = true,
-                            role_id = 5,
-                            scope_level = "DEPARTMENT"
-                        },
-                        new
-                        {
-                            Id = 6,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            cross_region_modules = "Payroll,Attendance",
-                            is_active = true,
-                            is_hierarchical = false,
-                            role_id = 6,
-                            scope_level = "CROSS_REGION"
-                        },
-                        new
-                        {
-                            Id = 7,
-                            created_at = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            is_active = true,
-                            is_hierarchical = false,
-                            role_id = 7,
-                            scope_level = "PERSONAL"
-                        });
-                });
-
             modelBuilder.Entity("ERP.Entities.Models.Roles", b =>
                 {
                     b.Property<int>("Id")
@@ -6079,19 +4834,11 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("is_active");
 
-                    b.Property<bool>("is_system_role")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_system_role");
-
                     b.Property<string>("name")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("name");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -6103,70 +4850,63 @@ namespace ERP.Entities.Migrations
                             Id = 1,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            description = "System Administrator",
+                            description = "Quản trị hệ thống cao nhất",
                             is_active = true,
-                            is_system_role = true,
-                            name = "Admin"
+                            name = "Quản trị"
                         },
                         new
                         {
                             Id = 2,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            description = "Executive Board / Manager",
+                            description = "Thành viên Ban giám đốc",
                             is_active = true,
-                            is_system_role = true,
-                            name = "Manager"
+                            name = "Ban giám đốc"
                         },
                         new
                         {
                             Id = 3,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            description = "Regional Manager",
+                            description = "Quản lý theo vùng/miền",
                             is_active = true,
-                            is_system_role = true,
-                            name = "Regional Manager"
+                            name = "Quản lý vùng"
                         },
                         new
                         {
                             Id = 4,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            description = "Branch Manager",
+                            description = "Quản lý tại chi nhánh",
                             is_active = true,
-                            is_system_role = true,
-                            name = "Branch Manager"
+                            name = "Quản lý chi nhánh"
                         },
                         new
                         {
                             Id = 5,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            description = "Department/Unit Head",
+                            description = "Quản lý phòng ban/bộ phận",
                             is_active = true,
-                            is_system_role = true,
-                            name = "Department Head"
+                            name = "Quản lý bộ phận"
                         },
                         new
                         {
                             Id = 6,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            description = "Module Specialist Admin",
+                            description = "Quản trị các phân hệ nghiệp vụ",
                             is_active = true,
-                            is_system_role = true,
-                            name = "Module Admin"
+                            name = "Quản trị phân hệ"
                         },
                         new
                         {
                             Id = 7,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            description = "Regular Employee Staff",
+                            description = "Nhân viên chính thức",
                             is_active = true,
-                            is_system_role = true,
-                            name = "Staff"
+                            name = "Nhân viên"
                         });
                 });
 
@@ -6198,10 +4938,6 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("salary_grade");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -6244,10 +4980,6 @@ namespace ERP.Entities.Migrations
                     b.Property<int>("job_title_id")
                         .HasColumnType("int")
                         .HasColumnName("job_title_id");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -6307,10 +5039,6 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("status");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -6406,10 +5134,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("int")
                         .HasColumnName("template_id");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.HasKey("Id");
 
                     b.HasIndex("shift_id");
@@ -6454,10 +5178,6 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("template_name");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -6522,10 +5242,6 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("template_name");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -6667,10 +5383,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("time")
                         .HasColumnName("start_time");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.HasKey("Id");
 
                     b.HasIndex("shift_type_id");
@@ -6753,10 +5465,6 @@ namespace ERP.Entities.Migrations
                     b.Property<decimal>("tax_rate")
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("tax_rate");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.Property<decimal?>("to_income")
                         .HasColumnType("decimal(18,2)")
@@ -6849,10 +5557,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("name");
 
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
                     b.HasKey("Id");
 
                     b.ToTable("TaxTypes", (string)null);
@@ -6865,48 +5569,6 @@ namespace ERP.Entities.Migrations
                             is_active = true,
                             name = "Thuế thu nhập cá nhân"
                         });
-                });
-
-            modelBuilder.Entity("ERP.Entities.Models.Tenants", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("updated_at");
-
-                    b.Property<string>("code")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("code");
-
-                    b.Property<bool>("is_active")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_active");
-
-                    b.Property<string>("name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)")
-                        .HasColumnName("name");
-
-                    b.Property<DateTime?>("subscription_expiry")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("subscription_expiry");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Tenants");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.TimeMachines", b =>
@@ -7003,57 +5665,11 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("updated_at");
 
-                    b.Property<int?>("assigned_by_user_id")
-                        .HasColumnType("int")
-                        .HasColumnName("assigned_by_user_id");
-
-                    b.Property<string>("assignment_reason")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("assignment_reason");
-
-                    b.Property<int?>("branch_id")
-                        .HasColumnType("int")
-                        .HasColumnName("branch_id");
-
-                    b.Property<int?>("department_id")
-                        .HasColumnType("int")
-                        .HasColumnName("department_id");
-
-                    b.Property<int>("id")
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
                     b.Property<bool>("is_active")
                         .HasColumnType("bit")
                         .HasColumnName("is_active");
 
-                    b.Property<int?>("region_id")
-                        .HasColumnType("int")
-                        .HasColumnName("region_id");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<DateTime>("valid_from")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("valid_from");
-
-                    b.Property<DateTime?>("valid_to")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("valid_to");
-
                     b.HasKey("user_id", "role_id");
-
-                    b.HasIndex("assigned_by_user_id");
-
-                    b.HasIndex("branch_id");
-
-                    b.HasIndex("department_id");
-
-                    b.HasIndex("region_id");
 
                     b.HasIndex("role_id");
 
@@ -7081,59 +5697,15 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("int")
                         .HasColumnName("employee_id");
 
-                    b.Property<int>("failed_login_count")
-                        .HasColumnType("int")
-                        .HasColumnName("failed_login_count");
-
                     b.Property<string>("firebase_uid")
                         .IsRequired()
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)")
                         .HasColumnName("firebase_uid");
 
-                    b.Property<bool>("force_password_change_after_emergency")
-                        .HasColumnType("bit")
-                        .HasColumnName("force_password_change_after_emergency");
-
                     b.Property<bool>("is_active")
                         .HasColumnType("bit")
                         .HasColumnName("is_active");
-
-                    b.Property<bool>("is_break_glass_account")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_break_glass_account");
-
-                    b.Property<bool>("is_locked")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_locked");
-
-                    b.Property<DateTime?>("last_emergency_access_at")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("last_emergency_access_at");
-
-                    b.Property<DateTime?>("last_failed_login_time")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("last_failed_login_time");
-
-                    b.Property<DateTime?>("last_password_change")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("last_password_change");
-
-                    b.Property<DateTime?>("locked_until")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("locked_until");
-
-                    b.Property<DateTime?>("password_expires_at")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("password_expires_at");
-
-                    b.Property<bool>("requires_password_change")
-                        .HasColumnType("bit")
-                        .HasColumnName("requires_password_change");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
 
                     b.Property<string>("username")
                         .IsRequired()
@@ -7244,17 +5816,6 @@ namespace ERP.Entities.Migrations
                     b.HasIndex("employee_id");
 
                     b.ToTable("WorkHistory", (string)null);
-                });
-
-            modelBuilder.Entity("ERP.Entities.Models.ActionPermissions", b =>
-                {
-                    b.HasOne("ERP.Entities.Models.Roles", "Role")
-                        .WithMany()
-                        .HasForeignKey("role_id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Role");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.Allowances", b =>
@@ -7390,24 +5951,6 @@ namespace ERP.Entities.Migrations
                         .IsRequired();
 
                     b.Navigation("Employee");
-                });
-
-            modelBuilder.Entity("ERP.Entities.Models.BreakGlassAccessLogs", b =>
-                {
-                    b.HasOne("ERP.Entities.Models.Users", "ApprovedByUser")
-                        .WithMany()
-                        .HasForeignKey("approved_by_user_id")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("ERP.Entities.Models.Users", "User")
-                        .WithMany()
-                        .HasForeignKey("user_id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("ApprovedByUser");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.ContractSignerPositions", b =>
@@ -7843,17 +6386,6 @@ namespace ERP.Entities.Migrations
                     b.Navigation("Employee");
                 });
 
-            modelBuilder.Entity("ERP.Entities.Models.LoginAttempts", b =>
-                {
-                    b.HasOne("ERP.Entities.Models.Users", "User")
-                        .WithMany()
-                        .HasForeignKey("user_id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("ERP.Entities.Models.MonthlyAttendanceSummary", b =>
                 {
                     b.HasOne("ERP.Entities.Models.Employees", "Employee")
@@ -7958,32 +6490,6 @@ namespace ERP.Entities.Migrations
                     b.Navigation("Employee");
 
                     b.Navigation("Period");
-                });
-
-            modelBuilder.Entity("ERP.Entities.Models.PermissionAuditLogs", b =>
-                {
-                    b.HasOne("ERP.Entities.Models.Users", "PerformedByUser")
-                        .WithMany()
-                        .HasForeignKey("performed_by_user_id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("ERP.Entities.Models.Roles", "Role")
-                        .WithMany()
-                        .HasForeignKey("role_id")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("ERP.Entities.Models.Users", "TargetUser")
-                        .WithMany()
-                        .HasForeignKey("target_user_id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("PerformedByUser");
-
-                    b.Navigation("Role");
-
-                    b.Navigation("TargetUser");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.PromotionHistory", b =>
@@ -8358,25 +6864,6 @@ namespace ERP.Entities.Migrations
                     b.Navigation("Shift");
                 });
 
-            modelBuilder.Entity("ERP.Entities.Models.RequestTypeApprovers", b =>
-                {
-                    b.HasOne("ERP.Entities.Models.RequestTypes", "RequestType")
-                        .WithMany()
-                        .HasForeignKey("request_type_id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("ERP.Entities.Models.Roles", "Role")
-                        .WithMany()
-                        .HasForeignKey("role_id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("RequestType");
-
-                    b.Navigation("Role");
-                });
-
             modelBuilder.Entity("ERP.Entities.Models.RequestVehicleUses", b =>
                 {
                     b.HasOne("ERP.Entities.Models.Requests", "Request")
@@ -8439,17 +6926,6 @@ namespace ERP.Entities.Migrations
                     b.Navigation("RequestType");
                 });
 
-            modelBuilder.Entity("ERP.Entities.Models.ResourcePermissions", b =>
-                {
-                    b.HasOne("ERP.Entities.Models.Roles", "Role")
-                        .WithMany()
-                        .HasForeignKey("role_id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Role");
-                });
-
             modelBuilder.Entity("ERP.Entities.Models.RolePermissions", b =>
                 {
                     b.HasOne("ERP.Entities.Models.Permissions", "Permission")
@@ -8465,17 +6941,6 @@ namespace ERP.Entities.Migrations
                         .IsRequired();
 
                     b.Navigation("Permission");
-
-                    b.Navigation("Role");
-                });
-
-            modelBuilder.Entity("ERP.Entities.Models.RoleScopes", b =>
-                {
-                    b.HasOne("ERP.Entities.Models.Roles", "Role")
-                        .WithMany()
-                        .HasForeignKey("role_id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
 
                     b.Navigation("Role");
                 });
@@ -8581,26 +7046,6 @@ namespace ERP.Entities.Migrations
 
             modelBuilder.Entity("ERP.Entities.Models.UserRoles", b =>
                 {
-                    b.HasOne("ERP.Entities.Models.Users", "AssignedByUser")
-                        .WithMany()
-                        .HasForeignKey("assigned_by_user_id")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("ERP.Entities.Models.Branches", "Branch")
-                        .WithMany()
-                        .HasForeignKey("branch_id")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("ERP.Entities.Models.Departments", "Department")
-                        .WithMany()
-                        .HasForeignKey("department_id")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("ERP.Entities.Models.Regions", "Region")
-                        .WithMany()
-                        .HasForeignKey("region_id")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("ERP.Entities.Models.Roles", "Role")
                         .WithMany()
                         .HasForeignKey("role_id")
@@ -8612,14 +7057,6 @@ namespace ERP.Entities.Migrations
                         .HasForeignKey("user_id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("AssignedByUser");
-
-                    b.Navigation("Branch");
-
-                    b.Navigation("Department");
-
-                    b.Navigation("Region");
 
                     b.Navigation("Role");
 

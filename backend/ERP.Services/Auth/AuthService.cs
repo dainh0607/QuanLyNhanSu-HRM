@@ -1096,9 +1096,36 @@ namespace ERP.Services.Auth
             }
 
             if (IsMasterEmail(primaryEmail) &&
-                !roles.Contains(AuthSecurityConstants.RoleSuperAdmin, StringComparer.OrdinalIgnoreCase))
+                !roles.Contains(AuthSecurityConstants.RoleAdmin, StringComparer.OrdinalIgnoreCase))
             {
-                roles.Insert(0, AuthSecurityConstants.RoleSuperAdmin);
+                roles.Insert(0, AuthSecurityConstants.RoleAdmin);
+            }
+
+            // Calculate Scope Level based on roles
+            string scopeLevel = "PERSONAL";
+            bool isSystemAdmin = false;
+
+            if (roles.Contains(AuthSecurityConstants.RoleAdmin, StringComparer.OrdinalIgnoreCase))
+            {
+                scopeLevel = "TENANT";
+                isSystemAdmin = true;
+            }
+            else if (roles.Contains(AuthSecurityConstants.RoleDirector, StringComparer.OrdinalIgnoreCase) || 
+                     roles.Contains(AuthSecurityConstants.RoleModuleAdmin, StringComparer.OrdinalIgnoreCase))
+            {
+                scopeLevel = "TENANT";
+            }
+            else if (roles.Contains(AuthSecurityConstants.RoleRegionManager, StringComparer.OrdinalIgnoreCase))
+            {
+                scopeLevel = "REGION";
+            }
+            else if (roles.Contains(AuthSecurityConstants.RoleBranchManager, StringComparer.OrdinalIgnoreCase))
+            {
+                scopeLevel = "BRANCH";
+            }
+            else if (roles.Contains(AuthSecurityConstants.RoleDeptManager, StringComparer.OrdinalIgnoreCase))
+            {
+                scopeLevel = "DEPARTMENT";
             }
 
             return new UserInfoDto
@@ -1111,7 +1138,12 @@ namespace ERP.Services.Auth
                 EmployeeCode = localUser.Employee?.employee_code ?? string.Empty,
                 PhoneNumber = localUser.Employee?.phone ?? string.Empty,
                 IsActive = localUser.is_active,
-                Roles = roles
+                Roles = roles,
+                ScopeLevel = scopeLevel,
+                RegionId = localUser.Employee?.region_id,
+                BranchId = localUser.Employee?.branch_id,
+                DepartmentId = localUser.Employee?.department_id,
+                IsSystemAdmin = isSystemAdmin
             };
         }
 
@@ -1124,10 +1156,9 @@ namespace ERP.Services.Auth
 
             var allowedRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                AuthSecurityConstants.RoleSuperAdmin,
+                AuthSecurityConstants.RoleAdmin,
                 "Admin",
                 "Manager",
-                AuthSecurityConstants.RoleAdmin,
                 AuthSecurityConstants.RoleDirector,
                 AuthSecurityConstants.RoleRegionManager,
                 AuthSecurityConstants.RoleBranchManager,
@@ -1202,7 +1233,12 @@ namespace ERP.Services.Auth
                 // FIX: Ensure tenant_id is always set to a valid number (0 as fallback for null)
                 new("tenant_id", user.TenantId?.ToString() ?? "0"),
                 new("EmployeeId", user.EmployeeId.ToString()),
-                new("EmployeeCode", user.EmployeeCode ?? string.Empty)
+                new("EmployeeCode", user.EmployeeCode ?? string.Empty),
+                new("scope_level", user.ScopeLevel ?? "PERSONAL"),
+                new("region_id", user.RegionId?.ToString() ?? ""),
+                new("branch_id", user.BranchId?.ToString() ?? ""),
+                new("department_id", user.DepartmentId?.ToString() ?? ""),
+                new("is_system_admin", user.IsSystemAdmin.ToString().ToLower())
             };
         }
 
@@ -1368,7 +1404,7 @@ namespace ERP.Services.Auth
             {
                 return await _context.UserRoles
                     .AnyAsync(ur => ur.is_active && 
-                        (ur.Role.name == AuthSecurityConstants.RoleSuperAdmin || ur.Role.name == "Quản trị" || ur.role_id == 1));
+                        (ur.Role.name == AuthSecurityConstants.RoleAdmin || ur.Role.name == "Quản trị" || ur.role_id == 1));
             }
             catch (Exception ex)
             {
@@ -1393,12 +1429,12 @@ namespace ERP.Services.Auth
 
                 _logger.LogInformation("Starting system bootstrap for {Email}", masterEmail);
 
-                var superAdminRole = await _context.Roles.FirstOrDefaultAsync(r => r.name == AuthSecurityConstants.RoleSuperAdmin);
+                var superAdminRole = await _context.Roles.FirstOrDefaultAsync(r => r.name == AuthSecurityConstants.RoleAdmin);
                 if (superAdminRole == null)
                 {
                     superAdminRole = new Roles 
                     { 
-                        name = AuthSecurityConstants.RoleSuperAdmin,
+                        name = AuthSecurityConstants.RoleAdmin,
                         description = "Hệ thống quản trị cao cấp (Super Admin)",
                         is_active = true,
                         CreatedAt = DateTime.UtcNow,

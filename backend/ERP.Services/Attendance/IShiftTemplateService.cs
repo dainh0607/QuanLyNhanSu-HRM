@@ -7,5 +7,8 @@ namespace ERP.Services.Attendance
     {
         Task<int> CreateTemplateAsync(ShiftTemplateCreateDto dto);
         Task<IEnumerable<ShiftTemplateDto>> GetAllTemplatesAsync();
+        Task<ShiftTemplateDto?> GetTemplateByIdAsync(int id);
+        Task<bool> UpdateTemplateAsync(int id, ShiftTemplateCreateDto dto);
+        Task<bool> DeleteTemplateAsync(int id);
     }
 }

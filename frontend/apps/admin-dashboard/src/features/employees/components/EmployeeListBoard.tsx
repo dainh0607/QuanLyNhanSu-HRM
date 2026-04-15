@@ -269,7 +269,9 @@ const EmployeeListBoard: React.FC<EmployeeListProps> = ({ onSelectEmployee }) =>
         isOpen={isBulkAddModalOpen}
         onClose={() => setIsBulkAddModalOpen(false)}
         defaultBranchId={listFilters.branchId}
-        onSuccess={() => {
+        onSuccess={(createdCount) => {
+          setIsBulkAddModalOpen(false);
+          showToast(`Đã thêm thành công ${createdCount} nhân viên`, 'success');
           void fetchEmployees();
         }}
       />

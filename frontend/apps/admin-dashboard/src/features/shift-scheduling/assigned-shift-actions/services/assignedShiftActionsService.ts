@@ -1,10 +1,8 @@
 import { authService } from "../../../../services/authService";
 import { API_URL, requestJson } from "../../../../services/employee/core";
-import { registerRuntimeShiftTemplate } from "../../open-shift/openShiftRuntimeStore";
-import type { AttendanceStatus } from "../../types";
+import { shiftSchedulingApi } from "../../services/shiftSchedulingApi";
 import { formatTime, getHoursBetween, parseIsoDate } from "../../utils/week";
 import {
-  getLeaveRequestAttendanceStatus,
   getLeaveTimeRange,
   isLeaveRequestAutoApproved,
 } from "../leave-request/utils";
@@ -18,21 +16,43 @@ import type {
   ShiftMapPoint,
 } from "../types";
 
-const MOBILE_IMAGE_PLACEHOLDER =
-  "data:image/svg+xml;utf8," +
-  encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="40" height="40" rx="10" fill="#DBEAFE"/><circle cx="20" cy="15" r="6" fill="#60A5FA"/><path d="M10 31c2.4-5 7-8 10-8s7.6 3 10 8" fill="#93C5FD"/></svg>',
-  );
-
 interface AttendanceRecordApiItem {
+  id?: number;
   Id?: number;
+  employeeId?: number;
   EmployeeId?: number;
+  employeeName?: string;
   EmployeeName?: string;
+  recordTime?: string;
   RecordTime?: string;
+  recordType?: string;
   RecordType?: string;
+  source?: string;
   Source?: string;
+  note?: string;
   Note?: string;
+  verified?: boolean;
   Verified?: boolean;
+}
+
+interface ShiftAttendanceDetailApiItem {
+  id?: number;
+  Id?: number;
+  shiftName?: string;
+  ShiftName?: string;
+  startTime?: string;
+  StartTime?: string;
+  endTime?: string;
+  EndTime?: string;
+  color?: string | null;
+  Color?: string | null;
+}
+
+interface ShiftAttendanceDetailApiResponse {
+  shift?: ShiftAttendanceDetailApiItem | null;
+  Shift?: ShiftAttendanceDetailApiItem | null;
+  attendance?: AttendanceRecordApiItem[];
+  Attendance?: AttendanceRecordApiItem[];
 }
 
 interface PaginatedApiResponse<T> {
@@ -130,19 +150,30 @@ const sameDate = (left: string, right: string): boolean => {
 const getContextKey = (context: AssignedShiftActionContext): string =>
   `${context.employee.id}-${context.shift.sourceId ?? context.shift.id}-${context.shift.date}`;
 
+const getFieldValue = <T>(
+  item: Record<string, unknown>,
+  camelKey: string,
+  pascalKey: string,
+): T | undefined =>
+  (item[camelKey] as T | undefined) ?? (item[pascalKey] as T | undefined);
+
 const toHistoryItem = (record: AttendanceRecordApiItem): ShiftAttendanceHistoryItem | null => {
-  if (!record.RecordTime) {
+  const timestamp = getFieldValue<string>(record as Record<string, unknown>, "recordTime", "RecordTime");
+  if (!timestamp) {
     return null;
   }
 
   return {
-    id: String(record.Id ?? `${record.RecordType}-${record.RecordTime}`),
-    timestamp: record.RecordTime,
-    recordType: record.RecordType ?? "IN",
-    deviceType: record.Source ?? "Web",
+    id: String(
+      getFieldValue<number>(record as Record<string, unknown>, "id", "Id") ??
+        `${getFieldValue<string>(record as Record<string, unknown>, "recordType", "RecordType")}-${timestamp}`,
+    ),
+    timestamp,
+    recordType: getFieldValue<string>(record as Record<string, unknown>, "recordType", "RecordType") ?? "IN",
+    deviceType: getFieldValue<string>(record as Record<string, unknown>, "source", "Source") ?? "Web",
     imageUrl: null,
-    reason: record.Note ?? null,
-    isPinned: Boolean(record.Verified),
+    reason: getFieldValue<string>(record as Record<string, unknown>, "note", "Note") ?? null,
+    isPinned: Boolean(getFieldValue<boolean>(record as Record<string, unknown>, "verified", "Verified")),
   };
 };
 
@@ -232,9 +263,25 @@ export const assignedShiftActionsService = {
   async getShiftAssignmentDetail(
     context: AssignedShiftActionContext,
   ): Promise<ShiftAssignmentDetail> {
-    const history = await loadAttendanceHistory(context.employee.id);
-    const datedHistory = filterHistoryByShiftDate(history, context.shift.date);
-    
+    let datedHistory: ShiftAttendanceHistoryItem[] = [];
+
+    try {
+      const response = await shiftSchedulingApi.getShiftAttendanceDetail(
+        context.employee.id,
+        context.shift.date,
+      ) as ShiftAttendanceDetailApiResponse;
+
+      datedHistory = sortHistoryAscending(
+        (response.attendance ?? response.Attendance ?? [])
+          .map((record) => toHistoryItem(record))
+          .filter((item): item is ShiftAttendanceHistoryItem => Boolean(item)),
+      );
+    } catch (error) {
+      console.warn("Shift detail endpoint is unavailable, falling back to attendance history.", error);
+      const history = await loadAttendanceHistory(context.employee.id);
+      datedHistory = filterHistoryByShiftDate(history, context.shift.date);
+    }
+
     const currentUser = authService.getCurrentUser();
     const canEditTime =
       !currentUser ||
@@ -262,7 +309,10 @@ export const assignedShiftActionsService = {
   async getAvailableShifts(
     context: AssignedShiftActionContext,
   ): Promise<AvailableShiftOption[]> {
-    const url = new URL(`${API_URL}/shifts`);
+    const response = await shiftSchedulingApi.getShiftOptions({
+      branchId: context.shift.branchId,
+      isActive: true,
+    }); /*
     if (context.shift.branchId) {
       url.searchParams.set("branchId", String(context.shift.branchId));
     }
@@ -274,6 +324,7 @@ export const assignedShiftActionsService = {
       "Không thể tải danh sách ca làm",
     );
 
+    */
     return response
       .map((item) => mapShiftOption(item))
       .filter((item): item is AvailableShiftOption => Boolean(item));

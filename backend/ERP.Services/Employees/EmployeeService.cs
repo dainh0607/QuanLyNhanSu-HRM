@@ -28,6 +28,7 @@ namespace ERP.Services.Employees
         private readonly ILogger<EmployeeService> _logger;
         private readonly ICurrentUserContext _userContext;
         private readonly IAuthorizationService _authService;
+        private readonly IScopedQueryHelper _scopedQueryHelper;
 
         public EmployeeService(
             IUnitOfWork unitOfWork, 
@@ -35,7 +36,8 @@ namespace ERP.Services.Employees
             IUserService userService, 
             ILogger<EmployeeService> logger,
             ICurrentUserContext userContext,
-            IAuthorizationService authService)
+            IAuthorizationService authService,
+            IScopedQueryHelper scopedQueryHelper)
         {
             _unitOfWork = unitOfWork;
             _firebaseService = firebaseService;
@@ -43,6 +45,7 @@ namespace ERP.Services.Employees
             _logger = logger;
             _userContext = userContext;
             _authService = authService;
+            _scopedQueryHelper = scopedQueryHelper;
         }
 
         private async Task EnsureEmployeeAccess(int employeeId)
@@ -825,7 +828,7 @@ namespace ERP.Services.Employees
         {
             var pageNumber = filter.PageNumber > 0 ? filter.PageNumber : 1;
             var pageSize = filter.PageSize > 0 ? filter.PageSize : 10;
-            var filteredQuery = BuildFilteredEmployeeQuery(filter);
+            var filteredQuery = await BuildFilteredEmployeeQueryAsync(filter);
             var count = await filteredQuery.CountAsync();
 
             var items = await ApplyEmployeeSorting(filteredQuery, filter)
@@ -851,7 +854,8 @@ namespace ERP.Services.Employees
 
         public async Task<byte[]> ExportEmployeesToCsvAsync(EmployeeFilterDto filter, IEnumerable<string>? columns = null)
         {
-            var employees = await ApplyEmployeeSorting(BuildFilteredEmployeeQuery(filter), filter)
+            var filteredQuery = await BuildFilteredEmployeeQueryAsync(filter);
+            var employees = await ApplyEmployeeSorting(filteredQuery, filter)
                 .Include(e => e.Region)
                 .Include(e => e.Branch)
                 .Include(e => e.Department)
@@ -962,6 +966,121 @@ namespace ERP.Services.Employees
             };
         }
 
+        private async Task<IQueryable<EmployeeEntity>> BuildFilteredEmployeeQueryAsync(EmployeeFilterDto filter)
+        {
+            var query = _unitOfWork.Repository<EmployeeEntity>().AsQueryable();
+
+            // FIX #7: Apply scope-based filtering to protect data
+            var currentUserId = _userContext.UserId ?? 0;
+            var tenantId = _userContext.TenantId ?? 0;
+            
+            if (currentUserId > 0 && tenantId > 0)
+            {
+                // Apply scope-based filtering using the ScopedQueryHelper
+                query = await _scopedQueryHelper.ApplyEmployeeScopeFilter(query, currentUserId, tenantId);
+            }
+
+            // Remove duplicate line that was in the original code
+            if (!string.IsNullOrWhiteSpace(filter.SearchTerm))
+            {
+                query = query.Where(e =>
+                    (e.full_name != null && e.full_name.Contains(filter.SearchTerm)) ||
+                    (e.email != null && e.email.Contains(filter.SearchTerm)) ||
+                    e.employee_code.Contains(filter.SearchTerm));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter.EmployeeCode))
+                query = query.Where(e => e.employee_code.Contains(filter.EmployeeCode));
+
+            if (!string.IsNullOrWhiteSpace(filter.FullName))
+                query = query.Where(e => e.full_name != null && e.full_name.Contains(filter.FullName));
+
+            if (!string.IsNullOrWhiteSpace(filter.Email))
+                query = query.Where(e => e.email != null && e.email.Contains(filter.Email));
+
+            if (!string.IsNullOrWhiteSpace(filter.Phone))
+                query = query.Where(e => e.phone != null && e.phone.Contains(filter.Phone));
+
+            if (!string.IsNullOrWhiteSpace(filter.IdentityNumber))
+                query = query.Where(e => e.identity_number != null && e.identity_number.Contains(filter.IdentityNumber));
+
+            if (!string.IsNullOrWhiteSpace(filter.TaxCode))
+                query = query.Where(e => e.tax_code != null && e.tax_code.Contains(filter.TaxCode));
+
+            if (!string.IsNullOrWhiteSpace(filter.GenderCode))
+                query = query.Where(e => e.gender_code == filter.GenderCode);
+
+            if (!string.IsNullOrWhiteSpace(filter.MaritalStatusCode))
+                query = query.Where(e => e.marital_status_code == filter.MaritalStatusCode);
+
+            if (filter.DepartmentId.HasValue)
+                query = query.Where(e => e.department_id == filter.DepartmentId);
+
+            if (filter.BranchId.HasValue)
+                query = query.Where(e => e.branch_id == filter.BranchId);
+
+            if (filter.JobTitleId.HasValue)
+                query = query.Where(e => e.job_title_id == filter.JobTitleId);
+
+            if (filter.AccessGroupId.HasValue)
+            {
+                var employeeIdsByAccessGroup = _unitOfWork.Repository<Users>().AsQueryable()
+                    .Where(user => user.is_active)
+                    .Join(
+                        _unitOfWork.Repository<UserRoles>().AsQueryable().Where(userRole => userRole.is_active),
+                        user => user.Id,
+                        userRole => userRole.user_id,
+                        (user, userRole) => new { user.employee_id, userRole.role_id })
+                    .Where(item => item.role_id == filter.AccessGroupId.Value)
+                    .Select(item => item.employee_id);
+
+                query = query.Where(e => employeeIdsByAccessGroup.Contains(e.Id));
+            }
+
+            if (filter.ManagerId.HasValue)
+                query = query.Where(e => e.manager_id == filter.ManagerId);
+
+            if (filter.RegionId.HasValue)
+                query = query.Where(e => e.region_id == filter.RegionId);
+
+            var normalizedStatus = filter.Status?.Trim().ToLowerInvariant();
+            var today = DateTime.Today;
+            if (normalizedStatus == "active")
+            {
+                query = query.Where(e => e.is_active && !e.is_resigned && (e.start_date == null || e.start_date <= today));
+            }
+            else if (normalizedStatus == "resigned")
+            {
+                query = query.Where(e => e.is_resigned);
+            }
+            else if (normalizedStatus == "inactive")
+            {
+                query = query.Where(e => !e.is_active && !e.is_resigned);
+            }
+            else if (normalizedStatus == "notstarted")
+            {
+                query = query.Where(e => e.start_date > today && !e.is_resigned);
+            }
+
+            if (filter.StartDateFrom.HasValue)
+                query = query.Where(e => e.start_date >= filter.StartDateFrom.Value);
+
+            if (filter.StartDateTo.HasValue)
+                query = query.Where(e => e.start_date <= filter.StartDateTo.Value);
+
+            if (filter.IsDepartmentHead.HasValue)
+                query = query.Where(e => e.is_department_head == filter.IsDepartmentHead.Value);
+
+            if (!string.IsNullOrWhiteSpace(filter.WorkType))
+                query = query.Where(e => e.work_type == filter.WorkType);
+
+            return query;
+        }
+
+        /// <summary>
+        /// Kept for backward compatibility, but should be deprecated in favor of BuildFilteredEmployeeQueryAsync
+        /// </summary>
+        [Obsolete("Use BuildFilteredEmployeeQueryAsync instead")]
         private IQueryable<EmployeeEntity> BuildFilteredEmployeeQuery(EmployeeFilterDto filter)
         {
             var query = _unitOfWork.Repository<EmployeeEntity>().AsQueryable();

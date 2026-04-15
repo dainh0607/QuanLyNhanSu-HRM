@@ -6,7 +6,7 @@
 -- In PRODUCTION: Run with proper backup and testing first
 -- ========================================================================
 
-USE [YourDatabaseName];
+USE NexaHRM;
 GO
 
 -- ========================================================================

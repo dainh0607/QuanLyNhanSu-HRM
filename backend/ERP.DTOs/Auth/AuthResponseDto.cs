@@ -23,5 +23,10 @@ namespace ERP.DTOs.Auth
         public string PhotoUrl { get; set; }
         public bool IsActive { get; set; }
         public List<string> Roles { get; set; }
+        public string ScopeLevel { get; set; }
+        public int? RegionId { get; set; }
+        public int? BranchId { get; set; }
+        public int? DepartmentId { get; set; }
+        public bool IsSystemAdmin { get; set; }
     }
 }
