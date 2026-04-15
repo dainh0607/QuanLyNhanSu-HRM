@@ -85,6 +85,23 @@ namespace ERP.API.Controllers
             }
         }
 
+        [HttpPost("copy")]
+        [HasPermission("Attendance", "Update")]
+        public async Task<IActionResult> CopyAssignments([FromBody] ERP.DTOs.Attendance.ShiftAssignmentCopyDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                var result = await _assignmentService.CopyAssignmentsAsync(dto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
         [HttpPost("{id}/refresh-attendance")]
         [HasPermission("Attendance", "Update")]
         public async Task<IActionResult> RefreshAttendance(int id)

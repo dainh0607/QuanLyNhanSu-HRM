@@ -36,6 +36,7 @@ namespace ERP.DTOs.Attendance
         public string StartTime { get; set; } = string.Empty;
         public string EndTime { get; set; } = string.Empty;
         public bool IsCrossNight { get; set; }
+        public bool IsActive { get; set; }
         public List<int> BranchIds { get; set; } = new();
         public List<int> DepartmentIds { get; set; } = new();
         public List<int> PositionIds { get; set; } = new();

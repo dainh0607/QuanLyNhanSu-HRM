@@ -148,7 +148,7 @@ const loadShiftCatalog = async (
     .map((item) => mapShiftCatalogItem(item))
     .filter((item): item is ShiftTabAssignTab => Boolean(item));
 
-  const branchNumber = branchId ? Number(branchId) : null;
+  /* const branchNumber = branchId ? Number(branchId) : null;
   const runtimeCatalog = getRuntimeShiftTemplateCatalog()
     .filter((item) =>
       branchNumber ? item.branchIds.length === 0 || item.branchIds.includes(branchId) : true,
@@ -164,7 +164,8 @@ const loadShiftCatalog = async (
       days: [],
     }));
 
-  const merged = [...runtimeCatalog, ...mapped];
+  const merged = [...runtimeCatalog, ...mapped]; */
+  const merged = mapped;
   const seen = new Set<string>();
   return merged.filter((item) => {
     if (seen.has(item.key)) {

@@ -198,6 +198,26 @@ namespace ERP.Services.Attendance
             return (startDate, startDate.AddDays(7));
         }
 
+        private static List<int> NormalizeIds(List<int>? values) =>
+            (values ?? new List<int>())
+                .Where(value => value > 0)
+                .Distinct()
+                .ToList();
+
+        private static DateTime ParseDate(string value, string label)
+        {
+            if (!DateTime.TryParse(value, out var parsedDate))
+                throw new Exception($"{label} khĂ´ng há»£p lá»‡.");
+
+            return parsedDate.Date;
+        }
+
+        private static string BuildSlotKey(int employeeId, DateTime date) =>
+            $"{employeeId}:{date:yyyy-MM-dd}";
+
+        private static string BuildAssignmentKey(int employeeId, int shiftId, DateTime date) =>
+            $"{employeeId}:{shiftId}:{date:yyyy-MM-dd}";
+
         public async Task<ShiftBulkActionResultDto> PublishAssignmentsAsync(string weekStartDate, List<int>? assignmentIds)
         {
             var (startDate, endDate) = ParseWeekRange(weekStartDate);
@@ -298,6 +318,151 @@ namespace ERP.Services.Attendance
             {
                 AffectedCount = assignments.Count,
                 Message = $"Đã xóa {assignments.Count} ca làm chưa xác nhận."
+            };
+        }
+
+        public async Task<ShiftAssignmentCopyResultDto> CopyAssignmentsAsync(ShiftAssignmentCopyDto dto)
+        {
+            if (dto.TargetWeekStartDates == null || dto.TargetWeekStartDates.Count == 0)
+                throw new Exception("Danh sĂ¡ch tuáº§n Ä‘Ă­ch khĂ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
+
+            var sourceWeekStartDate = ParseDate(dto.SourceWeekStartDate, "Tuáº§n nguá»“n");
+            var targetWeekStartDates = dto.TargetWeekStartDates
+                .Select(value => ParseDate(value, "Tuáº§n Ä‘Ă­ch"))
+                .Where(value => value != sourceWeekStartDate)
+                .Distinct()
+                .OrderBy(value => value)
+                .ToList();
+
+            if (targetWeekStartDates.Count == 0)
+                throw new Exception("KhĂ´ng cĂ³ tuáº§n Ä‘Ă­ch há»£p lá»‡ Ä‘á»ƒ sao chĂ©p.");
+
+            var branchIds = NormalizeIds(dto.BranchIds);
+            var departmentIds = NormalizeIds(dto.DepartmentIds);
+            var employeeIds = NormalizeIds(dto.EmployeeIds);
+            var assignmentIds = NormalizeIds(dto.AssignmentIds);
+            var mergeMode = (dto.MergeMode ?? "merge").Trim().ToLowerInvariant();
+
+            var sourceWeekEndDate = sourceWeekStartDate.AddDays(7);
+
+            var sourceQuery = _unitOfWork.Repository<ShiftAssignments>()
+                .AsQueryable()
+                .Include(assignment => assignment.Employee)
+                .Where(assignment => assignment.assignment_date >= sourceWeekStartDate && assignment.assignment_date < sourceWeekEndDate);
+
+            if (assignmentIds.Count > 0)
+                sourceQuery = sourceQuery.Where(assignment => assignmentIds.Contains(assignment.Id));
+
+            if (employeeIds.Count > 0)
+                sourceQuery = sourceQuery.Where(assignment => employeeIds.Contains(assignment.employee_id));
+
+            if (branchIds.Count > 0)
+                sourceQuery = sourceQuery.Where(assignment => assignment.Employee != null && assignment.Employee.branch_id.HasValue && branchIds.Contains(assignment.Employee.branch_id.Value));
+
+            if (departmentIds.Count > 0)
+                sourceQuery = sourceQuery.Where(assignment => assignment.Employee != null && assignment.Employee.department_id.HasValue && departmentIds.Contains(assignment.Employee.department_id.Value));
+
+            var sourceAssignments = await sourceQuery
+                .OrderBy(assignment => assignment.assignment_date)
+                .ThenBy(assignment => assignment.employee_id)
+                .ThenBy(assignment => assignment.shift_id)
+                .ToListAsync();
+
+            if (sourceAssignments.Count == 0)
+            {
+                return new ShiftAssignmentCopyResultDto();
+            }
+
+            var sourceEmployeeIds = sourceAssignments
+                .Select(assignment => assignment.employee_id)
+                .Distinct()
+                .ToList();
+
+            var targetRangeStartDate = targetWeekStartDates.Min();
+            var targetRangeEndDate = targetWeekStartDates.Max().AddDays(7);
+
+            var existingTargetAssignments = await _unitOfWork.Repository<ShiftAssignments>()
+                .AsQueryable()
+                .Where(assignment =>
+                    sourceEmployeeIds.Contains(assignment.employee_id) &&
+                    assignment.assignment_date >= targetRangeStartDate &&
+                    assignment.assignment_date < targetRangeEndDate)
+                .ToListAsync();
+
+            if (mergeMode == "overwrite")
+            {
+                var overwriteSlotKeys = new HashSet<string>(
+                    targetWeekStartDates.SelectMany(targetWeekStartDate =>
+                        sourceAssignments.Select(sourceAssignment =>
+                            BuildSlotKey(
+                                sourceAssignment.employee_id,
+                                targetWeekStartDate.AddDays((sourceAssignment.assignment_date.Date - sourceWeekStartDate).Days)))),
+                    StringComparer.OrdinalIgnoreCase);
+
+                var assignmentsToRemove = existingTargetAssignments
+                    .Where(assignment => overwriteSlotKeys.Contains(BuildSlotKey(assignment.employee_id, assignment.assignment_date.Date)))
+                    .ToList();
+
+                if (assignmentsToRemove.Count > 0)
+                {
+                    _unitOfWork.Repository<ShiftAssignments>().RemoveRange(assignmentsToRemove);
+                    existingTargetAssignments = existingTargetAssignments
+                        .Except(assignmentsToRemove)
+                        .ToList();
+                }
+            }
+
+            var existingAssignmentKeys = new HashSet<string>(
+                existingTargetAssignments.Select(assignment => BuildAssignmentKey(assignment.employee_id, assignment.shift_id, assignment.assignment_date.Date)),
+                StringComparer.OrdinalIgnoreCase);
+
+            var assignmentsToCreate = new List<ShiftAssignments>();
+            var copiedCount = 0;
+            var skippedCount = 0;
+            var now = DateTime.UtcNow;
+
+            foreach (var targetWeekStartDate in targetWeekStartDates)
+            {
+                foreach (var sourceAssignment in sourceAssignments)
+                {
+                    var targetAssignmentDate = targetWeekStartDate.AddDays((sourceAssignment.assignment_date.Date - sourceWeekStartDate).Days);
+                    var assignmentKey = BuildAssignmentKey(sourceAssignment.employee_id, sourceAssignment.shift_id, targetAssignmentDate);
+
+                    if (mergeMode != "overwrite" && existingAssignmentKeys.Contains(assignmentKey))
+                    {
+                        skippedCount += 1;
+                        continue;
+                    }
+
+                    assignmentsToCreate.Add(new ShiftAssignments
+                    {
+                        employee_id = sourceAssignment.employee_id,
+                        shift_id = sourceAssignment.shift_id,
+                        assignment_date = targetAssignmentDate,
+                        note = sourceAssignment.note,
+                        is_published = false,
+                        status = "draft",
+                        created_by = sourceAssignment.created_by,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    });
+
+                    existingAssignmentKeys.Add(assignmentKey);
+                    copiedCount += 1;
+                }
+            }
+
+            if (assignmentsToCreate.Count > 0)
+            {
+                await _unitOfWork.Repository<ShiftAssignments>().AddRangeAsync(assignmentsToCreate);
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+
+            return new ShiftAssignmentCopyResultDto
+            {
+                CopiedCount = copiedCount,
+                SkippedCount = skippedCount
             };
         }
 
