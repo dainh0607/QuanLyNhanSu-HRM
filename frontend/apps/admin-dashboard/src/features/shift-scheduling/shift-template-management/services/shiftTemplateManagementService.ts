@@ -2,6 +2,7 @@ import {
   API_URL,
   requestJson,
 } from "../../../../services/employee/core";
+import { shiftSchedulingApi } from "../../services/shiftSchedulingApi";
 import {
   getRuntimeShiftTemplateById,
   getRuntimeShiftTemplateCatalog,
@@ -24,28 +25,37 @@ import type {
 interface ShiftTemplateApiItem {
   id?: number;
   Id?: number;
+  templateName?: string | null;
   template_name?: string | null;
   TemplateName?: string | null;
   shift_name?: string | null;
   ShiftName?: string | null;
   name?: string | null;
   Name?: string | null;
+  startTime?: string | null;
   start_time?: string | null;
   StartTime?: string | null;
+  endTime?: string | null;
   end_time?: string | null;
   EndTime?: string | null;
+  isActive?: boolean | null;
   is_active?: boolean | null;
   IsActive?: boolean | null;
   status?: string | null;
   Status?: string | null;
+  branchIds?: Array<number | string> | null;
   branch_ids?: Array<number | string> | null;
   BranchIds?: Array<number | string> | null;
+  departmentIds?: Array<number | string> | null;
   department_ids?: Array<number | string> | null;
   DepartmentIds?: Array<number | string> | null;
+  positionIds?: Array<number | string> | null;
   position_ids?: Array<number | string> | null;
   PositionIds?: Array<number | string> | null;
+  jobTitleIds?: Array<number | string> | null;
   job_title_ids?: Array<number | string> | null;
   JobTitleIds?: Array<number | string> | null;
+  repeatDays?: Array<number | string> | null;
   repeat_days?: Array<number | string> | null;
   RepeatDays?: Array<number | string> | null;
   note?: string | null;
@@ -137,14 +147,15 @@ const mapApiItemToListItem = (
 ): ShiftTemplateListItem | null => {
   const id = Number(item.id ?? item.Id);
   const name =
+    item.templateName ??
     item.template_name ??
     item.TemplateName ??
     item.shift_name ??
     item.ShiftName ??
     item.name ??
     item.Name;
-  const startTime = normalizeTimeValue(item.start_time ?? item.StartTime);
-  const endTime = normalizeTimeValue(item.end_time ?? item.EndTime);
+  const startTime = normalizeTimeValue(item.startTime ?? item.start_time ?? item.StartTime);
+  const endTime = normalizeTimeValue(item.endTime ?? item.end_time ?? item.EndTime);
 
   if (!Number.isFinite(id) || !name?.trim() || !startTime || !endTime) {
     return null;
@@ -159,16 +170,18 @@ const mapApiItemToListItem = (
     endTime,
     durationHours: getHoursBetween(startTime, endTime),
     displayOrder: index + 1,
-    isActive: normalizeStatus(item.is_active ?? item.IsActive, item.status ?? item.Status),
-    branchIds: toStringArray(item.branch_ids ?? item.BranchIds),
-    departmentIds: toStringArray(item.department_ids ?? item.DepartmentIds),
+    isActive: normalizeStatus(item.isActive ?? item.is_active ?? item.IsActive, item.status ?? item.Status),
+    branchIds: toStringArray(item.branchIds ?? item.branch_ids ?? item.BranchIds),
+    departmentIds: toStringArray(item.departmentIds ?? item.department_ids ?? item.DepartmentIds),
     jobTitleIds: toStringArray(
+      item.positionIds ??
       item.position_ids ??
         item.PositionIds ??
+        item.jobTitleIds ??
         item.job_title_ids ??
         item.JobTitleIds,
     ),
-    repeatDays: toRepeatDayIds(item.repeat_days ?? item.RepeatDays),
+    repeatDays: toRepeatDayIds(item.repeatDays ?? item.repeat_days ?? item.RepeatDays),
     breakDurationMinutes: "0",
     allowedLateCheckInMinutes: "0",
     allowedEarlyCheckOutMinutes: "0",
@@ -320,7 +333,6 @@ const paginateItems = (
     totalCount,
     page: safePage,
     pageSize: safePageSize,
-    dataSource: "api",
   };
 };
 
@@ -341,41 +353,20 @@ export const shiftTemplateManagementService = {
   async getShiftTemplates(
     filters: ShiftTemplateListQuery,
   ): Promise<ShiftTemplateListResponse> {
-    const response = await requestJson<ShiftTemplateApiItem[]>(
-      buildListUrl().toString(),
-      { method: "GET" },
-      "Khong the tai danh sach ca lam",
-    );
+    const response = await shiftSchedulingApi.getShiftTemplates() as ShiftTemplateApiItem[];
 
     const items = response
       .map((item, index) => mapApiItemToListItem(item, index))
       .filter((item): item is ShiftTemplateListItem => Boolean(item));
-    const mergedItems = mergeApiItemsWithRuntime(items);
-    
-    return paginateItems(applyFilters(mergedItems, filters), filters);
+
+    return paginateItems(applyFilters(items, filters), filters);
   },
 
   async getShiftTemplateDetail(
     templateId: number,
   ): Promise<ShiftTemplateInitialData> {
-    if (isRuntimeShiftTemplateDeleted(templateId)) {
-      throw new Error("Khong tim thay ca lam can chinh sua.");
-    }
-
-    const runtimeTemplate = getRuntimeShiftTemplateById(templateId);
-    if (runtimeTemplate) {
-      return toShiftTemplateInitialData(runtimeTemplate);
-    }
-
-    const response = await requestJson<ShiftTemplateApiItem[]>(
-      buildListUrl().toString(),
-      { method: "GET" },
-      "Khong the tai chi tiet ca lam",
-    );
-    const mapped = response
-      .map((item, index) => mapApiItemToListItem(item, index))
-      .filter((item): item is ShiftTemplateListItem => Boolean(item))
-      .find((item) => item.id === templateId);
+    const response = await shiftSchedulingApi.getShiftTemplate(templateId) as ShiftTemplateApiItem;
+    const mapped = mapApiItemToListItem(response, 0);
 
     if (mapped) {
       return mapped;
@@ -387,19 +378,13 @@ export const shiftTemplateManagementService = {
   async updateShiftTemplate(
     payload: ShiftTemplateUpdatePayload,
   ): Promise<void> {
-    const { id, values, existing } = payload;
-    updateRuntimeShiftTemplate(id, values, {
-      code: existing.code,
-      displayOrder: existing.displayOrder,
-      isActive: existing.isActive,
-      note: existing.note ?? null,
-    });
+    await shiftSchedulingApi.updateShiftTemplate(payload.id, payload.values);
   },
 
   async deleteShiftTemplate(
     templateId: number,
   ): Promise<void> {
-    markRuntimeShiftTemplateDeleted(templateId);
+    await shiftSchedulingApi.deleteShiftTemplate(templateId);
   },
 
   async exportShiftTemplates(

@@ -1,46 +1,10 @@
 import { employeeService } from "../../../../services/employeeService";
-import { API_URL, requestJson } from "../../../../services/employee/core";
-import { registerRuntimeShiftTemplate } from "../../open-shift/openShiftRuntimeStore";
+import { shiftSchedulingApi } from "../../services/shiftSchedulingApi";
 import type {
   ShiftTemplateCatalogData,
   ShiftTemplateSubmitPayload,
   ShiftTemplateTargetOption,
 } from "../types";
-
-interface ShiftCreateResponse {
-  id?: number;
-  Id?: number;
-  templateId?: number;
-  TemplateId?: number;
-}
-
-const WEEKDAY_TO_BACKEND_VALUE: Record<string, number> = {
-  mon: 1,
-  tue: 2,
-  wed: 3,
-  thu: 4,
-  fri: 5,
-  sat: 6,
-  sun: 7,
-};
-
-const toNumericIdList = (values: string[]): number[] =>
-  Array.from(
-    new Set(
-      values
-        .map((value) => Number(value))
-        .filter((value) => Number.isFinite(value) && value > 0),
-    ),
-  );
-
-const toRepeatDayList = (values: string[]): number[] =>
-  Array.from(
-    new Set(
-      values
-        .map((value) => WEEKDAY_TO_BACKEND_VALUE[value])
-        .filter((value): value is number => Number.isFinite(value)),
-    ),
-  );
 
 const sortOptions = <T extends { label: string }>(options: T[]): T[] =>
   [...options].sort((left, right) => left.label.localeCompare(right.label, "vi"));
@@ -152,7 +116,7 @@ export const shiftTemplateService = {
   async createShiftTemplate(
     payload: ShiftTemplateSubmitPayload,
   ): Promise<void> {
-    const response = await requestJson<ShiftCreateResponse>(
+    await shiftSchedulingApi.createShiftTemplate(payload); /*
       `${API_URL}/shift-templates`,
       {
         method: "POST",
@@ -169,11 +133,11 @@ export const shiftTemplateService = {
         }),
       },
       "Không thể tạo mẫu ca làm mới",
-    );
-    registerRuntimeShiftTemplate(
+    ); */
+    /* registerRuntimeShiftTemplate(
       payload,
       response.templateId ?? response.TemplateId ?? response.id ?? response.Id,
-    );
+    ); */
   },
 };
 

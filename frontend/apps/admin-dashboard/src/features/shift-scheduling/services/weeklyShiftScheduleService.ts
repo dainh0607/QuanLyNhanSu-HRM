@@ -6,8 +6,12 @@ import {
   WORKING_DAYS_OPTIONS,
   WORKING_HOURS_OPTIONS,
 } from "../data/constants";
-import { getRuntimeOpenShiftsForWeek } from "../open-shift/openShiftRuntimeStore";
 import { getRuntimeQuickAddedEmployees } from "../quick-add-employees/stores/quickAddEmployeesRuntimeStore";
+import {
+  shiftSchedulingApi,
+  type ShiftBulkActionResult as ShiftBulkActionApiResult,
+  type ShiftCountersApiResponse,
+} from "./shiftSchedulingApi";
 import type {
   EmployeeListApiItem,
   MetadataOptionApiItem,
@@ -25,7 +29,7 @@ import type {
   WeeklyScheduleRow,
   WeeklyScheduleShift,
 } from "../types";
-import { getHoursBetween, getWeekDates, toIsoDate } from "../utils/week";
+import { addDays, getHoursBetween, getWeekDates, parseIsoDate, toIsoDate } from "../utils/week";
 
 const buildEmptyCellMap = (weekStartDate: string): Record<string, WeeklyScheduleCell> =>
   Object.fromEntries(
@@ -40,14 +44,6 @@ const buildEmptyCellMap = (weekStartDate: string): Record<string, WeeklySchedule
  */
 const getVal = <T>(obj: any, snakeKey: string, camelKey: string): T | undefined => {
   return obj[snakeKey] !== undefined ? obj[snakeKey] : (obj[camelKey] !== undefined ? obj[camelKey] : undefined);
-};
-
-const appendIfValue = (url: URL, key: string, value: string | number | undefined): void => {
-  if (value === undefined) return;
-  const strValue = String(value).trim();
-  if (strValue) {
-    url.searchParams.set(key, strValue);
-  }
 };
 
 const mergeRuntimeEmployees = (
@@ -481,37 +477,57 @@ const transformApiResponse = (
   );
 };
 
-const getScheduleEndpointUrl = (filters: ShiftScheduleFilters): string => {
-  const url = new URL(`${API_URL}/shift-assignments/weekly`);
-  url.searchParams.set("weekStartDate", filters.weekStartDate);
-  url.searchParams.set("viewMode", filters.viewMode);
-  url.searchParams.set("employeeStatus", filters.employeeStatus);
-  appendIfValue(url, "regionId", filters.regionId);
-  appendIfValue(url, "branchId", filters.branchId);
-  appendIfValue(url, "departmentId", filters.departmentId);
-  appendIfValue(url, "projectId", filters.projectId);
-  appendIfValue(url, "jobTitleId", filters.jobTitleId);
-  appendIfValue(url, "accessGroupId", filters.accessGroupId);
-  appendIfValue(url, "genderCode", filters.genderCode);
-  appendIfValue(url, "workingHoursBucket", filters.workingHoursBucket);
-  appendIfValue(url, "workingDaysBucket", filters.workingDaysBucket);
-  appendIfValue(url, "workedHoursBucket", filters.workedHoursBucket);
-  appendIfValue(url, "attendanceStatus", filters.attendanceStatus === "all" ? "" : filters.attendanceStatus);
-  appendIfValue(url, "searchTerm", filters.searchTerm);
-  return url.toString();
-};
-
 const getWeeklySchedule = async (filters: ShiftScheduleFilters): Promise<WeeklyScheduleGridData> => {
-  const response = await requestJson<WeeklyScheduleApiResponse>(
-    getScheduleEndpointUrl(filters),
-    { method: "GET" },
+  const response = await shiftSchedulingApi.getWeeklySchedule(filters);
+  const [openShiftsResult, countersResult] = await Promise.allSettled([
+    shiftSchedulingApi.getOpenShifts({
+      weekStartDate: filters.weekStartDate,
+      branchId: filters.branchId,
+    }),
+    shiftSchedulingApi.getShiftCounters({
+      startDate: filters.weekStartDate,
+      endDate: toIsoDate(addDays(parseIsoDate(filters.weekStartDate), 6)),
+      branchId: filters.branchId,
+    }),
+  ]);
+
+  if (openShiftsResult.status === "rejected") {
+    console.warn(
+      "Open shifts endpoint is unavailable, using weekly payload fallback.",
+      openShiftsResult.reason,
+    );
+  }
+
+  if (countersResult.status === "rejected") {
+    console.warn(
+      "Shift counters endpoint is unavailable, using weekly payload fallback.",
+      countersResult.reason,
+    );
+  }
+
+  const openShifts =
+    openShiftsResult.status === "fulfilled"
+      ? openShiftsResult.value
+      : (getVal<WeeklyScheduleApiOpenShift[]>(response, "open_shifts", "openShifts") ?? []);
+  const counters: ShiftCountersApiResponse | null =
+    countersResult.status === "fulfilled" ? countersResult.value : null; /*
     "Không thể tải bảng xếp ca tuần",
   );
 
+  */
   return transformApiResponse(
     {
       ...response,
       employees: mergeRuntimeEmployees(response.employees),
+      openShifts,
+      draftCount:
+        getVal<number>(counters ?? {}, "pendingPublishCount", "PendingPublishCount") ??
+        getVal<number>(response, "draftCount", "draftCount") ??
+        0,
+      publishedCount:
+        getVal<number>(counters ?? {}, "pendingApprovalCount", "PendingApprovalCount") ??
+        getVal<number>(response, "publishedCount", "publishedCount") ??
+        0,
     },
     filters,
   );
@@ -593,23 +609,36 @@ interface ShiftBulkActionResult {
   message: string;
 }
 
+const mapBulkActionResult = (response: ShiftBulkActionApiResult): ShiftBulkActionResult => ({
+  affectedCount: getVal<number>(response, "affectedCount", "AffectedCount") ?? 0,
+  message: getVal<string>(response, "message", "Message") ?? "",
+});
+
 const callBulkAction = async (
   endpoint: string,
   payload: ShiftBulkActionPayload,
-  fallback: string,
+  _fallback: string,
 ): Promise<ShiftBulkActionResult> => {
-  const response = await requestJson<ShiftBulkActionResult>(
-    `${API_URL}/shift-assignments/${endpoint}`,
-    {
-      method: "POST",
-      body: JSON.stringify({
-        WeekStartDate: payload.weekStartDate,
-        AssignmentIds: payload.assignmentIds ?? null,
-      }),
-    },
-    fallback,
-  );
-  return response;
+  switch (endpoint) {
+    case "bulk-publish":
+      return mapBulkActionResult(
+        await shiftSchedulingApi.publishAssignments(payload.weekStartDate, payload.assignmentIds),
+      );
+    case "bulk-approve":
+      return mapBulkActionResult(
+        await shiftSchedulingApi.approveAssignments(payload.weekStartDate, payload.assignmentIds),
+      );
+    case "bulk-publish-approve":
+      return mapBulkActionResult(
+        await shiftSchedulingApi.publishAndApproveAssignments(payload.weekStartDate, payload.assignmentIds),
+      );
+    case "bulk-delete-unconfirmed":
+      return mapBulkActionResult(
+        await shiftSchedulingApi.deleteUnconfirmedAssignments(payload.weekStartDate),
+      );
+    default:
+      throw new Error(`Unsupported bulk action endpoint: ${endpoint}`);
+  }
 };
 
 export const shiftBulkActionsService = {

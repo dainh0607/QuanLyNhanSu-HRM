@@ -1,5 +1,5 @@
 import { employeeService } from "../../../../services/employeeService";
-import { API_URL, requestJson } from "../../../../services/employee/core";
+import { shiftSchedulingApi } from "../../services/shiftSchedulingApi";
 import { weeklyShiftScheduleService } from "../../services/weeklyShiftScheduleService";
 import { formatTimeRange, getDayHeader, getWeekLabel, parseIsoDate } from "../../utils/week";
 import type { ShiftScheduleFilters, SelectOption, WeeklyScheduleRow } from "../../types";
@@ -165,7 +165,7 @@ export const shiftCopyService = {
   async getCatalogData(branchOptions: SelectOption[]): Promise<ShiftCopyCatalogData> {
     const cleanedBranchOptions = sortOptions(
       branchOptions.filter((option) => option.value.trim().length > 0),
-    );
+    ); */
 
     const [departments, employeeResponse] = await Promise.all([
       employeeService.getDepartmentsMetadata().catch(() => []),
@@ -242,7 +242,7 @@ export const shiftCopyService = {
   async copyShifts(
     payload: ShiftCopyCopyPayload,
   ): Promise<ShiftCopyCopyResult> {
-    const response = await requestJson<{ copiedCount?: number; skippedCount?: number }>(
+    const response = await shiftSchedulingApi.copyAssignments(payload); /*
       `${API_URL}/shift-assignments/copy`,
       {
         method: "POST",

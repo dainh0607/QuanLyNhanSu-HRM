@@ -59,6 +59,8 @@ const isActiveRow = (
       (row.accessGroupId && row.accessGroupId !== defaultAccessGroupId),
   );
 
+const hasNameInput = (row: QuickAddEmployeeDraftRow): boolean => Boolean(row.fullName.trim());
+
 const normalizeNameInput = (value: string): string =>
   value.replace(/\s{2,}/g, " ").replace(/^\s+/, "");
 
@@ -131,8 +133,8 @@ export const QuickAddEmployeesModal = ({
   }, [isOpen, preferredBranchId]);
 
   const activeRowCount = useMemo(
-    () => rows.filter((row) => isActiveRow(row, catalog.defaultAccessGroupId)).length,
-    [catalog.defaultAccessGroupId, rows],
+    () => rows.filter((row) => hasNameInput(row)).length,
+    [rows],
   );
 
   const fillSampleRow = (row: QuickAddEmployeeDraftRow): QuickAddEmployeeDraftRow => {
@@ -256,12 +258,13 @@ export const QuickAddEmployeesModal = ({
   const validateForm = (): boolean => {
     const nextValidation: ValidationState = { rows: {} };
     const activeRows = rows.filter((row) => isActiveRow(row, catalog.defaultAccessGroupId));
+    const rowsToSubmit = activeRows.filter((row) => hasNameInput(row));
 
     if (!branchId) {
       nextValidation.branchId = "Vui lòng chọn chi nhánh.";
     }
 
-    if (activeRows.length === 0) {
+    if (rowsToSubmit.length === 0) {
       nextValidation.form = "Vui lòng nhập ít nhất 1 nhân viên để thêm nhanh.";
     }
 
@@ -270,14 +273,14 @@ export const QuickAddEmployeesModal = ({
 
       if (!row.fullName.trim()) {
         rowErrors.fullName = "Tên nhân viên là bắt buộc.";
-      }
+      } else {
+        if (row.phone.trim() && !/^0\d{9}$/.test(row.phone.trim())) {
+          rowErrors.phone = "Số điện thoại phải gồm 10 số và bắt đầu bằng số 0.";
+        }
 
-      if (row.phone.trim() && !/^0\d{9}$/.test(row.phone.trim())) {
-        rowErrors.phone = "Số điện thoại phải gồm 10 số và bắt đầu bằng số 0.";
-      }
-
-      if (!row.accessGroupId) {
-        rowErrors.accessGroupId = "Vui lòng chọn nhóm truy cập.";
+        if (!row.accessGroupId) {
+          rowErrors.accessGroupId = "Vui lòng chọn nhóm truy cập.";
+        }
       }
 
       if (Object.keys(rowErrors).length > 0) {

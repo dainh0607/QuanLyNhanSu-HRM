@@ -320,7 +320,7 @@ export const ShiftTemplateModal = ({
       } else if (onSubmit) {
         await onSubmit(payload);
       } else {
-        await shiftTemplateService.createShiftTemplate(payload, true);
+        await shiftTemplateService.createShiftTemplate(payload);
       }
 
       onSuccess();
