@@ -53,6 +53,20 @@ namespace ERP.Services.Auth
 
             try
             {
+                dto.Email = dto.Email?.Trim();
+                dto.FullName = dto.FullName?.Trim();
+                dto.EmployeeCode = dto.EmployeeCode?.Trim();
+                dto.PhoneNumber = dto.PhoneNumber?.Trim();
+
+                if (IsMasterEmail(dto.Email))
+                {
+                    return new AuthResponseDto
+                    {
+                        Success = false,
+                        Message = "Tai khoan SuperAdmin goc duoc quan ly rieng tren Firebase, khong duoc dang ky qua public sign-up."
+                    };
+                }
+
                 transaction = await _context.Database.BeginTransactionAsync();
                 InvitationTokens invitation = null;
                 if (!string.IsNullOrEmpty(dto.InvitationToken))
@@ -1046,9 +1060,14 @@ namespace ERP.Services.Auth
             return role.Id;
         }
 
+        private string? GetMasterEmail()
+        {
+            return _configuration["AdminSettings:MasterEmail"]?.Trim();
+        }
+
         private bool IsMasterEmail(string? email)
         {
-            var masterEmail = _configuration["AdminSettings:MasterEmail"];
+            var masterEmail = GetMasterEmail();
             return !string.IsNullOrWhiteSpace(masterEmail) &&
                    !string.IsNullOrWhiteSpace(email) &&
                    string.Equals(email.Trim(), masterEmail.Trim(), StringComparison.OrdinalIgnoreCase);
@@ -1070,18 +1089,55 @@ namespace ERP.Services.Auth
                 .Select(roleName => roleName!)
                 .ToListAsync();
 
+            var primaryEmail = localUser.Employee?.email;
+            if (string.IsNullOrWhiteSpace(primaryEmail))
+            {
+                primaryEmail = localUser.Employee?.work_email ?? string.Empty;
+            }
+
+            if (IsMasterEmail(primaryEmail) &&
+                !roles.Contains(AuthSecurityConstants.RoleSuperAdmin, StringComparer.OrdinalIgnoreCase))
+            {
+                roles.Insert(0, AuthSecurityConstants.RoleSuperAdmin);
+            }
+
             return new UserInfoDto
             {
                 UserId = localUser.Id,
                 TenantId = localUser.tenant_id,
                 EmployeeId = localUser.Employee?.Id ?? 0,
-                Email = localUser.Employee?.email ?? string.Empty,
+                Email = primaryEmail ?? string.Empty,
                 FullName = localUser.Employee?.full_name ?? localUser.username,
                 EmployeeCode = localUser.Employee?.employee_code ?? string.Empty,
                 PhoneNumber = localUser.Employee?.phone ?? string.Empty,
                 IsActive = localUser.is_active,
                 Roles = roles
             };
+        }
+
+        private static bool CanAccessAdminSurface(IEnumerable<string>? roles)
+        {
+            if (roles == null)
+            {
+                return false;
+            }
+
+            var allowedRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                AuthSecurityConstants.RoleSuperAdmin,
+                "Admin",
+                "Manager",
+                AuthSecurityConstants.RoleAdmin,
+                AuthSecurityConstants.RoleDirector,
+                AuthSecurityConstants.RoleRegionManager,
+                AuthSecurityConstants.RoleBranchManager,
+                AuthSecurityConstants.RoleDeptManager,
+                AuthSecurityConstants.RoleModuleAdmin
+            };
+
+            return roles.Any(role =>
+                !string.IsNullOrWhiteSpace(role) &&
+                allowedRoles.Contains(role));
         }
 
         private async Task<AuthResponseDto> CreateSessionResponseAsync(int userId, UserInfoDto userInfo, AuthSessionContextDto sessionContext, string message)
@@ -1303,6 +1359,115 @@ namespace ERP.Services.Auth
             {
                 _logger.LogError(ex, "Error in ValidateInvitationTokenAsync");
                 return new InvitationValidationDto { Valid = false, Message = "Lỗi khi kiểm tra mã mời." };
+            }
+        }
+
+        public async Task<bool> IsSystemBootstrappedAsync()
+        {
+            try
+            {
+                return await _context.UserRoles
+                    .AnyAsync(ur => ur.is_active && 
+                        (ur.Role.name == AuthSecurityConstants.RoleSuperAdmin || ur.Role.name == "Quản trị" || ur.role_id == 1));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in IsSystemBootstrappedAsync");
+                return false;
+            }
+        }
+
+        public async Task<AuthResponseDto> BootstrapSystemAsync()
+        {
+            try
+            {
+                var masterEmail = GetMasterEmail();
+                if (string.IsNullOrWhiteSpace(masterEmail))
+                {
+                    return new AuthResponseDto
+                    {
+                        Success = false,
+                        Message = "Chua cau hinh MasterEmail trong appsettings.json."
+                    };
+                }
+
+                _logger.LogInformation("Starting system bootstrap for {Email}", masterEmail);
+
+                var superAdminRole = await _context.Roles.FirstOrDefaultAsync(r => r.name == AuthSecurityConstants.RoleSuperAdmin);
+                if (superAdminRole == null)
+                {
+                    superAdminRole = new Roles 
+                    { 
+                        name = AuthSecurityConstants.RoleSuperAdmin,
+                        description = "Hệ thống quản trị cao cấp (Super Admin)",
+                        is_active = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+                    _context.Roles.Add(superAdminRole);
+                    await _context.SaveChangesAsync();
+                }
+
+                var employee = await _context.Employees.FirstOrDefaultAsync(e => e.email == masterEmail);
+                if (employee == null)
+                {
+                    employee = new ERP.Entities.Models.Employees
+                    {
+                        employee_code = "SA_ADMIN",
+                        full_name = "Super Administrator",
+                        email = masterEmail,
+                        is_active = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+                    _context.Employees.Add(employee);
+                    await _context.SaveChangesAsync();
+                }
+
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.employee_id == employee.Id);
+                if (user == null)
+                {
+                    user = new Users
+                    {
+                        employee_id = employee.Id,
+                        username = masterEmail,
+                        is_active = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+                    _context.Users.Add(user);
+                    await _context.SaveChangesAsync();
+                }
+
+                var hasRole = await _context.UserRoles.AnyAsync(ur => ur.user_id == user.Id && ur.role_id == superAdminRole.Id);
+                if (!hasRole)
+                {
+                    _context.UserRoles.Add(new UserRoles
+                    {
+                        user_id = user.Id,
+                        role_id = superAdminRole.Id,
+                        is_active = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                    await _context.SaveChangesAsync();
+                }
+
+                return new AuthResponseDto
+                {
+                    Success = true,
+                    Message = "He thong da duoc bootstrap thanh cong. Vui long dang nhap bang tai khoan admin@nexahrm.com",
+                    User = await BuildUserInfoAsync(user)
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in BootstrapSystemAsync");
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = $"Loi trong qua trinh bootstrap: {ex.Message}"
+                };
             }
         }
     }

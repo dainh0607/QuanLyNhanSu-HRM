@@ -120,7 +120,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(AuthSecurityConstants.SuperAdminPolicyName, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.RequireRole(AuthSecurityConstants.RoleSuperAdmin);
+    });
+});
 
 // Add services to the container.
 builder.Services.AddHttpClient();

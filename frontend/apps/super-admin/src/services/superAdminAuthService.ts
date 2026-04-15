@@ -10,7 +10,6 @@ export interface User {
   isActive: boolean;
   roles: string[];
   photoUrl?: string;
-  role?: "admin" | "user";
 }
 
 export interface AuthResponse {
@@ -18,19 +17,17 @@ export interface AuthResponse {
   user?: User;
   message?: string;
   idToken?: string;
-  refreshToken?: string;
   expiresIn?: number;
 }
 
-export interface ChangePasswordPayload {
-  oldPassword: string;
-  newPassword: string;
-  confirmPassword: string;
+export interface SuperAdminSessionResult {
+  status: "authenticated" | "anonymous" | "unauthorized";
+  user: User | null;
 }
 
 const CSRF_COOKIE_NAME = "hrm_csrf_token";
 const CSRF_HEADER_NAME = "X-CSRF-Token";
-const SESSION_MARKER_KEY = "hrm_has_session";
+const SESSION_MARKER_KEY = "super_admin_has_session";
 const AUTH_CHECK_COOLDOWN_MS = 1500;
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS", "TRACE"]);
 
@@ -39,33 +36,6 @@ let currentUser: User | null = null;
 let pendingAuthCheck: Promise<User | null> | null = null;
 let lastAuthCheckAt = 0;
 let lastAuthCheckResult: User | null | undefined;
-
-const ADMIN_ACCESS_ROLES = new Set([
-  "Quản trị",
-  "Admin",
-  "Manager",
-  "WorkspaceOwner",
-  "Workspace Owner",
-  "Owner",
-]);
-
-export const hasAdministrativeAccess = (
-  user?: { roles?: string[] } | null,
-): boolean => Boolean(user?.roles?.some((role) => ADMIN_ACCESS_ROLES.has(role)));
-
-const normalizeUser = (user?: User | null): User | null => {
-  if (!user) {
-    return null;
-  }
-
-  return {
-    ...user,
-    /*
-    role: user.roles?.includes("Quản trị") ? "admin" : "user",
-    */
-    role: hasAdministrativeAccess(user) ? "admin" : "user",
-  };
-};
 
 const setSessionMarker = (hasSession: boolean) => {
   if (typeof window === "undefined") {
@@ -79,7 +49,7 @@ const setSessionMarker = (hasSession: boolean) => {
       window.localStorage.removeItem(SESSION_MARKER_KEY);
     }
   } catch {
-    // Ignore storage failures and keep auth flow running.
+    // Ignore localStorage failures.
   }
 };
 
@@ -127,7 +97,7 @@ const hasSessionHint = (): boolean =>
   Boolean(authToken || getCookieValue(CSRF_COOKIE_NAME) || hasSessionMarker());
 
 const setAuthSession = (user?: User | null, token?: string | null) => {
-  currentUser = normalizeUser(user);
+  currentUser = user ?? null;
   authToken = token ?? null;
   setSessionMarker(Boolean(currentUser || authToken));
 };
@@ -159,7 +129,7 @@ const createHeaders = (
   headers?: HeadersInit,
   method?: string,
   body?: BodyInit | null,
-  options: CreateHeadersOptions = {}
+  options: CreateHeadersOptions = {},
 ): Headers => {
   const mergedHeaders = new Headers(headers);
   const normalizedMethod = (method ?? "GET").toUpperCase();
@@ -194,7 +164,7 @@ const withSession = (options: RequestInit = {}): RequestInit => ({
 });
 
 const applyAuthResponse = (data?: Partial<AuthResponse> | null): User | null => {
-  const user = normalizeUser(data?.user ?? null);
+  const user = data?.user ?? null;
   setAuthSession(user, data?.idToken ?? null);
   rememberAuthCheck(user);
   return user;
@@ -204,7 +174,7 @@ const refreshSessionInternal = async (): Promise<boolean> => {
   try {
     const response = await fetch(
       `${API_URL}/auth/refresh`,
-      withSession({ method: "POST" })
+      withSession({ method: "POST" }),
     );
 
     if (!response.ok) {
@@ -231,7 +201,7 @@ const refreshSessionInternal = async (): Promise<boolean> => {
 export const authFetch = async (
   input: RequestInfo | URL,
   options: RequestInit = {},
-  retryOnUnauthorized = true
+  retryOnUnauthorized = true,
 ): Promise<Response> => {
   let response = await fetch(input, withSession(options));
 
@@ -245,7 +215,7 @@ export const authFetch = async (
   return response;
 };
 
-export const authService = {
+export const superAdminAuthService = {
   login: async (email: string, password: string): Promise<AuthResponse> => {
     try {
       const normalizedEmail = email.trim().toLowerCase();
@@ -264,7 +234,6 @@ export const authService = {
 
       if (response.ok && data?.success) {
         const user = applyAuthResponse(data);
-
         return {
           success: true,
           user: user ?? undefined,
@@ -273,83 +242,12 @@ export const authService = {
         };
       }
 
-      clearAuthSession();
       return {
         success: false,
-        message: data?.message || "Tài khoản hoặc mật khẩu không chính xác.",
+        message: data?.message || "Đăng nhập thất bại.",
       };
     } catch {
       clearInMemorySession();
-      return {
-        success: false,
-        message: "Không thể kết nối tới máy chủ. Vui lòng thử lại sau.",
-      };
-    }
-  },
-
-  register: async (userData: unknown): Promise<AuthResponse> => {
-    void userData;
-    return {
-      success: false,
-      message:
-        "Public signup is disabled. Workspace Owner accounts must be provisioned from SuperAdmin.",
-    };
-    /*
-    try {
-      const payload = JSON.stringify(userData);
-      const response = await fetch(`${API_URL}/auth/sign-up`, {
-        method: "POST",
-        credentials: "include",
-        headers: createHeaders(undefined, "POST", payload, {
-          includeAuth: false,
-          includeCsrf: false,
-        }),
-        body: payload,
-      });
-
-      const data = await readJsonSafely<AuthResponse>(response);
-
-      if (response.ok && data?.success) {
-        return {
-          success: true,
-          message: data.message || "Đăng ký tài khoản thành công!",
-        };
-      }
-
-      return {
-        success: false,
-        message: data?.message || "Đăng ký thất bại.",
-      };
-    } catch {
-      return {
-        success: false,
-        message: "Không thể kết nối tới máy chủ.",
-      };
-    }
-    */
-  },
-
-  changePassword: async (payload: ChangePasswordPayload): Promise<AuthResponse> => {
-    try {
-      const response = await authFetch(`${API_URL}/auth/change-password`, {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-
-      const data = await readJsonSafely<AuthResponse>(response);
-
-      if (response.ok && data?.success) {
-        return {
-          success: true,
-          message: data.message || "Đổi mật khẩu thành công.",
-        };
-      }
-
-      return {
-        success: false,
-        message: data?.message || "Không thể đổi mật khẩu.",
-      };
-    } catch {
       return {
         success: false,
         message: "Không thể kết nối tới máy chủ. Vui lòng thử lại sau.",
@@ -386,7 +284,7 @@ export const authService = {
         }
 
         const data = await readJsonSafely<User>(response);
-        const user = normalizeUser(data);
+        const user = data ?? null;
 
         if (!user) {
           clearInMemorySession();
@@ -409,11 +307,72 @@ export const authService = {
     return pendingAuthCheck;
   },
 
-  refreshSession: refreshSessionInternal,
+  checkSuperAdminSession: async (): Promise<SuperAdminSessionResult> => {
+    if (!hasSessionHint()) {
+      clearInMemorySession();
+      rememberAuthCheck(null);
+      return {
+        status: "anonymous",
+        user: null,
+      };
+    }
 
-  getCurrentUser: (): User | null => currentUser,
+    try {
+      const response = await authFetch(`${API_URL}/auth/super-admin/me`, {
+        method: "GET",
+      });
 
-  getAccessToken: (): string | null => authToken,
+      if (response.ok) {
+        const data = await readJsonSafely<User>(response);
+        const user = data ?? null;
+
+        if (!user) {
+          clearAuthSession();
+          rememberAuthCheck(null);
+          return {
+            status: "anonymous",
+            user: null,
+          };
+        }
+
+        setAuthSession(user, authToken);
+        rememberAuthCheck(user);
+        return {
+          status: "authenticated",
+          user,
+        };
+      }
+
+      if (response.status === 403) {
+        const meResponse = await authFetch(`${API_URL}/auth/me`, { method: "GET" }, false);
+        const data = meResponse.ok ? await readJsonSafely<User>(meResponse) : null;
+        const user = data ?? null;
+
+        if (user) {
+          setAuthSession(user, authToken);
+          rememberAuthCheck(user);
+        }
+
+        return {
+          status: "unauthorized",
+          user,
+        };
+      }
+
+      clearAuthSession();
+      rememberAuthCheck(null);
+      return {
+        status: "anonymous",
+        user: null,
+      };
+    } catch {
+      clearInMemorySession();
+      return {
+        status: "anonymous",
+        user: null,
+      };
+    }
+  },
 
   logout: async () => {
     try {
@@ -423,11 +382,12 @@ export const authService = {
         headers: createHeaders(undefined, "POST"),
       });
     } catch {
-      // Ignore logout request failures and still clear the local session.
+      // Ignore network errors and still clear local state.
     } finally {
       clearAuthSession();
       rememberAuthCheck(null);
     }
   },
-};
 
+  getCurrentUser: (): User | null => currentUser,
+};

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authService } from '../services/authService';
+import { authService, hasAdministrativeAccess } from '../services/authService';
 
 const AuthLandingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -14,8 +14,7 @@ const AuthLandingPage: React.FC = () => {
     }
 
     const handleRedirection = (currentUser: { roles?: string[] }) => {
-      const roles = currentUser.roles || [];
-      const isAdmin = roles.includes('Admin') || roles.includes('Manager');
+      const isAdmin = hasAdministrativeAccess(currentUser);
 
       if (isAdmin) {
         navigate('/personnel/employees', { replace: true });

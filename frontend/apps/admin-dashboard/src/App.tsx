@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
+import WorkspaceOwnerActivationPage from './pages/WorkspaceOwnerActivationPage';
 import { EmployeeList } from './features/employees';
 import { ContractsManagementPage, SigningPortalPage } from './features/employees-contracts';
 import { WeeklyShiftSchedulePage } from './features/shift-scheduling';
@@ -290,7 +290,7 @@ const Header = ({
 function LegacyStateApp() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [user, setUser] = useState<User | null>(null);
-  const [currentPage, setCurrentPage] = useState<"login" | "register">("login");
+  const [currentPage, setCurrentPage] = useState<"login" | "activation">("login");
   const [isInitializing, setIsInitializing] = useState<boolean>(true);
 
   // Navigation state
@@ -369,13 +369,12 @@ function LegacyStateApp() {
         </div>
       ) : currentPage === "login" ? (
         <LoginPage
-          onNavigateToRegister={() => setCurrentPage("register")}
+          onNavigateToActivation={() => setCurrentPage("activation")}
           onLoginSuccess={handleLoginSuccess}
         />
       ) : (
-        <RegisterPage
+        <WorkspaceOwnerActivationPage
           onNavigateToLogin={() => setCurrentPage("login")}
-          onRegisterSuccess={() => setCurrentPage("login")}
         />
       )}
     </div>
@@ -652,7 +651,8 @@ function RoutedApp() {
     const redirectPath =
       redirectState?.from &&
       redirectState.from !== "/login" &&
-      redirectState.from !== "/register"
+      redirectState.from !== "/register" &&
+      redirectState.from !== "/activate-workspace-owner"
         ? redirectState.from
         : "/auth/landing";
 
@@ -697,7 +697,7 @@ function RoutedApp() {
               <Navigate to="/auth/landing" replace />
             ) : (
               <LoginPage
-                onNavigateToRegister={() => navigate("/register")}
+                onNavigateToActivation={() => navigate("/activate-workspace-owner")}
 
                 onLoginSuccess={handleLoginSuccess}
               />
@@ -705,18 +705,18 @@ function RoutedApp() {
           }
         />
         <Route
-          path="/register"
+          path="/activate-workspace-owner"
           element={
             isAuthenticated ? (
               <Navigate to="/auth/landing" replace />
             ) : (
-              <RegisterPage
+              <WorkspaceOwnerActivationPage
                 onNavigateToLogin={() => navigate("/login")}
-                onRegisterSuccess={() => navigate("/login")}
               />
             )
           }
         />
+        <Route path="/register" element={<Navigate to="/activate-workspace-owner" replace />} />
         <Route
           path="/personnel/employees"
           element={

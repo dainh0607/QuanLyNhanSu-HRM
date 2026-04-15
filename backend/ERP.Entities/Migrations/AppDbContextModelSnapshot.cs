@@ -6123,7 +6123,7 @@ namespace ERP.Entities.Migrations
                             Id = 1,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            description = "System Administrator",
+                            description = "Quản trị hệ thống cao nhất",
                             is_active = true,
                             is_system_role = true,
                             name = "Admin"

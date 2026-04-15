@@ -11,6 +11,7 @@ namespace ERP.DTOs.Auth
         public const string AccessTokenType = "Access";
         public const string RefreshTokenType = "Refresh";
         public const string SignerTokenType = "Signer";
+        public const string SuperAdminPolicyName = "SuperAdminOnly";
 
         // Access Groups (Roles)
         public const string RoleAdmin = "Admin";
