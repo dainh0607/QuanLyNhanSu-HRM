@@ -1101,6 +1101,33 @@ namespace ERP.Services.Auth
                 roles.Insert(0, AuthSecurityConstants.RoleAdmin);
             }
 
+            // Calculate Scope Level based on roles
+            string scopeLevel = "PERSONAL";
+            bool isSystemAdmin = false;
+
+            if (roles.Contains(AuthSecurityConstants.RoleAdmin, StringComparer.OrdinalIgnoreCase))
+            {
+                scopeLevel = "TENANT";
+                isSystemAdmin = true;
+            }
+            else if (roles.Contains(AuthSecurityConstants.RoleDirector, StringComparer.OrdinalIgnoreCase) || 
+                     roles.Contains(AuthSecurityConstants.RoleModuleAdmin, StringComparer.OrdinalIgnoreCase))
+            {
+                scopeLevel = "TENANT";
+            }
+            else if (roles.Contains(AuthSecurityConstants.RoleRegionManager, StringComparer.OrdinalIgnoreCase))
+            {
+                scopeLevel = "REGION";
+            }
+            else if (roles.Contains(AuthSecurityConstants.RoleBranchManager, StringComparer.OrdinalIgnoreCase))
+            {
+                scopeLevel = "BRANCH";
+            }
+            else if (roles.Contains(AuthSecurityConstants.RoleDeptManager, StringComparer.OrdinalIgnoreCase))
+            {
+                scopeLevel = "DEPARTMENT";
+            }
+
             return new UserInfoDto
             {
                 UserId = localUser.Id,
@@ -1111,7 +1138,12 @@ namespace ERP.Services.Auth
                 EmployeeCode = localUser.Employee?.employee_code ?? string.Empty,
                 PhoneNumber = localUser.Employee?.phone ?? string.Empty,
                 IsActive = localUser.is_active,
-                Roles = roles
+                Roles = roles,
+                ScopeLevel = scopeLevel,
+                RegionId = localUser.Employee?.region_id,
+                BranchId = localUser.Employee?.branch_id,
+                DepartmentId = localUser.Employee?.department_id,
+                IsSystemAdmin = isSystemAdmin
             };
         }
 
@@ -1201,7 +1233,12 @@ namespace ERP.Services.Auth
                 // FIX: Ensure tenant_id is always set to a valid number (0 as fallback for null)
                 new("tenant_id", user.TenantId?.ToString() ?? "0"),
                 new("EmployeeId", user.EmployeeId.ToString()),
-                new("EmployeeCode", user.EmployeeCode ?? string.Empty)
+                new("EmployeeCode", user.EmployeeCode ?? string.Empty),
+                new("scope_level", user.ScopeLevel ?? "PERSONAL"),
+                new("region_id", user.RegionId?.ToString() ?? ""),
+                new("branch_id", user.BranchId?.ToString() ?? ""),
+                new("department_id", user.DepartmentId?.ToString() ?? ""),
+                new("is_system_admin", user.IsSystemAdmin.ToString().ToLower())
             };
         }
 

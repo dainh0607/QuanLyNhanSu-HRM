@@ -192,6 +192,7 @@ builder.Services.AddScoped<IShiftService, ShiftService>();
 builder.Services.AddScoped<IShiftTemplateService, ShiftTemplateService>();
 builder.Services.AddScoped<IShiftAssignmentService, ShiftAssignmentService>();
 builder.Services.AddScoped<IDocxService, DocxService>();
+builder.Services.AddScoped<IRlsSessionContextService, RlsSessionContextService>();
 builder.Services.AddHostedService<EmployeeStatusWorker>();
 
 // FIX #1-15: Register RBAC Authorization Services
@@ -220,6 +221,7 @@ using (var scope = app.Services.CreateScope())
             logger.LogInformation("[STARTUP] Ensuring database is migrated and seeded...");
             db.Database.Migrate();
             await AuthSessionSchemaInitializer.EnsureCreatedAsync(db);
+            await RlsSchemaInitializer.EnsureUpdatedAsync(db, app.Environment.ContentRootPath, logger);
 
             // Sync with Firebase
             var userService = services.GetRequiredService<IUserService>();
@@ -301,6 +303,7 @@ if (!app.Environment.IsDevelopment())
 app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
+app.UseRlsSessionContext();
 app.UseMiddleware<CsrfProtectionMiddleware>();
 app.UseMiddleware<ERP.API.Middleware.BreakGlassMiddleware>();
 app.UseMiddleware<AuthorizationMiddleware>(); // FIX #1-15: RBAC Authorization middleware
