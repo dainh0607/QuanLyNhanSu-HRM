@@ -5,8 +5,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ERP.Entities.Models
 {
     [Table("PayrollDeductions")]
-    public class PayrollDeductions : BaseEntity
+    public class PayrollDeductions : BaseEntity, ERP.Entities.Interfaces.ITenantEntity
     {
+        [Column("tenant_id")]
+        public int? tenant_id { get; set; }
+
         [Column("payroll_id")]
         public int payroll_id { get; set; }
 

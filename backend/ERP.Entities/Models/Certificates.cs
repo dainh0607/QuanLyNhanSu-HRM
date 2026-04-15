@@ -5,8 +5,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ERP.Entities.Models
 {
     [Table("Certificates")]
-    public class Certificates : BaseEntity
+    public class Certificates : BaseEntity, ERP.Entities.Interfaces.ITenantEntity
     {
+        [Column("tenant_id")]
+        public int? tenant_id { get; set; }
+
         [Column("certificate_name")]
         [StringLength(200)]
         public string certificate_name { get; set; }

@@ -13,13 +13,13 @@ namespace ERP.DTOs.Auth
         public const string SignerTokenType = "Signer";
 
         // Access Groups (Roles)
-        public const string RoleAdmin = "Quản trị";
-        public const string RoleDirector = "Ban giám đốc";
-        public const string RoleRegionManager = "Quản lý vùng";
-        public const string RoleBranchManager = "Quản lý chi nhánh";
-        public const string RoleDeptManager = "Quản lý bộ phận";
-        public const string RoleModuleAdmin = "Quản trị phân hệ";
-        public const string RoleEmployee = "Nhân viên";
+        public const string RoleAdmin = "Admin";
+        public const string RoleDirector = "Manager";
+        public const string RoleRegionManager = "Regional Manager";
+        public const string RoleBranchManager = "Branch Manager";
+        public const string RoleDeptManager = "Department Head";
+        public const string RoleModuleAdmin = "Module Admin";
+        public const string RoleEmployee = "Staff";
 
         // Access Group IDs
         public const int RoleAdminId = 1;

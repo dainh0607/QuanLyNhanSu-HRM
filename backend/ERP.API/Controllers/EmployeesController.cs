@@ -2,6 +2,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.DTOs.Employees;
 using ERP.Services.Employees;
+using ERP.Services.Authorization;
+using ERP.API.Extensions;
+using ERP.API.Authorization;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace ERP.API.Controllers
@@ -9,15 +13,20 @@ namespace ERP.API.Controllers
     [ApiController]
     [Route("api/employees")]
     [Authorize]
+    [HasPermission("Employee", "View")]
     public class EmployeesController : ControllerBase
     {
         private readonly IEmployeeService _employeeService;
         private readonly IEmployeeLifecycleService _lifecycleService;
+        private readonly ERP.Services.Authorization.IAuthorizationService _authService;
 
-        public EmployeesController(IEmployeeService employeeService, IEmployeeLifecycleService lifecycleService)
+        public EmployeesController(IEmployeeService employeeService, 
+            IEmployeeLifecycleService lifecycleService,
+            ERP.Services.Authorization.IAuthorizationService authService)
         {
             _employeeService = employeeService;
             _lifecycleService = lifecycleService;
+            _authService = authService;
         }
 
         [HttpGet]
@@ -35,6 +44,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpGet("{id}/full-profile")]
+        [HasPermission("Employee", "View")]
         public async Task<IActionResult> GetFullProfile(int id)
         {
             var result = await _employeeService.GetFullProfileAsync(id);
@@ -43,6 +53,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpGet("{id}")]
+        [HasPermission("Employee", "View")]
         public async Task<IActionResult> GetById(int id)
         {
             var result = await _employeeService.GetByIdAsync(id);
@@ -73,7 +84,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpGet("export")]
-        [Authorize(Roles = "Manager,Admin")]
+        [HasPermission("Employee", "Export")]
         public async Task<IActionResult> Export([FromQuery] EmployeeFilterDto filter, [FromQuery(Name = "columns")] string[]? columns)
         {
             var result = await _employeeService.ExportEmployeesToCsvAsync(filter, columns);
@@ -81,7 +92,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Manager,Admin")]
+        [HasPermission("Employee", "Create")]
         public async Task<IActionResult> Create([FromBody] EmployeeCreateDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -98,7 +109,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("bulk")]
-        [Authorize(Roles = "Manager,Admin")]
+        [HasPermission("Employee", "Create")]
         public async Task<IActionResult> BulkCreate([FromBody] EmployeeBulkCreateDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -115,7 +126,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Manager,Admin")]
+        [HasPermission("Employee", "Update")]
         public async Task<IActionResult> Update(int id, [FromBody] EmployeeUpdateDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -127,7 +138,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Manager,Admin")]
+        [HasPermission("Employee", "Delete")]
         public async Task<IActionResult> Delete(int id)
         {
             var success = await _employeeService.DeleteAsync(id);
@@ -137,7 +148,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("{id}/resignation")]
-        [Authorize(Roles = "Manager,Admin")]
+        [HasPermission("Employee", "Update")]
         public async Task<IActionResult> Resign(int id, [FromBody] ResignationRequestDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -149,7 +160,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("{id}/promotion")]
-        [Authorize(Roles = "Manager,Admin")]
+        [HasPermission("Employee", "Update")]
         public async Task<IActionResult> Promote(int id, [FromBody] PromotionRequestDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);

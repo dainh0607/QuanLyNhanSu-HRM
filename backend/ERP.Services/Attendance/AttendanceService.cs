@@ -8,6 +8,8 @@ using ERP.Entities.Models;
 using ERP.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using ERP.Services.Authorization;
+using ERP.Entities.Interfaces;
 
 namespace ERP.Services.Attendance
 {
@@ -15,11 +17,18 @@ namespace ERP.Services.Attendance
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<AttendanceService> _logger;
+        private readonly IAuthorizationService _authService;
+        private readonly ICurrentUserContext _userContext;
 
-        public AttendanceService(IUnitOfWork unitOfWork, ILogger<AttendanceService> logger)
+        public AttendanceService(IUnitOfWork unitOfWork, 
+            ILogger<AttendanceService> logger,
+            IAuthorizationService authService,
+            ICurrentUserContext userContext)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _authService = authService;
+            _userContext = userContext;
         }
 
         public async Task<bool> CheckInAsync(int userId, AttendanceCheckInDto dto)
@@ -70,6 +79,17 @@ namespace ERP.Services.Attendance
 
         public async Task<IEnumerable<AttendanceRecordDto>> GetTodayAttendanceAsync(int employeeId)
         {
+            // SCOPING: Check if current user can access this employee
+            var currentUserId = _userContext.UserId ?? 0;
+            if (currentUserId > 0)
+            {
+                var canAccess = await _authService.CanAccessEmployee(currentUserId, employeeId);
+                if (!canAccess && currentUserId != (await _unitOfWork.Repository<Users>().AsQueryable().Where(u => u.employee_id == employeeId).Select(u => u.Id).FirstOrDefaultAsync()))
+                {
+                    throw new UnauthorizedAccessException("Bạn không có quyền xem dữ liệu chấm công của nhân viên này.");
+                }
+            }
+
             var today = DateTime.UtcNow.Date;
             var tomorrow = today.AddDays(1);
 
@@ -95,6 +115,17 @@ namespace ERP.Services.Attendance
 
         public async Task<PaginatedListDto<AttendanceRecordDto>> GetAttendanceHistoryAsync(int employeeId, int skip, int take)
         {
+            // SCOPING: Check if current user can access this employee
+            var currentUserId = _userContext.UserId ?? 0;
+            if (currentUserId > 0)
+            {
+                var canAccess = await _authService.CanAccessEmployee(currentUserId, employeeId);
+                if (!canAccess && currentUserId != (await _unitOfWork.Repository<Users>().AsQueryable().Where(u => u.employee_id == employeeId).Select(u => u.Id).FirstOrDefaultAsync()))
+                {
+                    throw new UnauthorizedAccessException("Bạn không có quyền xem lịch sử chấm công của nhân viên này.");
+                }
+            }
+
             var query = _unitOfWork.Repository<AttendanceRecords>()
                 .AsQueryable()
                 .Include(r => r.Employee)

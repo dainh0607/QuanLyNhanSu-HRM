@@ -1,15 +1,20 @@
 using Microsoft.EntityFrameworkCore;
 using ERP.Entities.Models;
 using ERP.Entities.Seeding;
+using ERP.Entities.Interfaces;
 
 namespace ERP.Entities
 {
     public class AppDbContext : DbContext
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+        private readonly ERP.Entities.Interfaces.ICurrentUserContext _currentUserContext;
+
+        public AppDbContext(DbContextOptions<AppDbContext> options, ERP.Entities.Interfaces.ICurrentUserContext currentUserContext) : base(options)
         {
+            _currentUserContext = currentUserContext;
         }
 
+        public DbSet<Tenants> Tenants { get; set; }
         public DbSet<AddressTypes> AddressTypes { get; set; }
         public DbSet<Addresses> Addresses { get; set; }
         public DbSet<AdvanceTypes> AdvanceTypes { get; set; }
@@ -122,6 +127,15 @@ namespace ERP.Entities
         public DbSet<InvitationTokens> InvitationTokens { get; set; }
         public DbSet<EmployeeDocuments> EmployeeDocuments { get; set; }
 
+        // NEW: RBAC Authorization Tables (FIX)
+        public DbSet<RoleScopes> RoleScopes { get; set; }
+        public DbSet<ResourcePermissions> ResourcePermissions { get; set; }
+        public DbSet<ActionPermissions> ActionPermissions { get; set; }
+        public DbSet<RequestTypeApprovers> RequestTypeApprovers { get; set; }
+        public DbSet<PermissionAuditLogs> PermissionAuditLogs { get; set; }
+        public DbSet<BreakGlassAccessLogs> BreakGlassAccessLogs { get; set; }
+        public DbSet<LoginAttempts> LoginAttempts { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -150,6 +164,48 @@ namespace ERP.Entities
             {
                 relationship.DeleteBehavior = DeleteBehavior.Restrict;
             }
+
+            // ========== FIX #1: Multi-tenant Global Query Filters ==========
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            {
+                if (typeof(ITenantEntity).IsAssignableFrom(entityType.ClrType))
+                {
+                    modelBuilder.Entity(entityType.ClrType).HasQueryFilter(
+                        GenerateTenantQueryFilter(entityType.ClrType)
+                    );
+                }
+            }
+        }
+
+        private System.Linq.Expressions.LambdaExpression GenerateTenantQueryFilter(System.Type type)
+        {
+            var parameter = System.Linq.Expressions.Expression.Parameter(type, "e");
+            var tenantIdProperty = System.Linq.Expressions.Expression.Property(parameter, "tenant_id");
+            var currentTenantId = System.Linq.Expressions.Expression.Constant(_currentUserContext.TenantId, typeof(int?));
+            // e => e.tenant_id == _currentUserContext.TenantId || e.tenant_id == null
+            var body = System.Linq.Expressions.Expression.OrElse(
+                System.Linq.Expressions.Expression.Equal(tenantIdProperty, currentTenantId),
+                System.Linq.Expressions.Expression.Equal(tenantIdProperty, System.Linq.Expressions.Expression.Constant(null, typeof(int?)))
+            );
+            return System.Linq.Expressions.Expression.Lambda(body, parameter);
+        }
+
+        public override async Task<int> SaveChangesAsync(System.Threading.CancellationToken cancellationToken = default)
+        {
+            // ========== FIX #1: Multi-tenant Auto-assignment ==========
+            var entries = ChangeTracker.Entries()
+                .Where(e => e.Entity is ITenantEntity && e.State == EntityState.Added);
+
+            foreach (var entry in entries)
+            {
+                var tenantEntity = (ITenantEntity)entry.Entity;
+                if (!tenantEntity.tenant_id.HasValue && _currentUserContext.TenantId.HasValue)
+                {
+                    tenantEntity.tenant_id = _currentUserContext.TenantId;
+                }
+            }
+
+            return await base.SaveChangesAsync(cancellationToken);
         }
     }
 }

@@ -112,6 +112,38 @@ namespace ERP.Services.Auth
                     return new AuthResponseDto { Success = false, Message = $"Lỗi Firebase: {fbEx.Message}" };
                 }
 
+                // Create/Update Local Employee & Handle Multi-tenancy
+                Tenants? workspace = null;
+                int? tenantId = null;
+
+                if (invitation != null)
+                {
+                    // Case 1: Joining an existing workspace via invitation
+                    // In a production system, invitation should carry tenant_id. 
+                    // For now, we find the creator's tenant.
+                    var creator = await _context.Users.FindAsync(invitation.CreatedBy);
+                    tenantId = creator?.tenant_id;
+                }
+                else
+                {
+                    // Case 2: Creating a new workspace (New Customer)
+                    if (string.IsNullOrWhiteSpace(dto.CompanyName))
+                    {
+                        return new AuthResponseDto { Success = false, Message = "Tên công ty là bắt buộc khi đăng ký không gian làm việc mới." };
+                    }
+
+                    workspace = new Tenants
+                    {
+                        name = dto.CompanyName,
+                        code = Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper(), // Simple auto-code
+                        is_active = true,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.Tenants.Add(workspace);
+                    await _context.SaveChangesAsync();
+                    tenantId = workspace.Id;
+                }
+
                 try
                 {
                     // Create/Update Local Employee
@@ -123,6 +155,7 @@ namespace ERP.Services.Auth
                             full_name = dto.FullName,
                             email = dto.Email,
                             phone = dto.PhoneNumber,
+                            tenant_id = tenantId,
                             is_active = true,
                             CreatedAt = DateTime.UtcNow,
                             UpdatedAt = DateTime.UtcNow
@@ -132,19 +165,20 @@ namespace ERP.Services.Auth
                     }
 
                     // Create Local User
-                    var user = await _userService.CreateLocalUserAsync(existingEmployee.Id, dto.Email, firebaseUser.Uid);
+                    var user = await _userService.CreateLocalUserAsync(existingEmployee.Id, dto.Email, firebaseUser.Uid, tenantId);
 
                     // Assign Roles
-                    int assignedRoleId = 2; // Default Manager (Changed from 3 per user request)
+                    int assignedRoleId = invitation != null ? 7 : 1; // Default to Staff for invited, Tenant Admin (1) for Workspace Owner
+                    
+                    // Master Email check (Override to Super Admin)
                     string masterEmail = _configuration["AdminSettings:MasterEmail"];
-
                     if (!string.IsNullOrEmpty(masterEmail) &&
                         string.Equals(dto.Email, masterEmail, StringComparison.OrdinalIgnoreCase))
                     {
-                        assignedRoleId = 1; // Admin
+                        assignedRoleId = 1; // Or a specific Super Admin role if defined differently
                     }
 
-                    await _userService.AssignRoleAsync(user.Id, assignedRoleId);
+                    await _userService.AssignRoleAsync(user.Id, assignedRoleId, tenantId, workspace != null ? "Workspace Owner (Initial)" : "Staff Join");
 
                     // Mark invitation as used
                     if (invitation != null)
@@ -159,7 +193,7 @@ namespace ERP.Services.Auth
                     return new AuthResponseDto
                     {
                         Success = true,
-                        Message = "Dang ky thanh cong",
+                        Message = workspace != null ? $"Đăng ký thành công. Đã khởi tạo Workspace: {workspace.name}" : "Đăng ký thành công và tham gia Workspace thành công.",
                         User = await _userService.GetByIdAsync(user.Id)
                     };
                 }
@@ -229,13 +263,14 @@ namespace ERP.Services.Auth
                     return new AuthResponseDto { Success = false, Message = "Khong the tai thong tin nguoi dung" };
                 }
 
-                // Chặn nhân viên đăng nhập vào hệ thống quản trị
-                if (userInfo.Roles == null || !userInfo.Roles.Any(r => r == "Admin" || r == "Manager"))
+                // Chặn nhân viên không có quyền quản lý đăng nhập vào hệ thống quản trị
+                var allowedManagementRoles = new[] { "Admin", "Manager", "Regional Manager", "Branch Manager", "Department Head", "Module Admin" };
+                if (userInfo.Roles == null || !userInfo.Roles.Any(r => allowedManagementRoles.Contains(r)))
                 {
                     return new AuthResponseDto 
                     { 
                         Success = false, 
-                        Message = "Tài khoản nhân viên không có quyền truy cập vào hệ thống này." 
+                        Message = "Your account does not have permission to access the management system." 
                     };
                 }
 
@@ -870,6 +905,7 @@ namespace ERP.Services.Auth
             {
                 // 1. Rename existing legacy roles if they exist
                 var legacyRoles = await _context.Roles
+                    .IgnoreQueryFilters()
                     .Where(r => r.name == "Admin" || r.name == "Manager" || r.name == "User")
                     .ToListAsync();
 
@@ -898,6 +934,7 @@ namespace ERP.Services.Auth
 
                 // 3. Logic assigning default role for new users
                 var activeRoleIds = await _context.UserRoles
+                    .IgnoreQueryFilters()
                     .Where(ur => ur.user_id == userId && ur.is_active)
                     .Select(ur => ur.role_id)
                     .ToListAsync();
@@ -911,6 +948,7 @@ namespace ERP.Services.Auth
                     {
                         user_id = userId,
                         role_id = defaultRoleId,
+                        assignment_reason = "Initial Login Synchronization",
                         is_active = true,
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow
@@ -926,6 +964,7 @@ namespace ERP.Services.Auth
                     {
                         user_id = userId,
                         role_id = AuthSecurityConstants.RoleAdminId,
+                        assignment_reason = "Master Email Promotion",
                         is_active = true,
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow
@@ -1023,6 +1062,7 @@ namespace ERP.Services.Auth
             }
 
             var roles = await _context.UserRoles
+                .IgnoreQueryFilters()
                 .Where(ur => ur.user_id == localUser.Id && ur.is_active)
                 .Include(ur => ur.Role)
                 .Select(ur => ur.Role != null ? ur.Role.name : null)
@@ -1033,6 +1073,7 @@ namespace ERP.Services.Auth
             return new UserInfoDto
             {
                 UserId = localUser.Id,
+                TenantId = localUser.tenant_id,
                 EmployeeId = localUser.Employee?.Id ?? 0,
                 Email = localUser.Employee?.email ?? string.Empty,
                 FullName = localUser.Employee?.full_name ?? localUser.username,
@@ -1102,6 +1143,8 @@ namespace ERP.Services.Auth
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new(AuthSecurityConstants.SessionIdClaimType, sessionId),
                 new(AuthSecurityConstants.TokenTypeClaimType, AuthSecurityConstants.AccessTokenType),
+                // FIX: Ensure tenant_id is always set to a valid number (0 as fallback for null)
+                new("tenant_id", user.TenantId?.ToString() ?? "0"),
                 new("EmployeeId", user.EmployeeId.ToString()),
                 new("EmployeeCode", user.EmployeeCode ?? string.Empty)
             };

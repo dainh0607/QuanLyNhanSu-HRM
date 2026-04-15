@@ -4,12 +4,14 @@ using ERP.DTOs.Contracts;
 using ERP.Services.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ERP.API.Authorization;
 
 namespace ERP.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
+    [HasPermission("Contracts", "View")]
     public class ContractTemplatesController : ControllerBase
     {
         private readonly IContractTemplateService _templateService;

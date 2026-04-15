@@ -4,12 +4,14 @@ using ERP.DTOs.Employees.Profile;
 using ERP.Services.Employees;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ERP.API.Authorization;
 
 namespace ERP.API.Controllers
 {
     [ApiController]
     [Route("api/employees/{id}/profile")]
     [Authorize]
+    [HasPermission("Employee", "View")]
     public class EmployeeProfileController : ControllerBase
     {
         private readonly IEmployeeProfileService _profileService;
@@ -28,8 +30,8 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("basic-info")]
-        [Authorize(Roles = "Manager,Admin")]
-        public async Task<IActionResult> UpdateBasicInfo(int id, [FromBody] BasicInfoDto dto)
+        [HasPermission("Employee", "Update")]
+    public async Task<IActionResult> UpdateBasicInfo(int id, [FromBody] BasicInfoDto dto)
         {
             try
             {
@@ -44,8 +46,8 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("identity")]
-        [Authorize(Roles = "Manager,Admin")]
-        public async Task<IActionResult> UpdateIdentity(int id, [FromBody] IdentityInfoDto dto)
+        [HasPermission("Employee", "Update")]
+    public async Task<IActionResult> UpdateIdentity(int id, [FromBody] IdentityInfoDto dto)
         {
             var success = await _profileService.UpdateIdentityInfoAsync(id, dto);
             if (!success) return BadRequest();
@@ -53,8 +55,8 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("contact")]
-        [Authorize(Roles = "Manager,Admin")]
-        public async Task<IActionResult> UpdateContact(int id, [FromBody] ContactInfoDto dto)
+        [HasPermission("Employee", "Update")]
+    public async Task<IActionResult> UpdateContact(int id, [FromBody] ContactInfoDto dto)
         {
             var success = await _profileService.UpdateContactInfoAsync(id, dto);
             if (!success) return BadRequest();
@@ -62,8 +64,8 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("addresses")]
-        [Authorize(Roles = "Manager,Admin")]
-        public async Task<IActionResult> UpdateAddresses(int id, [FromBody] AddressProfileUpdateDto dto)
+        [HasPermission("Employee", "Update")]
+    public async Task<IActionResult> UpdateAddresses(int id, [FromBody] AddressProfileUpdateDto dto)
         {
             var request = dto ?? new AddressProfileUpdateDto();
             var success = await _profileService.UpdateAddressesAsync(id, request);
@@ -72,8 +74,8 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("emergency-contacts")]
-        [Authorize(Roles = "Manager,Admin")]
-        public async Task<IActionResult> UpdateEmergencyContacts(int id, [FromBody] List<EmergencyContactDto> dtos)
+        [HasPermission("Employee", "Update")]
+    public async Task<IActionResult> UpdateEmergencyContacts(int id, [FromBody] List<EmergencyContactDto> dtos)
         {
             var success = await _profileService.UpdateEmergencyContactsAsync(id, dtos);
             if (!success && dtos.Count > 0) return BadRequest();
@@ -99,8 +101,8 @@ namespace ERP.API.Controllers
         /// Validation MST (10 hoặc 13 chữ số thuần) được thực hiện qua [RegularExpression] trên DTO.
         /// </summary>
         [HttpPut("other-info")]
-        [Authorize(Roles = "Manager,Admin")]
-        public async Task<IActionResult> UpdateOtherInfo(int id, [FromBody] OtherInfoDto dto)
+        [HasPermission("Employee", "Update")]
+    public async Task<IActionResult> UpdateOtherInfo(int id, [FromBody] OtherInfoDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 

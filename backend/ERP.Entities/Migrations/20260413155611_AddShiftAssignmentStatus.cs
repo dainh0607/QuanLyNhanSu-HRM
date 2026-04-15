@@ -22,13 +22,7 @@ namespace ERP.Entities.Migrations
             migrationBuilder.Sql("UPDATE ShiftAssignments SET status = 'approved' WHERE is_published = 1");
             migrationBuilder.Sql("UPDATE ShiftAssignments SET status = 'draft' WHERE is_published = 0");
 
-            migrationBuilder.AddColumn<string>(
-                name: "status",
-                table: "OpenShifts",
-                type: "nvarchar(20)",
-                maxLength: 20,
-                nullable: false,
-                defaultValue: "active");
+
         }
 
         /// <inheritdoc />
@@ -38,9 +32,7 @@ namespace ERP.Entities.Migrations
                 name: "status",
                 table: "ShiftAssignments");
 
-            migrationBuilder.DropColumn(
-                name: "status",
-                table: "OpenShifts");
+
         }
     }
 }

@@ -3,12 +3,14 @@ using ERP.DTOs.JobTitles;
 using ERP.Services.Organization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ERP.API.Authorization;
 
 namespace ERP.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
+    [HasPermission("Organization", "View")]
     public class JobTitlesController : ControllerBase
     {
         private readonly IOrganizationService _orgService;
@@ -30,8 +32,8 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Admin,Manager")]
-        public async Task<IActionResult> Create([FromBody] JobTitleCreateDto dto)
+        [HasPermission("Organization", "Create")]
+    public async Task<IActionResult> Create([FromBody] JobTitleCreateDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             var res = await _orgService.CreateJobTitleAsync(dto);
@@ -39,8 +41,8 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin,Manager")]
-        public async Task<IActionResult> Update(int id, [FromBody] JobTitleUpdateDto dto)
+        [HasPermission("Organization", "Update")]
+    public async Task<IActionResult> Update(int id, [FromBody] JobTitleUpdateDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             var success = await _orgService.UpdateJobTitleAsync(id, dto);
@@ -49,8 +51,8 @@ namespace ERP.API.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Delete(int id)
+        [HasPermission("Organization", "Delete")]
+    public async Task<IActionResult> Delete(int id)
         {
             var success = await _orgService.DeleteJobTitleAsync(id);
             if (!success) return NotFound();

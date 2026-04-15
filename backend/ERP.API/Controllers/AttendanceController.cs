@@ -6,11 +6,14 @@ using ERP.DTOs.Attendance;
 using ERP.Services.Attendance;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ERP.API.Authorization;
 
 namespace ERP.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
+    [HasPermission("Attendance", "View")]
     public class AttendanceController : ControllerBase
     {
         private readonly IAttendanceService _attendanceService;
@@ -65,7 +68,6 @@ namespace ERP.API.Controllers
         }
 
         [HttpGet("today")]
-        [Authorize]
         public async Task<IActionResult> GetTodayAttendance([FromQuery] int? employeeId)
         {
             try
@@ -87,7 +89,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpGet("history/{employeeId}")]
-        [Authorize(Roles = "Manager,Admin")]
+        [HasPermission("Attendance", "View")]
         public async Task<IActionResult> GetAttendanceHistory(int employeeId, [FromQuery] int skip = 0, [FromQuery] int take = 10)
         {
             try

@@ -16,6 +16,10 @@ using ERP.Services.Lookup;
 using ERP.Services.Contracts;
 using ERP.Services.Attendance;
 using ERP.Services.Common;
+using ERP.Services.Authorization;
+using ERP.Services;
+using ERP.API.Middleware;
+using ERP.API.Extensions;
 using ERP.DTOs.Common;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -149,6 +153,18 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IClaimsTransformation, FirebaseClaimsTransformation>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddHttpContextAccessor();
+
+// RBAC Authorization Services
+builder.Services.AddScoped<ERP.Entities.Interfaces.ICurrentUserContext, CurrentUserContext>();
+builder.Services.AddScoped<ERP.Services.Authorization.IAuthorizationService, ERP.Services.Authorization.AuthorizationService>();
+builder.Services.AddScoped<ERP.Services.Authorization.IAuthorizationManagementService, ERP.Services.Authorization.AuthorizationManagementService>();
+builder.Services.AddScoped<ERP.Services.Authorization.IBreakGlassService, ERP.Services.Authorization.BreakGlassService>();
+builder.Services.AddScoped<ERP.Services.Authorization.IPermissionAuditLogService, ERP.Services.Authorization.PermissionAuditLogService>();
+builder.Services.AddScoped<ERP.Services.Authorization.ILoginAttemptService, ERP.Services.Authorization.LoginAttemptService>();
+
+builder.Services.AddScoped<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, ERP.API.Authorization.PermissionHandler>();
+builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationPolicyProvider, ERP.API.Authorization.PermissionPolicyProvider>();
+
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IEmployeeProfileService, EmployeeProfileService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
@@ -169,6 +185,13 @@ builder.Services.AddScoped<IShiftTemplateService, ShiftTemplateService>();
 builder.Services.AddScoped<IShiftAssignmentService, ShiftAssignmentService>();
 builder.Services.AddScoped<IDocxService, DocxService>();
 builder.Services.AddHostedService<EmployeeStatusWorker>();
+
+// FIX #1-15: Register RBAC Authorization Services
+builder.Services.AddScoped<IAuthorizationManagementService, AuthorizationManagementService>();
+builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
+builder.Services.AddScoped<IPermissionAuditLogService, PermissionAuditLogService>();
+builder.Services.AddScoped<IBreakGlassService, BreakGlassService>();
+builder.Services.AddScoped<ILoginAttemptService, LoginAttemptService>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -271,6 +294,8 @@ app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
 app.UseMiddleware<CsrfProtectionMiddleware>();
+app.UseMiddleware<ERP.API.Middleware.BreakGlassMiddleware>();
+app.UseMiddleware<AuthorizationMiddleware>(); // FIX #1-15: RBAC Authorization middleware
 app.UseAuthorization();
 
 app.MapControllers();

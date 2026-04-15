@@ -5,8 +5,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ERP.Entities.Models
 {
     [Table("ShiftTemplates")]
-    public class ShiftTemplates : AuditableEntity
+    public class ShiftTemplates : AuditableEntity, ERP.Entities.Interfaces.ITenantEntity
     {
+        [Column("tenant_id")]
+        public int? tenant_id { get; set; }
+
         [Column("template_name")]
         [Required]
         [StringLength(100)]

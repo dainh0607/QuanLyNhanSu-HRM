@@ -3,12 +3,14 @@ using System.Threading.Tasks;
 using ERP.Services.Attendance;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ERP.API.Authorization;
 
 namespace ERP.API.Controllers
 {
     [ApiController]
     [Route("api/shift-assignments")]
     [Authorize]
+    [HasPermission("Attendance", "View")]
     public class ShiftAssignmentsController : ControllerBase
     {
         private readonly IShiftAssignmentService _assignmentService;
@@ -51,6 +53,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost]
+        [HasPermission("Attendance", "Update")]
         public async Task<IActionResult> CreateAssignment([FromBody] ERP.DTOs.Attendance.ShiftAssignmentCreateDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -67,6 +70,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [HasPermission("Attendance", "Update")]
         public async Task<IActionResult> DeleteAssignment(int id)
         {
             try
@@ -82,6 +86,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("{id}/refresh-attendance")]
+        [HasPermission("Attendance", "Update")]
         public async Task<IActionResult> RefreshAttendance(int id)
         {
             try
@@ -97,6 +102,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("bulk-publish")]
+        [HasPermission("Attendance", "Update")]
         public async Task<IActionResult> BulkPublish([FromBody] ERP.DTOs.Attendance.ShiftBulkActionDto dto)
         {
             try
@@ -111,6 +117,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("bulk-approve")]
+        [HasPermission("Attendance", "Approve")]
         public async Task<IActionResult> BulkApprove([FromBody] ERP.DTOs.Attendance.ShiftBulkActionDto dto)
         {
             try
@@ -125,6 +132,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("bulk-publish-approve")]
+        [HasPermission("Attendance", "Approve")]
         public async Task<IActionResult> BulkPublishAndApprove([FromBody] ERP.DTOs.Attendance.ShiftBulkActionDto dto)
         {
             try
@@ -139,6 +147,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("bulk-delete-unconfirmed")]
+        [HasPermission("Attendance", "Update")]
         public async Task<IActionResult> BulkDeleteUnconfirmed([FromBody] ERP.DTOs.Attendance.ShiftBulkActionDto dto)
         {
             try

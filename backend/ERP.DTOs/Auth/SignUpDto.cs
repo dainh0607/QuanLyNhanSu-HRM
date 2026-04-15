@@ -24,6 +24,7 @@ namespace ERP.DTOs.Auth
         [StringLength(20)]
         public string EmployeeCode { get; set; }
 
+        public string? CompanyName { get; set; }
 
         public string PhoneNumber { get; set; }
 

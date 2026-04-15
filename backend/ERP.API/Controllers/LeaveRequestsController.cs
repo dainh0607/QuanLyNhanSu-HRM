@@ -5,12 +5,14 @@ using ERP.Entities.Models;
 using ERP.Repositories.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ERP.API.Authorization;
 
 namespace ERP.API.Controllers
 {
     [ApiController]
     [Route("api/leave-requests")]
     [Authorize]
+    [HasPermission("Leave", "Update")]
     public class LeaveRequestsController : ControllerBase
     {
         private readonly IUnitOfWork _unitOfWork;
