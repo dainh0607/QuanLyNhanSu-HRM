@@ -10,7 +10,7 @@ namespace ERP.API.Controllers
     [ApiController]
     [Route("api/shift-assignments")]
     [Authorize]
-    [HasPermission("Attendance", "View")]
+    [HasPermission("Attendance", "Manage")]
     public class ShiftAssignmentsController : ControllerBase
     {
         private readonly IShiftAssignmentService _assignmentService;
@@ -170,6 +170,21 @@ namespace ERP.API.Controllers
             try
             {
                 var result = await _assignmentService.DeleteUnconfirmedAssignmentsAsync(dto.WeekStartDate);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpPost("bulk-update-status")]
+        [HasPermission("Attendance", "Update")]
+        public async Task<IActionResult> BulkUpdateStatus([FromBody] ERP.DTOs.Attendance.ShiftBulkUpdateStatusDto dto)
+        {
+            try
+            {
+                var result = await _assignmentService.UpdateShiftStatusAsync(dto);
                 return Ok(result);
             }
             catch (Exception ex)

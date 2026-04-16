@@ -102,5 +102,50 @@ namespace ERP.API.Controllers
                 return BadRequest(new { Message = ex.Message });
             }
         }
+
+        [HttpGet("summary")]
+        public async Task<IActionResult> GetAttendanceSummary([FromQuery] int employeeId, [FromQuery] int month, [FromQuery] int year)
+        {
+            try
+            {
+                var summary = await _attendanceService.GetAttendanceSummaryAsync(employeeId, month, year);
+                return Ok(summary);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpGet("monthly/{employeeId}")]
+        public async Task<IActionResult> GetMonthlyAttendance(int employeeId, [FromQuery] int month, [FromQuery] int year)
+        {
+            try
+            {
+                var records = await _attendanceService.GetMonthlyAttendanceAsync(employeeId, month, year);
+                return Ok(records);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpPost("manual-adjustment")]
+        [HasPermission("Attendance", "Update")]
+        public async Task<IActionResult> ManualAdjustment([FromBody] AttendanceAdjustmentDto dto)
+        {
+            try
+            {
+                var modifierId = GetCurrentUserId();
+                var success = await _attendanceService.ManualAdjustmentAsync(modifierId, dto);
+                if (!success) return BadRequest(new { Message = "Điều chỉnh chấm công thất bại." });
+                return Ok(new { Message = "Điều chỉnh chấm công thành công." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
     }
 }

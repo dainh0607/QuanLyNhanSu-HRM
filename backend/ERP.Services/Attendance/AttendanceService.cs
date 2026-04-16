@@ -152,5 +152,87 @@ namespace ERP.Services.Attendance
 
             return new PaginatedListDto<AttendanceRecordDto>(items.ToList(), total, skip / take + 1, take);
         }
+
+        public async Task<AttendanceSummaryDto> GetAttendanceSummaryAsync(int employeeId, int month, int year)
+        {
+            var startDate = new DateTime(year, month, 1);
+            var endDate = startDate.AddMonths(1);
+
+            var records = await _unitOfWork.Repository<AttendanceRecords>()
+                .AsQueryable()
+                .Where(r => r.employee_id == employeeId && r.record_time >= startDate && r.record_time < endDate)
+                .ToListAsync();
+
+            // Logic đơn giản để tính toán summary
+            // Trong thực tế sẽ cần so khớp với ca làm việc để tính Late/Early
+            var presentDays = records.Select(r => r.record_time.Date).Distinct().Count();
+            var totalDaysInMonth = DateTime.DaysInMonth(year, month);
+
+            return new AttendanceSummaryDto
+            {
+                EmployeeId = employeeId,
+                Month = month,
+                Year = year,
+                TotalDays = totalDaysInMonth,
+                PresentDays = presentDays,
+                AbsentDays = totalDaysInMonth - presentDays, // Giả định đơn giản
+                LateCount = 0, // Placeholder
+                EarlyCount = 0 // Placeholder
+            };
+        }
+
+        public async Task<IEnumerable<AttendanceRecordDto>> GetMonthlyAttendanceAsync(int employeeId, int month, int year)
+        {
+            var startDate = new DateTime(year, month, 1);
+            var endDate = startDate.AddMonths(1);
+
+            var records = await _unitOfWork.Repository<AttendanceRecords>()
+                .AsQueryable()
+                .Include(r => r.Employee)
+                .Where(r => r.employee_id == employeeId && r.record_time >= startDate && r.record_time < endDate)
+                .OrderBy(r => r.record_time)
+                .ToListAsync();
+
+            return records.Select(r => new AttendanceRecordDto
+            {
+                Id = r.Id,
+                EmployeeId = r.employee_id,
+                EmployeeName = r.Employee?.full_name,
+                RecordTime = r.record_time,
+                RecordType = r.record_type,
+                Source = r.source,
+                Note = r.note,
+                Verified = r.verified
+            });
+        }
+
+        public async Task<bool> ManualAdjustmentAsync(int modifierId, AttendanceAdjustmentDto dto)
+        {
+            var record = await _unitOfWork.Repository<AttendanceRecords>().GetByIdAsync(dto.RecordId);
+            if (record == null) throw new Exception("Không tìm thấy bản ghi chấm công.");
+
+            // Lưu vết thay đổi
+            var modification = new AttendanceModifications
+            {
+                attendance_record_id = record.Id,
+                modified_by = modifierId,
+                modified_at = DateTime.UtcNow,
+                old_time = record.record_time,
+                new_time = dto.NewTime,
+                reason = dto.Reason,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            // Cập nhật bản ghi chính
+            record.record_time = dto.NewTime;
+            record.note = $"[Điều chỉnh] {dto.Reason}";
+            record.UpdatedAt = DateTime.UtcNow;
+
+            _unitOfWork.Repository<AttendanceRecords>().Update(record);
+            await _unitOfWork.Repository<AttendanceModifications>().AddAsync(modification);
+
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
     }
 }

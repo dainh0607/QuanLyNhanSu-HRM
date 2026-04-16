@@ -13,4 +13,9 @@ namespace ERP.DTOs.Attendance
         public int AffectedCount { get; set; }
         public string Message { get; set; } = string.Empty;
     }
+
+    public class ShiftBulkUpdateStatusDto : ShiftBulkActionDto
+    {
+        public string TargetStatus { get; set; } = string.Empty;
+    }
 }

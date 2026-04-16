@@ -41,12 +41,15 @@ let lastAuthCheckAt = 0;
 let lastAuthCheckResult: User | null | undefined;
 
 const ADMIN_ACCESS_ROLES = new Set([
-  "Quản trị",
   "Admin",
   "Manager",
-  "WorkspaceOwner",
+  "Regional Manager",
+  "Branch Manager",
+  "Department Head",
+  "Module Admin",
+  "Staff",
+  "Quản trị",
   "Workspace Owner",
-  "Owner",
 ]);
 
 export const hasAdministrativeAccess = (

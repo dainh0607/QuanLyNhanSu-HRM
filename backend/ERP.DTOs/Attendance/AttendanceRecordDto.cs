@@ -22,4 +22,24 @@ namespace ERP.DTOs.Attendance
         public string Note { get; set; }
         public string DeviceInfo { get; set; }
     }
+
+    public class AttendanceAdjustmentDto
+    {
+        public int RecordId { get; set; }
+        public int EmployeeId { get; set; }
+        public DateTime NewTime { get; set; }
+        public string Reason { get; set; } = string.Empty;
+    }
+
+    public class AttendanceSummaryDto
+    {
+        public int EmployeeId { get; set; }
+        public int Month { get; set; }
+        public int Year { get; set; }
+        public int TotalDays { get; set; }
+        public int PresentDays { get; set; }
+        public int AbsentDays { get; set; }
+        public int LateCount { get; set; }
+        public int EarlyCount { get; set; }
+    }
 }

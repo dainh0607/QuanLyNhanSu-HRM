@@ -12,10 +12,12 @@ namespace ERP.Services.Attendance
     public class ShiftAssignmentService : IShiftAssignmentService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IShiftNotificationService _notificationService;
 
-        public ShiftAssignmentService(IUnitOfWork unitOfWork)
+        public ShiftAssignmentService(IUnitOfWork unitOfWork, IShiftNotificationService notificationService)
         {
             _unitOfWork = unitOfWork;
+            _notificationService = notificationService;
         }
 
         public async Task<WeeklyScheduleApiResponseDto> GetWeeklyScheduleAsync(
@@ -239,6 +241,10 @@ namespace ERP.Services.Attendance
             }
 
             await _unitOfWork.SaveChangesAsync();
+
+            // Gửi thông báo
+            await _notificationService.NotifyShiftPublishedAsync(assignments.Select(a => a.Id).ToList());
+
             return new ShiftBulkActionResultDto
             {
                 AffectedCount = assignments.Count,
@@ -266,6 +272,10 @@ namespace ERP.Services.Attendance
             }
 
             await _unitOfWork.SaveChangesAsync();
+
+            // Gửi thông báo
+            await _notificationService.NotifyShiftApprovedAsync(assignments.Select(a => a.Id).ToList());
+
             return new ShiftBulkActionResultDto
             {
                 AffectedCount = assignments.Count,
@@ -294,6 +304,10 @@ namespace ERP.Services.Attendance
             }
 
             await _unitOfWork.SaveChangesAsync();
+
+            // Gửi thông báo
+            await _notificationService.NotifyShiftApprovedAsync(assignments.Select(a => a.Id).ToList());
+
             return new ShiftBulkActionResultDto
             {
                 AffectedCount = assignments.Count,
@@ -487,6 +501,54 @@ namespace ERP.Services.Attendance
             {
                 PendingPublishCount = draftCount,
                 PendingApprovalCount = pendingApprovalCount
+            };
+        }
+
+        public async Task<ShiftBulkActionResultDto> UpdateShiftStatusAsync(ShiftBulkUpdateStatusDto dto)
+        {
+            if (string.IsNullOrEmpty(dto.TargetStatus))
+                throw new Exception("Trạng thái đích không được để trống.");
+
+            var (startDate, endDate) = ParseWeekRange(dto.WeekStartDate);
+
+            var query = _unitOfWork.Repository<ShiftAssignments>()
+                .AsQueryable()
+                .Where(a => a.assignment_date >= startDate && a.assignment_date < endDate);
+
+            if (dto.AssignmentIds != null && dto.AssignmentIds.Count > 0)
+                query = query.Where(a => dto.AssignmentIds.Contains(a.Id));
+            else
+            {
+                // Nếu không truyền ID, mặc định là các ca có trạng thái hợp lệ để chuyển đổi
+                if (dto.TargetStatus == "published")
+                    query = query.Where(a => a.status == "draft");
+                else if (dto.TargetStatus == "approved")
+                    query = query.Where(a => a.status == "published" || a.status == "draft");
+            }
+
+            var assignments = await query.ToListAsync();
+            foreach (var a in assignments)
+            {
+                a.status = dto.TargetStatus;
+                if (dto.TargetStatus == "published") a.is_published = true;
+                if (dto.TargetStatus == "approved") a.is_published = true;
+                
+                a.UpdatedAt = DateTime.UtcNow;
+                _unitOfWork.Repository<ShiftAssignments>().Update(a);
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+
+            var ids = assignments.Select(a => a.Id).ToList();
+            if (dto.TargetStatus == "published")
+                await _notificationService.NotifyShiftPublishedAsync(ids);
+            else if (dto.TargetStatus == "approved")
+                await _notificationService.NotifyShiftApprovedAsync(ids);
+
+            return new ShiftBulkActionResultDto
+            {
+                AffectedCount = assignments.Count,
+                Message = $"Đã cập nhật {assignments.Count} ca làm sang trạng thái '{dto.TargetStatus}'."
             };
         }
     }

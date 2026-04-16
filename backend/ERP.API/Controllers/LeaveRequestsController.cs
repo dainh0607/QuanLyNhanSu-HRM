@@ -1,25 +1,64 @@
 using System;
 using System.Threading.Tasks;
 using ERP.DTOs.Attendance;
-using ERP.Entities.Models;
-using ERP.Repositories.Interfaces;
+using ERP.Services.Attendance;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Authorization;
+using System.Security.Claims;
 
 namespace ERP.API.Controllers
 {
     [ApiController]
     [Route("api/leave-requests")]
     [Authorize]
-    [HasPermission("Leave", "Update")]
+    [HasPermission("LeaveRequest", "View")]
     public class LeaveRequestsController : ControllerBase
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly ILeaveRequestService _leaveService;
 
-        public LeaveRequestsController(IUnitOfWork unitOfWork)
+        public LeaveRequestsController(ILeaveRequestService leaveService)
         {
-            _unitOfWork = unitOfWork;
+            _leaveService = leaveService;
+        }
+
+        private int GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            {
+                throw new UnauthorizedAccessException("Không thể xác định thông tin người dùng.");
+            }
+            return userId;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetLeaveRequests([FromQuery] string? status, [FromQuery] int skip = 0, [FromQuery] int take = 10)
+        {
+            try
+            {
+                var result = await _leaveService.GetLeaveRequestsAsync(status, skip, take);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            try
+            {
+                var result = await _leaveService.GetLeaveRequestByIdAsync(id);
+                if (result == null) return NotFound();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
         }
 
         [HttpPost]
@@ -29,31 +68,57 @@ namespace ERP.API.Controllers
 
             try
             {
-                // STUB implementation to satisfy the frontend UI.
-                // In Phase 4/5, this will be replaced with a robust ILeaveRequestService 
-                // that handles LeaveTypes mapping, Request transitions, etc.
-
-                var leaveRequest = new LeaveRequests
-                {
-                    employee_id = dto.employee_id,
-                    start_date = dto.leave_date,
-                    end_date = dto.leave_date,
-                    reason = dto.note ?? $"Nghỉ {dto.leave_type}",
-                    status = "PENDING",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
-
-                // Because leave_type_id and other FKs are required in DB, 
-                // but we don't have mapping logic right now, we will just return Ok()
-                // without actually inserting if it's missing mandatory FK mapping logic.
-                // If it fails DB constraints, it's safer to just mock the success for the UI right now.
-                
-                // await _unitOfWork.Repository<LeaveRequests>().AddAsync(leaveRequest);
-                // await _unitOfWork.SaveChangesAsync();
-
-                // Mock return to stabilize the frontend UI
+                var success = await _leaveService.CreateLeaveRequestAsync(dto);
+                if (!success) return BadRequest(new { Message = "Gửi yêu cầu nghỉ phép thất bại." });
                 return Ok(new { Message = "Đã gửi yêu cầu nghỉ phép thành công." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpPut("{id}/approve")]
+        [HasPermission("LeaveRequest", "Update")]
+        public async Task<IActionResult> ApproveLeaveRequest(int id)
+        {
+            try
+            {
+                var managerId = GetCurrentUserId();
+                var success = await _leaveService.ApproveLeaveRequestAsync(id, managerId);
+                if (!success) return BadRequest(new { Message = "Phê duyệt thất bại." });
+                return Ok(new { Message = "Đã phê duyệt yêu cầu nghỉ phép." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpPut("{id}/reject")]
+        [HasPermission("LeaveRequest", "Update")]
+        public async Task<IActionResult> RejectLeaveRequest(int id, [FromBody] string reason)
+        {
+            try
+            {
+                var managerId = GetCurrentUserId();
+                var success = await _leaveService.RejectLeaveRequestAsync(id, managerId, reason);
+                if (!success) return BadRequest(new { Message = "Từ chối thất bại." });
+                return Ok(new { Message = "Đã từ chối yêu cầu nghỉ phép." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpGet("balance/{employeeId}")]
+        public async Task<IActionResult> GetLeaveBalance(int employeeId)
+        {
+            try
+            {
+                var result = await _leaveService.GetLeaveBalanceAsync(employeeId);
+                return Ok(result);
             }
             catch (Exception ex)
             {

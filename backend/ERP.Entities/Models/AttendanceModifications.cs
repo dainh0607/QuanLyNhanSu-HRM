@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ERP.Entities.Models
 {
     [Table("AttendanceModifications")]
-    public class AttendanceModifications : BaseEntity
+    public class AttendanceModifications : AuditableEntity
     {
         [Column("attendance_record_id")]
         public int attendance_record_id { get; set; }
