@@ -10,6 +10,11 @@ namespace ERP.Services.Attendance
         Task<PaginatedListDto<LeaveRequestDto>> GetLeaveRequestsAsync(string? status, int skip, int take);
         Task<LeaveRequestDto?> GetLeaveRequestByIdAsync(int id);
         Task<bool> CreateLeaveRequestAsync(LeaveRequestCreateDto dto);
+        
+        // Matrix Modal Methods
+        Task<LeaveRequestDependentDataDto> GetDependentDataAsync(int branchId, int excludeEmployeeId);
+        Task<bool> CreateMatrixLeaveRequestAsync(LeaveRequestCreateMatrixDto dto, int creatorId);
+        
         Task<bool> ApproveLeaveRequestAsync(int id, int managerId);
         Task<bool> RejectLeaveRequestAsync(int id, int managerId, string reason);
         Task<IEnumerable<LeaveBalanceDto>> GetLeaveBalanceAsync(int employeeId);

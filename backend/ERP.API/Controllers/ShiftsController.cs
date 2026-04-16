@@ -34,6 +34,71 @@ namespace ERP.API.Controllers
             }
         }
 
+        // Shift Configuration Management APIs
+        
+        [HttpGet("list")]
+        public async Task<IActionResult> GetShiftList([FromQuery] string? search, [FromQuery] TimeSpan? startTime, [FromQuery] TimeSpan? endTime, [FromQuery] bool? isActive, [FromQuery] int skip = 0, [FromQuery] int take = 10)
+        {
+            try
+            {
+                var result = await _shiftService.GetShiftListAsync(search, startTime, endTime, isActive, skip, take);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpGet("export")]
+        public async Task<IActionResult> ExportShiftList([FromQuery] string? search, [FromQuery] TimeSpan? startTime, [FromQuery] TimeSpan? endTime, [FromQuery] bool? isActive)
+        {
+            try
+            {
+                var fileBytes = await _shiftService.ExportShiftListAsync(search, startTime, endTime, isActive);
+                var fileName = $"DanhSachCa_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
+                return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpPut("{id}")]
+        [ERP.API.Authorization.HasPermission("Attendance", "Update")]
+        public async Task<IActionResult> UpdateShift(int id, [FromBody] ShiftUpdateDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                var success = await _shiftService.UpdateShiftAsync(id, dto);
+                if (!success) return BadRequest(new { Message = "Cập nhật ca làm việc thất bại." });
+                return Ok(new { Message = "Đã cập nhật ca làm việc thành công." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpDelete("{id}")]
+        [ERP.API.Authorization.HasPermission("Attendance", "Update")]
+        public async Task<IActionResult> DeleteOrDeactivateShift(int id)
+        {
+            try
+            {
+                var success = await _shiftService.DeleteOrDeactivateShiftAsync(id);
+                if (!success) return BadRequest(new { Message = "Xóa/Ngừng hoạt động ca làm việc thất bại." });
+                return Ok(new { Message = "Đã thay đổi trạng thái ca làm việc thành công." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
         [HttpGet("weekly-schedule")]
         public async Task<IActionResult> GetWeeklySchedule([FromQuery] int branchId, [FromQuery] DateTime startDate)
         {
