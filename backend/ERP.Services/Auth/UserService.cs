@@ -31,6 +31,7 @@ namespace ERP.Services.Auth
         public async Task<UserInfoDto?> GetByIdAsync(int id)
         {
             var localUser = await _context.Users
+                .IgnoreQueryFilters()
                 .Include(u => u.Employee)
                 .FirstOrDefaultAsync(u => u.Id == id);
 
@@ -55,6 +56,7 @@ namespace ERP.Services.Auth
         public async Task<UserInfoDto?> GetByUidAsync(string uid)
         {
             var localUser = await _context.Users
+                .IgnoreQueryFilters()
                 .Include(u => u.Employee)
                 .FirstOrDefaultAsync(u => u.firebase_uid == uid);
 
@@ -79,6 +81,7 @@ namespace ERP.Services.Auth
         public async Task<Users?> GetLocalUserByEmailOrUidAsync(string email, string uid)
         {
             return await _context.Users
+                .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(u => u.firebase_uid == uid || u.username == email);
         }
 
@@ -100,12 +103,14 @@ namespace ERP.Services.Auth
                 {
                     // 1. Tìm kiếm User hiện có: Ưu tiên theo UID, sau đó đến Email
                     var localUser = await _context.Users
+                        .IgnoreQueryFilters()
                         .Include(u => u.Employee)
                         .FirstOrDefaultAsync(u => u.firebase_uid == fbUser.Uid);
 
                     if (localUser == null && !string.IsNullOrEmpty(fbUser.Email))
                     {
                         localUser = await _context.Users
+                            .IgnoreQueryFilters()
                             .Include(u => u.Employee)
                             .FirstOrDefaultAsync(u => u.username == fbUser.Email);
                     }

@@ -50,6 +50,9 @@ namespace ERP.Services.Authorization
         /// </summary>
         public async Task<bool> CanAccessRegion(int userId, int regionId)
         {
+            var userScope = await GetUserScopeInfo(userId);
+            if (userScope.IsWorkspaceWide) return true;
+
             var userRoles = await _context.UserRoles
                 .IgnoreQueryFilters()
                 .Where(ur => ur.user_id == userId && ur.is_active && 
@@ -60,21 +63,6 @@ namespace ERP.Services.Authorization
             if (!userRoles.Any())
                 return false;
 
-            // Check if user has region scope or can access all regions
-            var roleScopes = await _context.RoleScopes
-                .IgnoreQueryFilters()
-                .Where(rs => userRoles.Select(ur => ur.role_id).Contains(rs.role_id))
-                .ToListAsync();
-
-            // If no user role has region_id set, they can access
-            var restrictedRoles = userRoles.Where(ur => ur.region_id.HasValue).ToList();
-            if (!restrictedRoles.Any())
-            {
-                // Check if at least one role scope allows region access
-                if (roleScopes.Any(rs => rs.scope_level == "REGION" || rs.scope_level == "TENANT"))
-                    return true;
-            }
-
             // Check if user has access to this specific region
             return userRoles.Any(ur => ur.region_id == null || ur.region_id == regionId);
         }
@@ -84,6 +72,9 @@ namespace ERP.Services.Authorization
         /// </summary>
         public async Task<bool> CanAccessBranch(int userId, int branchId)
         {
+            var userScope = await GetUserScopeInfo(userId);
+            if (userScope.IsWorkspaceWide) return true;
+
             var userRoles = await _context.UserRoles
                 .IgnoreQueryFilters()
                 .Where(ur => ur.user_id == userId && ur.is_active &&
@@ -98,21 +89,7 @@ namespace ERP.Services.Authorization
             if (branchRestrictedRoles.Any())
                 return branchRestrictedRoles.Any(ur => ur.branch_id == branchId);
 
-            // If no branch restriction, check if they can access via region
-            var branch = await _context.Branches.FindAsync(branchId);
-            if (branch == null)
-                return false;
-
-            // User can access if no region restriction or region matches
-            var regionRestrictedRoles = userRoles.Where(ur => ur.region_id.HasValue);
-            if (regionRestrictedRoles.Any())
-            {
-                // Check if branch's region matches user's assigned region
-                // Note: This assumes branches have region association through employees
-                return true; // Simplified for now
-            }
-
-            return true; // Full tenant access
+            return true; // No explicit branch restriction
         }
 
         /// <summary>
@@ -120,6 +97,9 @@ namespace ERP.Services.Authorization
         /// </summary>
         public async Task<bool> CanAccessDepartment(int userId, int departmentId)
         {
+            var userScope = await GetUserScopeInfo(userId);
+            if (userScope.IsWorkspaceWide) return true;
+
             var userRoles = await _context.UserRoles
                 .IgnoreQueryFilters()
                 .Where(ur => ur.user_id == userId && ur.is_active &&
@@ -143,6 +123,13 @@ namespace ERP.Services.Authorization
         /// </summary>
         public async Task<bool> CanAccessEmployee(int userId, int employeeId)
         {
+            var userRoles = await GetUserRoles(userId);
+            var userScope = await GetUserScopeInfo(userId);
+
+            // Workspace-wide access bypasses all unit checks
+            if (userScope.IsWorkspaceWide)
+                return true;
+
             // Get employee assigned to this user
             var userEmployeeId = await _context.Users
                 .Where(u => u.Id == userId)
@@ -152,15 +139,16 @@ namespace ERP.Services.Authorization
             if (userEmployeeId <= 0)
                 return false;
 
+            // Self access
+            if (userEmployeeId == employeeId)
+                return true;
+
             var targetEmployee = await _context.Employees
                 .Where(e => e.Id == employeeId)
                 .FirstOrDefaultAsync();
 
             if (targetEmployee == null)
                 return false;
-
-            var userRoles = await GetUserRoles(userId);
-            var userScope = await GetUserScopeInfo(userId);
 
             // Check department access
             if (userScope.DepartmentId.HasValue)
@@ -243,13 +231,43 @@ namespace ERP.Services.Authorization
                        (!ur.valid_to.HasValue || ur.valid_to > DateTime.UtcNow))
                 .ToListAsync();
 
+            var roleIds = userRoles.Select(ur => ur.role_id).Distinct().ToList();
+            var roleScopes = await _context.RoleScopes
+                .IgnoreQueryFilters()
+                .Where(rs => roleIds.Contains(rs.role_id))
+                .ToListAsync();
+
+            // Determine Scope Level
+            var scopeLevel = "PERSONAL";
+            if (roleScopes.Any())
+            {
+                var scopePriority = new Dictionary<string, int>
+                {
+                    { "TENANT", 5 },
+                    { "CROSS_REGION", 4 },
+                    { "REGION", 3 },
+                    { "BRANCH", 2 },
+                    { "DEPARTMENT", 1 },
+                    { "PERSONAL", 0 }
+                };
+
+                var highestPriority = roleScopes
+                    .Select(rs => rs.scope_level ?? "PERSONAL")
+                    .Select(scope => scopePriority.ContainsKey(scope) ? scopePriority[scope] : 0)
+                    .Max();
+
+                scopeLevel = scopePriority.FirstOrDefault(kvp => kvp.Value == highestPriority).Key ?? "PERSONAL";
+            }
+
+            var firstAssignment = userRoles.FirstOrDefault();
             var scope = new UserScopeInfo
             {
                 UserId = userId,
-                TenantId = userRoles.FirstOrDefault()?.tenant_id,
-                RegionId = userRoles.FirstOrDefault()?.region_id,
-                BranchId = userRoles.FirstOrDefault()?.branch_id,
-                DepartmentId = userRoles.FirstOrDefault()?.department_id
+                TenantId = firstAssignment?.tenant_id,
+                RegionId = firstAssignment?.region_id,
+                BranchId = firstAssignment?.branch_id,
+                DepartmentId = firstAssignment?.department_id,
+                ScopeLevel = scopeLevel
             };
 
             return scope;
@@ -332,5 +350,7 @@ namespace ERP.Services.Authorization
         public int? RegionId { get; set; }
         public int? BranchId { get; set; }
         public int? DepartmentId { get; set; }
+        public string ScopeLevel { get; set; } = "PERSONAL";
+        public bool IsWorkspaceWide => ScopeLevel == "TENANT";
     }
 }
