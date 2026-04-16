@@ -24,6 +24,8 @@ using ERP.DTOs.Common;
 using ERP.Services.ControlPlane;
 using System.Text;
 using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.Unicode;
 using System.Security.Claims;
 using ERP.DTOs.Auth;
