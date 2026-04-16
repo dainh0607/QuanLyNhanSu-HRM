@@ -31,6 +31,15 @@ export const WORK_TABS = [
   { key: 'workHistory', label: 'Lịch sử công tác' },
   { key: 'salaryAllowance', label: 'Tiền lương/Trợ cấp' },
   { key: 'contract', label: 'Hợp đồng' },
+  { key: 'insurance', label: 'Bảo hiểm' },
+] as const;
+
+export const LEAVE_TABS = [
+  { key: 'leaveBalance', label: 'Quỹ nghỉ' },
+] as const;
+
+export const ASSET_TABS = [
+  { key: 'assets', label: 'Tài sản' },
 ] as const;
 
 export const WORK_TAB_SUCCESS_MESSAGES = {
@@ -40,6 +49,15 @@ export const WORK_TAB_SUCCESS_MESSAGES = {
   workHistory: 'Cập nhật lịch sử công tác thành công.',
   salaryAllowance: 'Cập nhật tiền lương/trợ cấp thành công.',
   contract: 'Cập nhật hợp đồng thành công.',
+  insurance: 'Cập nhật bảo hiểm thành công.',
+} as const;
+
+export const LEAVE_TAB_SUCCESS_MESSAGES = {
+  leaveBalance: 'Cập nhật quỹ nghỉ thành công.',
+} as const;
+
+export const ASSET_TAB_SUCCESS_MESSAGES = {
+  assets: 'Cập nhật danh sách tài sản thành công.',
 } as const;
 export const SECTION_PLACEHOLDER_COPY = {
   work: 'Shell chỉnh sửa cho Công việc đã được dựng sẵn để nối form ở bước tiếp theo.',

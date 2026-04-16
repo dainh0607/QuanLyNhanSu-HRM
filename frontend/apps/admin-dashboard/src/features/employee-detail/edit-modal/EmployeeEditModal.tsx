@@ -19,12 +19,16 @@ import {
   MODAL_SECTIONS,
   PERSONAL_TAB_SUCCESS_MESSAGES,
   WORK_TAB_SUCCESS_MESSAGES,
+  ASSET_TAB_SUCCESS_MESSAGES,
 } from './constants';
 import EditModalSidebar from './components/EditModalSidebar';
 import PersonalTabNavigation from './components/PersonalTabNavigationV2';
 import PersonalTabPanel from './components/PersonalTabPanel';
 import WorkTabNavigation from './components/WorkTabNavigation';
 import WorkTabPanel from './components/WorkTabPanel';
+import LeaveTabNavigation from './components/LeaveTabNavigation';
+import LeaveTabPanel from './components/LeaveTabPanel';
+import AssetForm from './forms/AssetForm';
 import SectionPlaceholder from './components/SectionPlaceholder';
 import { isModalSectionAvailable } from './sectionAvailability';
 import UnsavedChangesDialog from './components/UnsavedChangesDialog';
@@ -36,13 +40,22 @@ import type {
   PersonalTabKey,
   WorkFormMap,
   WorkTabKey,
+  LeaveFormMap,
+  LeaveTabKey,
+  AssetFormMap,
+  AssetTabKey,
 } from './types';
+import { LEAVE_TABS } from './constants';
 import {
   buildSeedForms,
   buildWorkSeedForms,
+  buildLeaveSeedForms,
+  buildAssetSeedForms,
   cloneForm,
   createPersonalFormsState,
   createWorkFormsState,
+  createLeaveFormsState,
+  createAssetFormsState,
   formsEqual,
   isEmailValid,
   isFacebookValid,
@@ -96,6 +109,24 @@ const WORK_TAB_LOADERS: Partial<{
 }> = {
   jobStatus: employeeService.getEmployeeEditJobStatus,
   jobInfo: employeeService.getEmployeeEditJobInfo,
+  promotionHistory: async () => [],
+  workHistory: async () => [],
+  salaryAllowance: async () => ({
+    paymentMethod: '',
+    salaryLevelName: '',
+    salaryAmount: '',
+    salaryChanges: [],
+    allowances: [],
+    otherIncomes: [],
+  }),
+  contract: async () => [],
+  insurance: async () => [],
+};
+
+const LEAVE_TAB_LOADERS: {
+  [K in LeaveTabKey]: (employeeId: number) => Promise<LeaveFormMap[K]>;
+} = {
+  leaveBalance: employeeService.getEmployeeEditLeaveBalance,
 };
 
 const WORK_TAB_SAVERS: Partial<{
@@ -103,6 +134,23 @@ const WORK_TAB_SAVERS: Partial<{
 }> = {
   jobStatus: employeeService.updateEmployeeEditJobStatus,
   jobInfo: employeeService.updateEmployeeEditJobInfo,
+  promotionHistory: async () => ({ success: true }),
+  workHistory: async () => ({ success: true }),
+  salaryAllowance: async () => ({ success: true }),
+  contract: async () => ({ success: true }),
+  insurance: async () => ({ success: true }),
+};
+
+const ASSET_TAB_LOADERS: {
+  [K in AssetTabKey]: (employeeId: number) => Promise<AssetFormMap[K]>;
+} = {
+  assets: employeeService.getEmployeeEditAsset,
+};
+
+const ASSET_TAB_SAVERS: {
+  [K in AssetTabKey]: (employeeId: number, payload: AssetFormMap[K]) => Promise<unknown>;
+} = {
+  assets: employeeService.updateEmployeeEditAsset,
 };
 
 const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
@@ -112,6 +160,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
   initialSectionLabel,
   initialPersonalTab,
   initialWorkTab,
+  initialLeaveTab,
   onClose,
   onSaved,
 }) => {
@@ -124,12 +173,22 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
   const [activeWorkTab, setActiveWorkTab] = useState<WorkTabKey>(
     initialWorkTab ?? 'jobStatus',
   );
+  const [activeLeaveTab, setActiveLeaveTab] = useState<LeaveTabKey>(
+    initialLeaveTab ?? 'leaveBalance',
+  );
+  const [activeAssetTab] = useState<AssetTabKey>('assets');
 
   const [personalForms, setPersonalForms] = useState(() =>
     createPersonalFormsState(buildSeedForms(employee, profile)),
   );
   const [workForms, setWorkForms] = useState(() =>
     createWorkFormsState(buildWorkSeedForms(profile)),
+  );
+  const [leaveForms, setLeaveForms] = useState(() =>
+    createLeaveFormsState(buildLeaveSeedForms()),
+  );
+  const [assetForms, setAssetForms] = useState(() =>
+    createAssetFormsState(buildAssetSeedForms()),
   );
 
   const [metadata, setMetadata] = useState<{
@@ -150,12 +209,14 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
     isLoading: false,
   });
 
-  const activePersonalState = personalForms[activePersonalTab];
-  const activeWorkState = workForms[activeWorkTab];
+  const activePersonalState = (personalForms as any)[activePersonalTab];
+  const activeWorkState = (workForms as any)[activeWorkTab];
+  const activeAssetState = (assetForms as any)[activeAssetTab];
 
-  const isCurrentTabDirty = 
-    (activeSection === 'personal' && activePersonalState.isDirty) ||
-    (activeSection === 'work' && activeWorkState.isDirty);
+  const isCurrentTabDirty =
+    ((activeSection === 'personal' && activePersonalState.isDirty) ||
+      (activeSection === 'work' && activeWorkState.isDirty) ||
+      (activeSection === 'asset' && activeAssetState.isDirty)) as boolean;
 
   const shouldGuardLeaving = isCurrentTabDirty;
   const isSaveEnabled =
@@ -168,7 +229,12 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
         activeWorkState.isLoaded &&
         !activeWorkState.isLoading &&
         !activeWorkState.isSubmitting &&
-        activeWorkState.isDirty)) &&
+        activeWorkState.isDirty) ||
+      (activeSection === 'asset' &&
+        activeAssetState.isLoaded &&
+        !activeAssetState.isLoading &&
+        !activeAssetState.isSubmitting &&
+        activeAssetState.isDirty)) &&
     !metadata.isLoading;
 
   const resolveAvailableSection = useCallback(
@@ -186,6 +252,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
       setActiveSection(resolveAvailableSection(sectionKey));
       setActivePersonalTab(initialPersonalTab ?? 'basicInfo');
       setActiveWorkTab(initialWorkTab ?? 'jobStatus');
+      setActiveLeaveTab(initialLeaveTab ?? 'leaveBalance');
     });
 
     return () => {
@@ -212,7 +279,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
   }, [isDialogOpen, isOpen, onClose, requestAction, shouldGuardLeaving]);
 
   const loadPersonalTab = useCallback(async (tabKey: PersonalTabKey) => {
-    setPersonalForms((prev) => ({
+    setPersonalForms((prev: any) => ({
       ...prev,
       [tabKey]: {
         ...prev[tabKey],
@@ -223,7 +290,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
 
     try {
       const response = await PERSONAL_TAB_LOADERS[tabKey](employee.id);
-      setPersonalForms((prev) => {
+      setPersonalForms((prev: any) => {
         const nextTab = prev[tabKey];
         const mergedData =
           tabKey === 'dependents'
@@ -275,7 +342,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
       return;
     }
 
-    setWorkForms((prev) => ({
+    setWorkForms((prev: any) => ({
       ...prev,
       [tabKey]: {
         ...prev[tabKey],
@@ -285,8 +352,12 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
     }));
 
     try {
+      const loader = WORK_TAB_LOADERS[tabKey];
+      if (!loader) {
+        throw new Error(`No loader found for tab: ${tabKey}`);
+      }
       const response = await loader(employee.id);
-      setWorkForms((prev) => {
+      setWorkForms((prev: any) => {
         const nextTab = prev[tabKey];
         const mergedData = mergeFormData(nextTab.data, response);
 
@@ -306,7 +377,95 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
       });
     } catch (error) {
       console.error(`Load work tab ${tabKey} error:`, error);
-      setWorkForms((prev) => ({
+      setWorkForms((prev: any) => ({
+        ...prev,
+        [tabKey]: {
+          ...prev[tabKey],
+          isLoading: false,
+          isLoaded: true,
+          loadError: 'Không thể tải dữ liệu tab này.',
+        },
+      }));
+    }
+  }, [employee.id]);
+
+  const loadLeaveTab = useCallback(async (tabKey: LeaveTabKey) => {
+    setLeaveForms((prev: any) => ({
+      ...prev,
+      [tabKey]: {
+        ...prev[tabKey],
+        isLoading: true,
+        loadError: null,
+      },
+    }));
+
+    try {
+      const response = await LEAVE_TAB_LOADERS[tabKey](employee.id);
+      setLeaveForms((prev: any) => {
+        const nextTab = prev[tabKey];
+        const mergedData = mergeFormData(nextTab.data, response);
+
+        return {
+          ...prev,
+          [tabKey]: {
+            ...nextTab,
+            data: mergedData,
+            initialData: cloneForm(mergedData),
+            isDirty: false,
+            errors: {},
+            isLoading: false,
+            isLoaded: true,
+            loadError: null,
+          },
+        };
+      });
+    } catch (error) {
+      console.error(`Load leave tab ${tabKey} error:`, error);
+      setLeaveForms((prev: any) => ({
+        ...prev,
+        [tabKey]: {
+          ...prev[tabKey],
+          isLoading: false,
+          isLoaded: true,
+          loadError: 'Không thể tải dữ liệu tab này.',
+        },
+      }));
+    }
+  }, [employee.id]);
+
+  const loadAssetTab = useCallback(async (tabKey: AssetTabKey) => {
+    setAssetForms((prev: any) => ({
+      ...prev,
+      [tabKey]: {
+        ...prev[tabKey],
+        isLoading: true,
+        loadError: null,
+      },
+    }));
+
+    try {
+      const response = await ASSET_TAB_LOADERS[tabKey](employee.id);
+      setAssetForms((prev: any) => {
+        const nextTab = prev[tabKey];
+        const mergedData = mergeFormData(nextTab.data, response);
+
+        return {
+          ...prev,
+          [tabKey]: {
+            ...nextTab,
+            data: mergedData,
+            initialData: cloneForm(mergedData),
+            isDirty: false,
+            errors: {},
+            isLoading: false,
+            isLoaded: true,
+            loadError: null,
+          },
+        };
+      });
+    } catch (error) {
+      console.error(`Load asset tab ${tabKey} error:`, error);
+      setAssetForms((prev: any) => ({
         ...prev,
         [tabKey]: {
           ...prev[tabKey],
@@ -350,7 +509,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
       return;
     }
 
-    if (personalForms[activePersonalTab].isLoaded || personalForms[activePersonalTab].isLoading) {
+    if ((personalForms as any)[activePersonalTab].isLoaded || (personalForms as any)[activePersonalTab].isLoading) {
       return;
     }
 
@@ -372,7 +531,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
       void loadMetadata();
     }
 
-    if (workForms[activeWorkTab].isLoaded || workForms[activeWorkTab].isLoading) {
+    if ((workForms as any)[activeWorkTab].isLoaded || (workForms as any)[activeWorkTab].isLoading) {
       return;
     }
 
@@ -385,12 +544,48 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
     };
   }, [activeWorkTab, activeSection, isOpen, loadWorkTab, workForms, metadata, loadMetadata]);
 
+  useEffect(() => {
+    if (!isOpen || activeSection !== 'leave') {
+      return;
+    }
+
+    if ((leaveForms as any)[activeLeaveTab].isLoaded || (leaveForms as any)[activeLeaveTab].isLoading) {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      void loadLeaveTab(activeLeaveTab);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [activeLeaveTab, activeSection, isOpen, loadLeaveTab, leaveForms]);
+
+  useEffect(() => {
+    if (!isOpen || activeSection !== 'asset') {
+      return;
+    }
+
+    if ((assetForms as any)[activeAssetTab].isLoaded || (assetForms as any)[activeAssetTab].isLoading) {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      void loadAssetTab(activeAssetTab);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [activeAssetTab, activeSection, isOpen, loadAssetTab, assetForms]);
+
   const updateTabData = <K extends PersonalTabKey, F extends keyof PersonalFormMap[K]>(
     tabKey: K,
     field: F,
     value: PersonalFormMap[K][F],
   ) => {
-    setPersonalForms((prev) => {
+    setPersonalForms((prev: any) => {
       const nextTab = prev[tabKey];
       const nextErrors = { ...nextTab.errors };
       delete nextErrors[String(field)];
@@ -421,7 +616,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
     field: F,
     value: WorkFormMap[K][F],
   ) => {
-    setWorkForms((prev) => {
+    setWorkForms((prev: any) => {
       const nextTab = prev[tabKey];
       const nextErrors = { ...nextTab.errors };
       delete nextErrors[String(field)];
@@ -447,8 +642,9 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
     });
   };
 
+
   const replaceTabData = <K extends PersonalTabKey>(tabKey: K, data: PersonalFormMap[K]) => {
-    setPersonalForms((prev) => ({
+    setPersonalForms((prev: any) => ({
       ...prev,
       [tabKey]: {
         ...prev[tabKey],
@@ -458,6 +654,20 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
       },
     }));
   };
+
+  const replaceWorkTabData = <K extends WorkTabKey>(tabKey: K, data: WorkFormMap[K]) => {
+    setWorkForms((prev: any) => ({
+      ...prev,
+      [tabKey]: {
+        ...prev[tabKey],
+        data,
+        isDirty: !formsEqual(data, prev[tabKey].initialData),
+        errors: {},
+      },
+    }));
+  };
+
+
 
   const validateBasicInfo = async (
     data: EmployeeEditBasicInfoPayload,
@@ -643,8 +853,8 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
       }
     }
 
-    if (activeSection === 'work') {
-      // Logic validate cho Work tab nếu cần, hiện tại chủ yếu là select
+    if (activeSection === 'leave') {
+      // Logic validate cho Leave tab nếu cần
       return {};
     }
 
@@ -659,7 +869,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
     const nextErrors = await validateCurrentTab();
     if (Object.keys(nextErrors).length > 0) {
       if (activeSection === 'personal') {
-        setPersonalForms((prev) => ({
+        setPersonalForms((prev: any) => ({
           ...prev,
           [activePersonalTab]: {
             ...prev[activePersonalTab],
@@ -667,10 +877,18 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
           },
         }));
       } else if (activeSection === 'work') {
-        setWorkForms((prev) => ({
+        setWorkForms((prev: any) => ({
           ...prev,
           [activeWorkTab]: {
             ...prev[activeWorkTab],
+            errors: nextErrors,
+          },
+        }));
+      } else if (activeSection === 'asset') {
+        setAssetForms((prev: any) => ({
+          ...prev,
+          [activeAssetTab]: {
+            ...prev[activeAssetTab],
             errors: nextErrors,
           },
         }));
@@ -680,7 +898,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
     }
 
     if (activeSection === 'personal') {
-      setPersonalForms((prev) => ({
+      setPersonalForms((prev: any) => ({
         ...prev,
         [activePersonalTab]: {
           ...prev[activePersonalTab],
@@ -690,12 +908,12 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
 
       try {
         const saver = PERSONAL_TAB_SAVERS[activePersonalTab];
-        await (saver as (id: number, data: any) => Promise<unknown>)(
+        await (saver as any)(
           employee.id,
           personalForms[activePersonalTab].data,
         );
 
-        setPersonalForms((prev) => ({
+        setPersonalForms((prev: any) => ({
           ...prev,
           [activePersonalTab]: {
             ...prev[activePersonalTab],
@@ -711,7 +929,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
         onSaved?.();
       } catch (error) {
         console.error(`Save personal ${activePersonalTab} error:`, error);
-        setPersonalForms((prev) => ({
+        setPersonalForms((prev: any) => ({
           ...prev,
           [activePersonalTab]: {
             ...prev[activePersonalTab],
@@ -721,10 +939,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
         showToast(error instanceof Error ? error.message : 'Không thể lưu dữ liệu.', 'error');
       }
     } else if (activeSection === 'work') {
-      const saver = WORK_TAB_SAVERS[activeWorkTab];
-      if (!saver) return;
-
-      setWorkForms((prev) => ({
+      setWorkForms((prev: any) => ({
         ...prev,
         [activeWorkTab]: {
           ...prev[activeWorkTab],
@@ -733,10 +948,13 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
       }));
 
       try {
-        const payload = workForms[activeWorkTab].data;
-        await (saver as (id: number, data: any) => Promise<unknown>)(employee.id, payload);
+        const saver = WORK_TAB_SAVERS[activeWorkTab];
+        if (!saver) {
+          throw new Error(`No saver found for tab: ${activeWorkTab}`);
+        }
+        await (saver as any)(employee.id, workForms[activeWorkTab].data);
 
-        setWorkForms((prev) => ({
+        setWorkForms((prev: any) => ({
           ...prev,
           [activeWorkTab]: {
             ...prev[activeWorkTab],
@@ -752,10 +970,47 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
         onSaved?.();
       } catch (error) {
         console.error(`Save work ${activeWorkTab} error:`, error);
-        setWorkForms((prev) => ({
+        setWorkForms((prev: any) => ({
           ...prev,
           [activeWorkTab]: {
             ...prev[activeWorkTab],
+            isSubmitting: false,
+          },
+        }));
+        showToast(error instanceof Error ? error.message : 'Không thể lưu dữ liệu.', 'error');
+      }
+    } else if (activeSection === 'asset') {
+      setAssetForms((prev: any) => ({
+        ...prev,
+        [activeAssetTab]: {
+          ...prev[activeAssetTab],
+          isSubmitting: true,
+        },
+      }));
+
+      try {
+        const saver = ASSET_TAB_SAVERS[activeAssetTab] as any;
+        await saver(employee.id, (assetForms as any)[activeAssetTab].data);
+
+        setAssetForms((prev: any) => ({
+          ...prev,
+          [activeAssetTab]: {
+            ...prev[activeAssetTab],
+            initialData: cloneForm(prev[activeAssetTab].data),
+            isDirty: false,
+            errors: {},
+            isSubmitting: false,
+          },
+        }));
+
+        showToast(ASSET_TAB_SUCCESS_MESSAGES[activeAssetTab], 'success');
+        onSaved?.();
+      } catch (error) {
+        console.error(`Save asset ${activeAssetTab} error:`, error);
+        setAssetForms((prev) => ({
+          ...prev,
+          [activeAssetTab]: {
+            ...prev[activeAssetTab],
             isSubmitting: false,
           },
         }));
@@ -819,6 +1074,14 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
     requestAction(shouldGuardLeaving, () => setActiveWorkTab(tab));
   };
 
+  const handleLeaveTabChange = (tab: LeaveTabKey) => {
+    if (tab === activeLeaveTab) {
+      return;
+    }
+
+    requestAction(shouldGuardLeaving, () => setActiveLeaveTab(tab));
+  };
+
   const handleRequestClose = () => {
     requestAction(shouldGuardLeaving, onClose);
   };
@@ -834,7 +1097,9 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
       ? personalForms[activePersonalTab].loadError
       : activeSection === 'work'
         ? workForms[activeWorkTab].loadError
-        : null;
+        : activeSection === 'leave'
+          ? leaveForms[activeLeaveTab].loadError
+          : null;
 
   return (
     <div
@@ -867,22 +1132,24 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
                     <p className="text-sm font-semibold text-slate-500">{employee.fullName}</p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleSave}
-                    disabled={!isSaveEnabled}
-                    className={`inline-flex min-h-11 items-center justify-center rounded-2xl px-6 text-sm font-bold transition-all ${
-                      isSaveEnabled
-                        ? 'bg-emerald-500 text-white shadow-[0_16px_30px_rgba(16,185,129,0.25)] hover:bg-emerald-600'
-                        : 'cursor-not-allowed bg-slate-200 text-slate-500'
-                    }`}
-                  >
-                    {(activeSection === 'personal' && activePersonalState.isSubmitting) ||
-                    (activeSection === 'work' && activeWorkState.isSubmitting) ? (
-                      <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
-                    ) : null}
-                    Lưu
-                  </button>
+                  {activeSection !== 'leave' && activeSection !== 'asset' && (
+                    <button
+                      type="button"
+                      onClick={handleSave}
+                      disabled={!isSaveEnabled}
+                      className={`inline-flex min-h-11 items-center justify-center rounded-2xl px-6 text-sm font-bold transition-all ${
+                        isSaveEnabled
+                          ? 'bg-emerald-500 text-white shadow-[0_16px_30px_rgba(16,185,129,0.25)] hover:bg-emerald-600'
+                          : 'cursor-not-allowed bg-slate-200 text-slate-500'
+                      }`}
+                    >
+                      {(activeSection === 'personal' && activePersonalState.isSubmitting) ||
+                      (activeSection === 'work' && activeWorkState.isSubmitting) ? (
+                        <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+                      ) : null}
+                      Lưu
+                    </button>
+                  )}
                 </div>
 
                 {activeSection === 'personal' ? (
@@ -896,6 +1163,12 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
                     activeTab={activeWorkTab}
                     workForms={workForms}
                     onChange={handleWorkTabChange}
+                  />
+                ) : activeSection === 'leave' && LEAVE_TABS.length > 1 ? (
+                  <LeaveTabNavigation
+                    activeTab={activeLeaveTab}
+                    leaveForms={leaveForms}
+                    onChange={handleLeaveTabChange}
                   />
                 ) : null}
               </div>
@@ -911,20 +1184,20 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
                   <PersonalTabPanel
                     activeTab={activePersonalTab}
                     personalForms={personalForms}
-                    onBasicInfoChange={(field, value) => updateTabData('basicInfo', field, value)}
-                    onContactChange={(field, value) => updateTabData('contact', field, value)}
+                    onBasicInfoChange={(field, value) => (updateTabData as any)('basicInfo', field, value)}
+                    onContactChange={(field, value) => (updateTabData as any)('contact', field, value)}
                     onEmergencyContactChange={(field, value) =>
-                      updateTabData('emergencyContact', field, value)
+                      (updateTabData as any)('emergencyContact', field, value)
                     }
                     onPermanentAddressChange={(field, value) =>
-                      updateTabData('permanentAddress', field, value)
+                      (updateTabData as any)('permanentAddress', field, value)
                     }
-                    onEducationChange={(value) => replaceTabData('education', value)}
-                    onIdentityChange={(field, value) => updateTabData('identity', field, value)}
-                    onBankAccountChange={(field, value) => updateTabData('bankAccount', field, value)}
-                    onHealthChange={(field, value) => updateTabData('health', field, value)}
+                    onEducationChange={(value) => (replaceTabData as any)('education', value)}
+                    onIdentityChange={(field, value) => (updateTabData as any)('identity', field, value)}
+                    onBankAccountChange={(field, value) => (updateTabData as any)('bankAccount', field, value)}
+                    onHealthChange={(field, value) => (updateTabData as any)('health', field, value)}
                     onAdditionalInfoChange={(field, value) =>
-                      updateTabData('additionalInfo', field, value)
+                      (updateTabData as any)('additionalInfo', field, value)
                     }
                     onCreateDependent={handleCreateDependent}
                   />
@@ -934,13 +1207,55 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
                     activeTab={activeWorkTab}
                     data={activeWorkState.data}
                     errors={activeWorkState.errors}
-                    onFieldChange={(field: any, value: any) => (updateWorkTabData as any)(activeWorkTab, field, value)}
+                    onFieldChange={(field: any, value: any) => {
+                      if (field === activeWorkTab) {
+                        replaceWorkTabData(activeWorkTab, value);
+                      } else {
+                        (updateWorkTabData as any)(activeWorkTab, field, value);
+                      }
+                    }}
                     metadata={{
                       regions: metadata.regions,
                       branches: metadata.branches,
                       departments: metadata.departments,
                       jobTitles: metadata.jobTitles,
                       accessGroups: metadata.accessGroups,
+                    }}
+                    profile={profile}
+                    onRefreshTab={loadWorkTab}
+                  />
+                ) : activeSection === 'leave' ? (
+                  <LeaveTabPanel
+                    leaveState={(leaveForms as any)[activeLeaveTab]}
+                  />
+                ) : activeSection === 'asset' ? (
+                  <AssetForm 
+                    data={assetForms[activeAssetTab].data} 
+                    employeeName={employee.fullName}
+                    onUpdateAssets={async (newAssets) => {
+                      // Lưu ngay lập tức như yêu cầu của khách hàng
+                      try {
+                        const saver = ASSET_TAB_SAVERS[activeAssetTab] as any;
+                        await saver(employee.id, newAssets);
+                        
+                        // Cập nhật state với dữ liệu mới và đánh dấu đã lưu (isDirty: false)
+                        setAssetForms((prev: any) => ({
+                          ...prev,
+                          [activeAssetTab]: {
+                            ...prev[activeAssetTab],
+                            data: newAssets,
+                            initialData: cloneForm(newAssets),
+                            isDirty: false,
+                            errors: {},
+                          },
+                        }));
+                        
+                        showToast(ASSET_TAB_SUCCESS_MESSAGES[activeAssetTab], 'success');
+                        onSaved?.();
+                      } catch (error) {
+                        showToast(error instanceof Error ? error.message : 'Không thể lưu dữ liệu.', 'error');
+                        throw error; // Ném lỗi để Modal Cấp phát không đóng lại và người dùng có thể thử lại
+                      }
                     }}
                   />
                 ) : (

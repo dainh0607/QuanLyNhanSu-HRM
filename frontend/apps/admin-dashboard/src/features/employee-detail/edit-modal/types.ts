@@ -8,17 +8,28 @@ import type {
   EmployeeEditEmergencyContactPayload,
   EmployeeEditHealthPayload,
   EmployeeEditIdentityPayload,
+  EmployeeEditContractPayload,
+  EmployeeEditInsurancePayload,
   EmployeeEditJobInfoPayload,
   EmployeeEditJobStatusPayload,
   EmployeeEditPermanentAddressPayload,
+  EmployeeEditPromotionHistoryPayload,
+  EmployeeEditSalaryAllowancePayload,
+  EmployeeEditWorkHistoryPayload,
   EmployeeFullProfile,
 } from '../../../services/employeeService';
 import type { Employee } from '../../employees/types';
-import { MODAL_SECTIONS, PERSONAL_TABS, WORK_TABS } from './constants';
+import { MODAL_SECTIONS, PERSONAL_TABS, WORK_TABS, LEAVE_TABS } from './constants';
+import type {
+  EmployeeEditLeaveBalancePayload,
+  EmployeeEditAssetPayload,
+} from '../../../services/employeeService';
 
 export type ModalSectionKey = (typeof MODAL_SECTIONS)[number]['key'];
 export type PersonalTabKey = (typeof PERSONAL_TABS)[number]['key'];
 export type WorkTabKey = (typeof WORK_TABS)[number]['key'];
+export type LeaveTabKey = (typeof LEAVE_TABS)[number]['key'];
+export type AssetTabKey = 'assets';
 export type EmployeeEditPlaceholderPayload = Record<string, never>;
 
 export type PersonalFormMap = {
@@ -37,10 +48,19 @@ export type PersonalFormMap = {
 export type WorkFormMap = {
   jobStatus: EmployeeEditJobStatusPayload;
   jobInfo: EmployeeEditJobInfoPayload;
-  promotionHistory: EmployeeEditPlaceholderPayload;
-  workHistory: EmployeeEditPlaceholderPayload;
-  salaryAllowance: EmployeeEditPlaceholderPayload;
-  contract: EmployeeEditPlaceholderPayload;
+  promotionHistory: EmployeeEditPromotionHistoryPayload;
+  workHistory: EmployeeEditWorkHistoryPayload;
+  salaryAllowance: EmployeeEditSalaryAllowancePayload;
+  contract: EmployeeEditContractPayload;
+  insurance: EmployeeEditInsurancePayload;
+};
+
+export type LeaveFormMap = {
+  leaveBalance: EmployeeEditLeaveBalancePayload;
+};
+
+export type AssetFormMap = {
+  assets: EmployeeEditAssetPayload;
 };
 
 export interface TabState<TForm> {
@@ -62,6 +82,14 @@ export type WorkFormsState = {
   [K in WorkTabKey]: TabState<WorkFormMap[K]>;
 };
 
+export type LeaveFormsState = {
+  [K in LeaveTabKey]: TabState<LeaveFormMap[K]>;
+};
+
+export type AssetFormsState = {
+  [K in AssetTabKey]: TabState<AssetFormMap[K]>;
+};
+
 export interface EmployeeEditModalProps {
   isOpen: boolean;
   employee: Employee;
@@ -69,6 +97,7 @@ export interface EmployeeEditModalProps {
   initialSectionLabel?: string;
   initialPersonalTab?: PersonalTabKey;
   initialWorkTab?: WorkTabKey;
+  initialLeaveTab?: LeaveTabKey;
   onClose: () => void;
   onSaved?: () => void;
 }

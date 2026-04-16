@@ -1,16 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { WORK_TABS } from '../constants';
-import type { WorkFormsState, WorkTabKey } from '../types';
+import { LEAVE_TABS } from '../constants';
+import type { LeaveFormsState, LeaveTabKey } from '../types';
 
-interface WorkTabNavigationProps {
-  activeTab: WorkTabKey;
-  workForms: WorkFormsState;
-  onChange: (tab: WorkTabKey) => void;
+interface LeaveTabNavigationProps {
+  activeTab: LeaveTabKey;
+  leaveForms: LeaveFormsState;
+  onChange: (tab: LeaveTabKey) => void;
 }
 
-const WorkTabNavigation: React.FC<WorkTabNavigationProps> = ({
+const LeaveTabNavigation: React.FC<LeaveTabNavigationProps> = ({
   activeTab,
-  workForms,
+  leaveForms,
   onChange,
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -58,7 +58,7 @@ const WorkTabNavigation: React.FC<WorkTabNavigationProps> = ({
 
   useEffect(() => {
     const activeButton = scrollContainerRef.current?.querySelector<HTMLButtonElement>(
-      `[data-work-tab="${activeTab}"]`,
+      `[data-leave-tab="${activeTab}"]`,
     );
 
     activeButton?.scrollIntoView({
@@ -135,33 +135,33 @@ const WorkTabNavigation: React.FC<WorkTabNavigationProps> = ({
           }`}
         >
           <div className="flex min-w-max items-center gap-10">
-            {WORK_TABS.map((tab) => {
+            {LEAVE_TABS.map((tab) => {
               const isActive = tab.key === activeTab;
-              const isDirty = workForms[tab.key]?.isDirty && workForms[tab.key]?.isLoaded;
+              const isDirty = leaveForms[tab.key]?.isDirty && leaveForms[tab.key]?.isLoaded;
 
               return (
                 <button
                   key={tab.key}
-                  data-work-tab={tab.key}
+                  data-leave-tab={tab.key}
                   type="button"
                   onClick={() => onChange(tab.key)}
                   aria-current={isActive ? 'page' : undefined}
                   className={`group relative shrink-0 transition-all py-4 ${
                     isActive
-                      ? 'text-emerald-600 font-bold'
+                      ? 'text-orange-600 font-bold'
                       : 'text-slate-400 hover:text-slate-600 font-medium'
                   }`}
                 >
                   <span className="flex items-center gap-2">
                     <span className="text-[14px] leading-none">{tab.label}</span>
                     {isDirty ? (
-                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-orange-500 animate-pulse"></span>
                     ) : null}
                   </span>
                   
                   {/* Underline Indicator */}
                   <span className={`absolute bottom-0 left-0 right-0 h-[3px] rounded-full transition-all duration-300 ${
-                    isActive ? 'bg-emerald-500 opacity-100' : 'bg-transparent opacity-0 group-hover:bg-slate-200 group-hover:opacity-100'
+                    isActive ? 'bg-orange-500 opacity-100' : 'bg-transparent opacity-0 group-hover:bg-slate-200 group-hover:opacity-100'
                   }`}></span>
                 </button>
               );
@@ -188,4 +188,4 @@ const WorkTabNavigation: React.FC<WorkTabNavigationProps> = ({
   );
 };
 
-export default WorkTabNavigation;
+export default LeaveTabNavigation;

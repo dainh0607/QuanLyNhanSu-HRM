@@ -33,6 +33,11 @@ import type {
   EmployeeEditMaritalStatusCode,
   EmployeeEditPermanentAddressPayload,
   EmployeeFullProfile,
+  EmployeeEditLeaveBalancePayload,
+  EmployeeEditLeaveHistoryPayload,
+  EmployeeEditAssetPayload,
+  AssetMetadata,
+  AssetLocationMetadata,
 } from "./types";
 
 interface EmployeeBasicInfoUpdateRequest {
@@ -1034,6 +1039,110 @@ const updateEmployeeEditJobInfo = async (
   );
 };
 
+const getEmployeeEditLeaveBalance = async (
+  _employeeId: number,
+): Promise<EmployeeEditLeaveBalancePayload> => {
+  await new Promise((resolve) => setTimeout(resolve, 600));
+  return {
+    details: [
+      {
+        leaveTypeName: "Nghỉ phép năm",
+        totalDays: "12",
+        usedDays: "2.5",
+        remainingDays: "9.5",
+      },
+      {
+        leaveTypeName: "Nghỉ ốm",
+        totalDays: "5",
+        usedDays: "1",
+        remainingDays: "4",
+      },
+      {
+        leaveTypeName: "Nghỉ chế độ",
+        totalDays: "0",
+        usedDays: "0",
+        remainingDays: "0",
+      },
+    ],
+    paidLeaveDays: "3.5",
+    unpaidLeaveDays: "0",
+  };
+};
+
+const updateEmployeeEditLeaveBalance = async (
+  _id: number,
+  _payload: EmployeeEditLeaveBalancePayload,
+): Promise<unknown> => {
+  return { success: true };
+};
+
+const getEmployeeEditLeaveHistory = async (
+  _id: number,
+): Promise<EmployeeEditLeaveHistoryPayload> => {
+  return [
+    {
+      id: "1",
+      leaveType: "Nghỉ phép năm",
+      startDate: "2024-03-01",
+      endDate: "2024-03-02",
+      duration: "2 ngày",
+      status: "Đã phê duyệt",
+      reason: "Việc gia đình",
+    },
+    {
+      id: "2",
+      leaveType: "Nghỉ phép năm",
+      startDate: "2024-04-10",
+      endDate: "2024-04-10",
+      duration: "1 ngày",
+      status: "Chờ phê duyệt",
+      reason: "Khám bệnh",
+    },
+  ];
+};
+
+const updateEmployeeEditLeaveHistory = async (
+  _id: number,
+  _payload: EmployeeEditLeaveHistoryPayload,
+): Promise<unknown> => {
+  return { success: true };
+};
+
+const getAssetsMetadata = async (): Promise<AssetMetadata[]> => {
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  return [
+    { id: '1', name: 'Laptop Dell Latitude 7420', code: 'LT001', totalQuantity: 10, availableQuantity: 5 },
+    { id: '2', name: 'Màn hình Dell UltraSharp 27"', code: 'MH001', totalQuantity: 15, availableQuantity: 8 },
+    { id: '3', name: 'Chuột Logitech MX Master 3', code: 'CH001', totalQuantity: 20, availableQuantity: 12 },
+    { id: '4', name: 'Bàn phím cơ Keychron K2', code: 'BP001', totalQuantity: 10, availableQuantity: 4 },
+  ];
+};
+
+const getAssetLocationsMetadata = async (): Promise<AssetLocationMetadata[]> => {
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  return [
+    { id: '1', name: 'Văn phòng chính (Hà Nội)' },
+    { id: '2', name: 'Chi nhánh TP.HCM' },
+    { id: '3', name: 'Kho tầng 5' },
+    { id: '4', name: 'Phòng IT' },
+  ];
+};
+
+const getEmployeeEditAsset = async (
+  _employeeId: number,
+): Promise<EmployeeEditAssetPayload> => {
+  await new Promise((resolve) => setTimeout(resolve, 600));
+  return [];
+};
+
+const updateEmployeeEditAsset = async (
+  _employeeId: number,
+  _payload: EmployeeEditAssetPayload,
+): Promise<unknown> => {
+  await new Promise((resolve) => setTimeout(resolve, 600));
+  return { success: true };
+};
+
 export {
   fetchEmployeeFullProfileFallback,
   getEmployeeEditBasicInfo,
@@ -1061,6 +1170,14 @@ export {
   updateEmployeeEditJobStatus,
   getEmployeeEditJobInfo,
   updateEmployeeEditJobInfo,
+  getEmployeeEditLeaveBalance,
+  updateEmployeeEditLeaveBalance,
+  getEmployeeEditLeaveHistory,
+  updateEmployeeEditLeaveHistory,
+  getEmployeeEditAsset,
+  updateEmployeeEditAsset,
+  getAssetsMetadata,
+  getAssetLocationsMetadata,
 };
 
 export const employeeProfileService = {
@@ -1090,4 +1207,12 @@ export const employeeProfileService = {
   updateEmployeeEditJobStatus,
   getEmployeeEditJobInfo,
   updateEmployeeEditJobInfo,
+  getEmployeeEditLeaveBalance,
+  updateEmployeeEditLeaveBalance,
+  getEmployeeEditLeaveHistory,
+  updateEmployeeEditLeaveHistory,
+  getEmployeeEditAsset,
+  updateEmployeeEditAsset,
+  getAssetsMetadata,
+  getAssetLocationsMetadata,
 };

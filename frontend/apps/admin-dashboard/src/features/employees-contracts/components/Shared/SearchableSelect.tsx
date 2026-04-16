@@ -7,6 +7,11 @@ interface SearchableSelectProps {
   placeholder: string;
   searchPlaceholder?: string;
   onChange: (value: string) => void;
+  footerAction?: {
+    label: string;
+    onClick: () => void;
+    icon?: string;
+  };
   disabled?: boolean;
   error?: string;
 }
@@ -24,6 +29,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
   placeholder,
   searchPlaceholder,
   onChange,
+  footerAction,
   disabled = false,
   error,
 }) => {
@@ -67,7 +73,9 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
           error
             ? 'border-rose-300 bg-rose-50/40 text-slate-900'
             : 'border-slate-200 bg-white text-slate-900 hover:border-slate-300'
-        } ${disabled ? 'cursor-not-allowed bg-slate-100 text-slate-400' : ''}`}
+        } ${disabled ? 'cursor-not-allowed bg-slate-100 text-slate-400' : ''} ${
+          isOpen ? 'ring-2 ring-[#134BBA]/20 border-[#134BBA]' : ''
+        }`}
       >
         <div className="min-w-0">
           <p className={selectedOption ? 'truncate font-medium text-slate-900' : 'text-slate-400'}>
@@ -77,13 +85,13 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
             <p className="mt-1 truncate text-xs text-slate-500">{selectedOption.supportingText}</p>
           ) : null}
         </div>
-        <span className="material-symbols-outlined ml-3 shrink-0 text-[20px] text-slate-400">
+        <span className={`material-symbols-outlined ml-3 shrink-0 text-[20px] text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}>
           expand_more
         </span>
       </button>
 
       {isOpen ? (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[1600] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_48px_rgba(15,23,42,0.16)]">
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[1600] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_48px_rgba(15,23,42,0.16)] animate-in fade-in zoom-in-95 duration-200">
           <div className="border-b border-slate-100 p-3">
             <div className="relative">
               <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
@@ -129,10 +137,26 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
               </div>
             )}
           </div>
+
+          {footerAction && (
+            <button
+              type="button"
+              onClick={() => {
+                footerAction.onClick();
+                setIsOpen(false);
+              }}
+              className="flex w-full items-center justify-center gap-2 border-t border-slate-100 bg-white py-4 text-sm font-bold text-[#134BBA] transition-colors hover:bg-slate-50"
+            >
+              <span className="material-symbols-outlined text-[20px]">
+                {footerAction.icon || 'add'}
+              </span>
+              {footerAction.label}
+            </button>
+          )}
         </div>
       ) : null}
     </div>
   );
-};
+}
 
 export default SearchableSelect;

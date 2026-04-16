@@ -6,6 +6,9 @@ export interface DetailBlockProps {
   children: React.ReactNode;
   className?: string;
   action?: React.ReactNode;
+  headerAction?: string;
+  actionClassName?: string;
+  onActionClick?: () => void;
 }
 
 const DetailBlock: React.FC<DetailBlockProps> = ({
@@ -14,6 +17,9 @@ const DetailBlock: React.FC<DetailBlockProps> = ({
   children,
   className = '',
   action,
+  headerAction,
+  actionClassName = '',
+  onActionClick,
 }) => (
   <section className={`space-y-5 ${className}`}>
     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -24,7 +30,18 @@ const DetailBlock: React.FC<DetailBlockProps> = ({
           {description && <p className="mt-0.5 text-xs leading-5 text-slate-400">{description}</p>}
         </div>
       </div>
-      {action ? <div className="flex-shrink-0">{action}</div> : null}
+      <div className="flex-shrink-0">
+        {action ? (
+          <div>{action}</div>
+        ) : headerAction ? (
+          <button
+            onClick={onActionClick}
+            className={`inline-flex items-center rounded-lg px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-500 transition-colors hover:bg-emerald-50 ${actionClassName}`}
+          >
+            {headerAction}
+          </button>
+        ) : null}
+      </div>
     </div>
     <div>{children}</div>
   </section>

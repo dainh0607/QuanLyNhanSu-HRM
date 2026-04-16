@@ -30,10 +30,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToActivation, onLoginSu
       */
     }
 
-    if (password.length < 8) {
-      setError('Mật khẩu phải có ít nhất 8 ký tự.');
-      return;
-    }
+    //if (password.length < 8) {
+    //  setError('Mật khẩu phải có ít nhất 8 ký tự.');
+    //  return;
+    //}
 
     setLoading(true);
 

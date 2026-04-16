@@ -7,12 +7,16 @@ import { authService } from '../../services/authService';
 import { useToast } from '../../hooks/useToast';
 import type { Employee } from '../employees/types';
 import EmployeeEditModal from './edit-modal/EmployeeEditModal';
-import type { PersonalTabKey } from './edit-modal/types';
+import type {
+  PersonalTabKey,
+  WorkTabKey,
+} from './edit-modal/types';
 import EmployeeDetailTabs from './components/EmployeeDetailTabs';
 import PasswordChangeDialog from './components/PasswordChangeDialog';
 import PersonalTabContent from './components/PersonalTabContent';
 import ProfileSummarySection from './components/ProfileSummarySection';
 import SecondaryTabPlaceholder from './components/SecondaryTabPlaceholder';
+import WorkTabContent from './components/WorkTabContent';
 import {
   AVATAR_LARGE_FILE_THRESHOLD_BYTES,
   MAX_AVATAR_SOURCE_FILE_SIZE_BYTES,
@@ -61,6 +65,9 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
   );
   const [editModalInitialPersonalTab, setEditModalInitialPersonalTab] = useState<PersonalTabKey>(
     'basicInfo',
+  );
+  const [editModalInitialWorkTab, setEditModalInitialWorkTab] = useState<WorkTabKey | undefined>(
+    undefined,
   );
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState<boolean>(false);
   const [isAvatarUploading, setIsAvatarUploading] = useState<boolean>(false);
@@ -307,12 +314,20 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
   const handleOpenEditModal = () => {
     setEditModalInitialSectionLabel(EMPLOYEE_DETAIL_TABS[0]);
     setEditModalInitialPersonalTab('basicInfo');
+    setEditModalInitialWorkTab(undefined);
     setIsEditModalOpen(true);
   };
 
   const handleOpenEditPersonalTab = (tab: PersonalTabKey) => {
     setEditModalInitialSectionLabel(EMPLOYEE_DETAIL_TABS[0]);
     setEditModalInitialPersonalTab(tab);
+    setEditModalInitialWorkTab(undefined);
+    setIsEditModalOpen(true);
+  };
+
+  const handleOpenEditWorkTab = (tab: WorkTabKey) => {
+    setEditModalInitialSectionLabel(EMPLOYEE_DETAIL_TABS[1]);
+    setEditModalInitialWorkTab(tab);
     setIsEditModalOpen(true);
   };
 
@@ -420,7 +435,9 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
 
         <section className="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-500">THÔNG TIN CÁ NHÂN</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-500">
+              {activeTab === EMPLOYEE_DETAIL_TABS[0] ? 'THÔNG TIN CÁ NHÂN' : activeTab === EMPLOYEE_DETAIL_TABS[1] ? 'THÔNG TIN CÔNG VIỆC' : activeTab.toUpperCase()}
+            </p>
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -485,6 +502,14 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
                   noteValue,
                 }}
               />
+            ) : activeTab === EMPLOYEE_DETAIL_TABS[1] ? (
+              <WorkTabContent
+                employee={displayEmployee}
+                isLoading={isLoading}
+                loadError={loadError}
+                profile={profile}
+                onOpenEditTab={handleOpenEditWorkTab}
+              />
             ) : (
               <SecondaryTabPlaceholder activeTab={activeTab} />
             )}
@@ -511,6 +536,7 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
             profile={profile}
             initialSectionLabel={editModalInitialSectionLabel}
             initialPersonalTab={editModalInitialPersonalTab}
+            initialWorkTab={editModalInitialWorkTab}
             onClose={handleCloseEditModal}
             onSaved={handleEditSaved}
           />

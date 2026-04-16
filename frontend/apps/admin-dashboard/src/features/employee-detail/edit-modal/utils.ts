@@ -12,6 +12,10 @@ import type {
   TabState,
   WorkFormMap,
   WorkFormsState,
+  LeaveFormMap,
+  LeaveFormsState,
+  AssetFormMap,
+  AssetFormsState,
 } from './types';
 
 export const toStringValue = (...values: Array<unknown>): string => {
@@ -338,10 +342,18 @@ export const buildWorkSeedForms = (
       isActive: Boolean(getRecordValue(basicInfoRecord, ['isActive'])),
       isDepartmentHead: Boolean(getRecordValue(basicInfoRecord, ['isDepartmentHead'])),
     },
-    promotionHistory: {},
-    workHistory: {},
-    salaryAllowance: {},
-    contract: {},
+    promotionHistory: [],
+    workHistory: [],
+    salaryAllowance: {
+      paymentMethod: '',
+      salaryLevelName: '',
+      salaryAmount: '',
+      salaryChanges: [],
+      allowances: [],
+      otherIncomes: [],
+    },
+    contract: [],
+    insurance: [],
   };
 };
 
@@ -365,6 +377,27 @@ export const createWorkFormsState = (seed: WorkFormMap): WorkFormsState => ({
   workHistory: createTabState(seed.workHistory),
   salaryAllowance: createTabState(seed.salaryAllowance),
   contract: createTabState(seed.contract),
+  insurance: createTabState(seed.insurance),
+});
+
+export const buildLeaveSeedForms = (): LeaveFormMap => ({
+  leaveBalance: {
+    details: [],
+    paidLeaveDays: '0',
+    unpaidLeaveDays: '0',
+  },
+});
+
+export const createLeaveFormsState = (seed: LeaveFormMap): LeaveFormsState => ({
+  leaveBalance: createTabState(seed.leaveBalance),
+});
+
+export const buildAssetSeedForms = (): AssetFormMap => ({
+  assets: [],
+});
+
+export const createAssetFormsState = (seed: AssetFormMap): AssetFormsState => ({
+  assets: createTabState(seed.assets),
 });
 
 export const buildDependentClientSignature = (

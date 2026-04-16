@@ -2,9 +2,8 @@ import type { Employee } from "../../features/employees/types";
 import { API_URL, parseDownloadFilename, requestBlob, requestJson } from "./core";
 import {
   appendEmployeeListQueryParams,
-  mapEmployeeListItem,
-  type EmployeeListQueryOptions,
 } from "./helpers";
+import { mockEmployees } from "../../features/employees/data/mockData";
 import type {
   EmployeeCreatePayload,
   EmployeeBulkCreatePayload,
@@ -21,26 +20,42 @@ const getEmployees = async (
   status?: string,
   filters?: EmployeeListFilters,
 ): Promise<PaginatedResponse<Employee>> => {
-  const url = new URL(`${API_URL}/employees`);
-  url.searchParams.append("pageNumber", pageNumber.toString());
-  url.searchParams.append("pageSize", pageSize.toString());
-  appendEmployeeListQueryParams(url, { searchTerm, status, filters } satisfies EmployeeListQueryOptions);
+  // --- MOCK DATA MODE ---
+  console.log("Mock getEmployees called with:", { pageNumber, pageSize, searchTerm, status, filters });
+  
+  // Simulate network delay
+  await new Promise((resolve) => setTimeout(resolve, 800));
 
-  try {
-    const response = await requestJson<PaginatedResponse<Record<string, unknown>>>(
-      url.toString(),
-      { method: "GET" },
-      "Error fetching employees",
+  let filtered = [...mockEmployees];
+
+  if (searchTerm) {
+    const lower = searchTerm.toLowerCase();
+    filtered = filtered.filter((e) => 
+      e.fullName?.toLowerCase().includes(lower) || 
+      e.employeeCode?.toLowerCase().includes(lower) ||
+      e.email?.toLowerCase().includes(lower)
     );
-
-    return {
-      ...response,
-      items: (response.items ?? []).map((item) => mapEmployeeListItem(item)),
-    };
-  } catch (error) {
-    console.error("Fetch Employees Error:", error);
-    throw error;
   }
+
+  if (status === "active") {
+    filtered = filtered.filter((e) => e.isActive && !e.isResigned);
+  } else if (status === "resigned") {
+    filtered = filtered.filter((e) => e.isResigned);
+  }
+
+  const totalCount = filtered.length;
+  const start = (pageNumber - 1) * pageSize;
+  const items = filtered.slice(start, start + pageSize);
+  const totalPages = Math.ceil(totalCount / pageSize);
+
+  return {
+    items,
+    totalCount,
+    pageNumber,
+    totalPages,
+    hasNextPage: pageNumber < totalPages,
+    hasPreviousPage: pageNumber > 1,
+  };
 };
 
 const exportEmployeesBasicInfoFile = async (options?: {
