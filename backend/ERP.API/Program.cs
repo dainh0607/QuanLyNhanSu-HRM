@@ -232,23 +232,30 @@ using (var scope = app.Services.CreateScope())
             await userService.SyncWithFirebaseAsync();
 
             // Seed User Elevation
-            var testEmail = "kfrog1233@gmail.com";
-            var user = db.Users.Include(u => u.Employee).FirstOrDefault(u => u.Employee.email == testEmail);
-            if (user != null)
+            var testEmails = new[] { "kfrog1233@gmail.com", "dainh123@gmail.com" };
+            foreach (var email in testEmails)
             {
-                var managerRoleId = 2; // Manager
-                var hasRole = db.UserRoles.Any(ur => ur.user_id == user.Id && (ur.role_id == 1 || ur.role_id == 2));
-                if (!hasRole)
+                var user = db.Users.Include(u => u.Employee).FirstOrDefault(u => u.Employee.email == email);
+                if (user != null)
                 {
-                    db.UserRoles.Add(new ERP.Entities.Models.UserRoles { 
-                        user_id = user.Id, 
-                        role_id = managerRoleId, 
-                        is_active = true,
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow
-                    });
-                    db.SaveChanges();
-                    logger.LogInformation("[SEED] Elevated {Email} to Manager role.", testEmail);
+                    var isDainh = email == "dainh123@gmail.com";
+                    var targetRoleId = isDainh ? 1 : 2; // Admin for dainh, Manager for kfrog
+                    var targetRoleName = isDainh ? "Admin" : "Manager";
+
+                    var hasRole = db.UserRoles.Any(ur => ur.user_id == user.Id && (ur.role_id == 1 || ur.role_id == 2));
+                    if (!hasRole)
+                    {
+                        db.UserRoles.Add(new ERP.Entities.Models.UserRoles
+                        {
+                            user_id = user.Id,
+                            role_id = targetRoleId,
+                            is_active = true,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        });
+                        db.SaveChanges();
+                        logger.LogInformation("[SEED] Elevated {Email} to {Role} role.", email, targetRoleName);
+                    }
                 }
             }
 

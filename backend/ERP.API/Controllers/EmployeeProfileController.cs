@@ -11,7 +11,7 @@ namespace ERP.API.Controllers
     [ApiController]
     [Route("api/employees/{id}/profile")]
     [Authorize]
-    [HasPermission("Employee", "View")]
+    [HasPermission("EMPLOYEE", "READ")]
     public class EmployeeProfileController : ControllerBase
     {
         private readonly IEmployeeProfileService _profileService;
@@ -30,7 +30,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("basic-info")]
-        [HasPermission("Employee", "Update")]
+        [HasPermission("EMPLOYEE", "UPDATE")]
     public async Task<IActionResult> UpdateBasicInfo(int id, [FromBody] BasicInfoDto dto)
         {
             try
@@ -46,7 +46,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("identity")]
-        [HasPermission("Employee", "Update")]
+        [HasPermission("EMPLOYEE", "UPDATE")]
     public async Task<IActionResult> UpdateIdentity(int id, [FromBody] IdentityInfoDto dto)
         {
             var success = await _profileService.UpdateIdentityInfoAsync(id, dto);
@@ -55,7 +55,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("contact")]
-        [HasPermission("Employee", "Update")]
+        [HasPermission("EMPLOYEE", "UPDATE")]
     public async Task<IActionResult> UpdateContact(int id, [FromBody] ContactInfoDto dto)
         {
             var success = await _profileService.UpdateContactInfoAsync(id, dto);
@@ -64,7 +64,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("addresses")]
-        [HasPermission("Employee", "Update")]
+        [HasPermission("EMPLOYEE", "UPDATE")]
     public async Task<IActionResult> UpdateAddresses(int id, [FromBody] AddressProfileUpdateDto dto)
         {
             var request = dto ?? new AddressProfileUpdateDto();
@@ -74,7 +74,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("emergency-contacts")]
-        [HasPermission("Employee", "Update")]
+        [HasPermission("EMPLOYEE", "UPDATE")]
     public async Task<IActionResult> UpdateEmergencyContacts(int id, [FromBody] List<EmergencyContactDto> dtos)
         {
             var success = await _profileService.UpdateEmergencyContactsAsync(id, dtos);
@@ -101,7 +101,7 @@ namespace ERP.API.Controllers
         /// Validation MST (10 hoặc 13 chữ số thuần) được thực hiện qua [RegularExpression] trên DTO.
         /// </summary>
         [HttpPut("other-info")]
-        [HasPermission("Employee", "Update")]
+        [HasPermission("EMPLOYEE", "UPDATE")]
     public async Task<IActionResult> UpdateOtherInfo(int id, [FromBody] OtherInfoDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);

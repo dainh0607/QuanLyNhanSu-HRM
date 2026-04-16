@@ -220,6 +220,7 @@ namespace ERP.Entities.Seeding
                 new ActionPermissions { Id = 2, role_id = 1, action = "READ", resource = "EMPLOYEE", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
                 new ActionPermissions { Id = 3, role_id = 1, action = "UPDATE", resource = "EMPLOYEE", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
                 new ActionPermissions { Id = 4, role_id = 1, action = "DELETE", resource = "EMPLOYEE", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 27, role_id = 1, action = "EXPORT", resource = "EMPLOYEE", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
                 
                 // System Admin - Full Management Access
                 new ActionPermissions { Id = 24, role_id = 1, action = "Manage", resource = "System", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
