@@ -72,6 +72,7 @@ namespace ERP.Services.Auth
                 if (!string.IsNullOrEmpty(dto.InvitationToken))
                 {
                     invitation = await _context.InvitationTokens
+                        .IgnoreQueryFilters()
                         .FirstOrDefaultAsync(i => i.Token == dto.InvitationToken && !i.IsUsed && i.ExpiresAt > DateTime.UtcNow);
                     
                     if (invitation == null)
@@ -85,11 +86,13 @@ namespace ERP.Services.Auth
                     }
                 }
                 var existingEmployee = await _context.Employees
+                    .IgnoreQueryFilters()
                     .FirstOrDefaultAsync(e => e.email == dto.Email);
 
                 if (existingEmployee != null)
                 {
                     var existingUser = await _context.Users
+                        .IgnoreQueryFilters()
                         .FirstOrDefaultAsync(u => u.employee_id == existingEmployee.Id);
 
                     if (existingUser != null)
@@ -135,7 +138,7 @@ namespace ERP.Services.Auth
                     // Case 1: Joining an existing workspace via invitation
                     // In a production system, invitation should carry tenant_id. 
                     // For now, we find the creator's tenant.
-                    var creator = await _context.Users.FindAsync(invitation.CreatedBy);
+                    var creator = await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == invitation.CreatedBy);
                     tenantId = creator?.tenant_id;
                 }
                 else
@@ -407,6 +410,7 @@ namespace ERP.Services.Auth
             try
             {
                 var localUser = await _context.Users
+                    .IgnoreQueryFilters()
                     .Include(u => u.Employee)
                     .FirstOrDefaultAsync(u => u.firebase_uid == uid && u.is_active);
 
@@ -462,6 +466,7 @@ namespace ERP.Services.Auth
             try
             {
                 var localUser = await _context.Users
+                    .IgnoreQueryFilters()
                     .Include(u => u.Employee)
                     .FirstOrDefaultAsync(u => u.Id == userId && u.is_active);
 
@@ -605,6 +610,7 @@ namespace ERP.Services.Auth
             var firebaseUid = await CreateFirebaseUserInternalAsync(email, password, displayName);
 
             var employeeCode = await _context.Employees
+                .IgnoreQueryFilters()
                 .Where(employee => employee.Id == employeeId)
                 .Select(employee => employee.employee_code)
                 .FirstOrDefaultAsync();
@@ -665,6 +671,7 @@ namespace ERP.Services.Auth
 
             var normalizedEmailLower = normalizedEmail.ToLower();
             var localUser = await _context.Users
+                .IgnoreQueryFilters()
                 .Include(u => u.Employee)
                 .FirstOrDefaultAsync(u =>
                     u.is_active &&
@@ -727,6 +734,7 @@ namespace ERP.Services.Auth
             await EnsureLoginRolesAsync(localUser.Id, normalizedEmail);
 
             return await _context.Users
+                .IgnoreQueryFilters()
                 .Include(u => u.Employee)
                 .FirstOrDefaultAsync(u => u.Id == localUser.Id && u.is_active);
         }
@@ -735,7 +743,7 @@ namespace ERP.Services.Auth
         {
             var normalizedEmailLower = email.Trim().ToLower();
 
-            var employee = await _context.Employees.FirstOrDefaultAsync(e =>
+            var employee = await _context.Employees.IgnoreQueryFilters().FirstOrDefaultAsync(e =>
                 e.is_active &&
                 (
                     (!string.IsNullOrWhiteSpace(e.email) && e.email.ToLower() == normalizedEmailLower) ||

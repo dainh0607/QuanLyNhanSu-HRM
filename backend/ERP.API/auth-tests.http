@@ -13,13 +13,13 @@ POST {{baseUrl}}/api/auth/sign-up
 Content-Type: {{contentType}}
 
 {
-  "email": "kfrog1111@gmail.com",
-  "password": "MailTest123",
-  "confirmPassword": "MailTest123",
-  "fullName": "Hùng Super Admin",
+  "email": "kfrog3333@gmail.com",
+  "password": "kfrog12333",
+  "confirmPassword": "kfrog12333",
+  "fullName": "Hùng",
   "employeeCode": "ADM011",
-  "phoneNumber": "+84232333342",
-  "companyName": "NexaHR2"
+  "phoneNumber": "+84232339998",
+  "companyName": "NexaHR11"
 }
 
 ###
@@ -30,8 +30,8 @@ POST {{baseUrl}}/api/auth/login
 Content-Type: {{contentType}}
 
 {
-  "email": "kfrog1111@gmail.com",
-  "password": "MailTest123"
+  "email": "kfrog3333@gmail.com",
+  "password": "kfrog12333"
 }
 
 ###
