@@ -538,5 +538,3 @@ export const shiftSchedulingApi = {
 };
 
 export default shiftSchedulingApi;
-
-export default shiftSchedulingApi;
