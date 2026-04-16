@@ -21,6 +21,7 @@ using ERP.Services;
 using ERP.API.Middleware;
 using ERP.API.Extensions;
 using ERP.DTOs.Common;
+using ERP.Services.ControlPlane;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
@@ -198,6 +199,7 @@ builder.Services.AddScoped<IRlsSessionContextService, RlsSessionContextService>(
 builder.Services.AddHostedService<EmployeeStatusWorker>();
 
 // FIX #1-15: Register RBAC Authorization Services
+builder.Services.AddScoped<ISuperAdminPortalService, SuperAdminPortalService>();
 builder.Services.AddScoped<IAuthorizationManagementService, AuthorizationManagementService>();
 builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
 builder.Services.AddScoped<IPermissionAuditLogService, PermissionAuditLogService>();
