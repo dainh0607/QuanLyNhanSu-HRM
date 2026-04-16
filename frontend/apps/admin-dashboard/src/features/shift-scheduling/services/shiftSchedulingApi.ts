@@ -8,6 +8,13 @@ import type {
   WeeklyScheduleApiResponse,
 } from "../types";
 import { addDays, parseIsoDate, toIsoDate } from "../utils/week";
+import {
+  assignMockShiftToEmployee,
+  createMockWeeklyShiftScheduleApiResponse,
+  deleteMockShiftAssignment,
+  getMockAvailableShiftCatalog,
+  refreshMockShiftAssignmentAttendance,
+} from "../data/mockWeeklyShiftSchedule";
 
 export interface ShiftCountersApiResponse {
   pendingPublishCount?: number;
@@ -230,11 +237,7 @@ const buildWeeklyScheduleUrl = (filters: ShiftScheduleFilters): string => {
 
 export const shiftSchedulingApi = {
   getWeeklySchedule(filters: ShiftScheduleFilters): Promise<WeeklyScheduleApiResponse> {
-    return requestJson<WeeklyScheduleApiResponse>(
-      buildWeeklyScheduleUrl(filters),
-      { method: "GET" },
-      "KhĂ´ng thá»ƒ táº£i báº£ng xáº¿p ca tuáº§n",
-    );
+    return Promise.resolve(createMockWeeklyShiftScheduleApiResponse(filters.weekStartDate));
   },
 
   getShiftCounters(params: {
@@ -242,16 +245,10 @@ export const shiftSchedulingApi = {
     endDate: string;
     branchId?: string;
   }): Promise<ShiftCountersApiResponse> {
-    const url = new URL(`${API_URL}/shift-assignments/counters`);
-    url.searchParams.set("startDate", params.startDate);
-    url.searchParams.set("endDate", params.endDate);
-    appendIfValue(url, "branchId", params.branchId);
-
-    return requestJson<ShiftCountersApiResponse>(
-      url.toString(),
-      { method: "GET" },
-      "KhĂ´ng thá»ƒ táº£i thá»‘ng kĂª ca lĂ m",
-    );
+    return Promise.resolve({
+      pendingPublishCount: 3,
+      pendingApprovalCount: 1,
+    });
   },
 
   createAssignment(payload: {
@@ -260,35 +257,24 @@ export const shiftSchedulingApi = {
     assignmentDate: string;
     note?: string | null;
   }): Promise<{ assignmentId?: number; AssignmentId?: number }> {
-    return requestJson<{ assignmentId?: number; AssignmentId?: number }>(
-      `${API_URL}/shift-assignments`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          employee_id: payload.employeeId,
-          shift_id: payload.shiftId,
-          assignment_date: payload.assignmentDate,
-          note: payload.note ?? null,
-        }),
-      },
-      "KhĂ´ng thá»ƒ gĂ¡n ca lĂ m",
-    );
+    const shifts = getMockAvailableShiftCatalog();
+    const shift = shifts.find(s => s.shift_id === payload.shiftId) || shifts[0];
+    const assignment = assignMockShiftToEmployee({
+      employeeId: payload.employeeId,
+      assignmentDate: payload.assignmentDate,
+      shift: { ...shift, note: payload.note ?? shift.note }
+    });
+    return Promise.resolve({ assignmentId: assignment.id });
   },
 
   deleteAssignment(assignmentId: number): Promise<void> {
-    return requestJson<void>(
-      `${API_URL}/shift-assignments/${assignmentId}`,
-      { method: "DELETE" },
-      "KhĂ´ng thá»ƒ xĂ³a ca lĂ m",
-    );
+    deleteMockShiftAssignment(assignmentId);
+    return Promise.resolve();
   },
 
   refreshAssignmentAttendance(assignmentId: number): Promise<void> {
-    return requestJson<void>(
-      `${API_URL}/shift-assignments/${assignmentId}/refresh-attendance`,
-      { method: "POST" },
-      "KhĂ´ng thá»ƒ táº£i láº¡i dá»¯ liá»‡u cháº¥m cĂ´ng",
-    );
+    refreshMockShiftAssignmentAttendance(assignmentId);
+    return Promise.resolve();
   },
 
   publishAssignments(weekStartDate: string, assignmentIds?: number[]): Promise<ShiftBulkActionResult> {
@@ -370,22 +356,15 @@ export const shiftSchedulingApi = {
     isActive?: boolean;
     branchId?: string | number | null;
   }): Promise<ShiftOptionApiItem[]> {
-    const url = new URL(`${API_URL}/shifts`);
-    if (typeof params?.isActive === "boolean") {
-      url.searchParams.set("isActive", String(params.isActive));
-    }
-
-    appendIfValue(
-      url,
-      "branchId",
-      params?.branchId === null || params?.branchId === undefined ? undefined : String(params.branchId),
-    );
-
-    return requestJson<ShiftOptionApiItem[]>(
-      url.toString(),
-      { method: "GET" },
-      "KhĂ´ng thá»ƒ táº£i danh sĂ¡ch ca lĂ m",
-    );
+    const catalog = getMockAvailableShiftCatalog(params?.branchId ? Number(params.branchId) : null);
+    return Promise.resolve(catalog.map(item => ({
+      shiftId: item.shift_id,
+      shiftName: item.shift_name,
+      startTime: item.start_time,
+      endTime: item.end_time,
+      color: item.color,
+      branchId: item.branch_id
+    })));
   },
 
   getLegacyWeeklySchedule(branchId: number, startDate: string): Promise<unknown> {
@@ -447,16 +426,7 @@ export const shiftSchedulingApi = {
     weekStartDate: string;
     branchId?: string;
   }): Promise<WeeklyScheduleApiOpenShift[]> {
-    const url = new URL(`${API_URL}/open-shifts`);
-    url.searchParams.set("startDate", params.weekStartDate);
-    url.searchParams.set("endDate", toIsoDate(addDays(parseIsoDate(params.weekStartDate), 7)));
-    appendIfValue(url, "branchId", params.branchId);
-
-    return requestJson<WeeklyScheduleApiOpenShift[]>(
-      url.toString(),
-      { method: "GET" },
-      "KhĂ´ng thá»ƒ táº£i danh sĂ¡ch ca má»Ÿ",
-    );
+    return Promise.resolve(createMockWeeklyShiftScheduleApiResponse(params.weekStartDate).open_shifts);
   },
 
   createOpenShift(payload: OpenShiftCreatePayload): Promise<void> {

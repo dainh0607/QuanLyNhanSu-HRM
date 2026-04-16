@@ -37,10 +37,12 @@ export const ShiftMatrixCell = ({
     ) : (
       <button
         type="button"
-        disabled={!isOpenShiftRow || !date || !onCreateOpenShift}
+        disabled={(!isOpenShiftRow && (!employee || !date || !quickActionHandlers)) || (isOpenShiftRow && (!date || !onCreateOpenShift))}
         onClick={() => {
           if (isOpenShiftRow && date && onCreateOpenShift) {
             onCreateOpenShift(date);
+          } else if (!isOpenShiftRow && employee && date && quickActionHandlers) {
+            quickActionHandlers.onAssignShift(employee, date);
           }
         }}
         className="flex h-full min-h-[40px] w-full items-center justify-center rounded-[6px] border border-dashed border-slate-300 bg-transparent text-slate-300 transition hover:border-slate-400 hover:text-slate-400 disabled:cursor-default disabled:hover:border-slate-300 disabled:hover:text-slate-300"

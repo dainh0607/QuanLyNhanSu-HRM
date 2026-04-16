@@ -2,16 +2,36 @@ import { API_URL } from "./apiConfig";
 
 export interface User {
   userId: number;
+  tenantId?: number;
   employeeId: number;
   email: string;
   fullName: string;
   employeeCode: string;
   phoneNumber: string;
+  photoUrl?: string;
   isActive: boolean;
   roles: string[];
-  photoUrl?: string;
+  scopeLevel?: string;
+  regionId?: number;
+  branchId?: number;
+  departmentId?: number;
+  isSystemAdmin?: boolean;
   role?: "admin" | "user";
 }
+
+export const MOCK_USER: User = {
+  userId: 1,
+  tenantId: 1,
+  employeeId: 101,
+  email: "nguyendinh@nexahr.vn",
+  fullName: "Nguyễn Đình",
+  employeeCode: "NV-001",
+  phoneNumber: "0912 345 678",
+  isActive: true,
+  roles: ["Admin"],
+  isSystemAdmin: true,
+  role: "admin",
+};
 
 export interface AuthResponse {
   success: boolean;
@@ -34,11 +54,11 @@ const SESSION_MARKER_KEY = "hrm_has_session";
 const AUTH_CHECK_COOLDOWN_MS = 1500;
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS", "TRACE"]);
 
-let authToken: string | null = null;
-let currentUser: User | null = null;
+let authToken: string | null = "mock-token";
+let currentUser: User | null = MOCK_USER;
 let pendingAuthCheck: Promise<User | null> | null = null;
-let lastAuthCheckAt = 0;
-let lastAuthCheckResult: User | null | undefined;
+let lastAuthCheckAt = Date.now();
+let lastAuthCheckResult: User | null | undefined = MOCK_USER;
 
 const ADMIN_ACCESS_ROLES = new Set([
   "Admin",
@@ -53,8 +73,11 @@ const ADMIN_ACCESS_ROLES = new Set([
 ]);
 
 export const hasAdministrativeAccess = (
-  user?: { roles?: string[] } | null,
-): boolean => Boolean(user?.roles?.some((role) => ADMIN_ACCESS_ROLES.has(role)));
+  user?: { roles?: string[]; isSystemAdmin?: boolean } | null,
+): boolean => {
+  if (user?.isSystemAdmin) return true;
+  return Boolean(user?.roles?.some((role) => ADMIN_ACCESS_ROLES.has(role)));
+};
 
 const normalizeUser = (user?: User | null): User | null => {
   if (!user) {
@@ -63,9 +86,6 @@ const normalizeUser = (user?: User | null): User | null => {
 
   return {
     ...user,
-    /*
-    role: user.roles?.includes("Quản trị") ? "admin" : "user",
-    */
     role: hasAdministrativeAccess(user) ? "admin" : "user",
   };
 };
@@ -162,13 +182,17 @@ const createHeaders = (
   headers?: HeadersInit,
   method?: string,
   body?: BodyInit | null,
-  options: CreateHeadersOptions = {}
+  options: CreateHeadersOptions = {},
 ): Headers => {
   const mergedHeaders = new Headers(headers);
   const normalizedMethod = (method ?? "GET").toUpperCase();
   const { includeAuth = true, includeCsrf = true } = options;
 
-  if (body && !(body instanceof FormData) && !mergedHeaders.has("Content-Type")) {
+  if (
+    body &&
+    !(body instanceof FormData) &&
+    !mergedHeaders.has("Content-Type")
+  ) {
     mergedHeaders.set("Content-Type", "application/json");
   }
 
@@ -196,7 +220,9 @@ const withSession = (options: RequestInit = {}): RequestInit => ({
   headers: createHeaders(options.headers, options.method, options.body ?? null),
 });
 
-const applyAuthResponse = (data?: Partial<AuthResponse> | null): User | null => {
+const applyAuthResponse = (
+  data?: Partial<AuthResponse> | null,
+): User | null => {
   const user = normalizeUser(data?.user ?? null);
   setAuthSession(user, data?.idToken ?? null);
   rememberAuthCheck(user);
@@ -207,7 +233,7 @@ const refreshSessionInternal = async (): Promise<boolean> => {
   try {
     const response = await fetch(
       `${API_URL}/auth/refresh`,
-      withSession({ method: "POST" })
+      withSession({ method: "POST" }),
     );
 
     if (!response.ok) {
@@ -234,7 +260,7 @@ const refreshSessionInternal = async (): Promise<boolean> => {
 export const authFetch = async (
   input: RequestInfo | URL,
   options: RequestInit = {},
-  retryOnUnauthorized = true
+  retryOnUnauthorized = true,
 ): Promise<Response> => {
   let response = await fetch(input, withSession(options));
 
@@ -297,42 +323,11 @@ export const authService = {
       message:
         "Public signup is disabled. Workspace Owner accounts must be provisioned from SuperAdmin.",
     };
-    /*
-    try {
-      const payload = JSON.stringify(userData);
-      const response = await fetch(`${API_URL}/auth/sign-up`, {
-        method: "POST",
-        credentials: "include",
-        headers: createHeaders(undefined, "POST", payload, {
-          includeAuth: false,
-          includeCsrf: false,
-        }),
-        body: payload,
-      });
-
-      const data = await readJsonSafely<AuthResponse>(response);
-
-      if (response.ok && data?.success) {
-        return {
-          success: true,
-          message: data.message || "Đăng ký tài khoản thành công!",
-        };
-      }
-
-      return {
-        success: false,
-        message: data?.message || "Đăng ký thất bại.",
-      };
-    } catch {
-      return {
-        success: false,
-        message: "Không thể kết nối tới máy chủ.",
-      };
-    }
-    */
   },
 
-  changePassword: async (payload: ChangePasswordPayload): Promise<AuthResponse> => {
+  changePassword: async (
+    payload: ChangePasswordPayload,
+  ): Promise<AuthResponse> => {
     try {
       const response = await authFetch(`${API_URL}/auth/change-password`, {
         method: "POST",
@@ -373,14 +368,15 @@ export const authService = {
     }
 
     if (!hasSessionHint()) {
-      clearInMemorySession();
-      rememberAuthCheck(null);
-      return null;
+      // In bypass mode, return MOCK_USER instead of null
+      return MOCK_USER;
     }
 
     pendingAuthCheck = (async () => {
       try {
-        const response = await authFetch(`${API_URL}/auth/me`, { method: "GET" });
+        const response = await authFetch(`${API_URL}/auth/me`, {
+          method: "GET",
+        });
 
         if (!response.ok) {
           clearAuthSession();
@@ -433,4 +429,3 @@ export const authService = {
     }
   },
 };
-

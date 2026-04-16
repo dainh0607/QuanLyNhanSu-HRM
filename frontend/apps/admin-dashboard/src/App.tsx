@@ -1,32 +1,29 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
-import LoginPage from './pages/LoginPage';
-import WorkspaceOwnerActivationPage from './pages/WorkspaceOwnerActivationPage';
-import { EmployeeList } from './features/employees';
-import { ContractsManagementPage, SigningPortalPage } from './features/employees-contracts';
-import { WeeklyShiftSchedulePage } from './features/shift-scheduling';
-import { EmployeeDetail } from './features/employee-detail/EmployeeDetailViewIntegrated';
-import type { PersonalTabKey } from './features/employee-detail/edit-modal/types';
-import type { Employee } from './features/employees/types';
-import { authService } from './services/authService';
-import AuthLandingPage from './pages/AuthLandingPage';
-import UnauthorizedPage from './pages/UnauthorizedPage';
-import type { User } from './services/authService';
-import { employeeService } from './services/employeeService';
-import './index.css';
-
-// Mock data mẫu để test khi chưa đăng nhập (user === null)
-const MOCK_USER: User = {
-  userId: 1,
-  employeeId: 101,
-  email: "nguyendinh@nexahr.vn",
-  fullName: "Nguyễn Đình",
-  employeeCode: "NV-001",
-  phoneNumber: "0912 345 678",
-  isActive: true,
-  roles: ["Admin"],
-  role: "admin",
-};
+import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
+import LoginPage from "./pages/LoginPage";
+import WorkspaceOwnerActivationPage from "./pages/WorkspaceOwnerActivationPage";
+import { EmployeeList } from "./features/employees";
+import {
+  ContractsManagementPage,
+  SigningPortalPage,
+} from "./features/employees-contracts";
+import { WeeklyShiftSchedulePage } from "./features/shift-scheduling";
+import { EmployeeDetail } from "./features/employee-detail/EmployeeDetailViewIntegrated";
+import type { PersonalTabKey } from "./features/employee-detail/edit-modal/types";
+import type { Employee } from "./features/employees/types";
+import { authService, MOCK_USER } from "./services/authService";
+import AuthLandingPage from "./pages/AuthLandingPage";
+import UnauthorizedPage from "./pages/UnauthorizedPage";
+import type { User } from "./services/authService";
+import { employeeService } from "./services/employeeService";
+import "./index.css";
 
 const getInitials = (fullName: string | undefined) => {
   if (!fullName) return "NĐ";
@@ -59,7 +56,9 @@ const Header = ({
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
-  const isShiftSchedulingActive = location.pathname.startsWith("/working-day/timekeeping");
+  const isShiftSchedulingActive = location.pathname.startsWith(
+    "/working-day/timekeeping",
+  );
   const isPersonnelSectionActive =
     location.pathname.startsWith("/personnel/employees") ||
     location.pathname.startsWith("/personnel/contracts");
@@ -86,8 +85,16 @@ const Header = ({
     menuKey?: "more";
   }> = [
     { name: "Lịch", active: false },
-    { name: "Nhân sự", active: isPersonnelSectionActive, to: "/personnel/employees" },
-    { name: "Chấm công", active: isShiftSchedulingActive, to: "/working-day/timekeeping" },
+    {
+      name: "Nhân sự",
+      active: isPersonnelSectionActive,
+      to: "/personnel/employees",
+    },
+    {
+      name: "Chấm công",
+      active: isShiftSchedulingActive,
+      to: "/working-day/timekeeping",
+    },
     { name: "Yêu cầu", active: false },
     { name: "Tiền lương", active: false },
     { name: "Thêm", active: false, hasDropdown: true, menuKey: "more" },
@@ -134,11 +141,11 @@ const Header = ({
 
             if (item.menuKey === "more") {
               return (
-                <div key={item.name} className="group relative flex h-16 items-center">
-                  <button
-                    type="button"
-                    className={buttonClassName}
-                  >
+                <div
+                  key={item.name}
+                  className="group relative flex h-16 items-center"
+                >
+                  <button type="button" className={buttonClassName}>
                     {item.name}
                     <span className="material-symbols-outlined text-lg leading-none">
                       expand_more
@@ -155,9 +162,13 @@ const Header = ({
                         >
                           <span className="flex items-center gap-3">
                             <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
-                              <span className="material-symbols-outlined text-[19px]">{menuItem.icon}</span>
+                              <span className="material-symbols-outlined text-[19px]">
+                                {menuItem.icon}
+                              </span>
                             </span>
-                            <span className="text-sm font-medium text-slate-700">{menuItem.label}</span>
+                            <span className="text-sm font-medium text-slate-700">
+                              {menuItem.label}
+                            </span>
                           </span>
 
                           <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">
@@ -290,7 +301,9 @@ const Header = ({
 function LegacyStateApp() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [user, setUser] = useState<User | null>(null);
-  const [currentPage, setCurrentPage] = useState<"login" | "activation">("login");
+  const [currentPage, setCurrentPage] = useState<"login" | "activation">(
+    "login",
+  );
   const [isInitializing, setIsInitializing] = useState<boolean>(true);
 
   // Navigation state
@@ -636,6 +649,9 @@ function RoutedApp() {
         if (currentUser) {
           setIsAuthenticated(true);
           setUser(currentUser);
+        } else {
+          setIsAuthenticated(false);
+          setUser(null);
         }
       } finally {
         setIsInitializing(false);
@@ -685,7 +701,11 @@ function RoutedApp() {
             isAuthenticated ? (
               <AuthLandingPage />
             ) : (
-              <Navigate to="/login" replace state={{ from: loginRedirectPath }} />
+              <Navigate
+                to="/login"
+                replace
+                state={{ from: loginRedirectPath }}
+              />
             )
           }
         />
@@ -697,8 +717,9 @@ function RoutedApp() {
               <Navigate to="/auth/landing" replace />
             ) : (
               <LoginPage
-                onNavigateToActivation={() => navigate("/activate-workspace-owner")}
-
+                onNavigateToActivation={() =>
+                  navigate("/activate-workspace-owner")
+                }
                 onLoginSuccess={handleLoginSuccess}
               />
             )
@@ -716,7 +737,10 @@ function RoutedApp() {
             )
           }
         />
-        <Route path="/register" element={<Navigate to="/activate-workspace-owner" replace />} />
+        <Route
+          path="/register"
+          element={<Navigate to="/activate-workspace-owner" replace />}
+        />
         <Route
           path="/personnel/employees"
           element={
@@ -751,7 +775,11 @@ function RoutedApp() {
             isAuthenticated ? (
               <WeeklyShiftSchedulingRoute user={user} onLogout={handleLogout} />
             ) : (
-              <Navigate to="/login" replace state={{ from: loginRedirectPath }} />
+              <Navigate
+                to="/login"
+                replace
+                state={{ from: loginRedirectPath }}
+              />
             )
           }
         />

@@ -6,7 +6,7 @@ import type {
 } from "../types";
 import { addDays, parseIsoDate, startOfWeek, toIsoDate } from "../utils/week";
 
-const baseEmployees: WeeklyScheduleApiEmployee[] = [
+export const baseEmployees: WeeklyScheduleApiEmployee[] = [
   {
     id: 101,
     full_name: "Nguyễn Minh Anh",

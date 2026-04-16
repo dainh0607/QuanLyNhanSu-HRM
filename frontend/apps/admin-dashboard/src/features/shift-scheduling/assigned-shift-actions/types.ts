@@ -97,6 +97,7 @@ export type DirectShiftTemplatePayload = ShiftTemplateSubmitPayload;
 export interface AssignedShiftQuickActionHandlers {
   onViewDetails: (context: AssignedShiftActionContext) => void;
   onAddSecondaryShift: (context: AssignedShiftActionContext) => void;
+  onAssignShift: (employee: WeeklyScheduleEmployee, date: string) => void;
   onOpenLeaveRequest: (context: AssignedShiftActionContext) => void;
   onRefreshAttendance: (context: AssignedShiftActionContext) => void;
   onOpenMap: (context: AssignedShiftActionContext) => void;

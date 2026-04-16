@@ -124,6 +124,7 @@ export const CompactShiftScheduleGrid = ({
                 return (
                   <ShiftMatrixCell
                     key={`${row.employee.id}-${isoDate}`}
+                    date={isoDate}
                     shifts={row.cells[isoDate]?.shifts ?? []}
                     employee={row.employee}
                     highlightShortage={highlightShortage}

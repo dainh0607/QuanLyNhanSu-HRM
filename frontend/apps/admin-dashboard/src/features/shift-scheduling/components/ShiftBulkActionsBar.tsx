@@ -22,13 +22,6 @@ const ShiftBulkActionsBar = ({
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const totalPending = draftCount + publishedCount;
-
-  // Ẩn khi không có ca nào chờ xử lý
-  if (totalPending === 0) {
-    return null;
-  }
-
   const handleClickOutside = useCallback((event: MouseEvent) => {
     if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
       setIsOpen(false);
@@ -44,6 +37,13 @@ const ShiftBulkActionsBar = ({
     };
   }, [isOpen, handleClickOutside]);
 
+  const totalPending = draftCount + publishedCount;
+
+  // Ẩn khi không có ca nào chờ xử lý
+  if (totalPending === 0) {
+    return null;
+  }
+
   const handleAction = (action: () => void) => {
     setIsOpen(false);
     action();
@@ -56,7 +56,7 @@ const ShiftBulkActionsBar = ({
         type="button"
         disabled={isProcessing || publishedCount === 0}
         onClick={() => handleAction(onApproveAll)}
-        className={`flex items-center rounded-l-lg border-r border-white/20 px-4 py-2.5 text-sm font-bold text-white transition-all duration-200 ${
+        className={`flex items-center rounded-l-lg border-r border-white/20 px-4 py-2 text-sm font-bold text-white transition-all duration-200 ${
           isProcessing
             ? "cursor-wait bg-emerald-400"
             : publishedCount > 0
@@ -64,16 +64,12 @@ const ShiftBulkActionsBar = ({
               : "cursor-not-allowed bg-emerald-400/60"
         }`}
       >
-        {isProcessing ? (
+        {isProcessing && (
           <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-        ) : (
-          <span className="material-symbols-outlined mr-2 text-[18px]">
-            check_circle
-          </span>
         )}
         Chấp thuận
         {publishedCount > 0 ? (
-          <span className="ml-1.5 inline-flex min-w-[22px] items-center justify-center rounded-full bg-white/20 px-1.5 py-0.5 text-[11px] font-bold leading-none">
+          <span className="ml-2 inline-flex h-5 min-w-[20px] items-center justify-center rounded-md bg-white/10 px-1.5 text-[10px] font-bold leading-none text-white ring-1 ring-inset ring-white/20">
             {publishedCount}
           </span>
         ) : null}
@@ -84,7 +80,7 @@ const ShiftBulkActionsBar = ({
         type="button"
         disabled={isProcessing}
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`flex h-full items-center justify-center rounded-r-lg px-2.5 py-2.5 text-white transition-all duration-200 ${
+        className={`flex h-full items-center justify-center rounded-r-lg px-2.5 py-2 text-white transition-all duration-200 ${
           isProcessing
             ? "cursor-wait bg-emerald-400"
             : "bg-emerald-600 hover:bg-emerald-700"
@@ -102,7 +98,7 @@ const ShiftBulkActionsBar = ({
       {/* Dropdown menu */}
       {isOpen ? (
         <div className="absolute right-0 top-full z-[1000] mt-1.5 w-64 animate-[fadeSlideDown_0.2s_ease-out] overflow-hidden rounded-xl border border-gray-200 bg-white py-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
-          <div className="mb-1 border-b border-gray-100 px-4 py-2">
+          <div className="mb-1 border-b border-gray-100 px-4 py-[7px]">
             <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
               Thao tác hàng loạt
             </span>
@@ -113,18 +109,15 @@ const ShiftBulkActionsBar = ({
             type="button"
             disabled={draftCount === 0}
             onClick={() => handleAction(onPublishAll)}
-            className={`flex w-full items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+            className={`flex min-h-[28px] w-full items-center gap-3 px-4 py-1 text-xs transition-colors ${
               draftCount > 0
-                ? "text-gray-700 hover:bg-blue-50 hover:text-[#134BBA]"
+                ? "text-gray-700 hover:bg-blue-50/50 hover:text-[#134BBA]"
                 : "cursor-not-allowed text-gray-300"
             }`}
           >
-            <span className="material-symbols-outlined text-[18px]">
-              campaign
-            </span>
             <span className="flex-1 text-left">Công bố tất cả</span>
             {draftCount > 0 ? (
-              <span className="inline-flex min-w-[22px] items-center justify-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold leading-none text-amber-700">
+              <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-md bg-amber-50 px-1.5 text-[10px] font-bold leading-none text-amber-600 ring-1 ring-inset ring-amber-200/50">
                 {draftCount}
               </span>
             ) : null}
@@ -135,18 +128,15 @@ const ShiftBulkActionsBar = ({
             type="button"
             disabled={publishedCount === 0}
             onClick={() => handleAction(onApproveAll)}
-            className={`flex w-full items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+            className={`flex min-h-[28px] w-full items-center gap-3 px-4 py-1 text-xs transition-colors ${
               publishedCount > 0
-                ? "text-gray-700 hover:bg-emerald-50 hover:text-emerald-700"
+                ? "text-gray-700 hover:bg-emerald-50/50 hover:text-emerald-700"
                 : "cursor-not-allowed text-gray-300"
             }`}
           >
-            <span className="material-symbols-outlined text-[18px]">
-              check_circle
-            </span>
             <span className="flex-1 text-left">Chấp thuận tất cả</span>
             {publishedCount > 0 ? (
-              <span className="inline-flex min-w-[22px] items-center justify-center rounded-full bg-emerald-100 px-1.5 py-0.5 text-[11px] font-bold leading-none text-emerald-700">
+              <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-md bg-emerald-50 px-1.5 text-[10px] font-bold leading-none text-emerald-600 ring-1 ring-inset ring-emerald-200/50">
                 {publishedCount}
               </span>
             ) : null}
@@ -159,13 +149,10 @@ const ShiftBulkActionsBar = ({
             type="button"
             disabled={totalPending === 0}
             onClick={() => handleAction(onPublishAndApproveAll)}
-            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-gray-700 transition-colors hover:bg-indigo-50 hover:text-indigo-700"
+            className="flex min-h-[28px] w-full items-center gap-3 px-4 py-1 text-xs text-gray-700 transition-colors hover:bg-indigo-50/50 hover:text-indigo-700"
           >
-            <span className="material-symbols-outlined text-[18px]">
-              done_all
-            </span>
             <span className="flex-1 text-left">Công bố & Chấp thuận</span>
-            <span className="inline-flex min-w-[22px] items-center justify-center rounded-full bg-indigo-100 px-1.5 py-0.5 text-[11px] font-bold leading-none text-indigo-700">
+            <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-md bg-indigo-50 px-1.5 text-[10px] font-bold leading-none text-indigo-600 ring-1 ring-inset ring-indigo-200/50">
               {totalPending}
             </span>
           </button>
@@ -177,11 +164,8 @@ const ShiftBulkActionsBar = ({
             type="button"
             disabled={totalPending === 0}
             onClick={() => handleAction(onDeleteUnconfirmed)}
-            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-red-600 transition-colors hover:bg-red-50 hover:text-red-700"
+            className="flex min-h-[28px] w-full items-center gap-3 px-4 py-1 text-xs text-red-600 transition-colors hover:bg-red-50/50 hover:text-red-700"
           >
-            <span className="material-symbols-outlined text-[18px]">
-              delete_sweep
-            </span>
             <span className="flex-1 text-left">
               Xoá tất cả ca chưa xác nhận
             </span>

@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { isTodayIsoDate } from "../utils/week";
 import type { AssignedShiftActionContext, AssignedShiftQuickActionHandlers } from "./types";
 
@@ -63,7 +63,9 @@ export const AssignedShiftQuickActions = ({
           onClick={() => handlers.onViewDetails(context)}
         />
 
-        {isToday ? (
+        {["upcoming", "untracked", "paidLeave", "unpaidLeave", "businessTrip"].includes(
+          context.shift.attendanceStatus
+        ) ? (
           <QuickActionButton
             icon="add"
             label="Thêm ca phụ"

@@ -2,14 +2,20 @@ import { API_URL } from "./apiConfig";
 
 export interface User {
   userId: number;
+  tenantId?: number;
   employeeId: number;
   email: string;
   fullName: string;
   employeeCode: string;
   phoneNumber: string;
+  photoUrl?: string;
   isActive: boolean;
   roles: string[];
-  photoUrl?: string;
+  scopeLevel?: string;
+  regionId?: number;
+  branchId?: number;
+  departmentId?: number;
+  isSystemAdmin?: boolean;
 }
 
 export interface AuthResponse {
@@ -135,7 +141,11 @@ const createHeaders = (
   const normalizedMethod = (method ?? "GET").toUpperCase();
   const { includeAuth = true, includeCsrf = true } = options;
 
-  if (body && !(body instanceof FormData) && !mergedHeaders.has("Content-Type")) {
+  if (
+    body &&
+    !(body instanceof FormData) &&
+    !mergedHeaders.has("Content-Type")
+  ) {
     mergedHeaders.set("Content-Type", "application/json");
   }
 
@@ -163,7 +173,9 @@ const withSession = (options: RequestInit = {}): RequestInit => ({
   headers: createHeaders(options.headers, options.method, options.body ?? null),
 });
 
-const applyAuthResponse = (data?: Partial<AuthResponse> | null): User | null => {
+const applyAuthResponse = (
+  data?: Partial<AuthResponse> | null,
+): User | null => {
   const user = data?.user ?? null;
   setAuthSession(user, data?.idToken ?? null);
   rememberAuthCheck(user);
@@ -275,7 +287,9 @@ export const superAdminAuthService = {
 
     pendingAuthCheck = (async () => {
       try {
-        const response = await authFetch(`${API_URL}/auth/me`, { method: "GET" });
+        const response = await authFetch(`${API_URL}/auth/me`, {
+          method: "GET",
+        });
 
         if (!response.ok) {
           clearAuthSession();
@@ -344,8 +358,14 @@ export const superAdminAuthService = {
       }
 
       if (response.status === 403) {
-        const meResponse = await authFetch(`${API_URL}/auth/me`, { method: "GET" }, false);
-        const data = meResponse.ok ? await readJsonSafely<User>(meResponse) : null;
+        const meResponse = await authFetch(
+          `${API_URL}/auth/me`,
+          { method: "GET" },
+          false,
+        );
+        const data = meResponse.ok
+          ? await readJsonSafely<User>(meResponse)
+          : null;
         const user = data ?? null;
 
         if (user) {

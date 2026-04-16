@@ -112,6 +112,37 @@ export const useAssignedShiftQuickActions = ({
     [loadDetail],
   );
 
+  const handleAssignShift = useCallback(
+    (employee: WeeklyScheduleEmployee, date: string) => {
+      setPickerContext({
+        employee,
+        shift: {
+          id: `new-${employee.id}-${date}`,
+          shiftName: "Ca làm mới",
+          startTime: "08:00",
+          endTime: "17:00",
+          date,
+          attendanceStatus: "upcoming",
+        },
+      });
+      setIsAvailableShiftsLoading(true);
+      setAvailableShifts([]);
+
+      void assignedShiftActionsService
+        .getAvailableShifts({
+          employee,
+          shift: { id: "", date, shiftName: "", startTime: "", endTime: "", attendanceStatus: "upcoming" },
+        })
+        .then((response) => setAvailableShifts(response))
+        .catch((error) => {
+          console.error("Failed to load available shifts.", error);
+          notify("Không thể tải danh sách ca làm.", "error");
+        })
+        .finally(() => setIsAvailableShiftsLoading(false));
+    },
+    [notify],
+  );
+
   const handleAddSecondaryShift = useCallback(
     (context: AssignedShiftActionContext) => {
       setPickerContext(context);
@@ -170,6 +201,7 @@ export const useAssignedShiftQuickActions = ({
     () => ({
       onViewDetails: handleViewDetails,
       onAddSecondaryShift: handleAddSecondaryShift,
+      onAssignShift: handleAssignShift,
       onOpenLeaveRequest: handleOpenLeaveRequest,
       onRefreshAttendance: handleRefreshAttendance,
       onOpenMap: handleOpenMap,
@@ -177,6 +209,7 @@ export const useAssignedShiftQuickActions = ({
     }),
     [
       handleAddSecondaryShift,
+      handleAssignShift,
       handleDeleteShift,
       handleOpenLeaveRequest,
       handleOpenMap,
