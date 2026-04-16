@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using ERP.Entities.Models;
 using ERP.Entities.Seeding;
 using ERP.Entities.Interfaces;
+using ERP.Entities.Models.ControlPlane;
 
 namespace ERP.Entities
 {
@@ -135,6 +136,13 @@ namespace ERP.Entities
         public DbSet<PermissionAuditLogs> PermissionAuditLogs { get; set; }
         public DbSet<BreakGlassAccessLogs> BreakGlassAccessLogs { get; set; }
         public DbSet<LoginAttempts> LoginAttempts { get; set; }
+
+        // NEW: Control Plane (Super Admin) Tables
+        public DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
+        public DbSet<TenantSubscription> TenantSubscriptions { get; set; }
+        public DbSet<WorkspaceOwnerInvitation> WorkspaceOwnerInvitations { get; set; }
+        public DbSet<SupportAccessGrant> SupportAccessGrants { get; set; }
+        public DbSet<InvoiceMetadata> InvoiceMetadata { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
