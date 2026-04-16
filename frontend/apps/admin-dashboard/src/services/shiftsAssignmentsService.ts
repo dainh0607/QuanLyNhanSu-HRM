@@ -34,50 +34,23 @@ export interface CopyShiftRequest {
   departmentId?: number;
 }
 
-// Mock data
-const mockAssignments: ShiftAssignment[] = [
-  {
-    id: 1,
-    employeeId: 1,
-    shiftId: 1,
-    assignedDate: "2026-04-16",
-    status: "approved",
-    createdAt: "2026-04-14",
-  },
-  {
-    id: 2,
-    employeeId: 2,
-    shiftId: 2,
-    assignedDate: "2026-04-16",
-    status: "published",
-    createdAt: "2026-04-14",
-  },
-];
-
 export const shiftAssignmentsService = {
   async getWeeklyAssignments(
     startDate: string,
     branchId?: number,
   ): Promise<{ week: string; assignments: ShiftAssignment[] }> {
-    try {
-      const url = new URL(`${API_URL}/shift-assignments/weekly`);
-      url.searchParams.set("startDate", startDate);
-      if (branchId) url.searchParams.set("branchId", String(branchId));
+    const url = new URL(`${API_URL}/shift-assignments/weekly`);
+    url.searchParams.set("startDate", startDate);
+    if (branchId) url.searchParams.set("branchId", String(branchId));
 
-      return await requestJson<{
-        week: string;
-        assignments: ShiftAssignment[];
-      }>(
-        url.toString(),
-        { method: "GET" },
-        "Failed to fetch weekly assignments",
-      );
-    } catch {
-      return {
-        week: startDate,
-        assignments: mockAssignments,
-      };
-    }
+    return await requestJson<{
+      week: string;
+      assignments: ShiftAssignment[];
+    }>(
+      url.toString(),
+      { method: "GET" },
+      "Không thể tải danh sách gán ca tuần",
+    );
   },
 
   async createAssignment(data: {
@@ -92,7 +65,7 @@ export const shiftAssignmentsService = {
           method: "POST",
           body: JSON.stringify(data),
         },
-        "Failed to create shift assignment",
+        "Không thể gán ca mới",
       );
     } catch (error) {
       console.error("Create assignment error:", error);
@@ -105,10 +78,27 @@ export const shiftAssignmentsService = {
       return await requestJson<{ success: boolean }>(
         `${API_URL}/shift-assignments/${id}`,
         { method: "DELETE" },
-        `Failed to delete assignment ${id}`,
+        `Không thể xóa gán ca ${id}`,
       );
     } catch (error) {
       console.error("Delete assignment error:", error);
+      throw error;
+    }
+  },
+
+  async unassignShift(employeeId: number, date: string): Promise<{ success: boolean }> {
+    try {
+      const url = new URL(`${API_URL}/shifts/assignment`);
+      url.searchParams.set("employeeId", String(employeeId));
+      url.searchParams.set("date", date);
+
+      return await requestJson<{ success: boolean }>(
+        url.toString(),
+        { method: "DELETE" },
+        "Không thể hủy gán ca cho nhân viên",
+      );
+    } catch (error) {
+      console.error("Unassign shift error:", error);
       throw error;
     }
   },
@@ -123,7 +113,7 @@ export const shiftAssignmentsService = {
           method: "POST",
           body: JSON.stringify(request),
         },
-        "Failed to copy shifts",
+        "Không thể sao chép lịch làm việc",
       );
     } catch (error) {
       console.error("Copy shifts error:", error);
@@ -136,7 +126,7 @@ export const shiftAssignmentsService = {
       return await requestJson<{ success: boolean }>(
         `${API_URL}/shift-assignments/${assignmentId}/refresh-attendance`,
         { method: "POST" },
-        "Failed to refresh attendance",
+        "Không thể làm mới chấm công",
       );
     } catch (error) {
       console.error("Refresh attendance error:", error);
@@ -154,7 +144,7 @@ export const shiftAssignmentsService = {
           method: "POST",
           body: JSON.stringify({ assignmentIds }),
         },
-        "Failed to publish assignments",
+        "Không thể chốt công hàng loạt",
       );
     } catch (error) {
       console.error("Bulk publish error:", error);
@@ -172,7 +162,7 @@ export const shiftAssignmentsService = {
           method: "POST",
           body: JSON.stringify({ assignmentIds }),
         },
-        "Failed to approve assignments",
+        "Không thể duyệt ca hàng loạt",
       );
     } catch (error) {
       console.error("Bulk approve error:", error);
@@ -188,7 +178,7 @@ export const shiftAssignmentsService = {
           method: "POST",
           body: JSON.stringify({ assignmentIds }),
         },
-        "Failed to delete assignments",
+        "Không thể xóa các ca chưa chốt",
       );
     } catch (error) {
       console.error("Bulk delete error:", error);
@@ -197,24 +187,13 @@ export const shiftAssignmentsService = {
   },
 
   async getCounters(startDate?: string): Promise<ShiftCountersDto> {
-    try {
-      const url = new URL(`${API_URL}/shift-assignments/counters`);
-      if (startDate) url.searchParams.set("startDate", startDate);
+    const url = new URL(`${API_URL}/shift-assignments/counters`);
+    if (startDate) url.searchParams.set("startDate", startDate);
 
-      return await requestJson<ShiftCountersDto>(
-        url.toString(),
-        { method: "GET" },
-        "Failed to fetch shift counters",
-      );
-    } catch {
-      return {
-        totalAssignments: mockAssignments.length,
-        draftCount: 0,
-        publishedCount: mockAssignments.filter((a) => a.status === "published")
-          .length,
-        approvedCount: mockAssignments.filter((a) => a.status === "approved")
-          .length,
-      };
-    }
+    return await requestJson<ShiftCountersDto>(
+      url.toString(),
+      { method: "GET" },
+      "Không thể tải bộ đếm ca",
+    );
   },
 };

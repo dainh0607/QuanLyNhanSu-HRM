@@ -20,42 +20,42 @@ const getEmployees = async (
   status?: string,
   filters?: EmployeeListFilters,
 ): Promise<PaginatedResponse<Employee>> => {
-  // --- MOCK DATA MODE ---
-  console.log("Mock getEmployees called with:", { pageNumber, pageSize, searchTerm, status, filters });
-  
-  // Simulate network delay
-  await new Promise((resolve) => setTimeout(resolve, 800));
+  const url = new URL(`${API_URL}/employees`);
+  url.searchParams.append("pageNumber", pageNumber.toString());
+  url.searchParams.append("pageSize", pageSize.toString());
+  if (searchTerm) url.searchParams.append("searchTerm", searchTerm);
+  if (status) url.searchParams.append("status", status);
 
-  let filtered = [...mockEmployees];
+  if (filters) {
+    if (filters.branchId) url.searchParams.append("branchId", filters.branchId.toString());
+    if (filters.departmentId) url.searchParams.append("departmentId", filters.departmentId.toString());
+    if (filters.jobTitleId) url.searchParams.append("jobTitleId", filters.jobTitleId.toString());
+    if (filters.genderCode) url.searchParams.append("genderCode", filters.genderCode);
+  }
 
-  if (searchTerm) {
-    const lower = searchTerm.toLowerCase();
-    filtered = filtered.filter((e) => 
-      e.fullName?.toLowerCase().includes(lower) || 
-      e.employeeCode?.toLowerCase().includes(lower) ||
-      e.email?.toLowerCase().includes(lower)
+  try {
+    return await requestJson<PaginatedResponse<Employee>>(
+      url.toString(),
+      { method: "GET" },
+      "Lỗi khi tải danh sách nhân viên",
     );
+  } catch (error) {
+    console.error("Fetch Employees Error:", error);
+    throw error;
   }
+};
 
-  if (status === "active") {
-    filtered = filtered.filter((e) => e.isActive && !e.isResigned);
-  } else if (status === "resigned") {
-    filtered = filtered.filter((e) => e.isResigned);
+const getActiveEmployeesByBranch = async (branchId: number): Promise<Employee[]> => {
+  try {
+    return await requestJson<Employee[]>(
+      `${API_URL}/employees/active-by-branch?branchId=${branchId}`,
+      { method: "GET" },
+      "Lỗi khi tải danh sách nhân viên theo chi nhánh",
+    );
+  } catch (error) {
+    console.error(`Fetch Active Employees for Branch ${branchId} Error:`, error);
+    throw error;
   }
-
-  const totalCount = filtered.length;
-  const start = (pageNumber - 1) * pageSize;
-  const items = filtered.slice(start, start + pageSize);
-  const totalPages = Math.ceil(totalCount / pageSize);
-
-  return {
-    items,
-    totalCount,
-    pageNumber,
-    totalPages,
-    hasNextPage: pageNumber < totalPages,
-    hasPreviousPage: pageNumber > 1,
-  };
 };
 
 const exportEmployeesBasicInfoFile = async (options?: {
@@ -64,6 +64,7 @@ const exportEmployeesBasicInfoFile = async (options?: {
   status?: string;
   filters?: EmployeeListFilters;
 }): Promise<EmployeeExportFileResult> => {
+// ... (rest of export logic remains same as it already used API_URL)
   const url = new URL(`${API_URL}/employees/export`);
 
   options?.columnIds?.forEach((columnId) => {
@@ -244,6 +245,7 @@ const checkEmployeeEmailExists = async (
 
 export const employeeListService = {
   getEmployees,
+  getActiveEmployeesByBranch,
   exportEmployeesBasicInfoFile,
   getEmployeeById,
   getEmployeeFullProfile,

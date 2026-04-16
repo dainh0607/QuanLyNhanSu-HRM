@@ -7,14 +7,6 @@ import type {
   WeeklyScheduleApiOpenShift,
   WeeklyScheduleApiResponse,
 } from "../types";
-import { addDays, parseIsoDate, toIsoDate } from "../utils/week";
-import {
-  assignMockShiftToEmployee,
-  createMockWeeklyShiftScheduleApiResponse,
-  deleteMockShiftAssignment,
-  getMockAvailableShiftCatalog,
-  refreshMockShiftAssignmentAttendance,
-} from "../data/mockWeeklyShiftSchedule";
 
 export interface ShiftCountersApiResponse {
   pendingPublishCount?: number;
@@ -216,8 +208,8 @@ const toRepeatDayList = (values: string[]): number[] =>
   );
 
 const buildWeeklyScheduleUrl = (filters: ShiftScheduleFilters): string => {
-  const url = new URL(`${API_URL}/shift-assignments/weekly`);
-  url.searchParams.set("weekStartDate", filters.weekStartDate);
+  const url = new URL(`${API_URL}/shifts/weekly-schedule`);
+  url.searchParams.set("startDate", filters.weekStartDate);
   url.searchParams.set("viewMode", filters.viewMode);
   url.searchParams.set("employeeStatus", filters.employeeStatus);
   appendIfValue(url, "regionId", filters.regionId);
@@ -237,7 +229,11 @@ const buildWeeklyScheduleUrl = (filters: ShiftScheduleFilters): string => {
 
 export const shiftSchedulingApi = {
   getWeeklySchedule(filters: ShiftScheduleFilters): Promise<WeeklyScheduleApiResponse> {
-    return Promise.resolve(createMockWeeklyShiftScheduleApiResponse(filters.weekStartDate));
+    return requestJson<WeeklyScheduleApiResponse>(
+      buildWeeklyScheduleUrl(filters),
+      { method: "GET" },
+      "Không thể tải bảng xếp ca",
+    );
   },
 
   getShiftCounters(params: {
@@ -245,10 +241,16 @@ export const shiftSchedulingApi = {
     endDate: string;
     branchId?: string;
   }): Promise<ShiftCountersApiResponse> {
-    return Promise.resolve({
-      pendingPublishCount: 3,
-      pendingApprovalCount: 1,
-    });
+    const url = new URL(`${API_URL}/shift-assignments/counters`);
+    url.searchParams.set("startDate", params.startDate);
+    url.searchParams.set("endDate", params.endDate);
+    if (params.branchId) url.searchParams.set("branchId", params.branchId);
+
+    return requestJson<ShiftCountersApiResponse>(
+      url.toString(),
+      { method: "GET" },
+      "Không thể tải bộ đếm ca",
+    );
   },
 
   createAssignment(payload: {
@@ -257,24 +259,35 @@ export const shiftSchedulingApi = {
     assignmentDate: string;
     note?: string | null;
   }): Promise<{ assignmentId?: number; AssignmentId?: number }> {
-    const shifts = getMockAvailableShiftCatalog();
-    const shift = shifts.find(s => s.shift_id === payload.shiftId) || shifts[0];
-    const assignment = assignMockShiftToEmployee({
-      employeeId: payload.employeeId,
-      assignmentDate: payload.assignmentDate,
-      shift: { ...shift, note: payload.note ?? shift.note }
-    });
-    return Promise.resolve({ assignmentId: assignment.id });
+    return requestJson<{ assignmentId?: number; AssignmentId?: number }>(
+      `${API_URL}/shift-assignments`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          employeeId: payload.employeeId,
+          shiftId: payload.shiftId,
+          date: payload.assignmentDate,
+          notes: payload.note,
+        }),
+      },
+      "Không thể gán ca làm việc",
+    );
   },
 
   deleteAssignment(assignmentId: number): Promise<void> {
-    deleteMockShiftAssignment(assignmentId);
-    return Promise.resolve();
+    return requestJson<void>(
+      `${API_URL}/shift-assignments/${assignmentId}`,
+      { method: "DELETE" },
+      "Không thể xóa gán ca",
+    );
   },
 
   refreshAssignmentAttendance(assignmentId: number): Promise<void> {
-    refreshMockShiftAssignmentAttendance(assignmentId);
-    return Promise.resolve();
+    return requestJson<void>(
+      `${API_URL}/shift-assignments/${assignmentId}/refresh-attendance`,
+      { method: "POST" },
+      "Không thể làm mới chấm công",
+    );
   },
 
   publishAssignments(weekStartDate: string, assignmentIds?: number[]): Promise<ShiftBulkActionResult> {
@@ -287,7 +300,7 @@ export const shiftSchedulingApi = {
           assignmentIds: assignmentIds ?? null,
         }),
       },
-      "KhĂ´ng thá»ƒ cĂ´ng bá»‘ ca lĂ m",
+      "Không thể công bố ca làm",
     );
   },
 
@@ -301,7 +314,7 @@ export const shiftSchedulingApi = {
           assignmentIds: assignmentIds ?? null,
         }),
       },
-      "KhĂ´ng thá»ƒ cháº¥p thuáº­n ca lĂ m",
+      "Không thể chấp thuận ca làm",
     );
   },
 
@@ -315,7 +328,7 @@ export const shiftSchedulingApi = {
           assignmentIds: assignmentIds ?? null,
         }),
       },
-      "KhĂ´ng thá»ƒ cĂ´ng bá»‘ & cháº¥p thuáº­n",
+      "Không thể công bố & chấp thuận",
     );
   },
 
@@ -329,7 +342,7 @@ export const shiftSchedulingApi = {
           assignmentIds: null,
         }),
       },
-      "KhĂ´ng thá»ƒ xĂ³a ca chÆ°a xĂ¡c nháº­n",
+      "Không thể xóa ca chưa xác nhận",
     );
   },
 
@@ -348,7 +361,7 @@ export const shiftSchedulingApi = {
           mergeMode: payload.mergeMode,
         }),
       },
-      "KhĂ´ng thá»ƒ sao chĂ©p ca lĂ m",
+      "Không thể sao chép ca làm",
     );
   },
 
@@ -356,15 +369,15 @@ export const shiftSchedulingApi = {
     isActive?: boolean;
     branchId?: string | number | null;
   }): Promise<ShiftOptionApiItem[]> {
-    const catalog = getMockAvailableShiftCatalog(params?.branchId ? Number(params.branchId) : null);
-    return Promise.resolve(catalog.map(item => ({
-      shiftId: item.shift_id,
-      shiftName: item.shift_name,
-      startTime: item.start_time,
-      endTime: item.end_time,
-      color: item.color,
-      branchId: item.branch_id
-    })));
+    const url = new URL(`${API_URL}/shifts`);
+    if (params?.isActive !== undefined) url.searchParams.set("isActive", String(params.isActive));
+    if (params?.branchId) url.searchParams.set("branchId", String(params.branchId));
+
+    return requestJson<ShiftOptionApiItem[]>(
+      url.toString(),
+      { method: "GET" },
+      "Không thể tải danh sách ca",
+    );
   },
 
   getLegacyWeeklySchedule(branchId: number, startDate: string): Promise<unknown> {
@@ -375,7 +388,7 @@ export const shiftSchedulingApi = {
     return requestJson<unknown>(
       url.toString(),
       { method: "GET" },
-      "KhĂ´ng thá»ƒ táº£i ma tráº­n xáº¿p ca",
+      "Không thể tải ma trận xếp ca",
     );
   },
 
@@ -387,7 +400,7 @@ export const shiftSchedulingApi = {
     return requestJson<ShiftAttendanceDetailApiResponse>(
       url.toString(),
       { method: "GET" },
-      "KhĂ´ng thá»ƒ táº£i chi tiáº¿t ca lĂ m",
+      "Không thể tải chi tiết ca làm",
     );
   },
 
@@ -399,7 +412,7 @@ export const shiftSchedulingApi = {
     return requestJson<void>(
       url.toString(),
       { method: "DELETE" },
-      "KhĂ´ng thá»ƒ há»§y gĂ¡n ca",
+      "Không thể hủy gán ca",
     );
   },
 
@@ -410,7 +423,7 @@ export const shiftSchedulingApi = {
         method: "POST",
         body: JSON.stringify(payload),
       },
-      "KhĂ´ng thá»ƒ táº¡o ca lĂ m",
+      "Không thể tạo ca làm",
     );
   },
 
@@ -418,7 +431,7 @@ export const shiftSchedulingApi = {
     return requestJson<ShiftDetailApiResponse>(
       `${API_URL}/shifts/${shiftId}/detail`,
       { method: "GET" },
-      "KhĂ´ng thá»ƒ táº£i chi tiáº¿t ca",
+      "Không thể tải chi tiết ca",
     );
   },
 
@@ -426,7 +439,15 @@ export const shiftSchedulingApi = {
     weekStartDate: string;
     branchId?: string;
   }): Promise<WeeklyScheduleApiOpenShift[]> {
-    return Promise.resolve(createMockWeeklyShiftScheduleApiResponse(params.weekStartDate).open_shifts);
+    const url = new URL(`${API_URL}/shifts/open`);
+    url.searchParams.set("startDate", params.weekStartDate);
+    if (params.branchId) url.searchParams.set("branchId", params.branchId);
+
+    return requestJson<WeeklyScheduleApiOpenShift[]>(
+      url.toString(),
+      { method: "GET" },
+      "Không thể tải ca mở",
+    );
   },
 
   createOpenShift(payload: OpenShiftCreatePayload): Promise<void> {
@@ -445,7 +466,7 @@ export const shiftSchedulingApi = {
           Note: null,
         }),
       },
-      "KhĂ´ng thá»ƒ táº¡o ca má»Ÿ",
+      "Không thể tạo ca mở",
     );
   },
 
@@ -453,7 +474,7 @@ export const shiftSchedulingApi = {
     return requestJson<ShiftTemplateApiResponseItem[]>(
       `${API_URL}/shift-templates`,
       { method: "GET" },
-      "KhĂ´ng thá»ƒ táº£i danh sĂ¡ch máº«u ca",
+      "Không thể tải danh sách mẫu ca",
     );
   },
 
@@ -461,7 +482,7 @@ export const shiftSchedulingApi = {
     return requestJson<ShiftTemplateApiResponseItem>(
       `${API_URL}/shift-templates/${templateId}`,
       { method: "GET" },
-      "KhĂ´ng thá»ƒ táº£i chi tiáº¿t máº«u ca",
+      "Không thể tải chi tiết mẫu ca",
     );
   },
 
@@ -482,7 +503,7 @@ export const shiftSchedulingApi = {
           Note: null,
         }),
       },
-      "KhĂ´ng thá»ƒ táº¡o máº«u ca lĂ m má»›i",
+      "Không thể tạo mẫu ca làm mới",
     );
   },
 
@@ -503,7 +524,7 @@ export const shiftSchedulingApi = {
           Note: null,
         }),
       },
-      "KhĂ´ng thá»ƒ cáº­p nháº­t máº«u ca",
+      "Không thể cập nhật mẫu ca",
     );
   },
 
@@ -511,7 +532,7 @@ export const shiftSchedulingApi = {
     return requestJson<void>(
       `${API_URL}/shift-templates/${templateId}`,
       { method: "DELETE" },
-      "KhĂ´ng thá»ƒ xĂ³a máº«u ca",
+      "Không thể xóa mẫu ca",
     );
   },
 };
