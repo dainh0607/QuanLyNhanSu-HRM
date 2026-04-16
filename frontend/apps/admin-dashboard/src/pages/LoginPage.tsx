@@ -172,17 +172,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToActivation, onLoginSu
             Mo trang kich hoat
           </button>
         </p>
-
-        <p className="legacy-signup-footer">
-          Bạn chưa có tài khoản?{' '}
-          <button
-            type="button"
-            className="activation-link"
-            onClick={onNavigateToActivation}
-          >
-            Đăng ký ngay
-          </button>
-        </p>
       </form>
     </div>
   );

@@ -54,11 +54,11 @@ const SESSION_MARKER_KEY = "hrm_has_session";
 const AUTH_CHECK_COOLDOWN_MS = 1500;
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS", "TRACE"]);
 
-let authToken: string | null = "mock-token";
-let currentUser: User | null = MOCK_USER;
+let authToken: string | null = null;
+let currentUser: User | null = null;
 let pendingAuthCheck: Promise<User | null> | null = null;
 let lastAuthCheckAt = Date.now();
-let lastAuthCheckResult: User | null | undefined = MOCK_USER;
+let lastAuthCheckResult: User | null | undefined = undefined;
 
 const ADMIN_ACCESS_ROLES = new Set([
   "Admin",
@@ -368,8 +368,7 @@ export const authService = {
     }
 
     if (!hasSessionHint()) {
-      // In bypass mode, return MOCK_USER instead of null
-      return MOCK_USER;
+      return null;
     }
 
     pendingAuthCheck = (async () => {

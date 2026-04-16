@@ -112,6 +112,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  align-self: center;
   gap: 6px;
   padding: 6px 14px;
   border-radius: 22px;

@@ -49,8 +49,8 @@ const Header = ({
   user: User | null;
   onLogout: () => void;
 }) => {
-  // Sử dụng mock data nếu user chưa đăng nhập
-  const displayUser = user ?? MOCK_USER;
+  const displayUser = user;
+  if (!displayUser) return null;
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -736,10 +736,6 @@ function RoutedApp() {
               />
             )
           }
-        />
-        <Route
-          path="/register"
-          element={<Navigate to="/activate-workspace-owner" replace />}
         />
         <Route
           path="/personnel/employees"
