@@ -14,6 +14,7 @@ namespace ERP.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
+        private readonly IUserService _userService;
         private readonly IFirebaseService _firebaseService;
         private readonly ILogger<AuthController> _logger;
         private readonly IConfiguration _configuration;
@@ -21,12 +22,14 @@ namespace ERP.API.Controllers
 
         public AuthController(
             IAuthService authService,
+            IUserService userService,
             IFirebaseService firebaseService,
             ILogger<AuthController> logger,
             IConfiguration configuration,
             IWebHostEnvironment environment)
         {
             _authService = authService;
+            _userService = userService;
             _firebaseService = firebaseService;
             _logger = logger;
             _configuration = configuration;
@@ -192,7 +195,7 @@ namespace ERP.API.Controllers
 
             try
             {
-                var count = await _authService.SyncFirebaseUsersAsync();
+                var count = await _userService.SyncWithFirebaseAsync();
                 return Ok(new { Message = $"Successfully synced {count} users from Firebase.", Count = count });
             }
             catch (Exception ex)

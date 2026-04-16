@@ -494,149 +494,6 @@ namespace ERP.Services.Auth
             }
         }
 
-        public async Task<int> SyncFirebaseUsersAsync()
-        {
-            if (FirebaseAdmin.FirebaseApp.DefaultInstance == null)
-            {
-                _logger.LogWarning("Firebase App not initialized. Skipping SyncFirebaseUsersAsync.");
-                return 0;
-            }
-
-            var syncCount = 0;
-
-            try
-            {
-                _logger.LogInformation("Starting Firebase to Local DB synchronization...");
-
-                var fbUsers = await _firebaseService.ListAllUsersAsync();
-                foreach (var fbUser in fbUsers)
-                {
-                    var localUser = await _context.Users
-                        .Include(u => u.Employee)
-                        .FirstOrDefaultAsync(u => u.firebase_uid == fbUser.Uid || u.Employee.email == fbUser.Email);
-
-                    var targetRoleId = 2; // Default Manager (Changed from 3)
-                    if (fbUser.Email?.ToLower().Contains("admin") == true)
-                    {
-                        targetRoleId = 1;
-                    }
-
-                    if (localUser == null)
-                    {
-                        _logger.LogInformation("Syncing new user: {Email} ({Uid}) - Role ID: {RoleId}", fbUser.Email, fbUser.Uid, targetRoleId);
-
-                        using var transaction = await _context.Database.BeginTransactionAsync();
-
-                        try
-                        {
-                            var generatedCode = fbUser.Email?.Split('@')[0].ToUpperInvariant() ?? $"EMP_{Guid.NewGuid():N}"[..8];
-                            var employeeCode = generatedCode.Length > 20 ? generatedCode[..20] : generatedCode;
-
-                            var newEmployee = new EmployeeEntity
-                            {
-                                employee_code = employeeCode,
-                                full_name = fbUser.DisplayName ?? fbUser.Email,
-                                email = fbUser.Email,
-                                phone = fbUser.PhoneNumber,
-                                is_active = true,
-                                CreatedAt = DateTime.UtcNow,
-                                UpdatedAt = DateTime.UtcNow
-                            };
-
-                            _context.Employees.Add(newEmployee);
-                            await _context.SaveChangesAsync();
-
-                            var newUser = new Users
-                            {
-                                employee_id = newEmployee.Id,
-                                username = BuildInternalUsername(newEmployee.employee_code, newEmployee.Id),
-                                firebase_uid = fbUser.Uid,
-                                is_active = true,
-                                CreatedAt = DateTime.UtcNow,
-                                UpdatedAt = DateTime.UtcNow
-                            };
-
-                            _context.Users.Add(newUser);
-                            await _context.SaveChangesAsync();
-
-                            var userRole = new UserRoles
-                            {
-                                user_id = newUser.Id,
-                                role_id = targetRoleId,
-                                is_active = true,
-                                CreatedAt = DateTime.UtcNow,
-                                UpdatedAt = DateTime.UtcNow
-                            };
-
-                            _context.UserRoles.Add(userRole);
-                            await _context.SaveChangesAsync();
-
-                            await transaction.CommitAsync();
-                            syncCount++;
-                        }
-                        catch (Exception ex)
-                        {
-                            await transaction.RollbackAsync();
-                            _logger.LogError(ex, "Failed to sync user {Email}", fbUser.Email);
-                        }
-                    }
-                    else
-                    {
-                        var desiredUsername = BuildInternalUsername(localUser.Employee?.employee_code, localUser.Employee?.Id ?? localUser.Id);
-                        var shouldSaveLocalUser = false;
-
-                        if (!string.Equals(localUser.username, desiredUsername, StringComparison.Ordinal))
-                        {
-                            localUser.username = desiredUsername;
-                            shouldSaveLocalUser = true;
-                        }
-
-                        if (!string.Equals(localUser.firebase_uid, fbUser.Uid, StringComparison.Ordinal))
-                        {
-                            localUser.firebase_uid = fbUser.Uid;
-                            shouldSaveLocalUser = true;
-                        }
-
-                        if (shouldSaveLocalUser)
-                        {
-                            localUser.UpdatedAt = DateTime.UtcNow;
-                            await _context.SaveChangesAsync();
-                        }
-
-                        var currentRoles = await _context.UserRoles
-                            .Where(ur => ur.user_id == localUser.Id && ur.is_active)
-                            .Select(ur => ur.role_id)
-                            .ToListAsync();
-
-                        if (!currentRoles.Contains(targetRoleId))
-                        {
-                            _logger.LogInformation("Updating roles for existing user: {Email} to include Role ID {RoleId}", fbUser.Email, targetRoleId);
-
-                            var newUserRole = new UserRoles
-                            {
-                                user_id = localUser.Id,
-                                role_id = targetRoleId,
-                                is_active = true,
-                                CreatedAt = DateTime.UtcNow,
-                                UpdatedAt = DateTime.UtcNow
-                            };
-
-                            _context.UserRoles.Add(newUserRole);
-                            await _context.SaveChangesAsync();
-                            syncCount++;
-                        }
-                    }
-                }
-
-                _logger.LogInformation("Sync completed. {Count} users processed or updated.", syncCount);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error during SyncFirebaseUsersAsync");
-            }
-
-            return syncCount;
-        }
 
         public async Task<AuthResponseDto> ChangePasswordAsync(int userId, ChangePasswordDto dto)
         {
@@ -755,7 +612,7 @@ namespace ERP.Services.Auth
             var user = new Users
             {
                 employee_id = employeeId,
-                username = BuildInternalUsername(employeeCode, employeeId),
+                username = email, // Đồng nhất dùng email làm username
                 firebase_uid = firebaseUid,
                 is_active = true,
                 CreatedAt = DateTime.UtcNow,
@@ -832,7 +689,7 @@ namespace ERP.Services.Auth
                 localUser = new Users
                 {
                     employee_id = employee.Id,
-                    username = BuildInternalUsername(employee.employee_code, employee.Id),
+                    username = normalizedEmail, // Dùng email làm username
                     firebase_uid = Truncate(firebaseUid ?? $"email:{normalizedEmailLower}", 128),
                     is_active = true,
                     CreatedAt = DateTime.UtcNow,
@@ -851,12 +708,14 @@ namespace ERP.Services.Auth
                 shouldSaveLocalUser = true;
             }
 
-            var desiredUsername = BuildInternalUsername(localUser.Employee?.employee_code, localUser.Employee?.Id ?? localUser.Id);
-            if (!string.IsNullOrWhiteSpace(desiredUsername) &&
-                !string.Equals(localUser.username, desiredUsername, StringComparison.Ordinal))
+            if (!string.Equals(localUser.username, normalizedEmail, StringComparison.OrdinalIgnoreCase))
             {
-                localUser.username = desiredUsername;
-                shouldSaveLocalUser = true;
+                // Tự động chuyển đổi username cũ sang email nếu cần
+                if (localUser.username.StartsWith("usr_EMP_", StringComparison.OrdinalIgnoreCase))
+                {
+                    localUser.username = normalizedEmail;
+                    shouldSaveLocalUser = true;
+                }
             }
 
             if (shouldSaveLocalUser)
@@ -1290,14 +1149,6 @@ namespace ERP.Services.Auth
                 : 7;
         }
 
-        private static string BuildInternalUsername(string? employeeCode, int fallbackId)
-        {
-            var rawValue = !string.IsNullOrWhiteSpace(employeeCode)
-                ? $"usr_{employeeCode.Trim()}"
-                : $"usr_{fallbackId}";
-
-            return Truncate(rawValue, 50);
-        }
 
         private static string Truncate(string? value, int maxLength)
         {

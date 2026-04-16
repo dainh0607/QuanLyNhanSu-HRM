@@ -98,9 +98,19 @@ namespace ERP.Services.Auth
 
                 foreach (var fbUser in fbUsers)
                 {
-                    var localUser = await GetLocalUserByEmailOrUidAsync(fbUser.Email, fbUser.Uid);
+                    // 1. Tìm kiếm User hiện có: Ưu tiên theo UID, sau đó đến Email
+                    var localUser = await _context.Users
+                        .Include(u => u.Employee)
+                        .FirstOrDefaultAsync(u => u.firebase_uid == fbUser.Uid);
 
-                    int targetRoleId = 2; // Default Manager (Changed from 3)
+                    if (localUser == null && !string.IsNullOrEmpty(fbUser.Email))
+                    {
+                        localUser = await _context.Users
+                            .Include(u => u.Employee)
+                            .FirstOrDefaultAsync(u => u.username == fbUser.Email);
+                    }
+
+                    int targetRoleId = 2; // Default Manager
                     string masterEmail = _configuration["AdminSettings:MasterEmail"];
                     if (!string.IsNullOrEmpty(masterEmail) && 
                         string.Equals(fbUser.Email, masterEmail, StringComparison.OrdinalIgnoreCase))
@@ -110,16 +120,16 @@ namespace ERP.Services.Auth
 
                     if (localUser == null)
                     {
+                        // TRƯỜNG HỢP 1: USER CHƯA TỒN TẠI - TẠO MỚI
                         using (var transaction = await _context.Database.BeginTransactionAsync())
                         {
                             try
                             {
-                                var employeeCode = fbUser.Email?.Split('@')[0].ToUpper() ?? "EMP_" + Guid.NewGuid().ToString().Substring(0, 8);
+                                var employeeCode = fbUser.Email?.Split('@')[0].ToUpper() ?? "EMP_" + Guid.NewGuid().ToString("N").Substring(0, 8);
                                 
-                                // Get default tenant or create one
                                 var defaultTenant = await _context.Tenants.FirstOrDefaultAsync() ?? 
                                     new Tenants { 
-                                        name = "Default Work space", 
+                                        name = "Default Workspace", 
                                         code = "DEFAULT",
                                         is_active = true,
                                         CreatedAt = DateTime.UtcNow
@@ -145,38 +155,69 @@ namespace ERP.Services.Auth
                                 _context.Employees.Add(newEmployee);
                                 await _context.SaveChangesAsync();
 
-                                await Task.CompletedTask; // Placeholder for logic
-                                
                                 var newUser = new Users
                                 {
                                     employee_id = newEmployee.Id,
-                                    username = fbUser.Email,
+                                    username = fbUser.Email ?? employeeCode, // Ưu tiên Email làm username
                                     firebase_uid = fbUser.Uid,
                                     is_active = true,
-                                    tenant_id = defaultTenant.Id, // FIX: Assign tenant immediately
+                                    tenant_id = defaultTenant.Id,
                                     CreatedAt = DateTime.UtcNow,
                                     UpdatedAt = DateTime.UtcNow
                                 };
                                 _context.Users.Add(newUser);
                                 await _context.SaveChangesAsync();
 
-                                await AssignRoleInternalAsync(newUser.Id, targetRoleId, defaultTenant.Id, "Firebase Sync");
+                                await AssignRoleInternalAsync(newUser.Id, targetRoleId, defaultTenant.Id, "Firebase Sync (New)");
                                 await transaction.CommitAsync();
+                                
+                                _logger.LogInformation($"Synced NEW user from Firebase: {fbUser.Email}");
                                 syncCount++;
                             }
                             catch (Exception ex)
                             {
                                 await transaction.RollbackAsync();
-                                _logger.LogError($"Failed to sync user {fbUser.Email}: {ex.Message}");
+                                _logger.LogError($"Failed to sync NEW user {fbUser.Email}: {ex.Message}");
                             }
                         }
                     }
                     else
                     {
+                        // TRƯỜNG HỢP 2: USER ĐÃ TỒN TẠI - CẬP NHẬT THÔNG TIN
+                        bool wasUpdated = false;
+
+                        // Cập nhật Firebase UID nếu trước đó chỉ có Email (do SignUp thủ công hoặc sync cũ)
+                        if (string.IsNullOrEmpty(localUser.firebase_uid) || localUser.firebase_uid != fbUser.Uid)
+                        {
+                            localUser.firebase_uid = fbUser.Uid;
+                            wasUpdated = true;
+                        }
+
+                        // Đảm bảo username đồng nhất với Email nếu có thể
+                        if (!string.IsNullOrEmpty(fbUser.Email) && localUser.username != fbUser.Email)
+                        {
+                            // Chỉ cập nhật nếu username cũ có dạng usr_EMP_ (tức là username tự sinh)
+                            // Tránh đổi username nếu người dùng đã đặt thủ công cái gì đó khác
+                            if (localUser.username.StartsWith("usr_EMP_", StringComparison.OrdinalIgnoreCase))
+                            {
+                                localUser.username = fbUser.Email;
+                                wasUpdated = true;
+                            }
+                        }
+
+                        if (wasUpdated)
+                        {
+                            localUser.UpdatedAt = DateTime.UtcNow;
+                            await _context.SaveChangesAsync();
+                            _logger.LogInformation($"Updated existing user UID/Username during sync: {fbUser.Email}");
+                            syncCount++;
+                        }
+
+                        // Kiểm tra vai trò
                         var currentRoles = await GetUserRoleIdsAsync(localUser.Id);
                         if (!currentRoles.Contains(targetRoleId))
                         {
-                            await AssignRoleInternalAsync(localUser.Id, targetRoleId, localUser.tenant_id, "Firebase Sync (Update)");
+                            await AssignRoleInternalAsync(localUser.Id, targetRoleId, localUser.tenant_id, "Firebase Sync (Role Update)");
                             syncCount++;
                         }
                     }
@@ -184,7 +225,7 @@ namespace ERP.Services.Auth
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during synchronization");
+                _logger.LogError(ex, "Error during Firebase synchronization");
             }
             return syncCount;
         }

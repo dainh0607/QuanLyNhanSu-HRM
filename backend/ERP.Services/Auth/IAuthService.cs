@@ -12,7 +12,6 @@ namespace ERP.Services.Auth
         Task<UserInfoDto?> GetUserByUidAsync(string uid);
         Task<UserInfoDto?> GetUserByIdAsync(int userId);
         Task<string?> VerifyTokenAsync(string idToken);
-        Task<int> SyncFirebaseUsersAsync();
         Task<AuthResponseDto> PreRegisterStaffAsync(PreRegisterStaffDto dto);
         string GenerateInternalToken(UserInfoDto user, string sessionId);
         Task<string> CreateFirebaseUserAsync(string email, string password, string displayName, int employeeId);
