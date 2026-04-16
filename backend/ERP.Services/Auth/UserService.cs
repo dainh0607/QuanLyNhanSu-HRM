@@ -259,6 +259,21 @@ namespace ERP.Services.Auth
 
         private async Task AssignRoleInternalAsync(int userId, int roleId, int? tenantId = null, string? assignmentReason = null)
         {
+            var existingRole = await _context.UserRoles
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(ur => ur.user_id == userId && ur.role_id == roleId);
+
+            if (existingRole != null)
+            {
+                if (!existingRole.is_active)
+                {
+                    existingRole.is_active = true;
+                    existingRole.UpdatedAt = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                }
+                return;
+            }
+
             var userRole = new UserRoles
             {
                 user_id = userId,
@@ -276,6 +291,7 @@ namespace ERP.Services.Auth
         private async Task<List<string>> GetUserRolesAsync(int userId)
         {
             return await _context.UserRoles
+                .IgnoreQueryFilters()
                 .Where(ur => ur.user_id == userId && ur.is_active)
                 .Include(ur => ur.Role)
                 .Select(ur => ur.Role.name)
@@ -285,6 +301,7 @@ namespace ERP.Services.Auth
         private async Task<List<int>> GetUserRoleIdsAsync(int userId)
         {
             return await _context.UserRoles
+                .IgnoreQueryFilters()
                 .Where(ur => ur.user_id == userId && ur.is_active)
                 .Select(ur => ur.role_id)
                 .ToListAsync();

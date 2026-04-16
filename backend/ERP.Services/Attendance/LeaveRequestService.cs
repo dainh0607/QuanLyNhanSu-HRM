@@ -107,6 +107,128 @@ namespace ERP.Services.Attendance
             return await _unitOfWork.SaveChangesAsync() > 0;
         }
 
+        public async Task<LeaveRequestDependentDataDto> GetDependentDataAsync(int branchId, int excludeEmployeeId)
+        {
+            var leaveTypes = await _unitOfWork.Repository<LeaveTypes>()
+                .AsQueryable()
+                .Select(lt => new LeaveTypeSimpleDto
+                {
+                    Id = lt.Id,
+                    Name = lt.name,
+                    IsPaidLeave = lt.is_paid
+                })
+                .ToListAsync();
+
+            var employees = await _unitOfWork.Repository<ERP.Entities.Models.Employees>()
+                .AsQueryable()
+                .Where(e => e.branch_id == branchId && e.Id != excludeEmployeeId && e.is_active && !e.is_resigned)
+                .Select(e => new EmployeeSimpleDto
+                {
+                    Id = e.Id,
+                    FullName = e.full_name,
+                    Code = e.employee_code,
+                    JobTitle = e.JobTitle != null ? e.JobTitle.name : null
+                })
+                .ToListAsync();
+
+            return new LeaveRequestDependentDataDto
+            {
+                LeaveTypes = leaveTypes,
+                HandoverEmployees = employees
+            };
+        }
+
+        public async Task<bool> CreateMatrixLeaveRequestAsync(LeaveRequestCreateMatrixDto dto, int creatorId)
+        {
+            var shift = await _unitOfWork.Repository<Shifts>().GetByIdAsync(dto.shift_id);
+            if (shift == null) throw new Exception("Không tìm thấy ca làm việc chỉ định.");
+            
+            var req = new LeaveRequests
+            {
+                employee_id = dto.employee_id,
+                leave_type_id = dto.leave_type_id,
+                start_shift_id = dto.shift_id,
+                end_shift_id = dto.shift_id,
+                reason = dto.reason,
+                handover_employee_id = dto.handover_employee_id,
+                handover_phone = dto.handover_phone,
+                handover_note = dto.handover_note,
+                status = "APPROVED",
+                approved_by = creatorId,
+                approved_at = DateTime.UtcNow,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            var shiftDurationHours = shift.is_overnight 
+                ? (decimal)((shift.end_time.Add(TimeSpan.FromDays(1))) - shift.start_time).TotalHours
+                : (decimal)(shift.end_time - shift.start_time).TotalHours;
+
+            if (dto.leave_type_duration == "HOURLY")
+            {
+                if (string.IsNullOrEmpty(dto.start_time) || string.IsNullOrEmpty(dto.end_time))
+                    throw new Exception("Vui lòng chỉ định thời gian 'Từ giờ' và 'Đến giờ'.");
+
+                if (!TimeSpan.TryParse(dto.start_time, out var startTime) || !TimeSpan.TryParse(dto.end_time, out var endTime))
+                    throw new Exception("Định dạng thời gian không hợp lệ.");
+
+                var normalizedShiftEnd = shift.is_overnight ? shift.end_time.Add(TimeSpan.FromDays(1)) : shift.end_time;
+                var normalizedEndTime = shift.is_overnight && endTime <= shift.end_time ? endTime.Add(TimeSpan.FromDays(1)) : endTime;
+                var normalizedStartTime = shift.is_overnight && startTime <= shift.end_time && startTime < endTime ? startTime.Add(TimeSpan.FromDays(1)) : startTime;
+
+                if (normalizedStartTime >= normalizedEndTime)
+                    throw new Exception("Thời gian kết thúc phải lớn hơn thời gian bắt đầu.");
+
+                if (normalizedStartTime < shift.start_time || normalizedEndTime > normalizedShiftEnd)
+                    throw new Exception("Khung giờ nghỉ không nằm trong thời gian ca làm việc.");
+
+                req.start_date = dto.leave_date.Date.Add(startTime);
+                req.end_date = dto.leave_date.Date.Add(endTime);
+                req.number_of_hours = (decimal)(normalizedEndTime - normalizedStartTime).TotalHours;
+                
+                var durType = await _unitOfWork.Repository<LeaveDurationTypes>().AsQueryable().FirstOrDefaultAsync(d => d.code == "HOURLY");
+                req.duration_type_id = durType?.Id;
+            }
+            else
+            {
+                req.start_date = dto.leave_date.Date.Add(shift.start_time);
+                req.end_date = dto.leave_date.Date.Add(shift.end_time);
+
+                decimal requestedHours = dto.leave_type_duration switch
+                {
+                    "FULL" => shiftDurationHours,
+                    "HALF" => shiftDurationHours / 2,
+                    "QUARTER" => shiftDurationHours / 4,
+                    "THREE_QUARTERS" => shiftDurationHours * 0.75m,
+                    _ => shiftDurationHours
+                };
+
+                req.number_of_hours = requestedHours;
+                
+                var durType = await _unitOfWork.Repository<LeaveDurationTypes>().AsQueryable().FirstOrDefaultAsync(d => d.code == dto.leave_type_duration);
+                req.duration_type_id = durType?.Id;
+            }
+
+            await _unitOfWork.Repository<LeaveRequests>().AddAsync(req);
+            
+            var leaveType = await _unitOfWork.Repository<LeaveTypes>().GetByIdAsync(dto.leave_type_id);
+            if (leaveType != null && leaveType.is_paid)
+            {
+                var requestedDays = req.number_of_hours.Value / 8m;
+                var balance = await _unitOfWork.Repository<EmployeeLeaves>()
+                    .AsQueryable()
+                    .FirstOrDefaultAsync(b => b.employee_id == req.employee_id && b.leave_type_id == req.leave_type_id);
+
+                if (balance != null)
+                {
+                    balance.used_days += requestedDays;
+                    _unitOfWork.Repository<EmployeeLeaves>().Update(balance);
+                }
+            }
+
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+
         public async Task<bool> ApproveLeaveRequestAsync(int id, int managerId)
         {
             var leaveRequest = await _unitOfWork.Repository<LeaveRequests>().GetByIdAsync(id);
