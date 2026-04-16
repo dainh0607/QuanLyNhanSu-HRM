@@ -10,7 +10,7 @@ namespace ERP.API.Controllers
     [ApiController]
     [Route("api/shifts")]
     [Authorize]
-    [ERP.API.Authorization.HasPermission("Attendance", "View")]
+    [ERP.API.Authorization.HasPermission("attendance", "read")]
     public class ShiftsController : ControllerBase
     {
         private readonly IShiftService _shiftService;
@@ -66,7 +66,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("{id}")]
-        [ERP.API.Authorization.HasPermission("Attendance", "Update")]
+        [ERP.API.Authorization.HasPermission("attendance", "update")]
         public async Task<IActionResult> UpdateShift(int id, [FromBody] ShiftUpdateDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -84,7 +84,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpDelete("{id}")]
-        [ERP.API.Authorization.HasPermission("Attendance", "Update")]
+        [ERP.API.Authorization.HasPermission("attendance", "update")]
         public async Task<IActionResult> DeleteOrDeactivateShift(int id)
         {
             try
@@ -128,7 +128,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpDelete("assignment")]
-        [ERP.API.Authorization.HasPermission("Attendance", "Update")]
+        [ERP.API.Authorization.HasPermission("attendance", "update")]
         public async Task<IActionResult> DeleteAssignment([FromQuery] int employeeId, [FromQuery] DateTime date)
         {
             try
@@ -144,7 +144,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost]
-        [ERP.API.Authorization.HasPermission("Attendance", "Update")]
+        [ERP.API.Authorization.HasPermission("attendance", "update")]
         public async Task<IActionResult> CreateShift([FromBody] ShiftCreateDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -176,7 +176,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("~/api/open-shifts")]
-        [ERP.API.Authorization.HasPermission("Attendance", "Update")]
+        [ERP.API.Authorization.HasPermission("attendance", "update")]
         public async Task<IActionResult> CreateOpenShifts([FromBody] OpenShiftCreateDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);

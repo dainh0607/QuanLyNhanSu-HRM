@@ -12,7 +12,7 @@ namespace ERP.API.Controllers
     [ApiController]
     [Route("api/leave-requests")]
     [Authorize]
-    [HasPermission("LeaveRequest", "View")]
+    [HasPermission("leave", "read")]
     public class LeaveRequestsController : ControllerBase
     {
         private readonly ILeaveRequestService _leaveService;
@@ -79,7 +79,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpGet("dependent-data")]
-        [HasPermission("LeaveRequest", "View")]
+        [HasPermission("leave", "read")]
         public async Task<IActionResult> GetDependentData([FromQuery] int branchId, [FromQuery] int excludeEmployeeId)
         {
             try
@@ -94,7 +94,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("matrix")]
-        [HasPermission("LeaveRequest", "Create")]
+        [HasPermission("leave", "create")]
         public async Task<IActionResult> CreateMatrixLeaveRequest([FromBody] LeaveRequestCreateMatrixDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -113,7 +113,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("{id}/approve")]
-        [HasPermission("LeaveRequest", "Update")]
+        [HasPermission("leave", "approve")]
         public async Task<IActionResult> ApproveLeaveRequest(int id)
         {
             try
@@ -130,7 +130,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("{id}/reject")]
-        [HasPermission("LeaveRequest", "Update")]
+        [HasPermission("leave", "approve")]
         public async Task<IActionResult> RejectLeaveRequest(int id, [FromBody] string reason)
         {
             try

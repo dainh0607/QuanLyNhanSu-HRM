@@ -216,47 +216,97 @@ namespace ERP.Entities.Seeding
             // 21. Action Permissions (Map CRUD actions to roles and scopes)
             modelBuilder.Entity<ActionPermissions>().HasData(
                 // System Admin - Full CRUD on all resources
-                new ActionPermissions { Id = 1, role_id = 1, action = "CREATE", resource = "EMPLOYEE", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
-                new ActionPermissions { Id = 2, role_id = 1, action = "READ", resource = "EMPLOYEE", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
-                new ActionPermissions { Id = 3, role_id = 1, action = "UPDATE", resource = "EMPLOYEE", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
-                new ActionPermissions { Id = 4, role_id = 1, action = "DELETE", resource = "EMPLOYEE", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
-                new ActionPermissions { Id = 27, role_id = 1, action = "EXPORT", resource = "EMPLOYEE", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 1, role_id = 1, action = "create", resource = "employee", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 2, role_id = 1, action = "read", resource = "employee", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 3, role_id = 1, action = "update", resource = "employee", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 4, role_id = 1, action = "delete", resource = "employee", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 27, role_id = 1, action = "export", resource = "employee", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
                 
                 // System Admin - Full Management Access
-                new ActionPermissions { Id = 24, role_id = 1, action = "Manage", resource = "System", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
-                new ActionPermissions { Id = 25, role_id = 1, action = "READ", resource = "RBAC", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
-                new ActionPermissions { Id = 26, role_id = 1, action = "UPDATE", resource = "RBAC", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 24, role_id = 1, action = "manage", resource = "system", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 25, role_id = 1, action = "read", resource = "rbac", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 26, role_id = 1, action = "update", resource = "rbac", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
                 
                 // Executive - Full access within tenant
-                new ActionPermissions { Id = 5, role_id = 2, action = "READ", resource = "EMPLOYEE", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
-                new ActionPermissions { Id = 6, role_id = 2, action = "APPROVE", resource = "REQUEST", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 5, role_id = 2, action = "read", resource = "employee", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 6, role_id = 2, action = "approve", resource = "request", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
                 
                 // Regional Manager - Region-scoped CRUD
-                new ActionPermissions { Id = 7, role_id = 3, action = "CREATE", resource = "EMPLOYEE", allowed_scope = "SAME_REGION", is_active = true, created_at = seedDate },
-                new ActionPermissions { Id = 8, role_id = 3, action = "READ", resource = "EMPLOYEE", allowed_scope = "SAME_REGION", is_active = true, created_at = seedDate },
-                new ActionPermissions { Id = 9, role_id = 3, action = "UPDATE", resource = "EMPLOYEE", allowed_scope = "SAME_REGION", is_active = true, created_at = seedDate },
-                new ActionPermissions { Id = 10, role_id = 3, action = "TRANSFER_EMPLOYEE", resource = "EMPLOYEE", allowed_scope = "SAME_REGION", is_active = true, created_at = seedDate },
-                new ActionPermissions { Id = 11, role_id = 3, action = "APPROVE", resource = "REQUEST", allowed_scope = "SAME_REGION", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 7, role_id = 3, action = "create", resource = "employee", allowed_scope = "SAME_REGION", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 8, role_id = 3, action = "read", resource = "employee", allowed_scope = "SAME_REGION", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 9, role_id = 3, action = "update", resource = "employee", allowed_scope = "SAME_REGION", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 10, role_id = 3, action = "TRANSFER_EMPLOYEE", resource = "employee", allowed_scope = "SAME_REGION", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 11, role_id = 3, action = "approve", resource = "request", allowed_scope = "SAME_REGION", is_active = true, created_at = seedDate },
                 
                 // Branch Manager - Branch-scoped operations
-                new ActionPermissions { Id = 12, role_id = 4, action = "CREATE", resource = "EMPLOYEE", allowed_scope = "SAME_BRANCH", is_active = true, created_at = seedDate },
-                new ActionPermissions { Id = 13, role_id = 4, action = "READ", resource = "EMPLOYEE", allowed_scope = "SAME_BRANCH", is_active = true, created_at = seedDate },
-                new ActionPermissions { Id = 14, role_id = 4, action = "UPDATE", resource = "EMPLOYEE", allowed_scope = "SAME_BRANCH", is_active = true, created_at = seedDate },
-                new ActionPermissions { Id = 15, role_id = 4, action = "APPROVE", resource = "REQUEST", allowed_scope = "SAME_BRANCH", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 12, role_id = 4, action = "create", resource = "employee", allowed_scope = "SAME_BRANCH", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 13, role_id = 4, action = "read", resource = "employee", allowed_scope = "SAME_BRANCH", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 14, role_id = 4, action = "update", resource = "employee", allowed_scope = "SAME_BRANCH", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 15, role_id = 4, action = "approve", resource = "request", allowed_scope = "SAME_BRANCH", is_active = true, created_at = seedDate },
                 
                 // Department Manager - Department-scoped operations
-                new ActionPermissions { Id = 16, role_id = 5, action = "READ", resource = "EMPLOYEE", allowed_scope = "SAME_DEPARTMENT", is_active = true, created_at = seedDate },
-                new ActionPermissions { Id = 17, role_id = 5, action = "ASSIGN_TASK", resource = "EMPLOYEE", allowed_scope = "SAME_DEPARTMENT", is_active = true, created_at = seedDate },
-                new ActionPermissions { Id = 18, role_id = 5, action = "APPROVE", resource = "LEAVE", allowed_scope = "SAME_DEPARTMENT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 16, role_id = 5, action = "read", resource = "employee", allowed_scope = "SAME_DEPARTMENT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 17, role_id = 5, action = "ASSIGN_TASK", resource = "employee", allowed_scope = "SAME_DEPARTMENT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 18, role_id = 5, action = "approve", resource = "leave", allowed_scope = "SAME_DEPARTMENT", is_active = true, created_at = seedDate },
                 
                 // Module Admin - Cross-region for specific resources
-                new ActionPermissions { Id = 19, role_id = 6, action = "READ", resource = "PAYROLL", allowed_scope = "CROSS_REGION", is_active = true, created_at = seedDate },
-                new ActionPermissions { Id = 20, role_id = 6, action = "READ", resource = "ATTENDANCE", allowed_scope = "CROSS_REGION", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 19, role_id = 6, action = "read", resource = "payroll", allowed_scope = "CROSS_REGION", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 20, role_id = 6, action = "read", resource = "attendance", allowed_scope = "CROSS_REGION", is_active = true, created_at = seedDate },
                 
                 // Standard User - Personal operations
-                new ActionPermissions { Id = 21, role_id = 7, action = "READ", resource = "MYPROFILE", allowed_scope = "PERSONAL", is_active = true, created_at = seedDate },
-                new ActionPermissions { Id = 22, role_id = 7, action = "UPDATE", resource = "MYPROFILE", allowed_scope = "PERSONAL", is_active = true, created_at = seedDate },
-                new ActionPermissions { Id = 23, role_id = 7, action = "CREATE", resource = "REQUEST", allowed_scope = "PERSONAL", is_active = true, created_at = seedDate }
+                new ActionPermissions { Id = 21, role_id = 7, action = "read", resource = "myprofile", allowed_scope = "PERSONAL", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 22, role_id = 7, action = "update", resource = "myprofile", allowed_scope = "PERSONAL", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 23, role_id = 7, action = "create", resource = "request", allowed_scope = "PERSONAL", is_active = true, created_at = seedDate },
+
+                // --- Additional Permissions for Batch Fix ---
+                // Admin (Role 1)
+                new ActionPermissions { Id = 28, role_id = 1, action = "read", resource = "attendance", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 29, role_id = 1, action = "update", resource = "attendance", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 30, role_id = 1, action = "approve", resource = "attendance", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 31, role_id = 1, action = "read", resource = "organization", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 32, role_id = 1, action = "create", resource = "organization", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 33, role_id = 1, action = "update", resource = "organization", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 34, role_id = 1, action = "delete", resource = "organization", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 35, role_id = 1, action = "read", resource = "leave", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 36, role_id = 1, action = "create", resource = "leave", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 37, role_id = 1, action = "approve", resource = "leave", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+
+                // Executive (Role 2)
+                new ActionPermissions { Id = 38, role_id = 2, action = "read", resource = "attendance", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 39, role_id = 2, action = "approve", resource = "attendance", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 40, role_id = 2, action = "read", resource = "leave", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 41, role_id = 2, action = "approve", resource = "leave", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+
+                // Regional Manager (Role 3)
+                new ActionPermissions { Id = 42, role_id = 3, action = "read", resource = "attendance", allowed_scope = "SAME_REGION", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 43, role_id = 3, action = "update", resource = "attendance", allowed_scope = "SAME_REGION", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 44, role_id = 3, action = "approve", resource = "attendance", allowed_scope = "SAME_REGION", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 45, role_id = 3, action = "read", resource = "organization", allowed_scope = "SAME_REGION", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 46, role_id = 3, action = "read", resource = "leave", allowed_scope = "SAME_REGION", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 47, role_id = 3, action = "approve", resource = "leave", allowed_scope = "SAME_REGION", is_active = true, created_at = seedDate },
+
+                // Branch Manager (Role 4)
+                new ActionPermissions { Id = 48, role_id = 4, action = "read", resource = "attendance", allowed_scope = "SAME_BRANCH", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 49, role_id = 4, action = "update", resource = "attendance", allowed_scope = "SAME_BRANCH", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 50, role_id = 4, action = "approve", resource = "attendance", allowed_scope = "SAME_BRANCH", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 51, role_id = 4, action = "read", resource = "organization", allowed_scope = "SAME_BRANCH", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 52, role_id = 4, action = "read", resource = "leave", allowed_scope = "SAME_BRANCH", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 53, role_id = 4, action = "approve", resource = "leave", allowed_scope = "SAME_BRANCH", is_active = true, created_at = seedDate },
+
+                // Department Manager (Role 5)
+                new ActionPermissions { Id = 54, role_id = 5, action = "read", resource = "attendance", allowed_scope = "SAME_DEPARTMENT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 55, role_id = 5, action = "update", resource = "attendance", allowed_scope = "SAME_DEPARTMENT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 56, role_id = 5, action = "approve", resource = "attendance", allowed_scope = "SAME_DEPARTMENT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 57, role_id = 5, action = "read", resource = "leave", allowed_scope = "SAME_DEPARTMENT", is_active = true, created_at = seedDate },
+
+                // Admin (Role 1) - Management resources
+                new ActionPermissions { Id = 58, role_id = 1, action = "read", resource = "system", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 59, role_id = 1, action = "update", resource = "system", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 60, role_id = 1, action = "delete", resource = "system", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 61, role_id = 1, action = "read", resource = "user", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 62, role_id = 1, action = "update", resource = "user", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 63, role_id = 1, action = "read", resource = "contracts", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 64, role_id = 1, action = "update", resource = "contracts", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate }
             );
 
             // 22. Request Type Approvers (Approval chains for each request type)

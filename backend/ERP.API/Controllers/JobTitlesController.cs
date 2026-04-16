@@ -10,7 +10,7 @@ namespace ERP.API.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    [HasPermission("Organization", "View")]
+    [HasPermission("organization", "read")]
     public class JobTitlesController : ControllerBase
     {
         private readonly IOrganizationService _orgService;
@@ -32,7 +32,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost]
-        [HasPermission("Organization", "Create")]
+        [HasPermission("organization", "create")]
     public async Task<IActionResult> Create([FromBody] JobTitleCreateDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -41,7 +41,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("{id}")]
-        [HasPermission("Organization", "Update")]
+        [HasPermission("organization", "update")]
     public async Task<IActionResult> Update(int id, [FromBody] JobTitleUpdateDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -51,7 +51,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpDelete("{id}")]
-        [HasPermission("Organization", "Delete")]
+        [HasPermission("organization", "delete")]
     public async Task<IActionResult> Delete(int id)
         {
             var success = await _orgService.DeleteJobTitleAsync(id);

@@ -11,7 +11,7 @@ namespace ERP.API.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    [HasPermission("Contracts", "View")]
+    [HasPermission("contracts", "read")]
     public class ContractsController : ControllerBase
     {
         private readonly IContractService _contractService;
@@ -51,7 +51,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost]
-        [HasPermission("Contracts", "Manage")]
+        [HasPermission("contracts", "update")]
         public async Task<IActionResult> Create([FromBody] ContractCreateDto dto)
         {
             var success = await _contractService.CreateAsync(dto);
@@ -60,7 +60,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("manual")]
-        [HasPermission("Contracts", "Manage")]
+        [HasPermission("contracts", "update")]
         public async Task<IActionResult> CreateManual([FromBody] ContractCreateDto dto)
         {
             var success = await _contractService.CreateAsync(dto);
@@ -69,7 +69,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("electronic/draft")]
-        [HasPermission("Contracts", "Manage")]
+        [HasPermission("contracts", "update")]
         public async Task<IActionResult> CreateElectronicDraft([FromBody] ElectronicContractDraftDto dto)
         {
             var id = await _contractService.CreateElectronicDraftAsync(dto);
@@ -78,7 +78,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("electronic/step3")]
-        [HasPermission("Contracts", "Manage")]
+        [HasPermission("contracts", "update")]
         public async Task<IActionResult> SaveStep3Signers([FromBody] ContractStep3Dto dto)
         {
             try
@@ -93,7 +93,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("electronic/step4")]
-        [HasPermission("Contracts", "Manage")]
+        [HasPermission("contracts", "update")]
         public async Task<IActionResult> SaveStep4Positions([FromBody] ContractStep4Dto dto)
         {
             try
@@ -109,7 +109,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("electronic/submit")]
-        [HasPermission("Contracts", "Manage")]
+        [HasPermission("contracts", "update")]
         public async Task<IActionResult> SubmitElectronicContract([FromBody] ContractSubmitDto dto)
         {
             try
@@ -124,7 +124,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("{id}")]
-        [HasPermission("Contracts", "Manage")]
+        [HasPermission("contracts", "update")]
         public async Task<IActionResult> Update(int id, [FromBody] ContractUpdateDto dto)
         {
             var success = await _contractService.UpdateAsync(id, dto);
@@ -133,7 +133,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpDelete("{id}")]
-        [HasPermission("Contracts", "Manage")]
+        [HasPermission("contracts", "update")]
         public async Task<IActionResult> Delete(int id)
         {
             var success = await _contractService.DeleteAsync(id);
@@ -142,7 +142,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpGet("export")]
-        [HasPermission("Contracts", "Manage")]
+        [HasPermission("contracts", "update")]
         public async Task<IActionResult> Export([FromQuery] ContractFilterDto filter)
         {
             var bytes = await _contractService.ExportToCsvAsync(filter);
@@ -150,7 +150,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("bulk-delete")]
-        [HasPermission("Contracts", "Manage")]
+        [HasPermission("contracts", "update")]
         public async Task<IActionResult> BulkDelete([FromBody] int[] ids)
         {
             var count = await _contractService.DeleteMultipleAsync(ids);

@@ -12,7 +12,7 @@ namespace ERP.API.Controllers
     [ApiController]
     [Route("api/auth-mgmt")]
     [Authorize]
-    [HasPermission("System", "Manage")] // Only Tenant Admins or System Admins
+    [HasPermission("system", "update")] // Only Tenant Admins or System Admins
     public class AuthorizationManagementController : ControllerBase
     {
         private readonly IAuthorizationManagementService _mgmtService;
