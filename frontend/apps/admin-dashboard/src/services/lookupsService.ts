@@ -1,0 +1,177 @@
+import { API_URL, requestJson } from "./employee/core";
+
+export interface LookupItem {
+  id: number;
+  code: string;
+  name: string;
+  value?: string;
+}
+
+export interface CountryDto {
+  code: string;
+  name: string;
+  dialCode?: string;
+}
+
+export interface ProvinceDto {
+  code: string;
+  name: string;
+  countryCode: string;
+}
+
+export interface DistrictDto {
+  code: string;
+  name: string;
+  provinceCode: string;
+}
+
+// Mock data
+const mockGenders: LookupItem[] = [
+  { id: 1, code: "M", name: "Male", value: "Nam" },
+  { id: 2, code: "F", name: "Female", value: "Nữ" },
+  { id: 3, code: "O", name: "Other", value: "Khác" },
+];
+
+const mockMaritalStatuses: LookupItem[] = [
+  { id: 1, code: "S", name: "Single", value: "Độc thân" },
+  { id: 2, code: "M", name: "Married", value: "Đã kết hôn" },
+  { id: 3, code: "D", name: "Divorced", value: "Ly dị" },
+];
+
+const mockCountries: CountryDto[] = [
+  { code: "VN", name: "Vietnam", dialCode: "+84" },
+  { code: "US", name: "United States", dialCode: "+1" },
+  { code: "JP", name: "Japan", dialCode: "+81" },
+];
+
+const mockEducationLevels: LookupItem[] = [
+  { id: 1, code: "HS", name: "High School", value: "Trung học phổ thông" },
+  { id: 2, code: "BA", name: "Bachelor", value: "Đại học" },
+  { id: 3, code: "MA", name: "Master", value: "Thạc sĩ" },
+  { id: 4, code: "PHD", name: "PhD", value: "Tiến sĩ" },
+];
+
+const mockContractTypes: LookupItem[] = [
+  { id: 1, code: "FT", name: "Full-time", value: "Toàn thời gian" },
+  { id: 2, code: "PT", name: "Part-time", value: "Bán thời gian" },
+  { id: 3, code: "IC", name: "Independent Contractor", value: "Độc lập" },
+];
+
+const mockTaxTypes: LookupItem[] = [
+  { id: 1, code: "PERSONAL", name: "Personal Income Tax" },
+  { id: 2, code: "CORPORATE", name: "Corporate Income Tax" },
+];
+
+export const lookupsService = {
+  async getGenders(): Promise<LookupItem[]> {
+    try {
+      return await requestJson<LookupItem[]>(
+        `${API_URL}/lookups/genders`,
+        { method: "GET" },
+        "Failed to fetch genders",
+      );
+    } catch {
+      return mockGenders;
+    }
+  },
+
+  async getMaritalStatuses(): Promise<LookupItem[]> {
+    try {
+      return await requestJson<LookupItem[]>(
+        `${API_URL}/lookups/marital-statuses`,
+        { method: "GET" },
+        "Failed to fetch marital statuses",
+      );
+    } catch {
+      return mockMaritalStatuses;
+    }
+  },
+
+  async getCountries(): Promise<CountryDto[]> {
+    try {
+      return await requestJson<CountryDto[]>(
+        `${API_URL}/lookups/countries`,
+        { method: "GET" },
+        "Failed to fetch countries",
+      );
+    } catch {
+      return mockCountries;
+    }
+  },
+
+  async getProvinces(countryCode: string): Promise<ProvinceDto[]> {
+    try {
+      return await requestJson<ProvinceDto[]>(
+        `${API_URL}/lookups/provinces/${countryCode}`,
+        { method: "GET" },
+        `Failed to fetch provinces for ${countryCode}`,
+      );
+    } catch {
+      return [];
+    }
+  },
+
+  async getDistricts(provinceCode: string): Promise<DistrictDto[]> {
+    try {
+      return await requestJson<DistrictDto[]>(
+        `${API_URL}/lookups/districts/${provinceCode}`,
+        { method: "GET" },
+        `Failed to fetch districts for ${provinceCode}`,
+      );
+    } catch {
+      return [];
+    }
+  },
+
+  async getEducationLevels(): Promise<LookupItem[]> {
+    try {
+      return await requestJson<LookupItem[]>(
+        `${API_URL}/lookups/education-levels`,
+        { method: "GET" },
+        "Failed to fetch education levels",
+      );
+    } catch {
+      return mockEducationLevels;
+    }
+  },
+
+  async getMajors(): Promise<LookupItem[]> {
+    try {
+      return await requestJson<LookupItem[]>(
+        `${API_URL}/lookups/majors`,
+        { method: "GET" },
+        "Failed to fetch majors",
+      );
+    } catch {
+      return [
+        { id: 1, code: "CS", name: "Computer Science" },
+        { id: 2, code: "ECON", name: "Economics" },
+        { id: 3, code: "ACC", name: "Accounting" },
+      ];
+    }
+  },
+
+  async getContractTypes(): Promise<LookupItem[]> {
+    try {
+      return await requestJson<LookupItem[]>(
+        `${API_URL}/lookups/contract-types`,
+        { method: "GET" },
+        "Failed to fetch contract types",
+      );
+    } catch {
+      return mockContractTypes;
+    }
+  },
+
+  async getTaxTypes(): Promise<LookupItem[]> {
+    try {
+      return await requestJson<LookupItem[]>(
+        `${API_URL}/lookups/tax-types`,
+        { method: "GET" },
+        "Failed to fetch tax types",
+      );
+    } catch {
+      return mockTaxTypes;
+    }
+  },
+};

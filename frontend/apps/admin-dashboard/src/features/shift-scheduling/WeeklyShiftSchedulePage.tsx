@@ -22,7 +22,13 @@ import type {
   ShiftScheduleGridData,
   ShiftScheduleSettings,
 } from "./types";
-import { addDays, getWeekLabel, parseIsoDate, startOfWeek, toIsoDate } from "./utils/week";
+import {
+  addDays,
+  getWeekLabel,
+  parseIsoDate,
+  startOfWeek,
+  toIsoDate,
+} from "./utils/week";
 import DeleteUnconfirmedModal from "./components/DeleteUnconfirmedModal";
 import { shiftBulkActionsService } from "./services/weeklyShiftScheduleService";
 
@@ -76,10 +82,15 @@ export const WeeklyShiftSchedulePage = () => {
     employeeStatusOptions,
   } = useWeeklyShiftSchedule();
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
-  const [selectedOpenShiftDate, setSelectedOpenShiftDate] = useState<string | null>(null);
-  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState<boolean>(false);
-  const [isAdvancedFilterOpen, setIsAdvancedFilterOpen] = useState<boolean>(false);
-  const [isQuickAddEmployeesOpen, setIsQuickAddEmployeesOpen] = useState<boolean>(false);
+  const [selectedOpenShiftDate, setSelectedOpenShiftDate] = useState<
+    string | null
+  >(null);
+  const [isTemplateModalOpen, setIsTemplateModalOpen] =
+    useState<boolean>(false);
+  const [isAdvancedFilterOpen, setIsAdvancedFilterOpen] =
+    useState<boolean>(false);
+  const [isQuickAddEmployeesOpen, setIsQuickAddEmployeesOpen] =
+    useState<boolean>(false);
   const [isShiftAssignOpen, setIsShiftAssignOpen] = useState<boolean>(false);
   const [isShiftCopyOpen, setIsShiftCopyOpen] = useState<boolean>(false);
   const [isBulkProcessing, setIsBulkProcessing] = useState<boolean>(false);
@@ -112,7 +123,8 @@ export const WeeklyShiftSchedulePage = () => {
   const activeAdvancedFilterCount = useMemo(
     () =>
       Object.values(advancedSidebarFilters).reduce(
-        (count: number, values) => count + (values?.filter(Boolean).length ?? 0),
+        (count: number, values) =>
+          count + (values?.filter(Boolean).length ?? 0),
         0,
       ),
     [advancedSidebarFilters],
@@ -201,9 +213,12 @@ export const WeeklyShiftSchedulePage = () => {
       return;
     }
 
-    const refreshTimer = window.setInterval(() => {
-      void reload();
-    }, settings.autoRefreshMinutes * 60 * 1000);
+    const refreshTimer = window.setInterval(
+      () => {
+        void reload();
+      },
+      settings.autoRefreshMinutes * 60 * 1000,
+    );
 
     return () => {
       window.clearInterval(refreshTimer);
@@ -236,10 +251,14 @@ export const WeeklyShiftSchedulePage = () => {
               onViewModeChange={handleViewModeChange}
               onFilterChange={handleFilterChange}
               onPreviousWeek={() =>
-                handleWeekChange(toIsoDate(addDays(parseIsoDate(filters.weekStartDate), -7)))
+                handleWeekChange(
+                  toIsoDate(addDays(parseIsoDate(filters.weekStartDate), -7)),
+                )
               }
               onNextWeek={() =>
-                handleWeekChange(toIsoDate(addDays(parseIsoDate(filters.weekStartDate), 7)))
+                handleWeekChange(
+                  toIsoDate(addDays(parseIsoDate(filters.weekStartDate), 7)),
+                )
               }
               onWeekChange={handleWeekChange}
               onRefresh={() => {
@@ -269,15 +288,22 @@ export const WeeklyShiftSchedulePage = () => {
               onOpenSettings={() => setIsSettingsOpen(true)}
               isAdvancedFilterOpen={isAdvancedFilterOpen}
               activeAdvancedFilterCount={activeAdvancedFilterCount}
-              onToggleAdvancedFilter={() => setIsAdvancedFilterOpen((prev) => !prev)}
+              onToggleAdvancedFilter={() =>
+                setIsAdvancedFilterOpen((prev) => !prev)
+              }
               draftCount={data?.draftCount ?? 0}
               publishedCount={data?.publishedCount ?? 0}
               isBulkProcessing={isBulkProcessing}
               onPublishAll={async () => {
                 setIsBulkProcessing(true);
                 try {
-                  const result = await shiftBulkActionsService.publishAll(filters.weekStartDate);
-                  notify(result.message, "success");
+                  const result = await shiftBulkActionsService.publishAll(
+                    filters.weekStartDate,
+                  );
+                  notify(
+                    result.message || "Đã công bố ca làm việc thành công.",
+                    "success",
+                  );
                   void reload();
                 } catch {
                   notify("Lỗi khi công bố ca làm việc.", "error");
@@ -288,8 +314,13 @@ export const WeeklyShiftSchedulePage = () => {
               onApproveAll={async () => {
                 setIsBulkProcessing(true);
                 try {
-                  const result = await shiftBulkActionsService.approveAll(filters.weekStartDate);
-                  notify(result.message, "success");
+                  const result = await shiftBulkActionsService.approveAll(
+                    filters.weekStartDate,
+                  );
+                  notify(
+                    result.message || "Đã chấp thuận ca làm việc thành công.",
+                    "success",
+                  );
                   void reload();
                 } catch {
                   notify("Lỗi khi chấp thuận ca làm việc.", "error");
@@ -300,8 +331,15 @@ export const WeeklyShiftSchedulePage = () => {
               onPublishAndApproveAll={async () => {
                 setIsBulkProcessing(true);
                 try {
-                  const result = await shiftBulkActionsService.publishAndApproveAll(filters.weekStartDate);
-                  notify(result.message, "success");
+                  const result =
+                    await shiftBulkActionsService.publishAndApproveAll(
+                      filters.weekStartDate,
+                    );
+                  notify(
+                    result.message ||
+                      "Đã công bố & chấp thuận ca làm việc thành công.",
+                    "success",
+                  );
                   void reload();
                 } catch {
                   notify("Lỗi khi công bố & chấp thuận ca làm.", "error");
@@ -329,11 +367,15 @@ export const WeeklyShiftSchedulePage = () => {
                     rows={visibleData.rows}
                     openShiftCells={visibleData.openShiftCells}
                     searchTerm={filters.searchTerm}
-                    onSearchChange={(value) => updateFilter("searchTerm", value)}
+                    onSearchChange={(value) =>
+                      updateFilter("searchTerm", value)
+                    }
                     onAddEmployee={() => setIsQuickAddEmployeesOpen(true)}
                     onCreateOpenShift={(date) => setSelectedOpenShiftDate(date)}
                     highlightShortage={settings.highlightShortage}
-                    quickActionHandlers={assignedShiftQuickActions.quickActionHandlers}
+                    quickActionHandlers={
+                      assignedShiftQuickActions.quickActionHandlers
+                    }
                   />
                   <ShiftLegend />
                 </>
@@ -348,7 +390,8 @@ export const WeeklyShiftSchedulePage = () => {
                     Chưa có dữ liệu xếp ca để hiển thị
                   </h2>
                   <p className="mt-2 max-w-lg text-sm leading-6 text-slate-500">
-                    Hãy thử làm mới dữ liệu hoặc thay đổi bộ lọc tuần để tiếp tục kiểm tra lịch làm việc.
+                    Hãy thử làm mới dữ liệu hoặc thay đổi bộ lọc tuần để tiếp
+                    tục kiểm tra lịch làm việc.
                   </p>
                   <button
                     type="button"
@@ -443,7 +486,9 @@ export const WeeklyShiftSchedulePage = () => {
         onConfirm={async () => {
           setIsBulkProcessing(true);
           try {
-            const result = await shiftBulkActionsService.deleteUnconfirmed(filters.weekStartDate);
+            const result = await shiftBulkActionsService.deleteUnconfirmed(
+              filters.weekStartDate,
+            );
             notify(result.message, "success");
             setIsDeleteModalOpen(false);
             void reload();

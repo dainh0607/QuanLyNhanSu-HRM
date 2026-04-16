@@ -26,23 +26,20 @@ export const AvailableShiftPickerModal = ({
   <ActionModalShell
     isOpen={isOpen}
     onClose={onClose}
-    title="Chọn ca làm bổ sung"
+    title={context?.employee.fullName ?? "Gán ca làm"}
     description={`Danh sách ca làm có thể gán trực tiếp cho ${
       context?.employee.fullName ?? "nhân viên"
     } trong ngày ${context?.shift.date ?? "--"}.`}
     widthClassName="max-w-4xl"
     footer={
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-slate-500">
-          Có thể tạo mới ca rồi gán trực tiếp ngay trong luồng này.
-        </p>
+      <div className="flex items-center justify-end gap-3">
         <button
           type="button"
           onClick={onCreateNew}
           className="inline-flex items-center gap-2 rounded-xl border border-[#134BBA] px-4 py-2 text-sm font-semibold text-[#134BBA] transition hover:bg-[#EFF6FF]"
         >
           <span className="material-symbols-outlined text-[18px]">add</span>
-          Tạo ca làm mới
+          Tạo mới
         </button>
       </div>
     }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -34,17 +34,8 @@ namespace ERP.Entities.Migrations
                 columns: new[] { "description", "name" },
                 values: new object[] { "Quản lý theo vùng/miền", "Quản lý vùng" });
 
-            migrationBuilder.InsertData(
-                table: "Roles",
-                columns: new[] { "id", "created_at", "updated_at", "description", "is_active", "name" },
-                values: new object[,]
-                {
-                    { 4, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), "Quản lý tại chi nhánh", true, "Quản lý chi nhánh" },
-                    { 5, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), "Quản lý phòng ban/bộ phận", true, "Quản lý bộ phận" },
-                    { 6, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), "Quản trị các phân hệ nghiệp vụ", true, "Quản trị phân hệ" },
-                    { 7, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), "Nhân viên chính thức", true, "Nhân viên" }
-                });
         }
+
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)

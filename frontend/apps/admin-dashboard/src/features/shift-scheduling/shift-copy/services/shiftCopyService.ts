@@ -165,7 +165,7 @@ export const shiftCopyService = {
   async getCatalogData(branchOptions: SelectOption[]): Promise<ShiftCopyCatalogData> {
     const cleanedBranchOptions = sortOptions(
       branchOptions.filter((option) => option.value.trim().length > 0),
-    ); */
+    );
 
     const [departments, employeeResponse] = await Promise.all([
       employeeService.getDepartmentsMetadata().catch(() => []),
@@ -242,22 +242,7 @@ export const shiftCopyService = {
   async copyShifts(
     payload: ShiftCopyCopyPayload,
   ): Promise<ShiftCopyCopyResult> {
-    const response = await shiftSchedulingApi.copyAssignments(payload); /*
-      `${API_URL}/shift-assignments/copy`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          source_week_start_date: payload.sourceWeekStartDate,
-          target_week_start_dates: payload.targetWeekStartDates,
-          branch_ids: payload.branchIds.map(Number),
-          department_ids: payload.departmentIds.map(Number),
-          employee_ids: payload.employeeIds.map(Number),
-          assignment_ids: payload.previewItems.map((item) => item.assignmentId),
-          merge_mode: payload.mergeMode,
-        }),
-      },
-      "Không thể sao chép ca làm",
-    );
+    const response = await shiftSchedulingApi.copyAssignments(payload);
 
     return {
       copiedCount:

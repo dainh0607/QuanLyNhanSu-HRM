@@ -38,13 +38,17 @@ const hasAllowedRole = (user: User | null | undefined): boolean => {
   });
 };
 
-export const isSuperAdminAccount = (
-  user: User | null | undefined,
-): boolean => {
+export const isSuperAdminAccount = (user: User | null | undefined): boolean => {
   if (!user?.email) {
     return false;
   }
 
+  // Check if backend marked this user as system admin
+  if (user.isSystemAdmin === true) {
+    return allowedSuperAdminEmails.includes(normalizeValue(user.email));
+  }
+
+  // Fallback: check role and email (legacy support)
   return (
     allowedSuperAdminEmails.includes(normalizeValue(user.email)) &&
     hasAllowedRole(user)
