@@ -11,7 +11,7 @@ namespace ERP.API.Controllers
     [ApiController]
     [Route("api/employees/{id}/details")]
     [Authorize]
-    [HasPermission("Employee", "View")]
+    [HasPermission("employee", "read")]
     public class EmployeeDetailsController : ControllerBase
     {
         private readonly IEmployeeProfileService _profileService;
@@ -22,7 +22,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("education")]
-        [HasPermission("Employee", "Update")]
+        [HasPermission("employee", "update")]
     public async Task<IActionResult> UpdateEducation(int id, [FromBody] List<EducationDto> dtos)
         {
             var success = await _profileService.UpdateEducationAsync(id, dtos);
@@ -31,7 +31,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("skills")]
-        [HasPermission("Employee", "Update")]
+        [HasPermission("employee", "update")]
     public async Task<IActionResult> UpdateSkills(int id, [FromBody] List<EmployeeSkillDto> dtos)
         {
             var success = await _profileService.UpdateSkillsAsync(id, dtos);
@@ -40,7 +40,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("certificates")]
-        [HasPermission("Employee", "Update")]
+        [HasPermission("employee", "update")]
     public async Task<IActionResult> UpdateCertificates(int id, [FromBody] List<EmployeeCertificateDto> dtos)
         {
             var success = await _profileService.UpdateCertificatesAsync(id, dtos);
@@ -49,7 +49,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("work-history")]
-        [HasPermission("Employee", "Update")]
+        [HasPermission("employee", "update")]
     public async Task<IActionResult> UpdateWorkHistory(int id, [FromBody] List<WorkHistoryDto> dtos)
         {
             var success = await _profileService.UpdateWorkHistoryAsync(id, dtos);
@@ -58,7 +58,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("bank-accounts")]
-        [HasPermission("Employee", "Update")]
+        [HasPermission("employee", "update")]
     public async Task<IActionResult> UpdateBankAccounts(int id, [FromBody] List<BankAccountDto> dtos)
         {
             var success = await _profileService.UpdateBankAccountsAsync(id, dtos);
@@ -67,7 +67,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("health-record")]
-        [HasPermission("Employee", "Update")]
+        [HasPermission("employee", "update")]
     public async Task<IActionResult> UpdateHealthRecord(int id, [FromBody] HealthRecordDto dto)
         {
             var success = await _profileService.UpdateHealthRecordAsync(id, dto);
@@ -76,7 +76,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("dependents")]
-        [HasPermission("Employee", "Update")]
+        [HasPermission("employee", "update")]
     public async Task<IActionResult> UpdateDependents(int id, [FromBody] List<DependentDto> dtos)
         {
             var success = await _profileService.UpdateDependentsAsync(id, dtos);

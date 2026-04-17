@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState, useEffect } from "react";
+import { authService, hasPermission } from "../../../services/authService";
 
 interface ShiftBulkActionsBarProps {
   draftCount: number;
@@ -21,6 +22,8 @@ const ShiftBulkActionsBar = ({
 }: ShiftBulkActionsBarProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const user = authService.getCurrentUser();
+  const canUpdate = hasPermission(user, "shifts", "update");
 
   const handleClickOutside = useCallback((event: MouseEvent) => {
     if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -39,8 +42,8 @@ const ShiftBulkActionsBar = ({
 
   const totalPending = draftCount + publishedCount;
 
-  // Ẩn khi không có ca nào chờ xử lý
-  if (totalPending === 0) {
+  // Ẩn khi không có ca nào chờ xử lý hoặc không có quyền cập nhật
+  if (totalPending === 0 || !canUpdate) {
     return null;
   }
 

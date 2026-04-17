@@ -12,7 +12,7 @@ namespace ERP.API.Controllers
     [ApiController]
     [Route("api/leave-requests")]
     [Authorize]
-    [HasPermission("LeaveRequest", "View")]
+    [HasPermission("leave", "read")]
     public class LeaveRequestsController : ControllerBase
     {
         private readonly ILeaveRequestService _leaveService;
@@ -78,8 +78,42 @@ namespace ERP.API.Controllers
             }
         }
 
+        [HttpGet("dependent-data")]
+        [HasPermission("leave", "read")]
+        public async Task<IActionResult> GetDependentData([FromQuery] int branchId, [FromQuery] int excludeEmployeeId)
+        {
+            try
+            {
+                var result = await _leaveService.GetDependentDataAsync(branchId, excludeEmployeeId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpPost("matrix")]
+        [HasPermission("leave", "create")]
+        public async Task<IActionResult> CreateMatrixLeaveRequest([FromBody] LeaveRequestCreateMatrixDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                var creatorId = GetCurrentUserId();
+                var success = await _leaveService.CreateMatrixLeaveRequestAsync(dto, creatorId);
+                if (!success) return BadRequest(new { Message = "Gửi yêu cầu nghỉ phép thất bại." });
+                return Ok(new { Message = "Đã gửi yêu cầu nghỉ phép thành công." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
         [HttpPut("{id}/approve")]
-        [HasPermission("LeaveRequest", "Update")]
+        [HasPermission("leave", "approve")]
         public async Task<IActionResult> ApproveLeaveRequest(int id)
         {
             try
@@ -96,7 +130,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("{id}/reject")]
-        [HasPermission("LeaveRequest", "Update")]
+        [HasPermission("leave", "approve")]
         public async Task<IActionResult> RejectLeaveRequest(int id, [FromBody] string reason)
         {
             try

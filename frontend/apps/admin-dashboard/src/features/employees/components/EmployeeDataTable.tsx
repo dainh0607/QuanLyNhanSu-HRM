@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Employee, ColumnConfig } from '../types';
+import { authService, hasPermission } from '../../../services/authService';
 
 interface EmployeeDataTableProps {
   employees: Employee[];
@@ -138,6 +139,9 @@ const EmployeeDataTable: React.FC<EmployeeDataTableProps> = ({
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const user = authService.getCurrentUser();
+  const canUpdate = hasPermission(user, 'employee', 'update');
+  const canDelete = hasPermission(user, 'employee', 'delete');
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -339,35 +343,57 @@ const EmployeeDataTable: React.FC<EmployeeDataTableProps> = ({
                           index < 2 ? 'top-full mt-1' : 'bottom-full mb-1'
                         }`}
                       >
-                        <button
-                          onClick={() => {
-                            onDeleteEmployee?.(employee.id);
-                            setActiveMenuId(null);
-                          }}
-                          className="flex w-full items-center gap-[11px] px-[15px] py-[7px] text-left text-[13px] font-medium text-gray-700 transition-colors hover:bg-gray-50"
-                          type="button"
-                        >
-                          <span className="material-symbols-outlined text-[19px] text-[#192841]">
-                            delete
-                          </span>
-                          Xóa
-                        </button>
+                        {canDelete && (
+                          <button
+                            onClick={() => {
+                              onDeleteEmployee?.(employee.id);
+                              setActiveMenuId(null);
+                            }}
+                            className="flex w-full items-center gap-[11px] px-[15px] py-[7px] text-left text-[13px] font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                            type="button"
+                          >
+                            <span className="material-symbols-outlined text-[19px] text-[#192841]">
+                              delete
+                            </span>
+                            Xóa
+                          </button>
+                        )}
 
-                        <div className="mx-2 my-0.5 h-px bg-gray-50" />
+                        {canDelete && canUpdate && (
+                          <div className="mx-2 my-0.5 h-px bg-gray-50" />
+                        )}
 
-                        <button
-                          onClick={() => {
-                            onSelectEmployee?.(employee);
-                            setActiveMenuId(null);
-                          }}
-                          className="flex w-full items-center gap-[11px] px-[15px] py-[7px] text-left text-[13px] font-medium text-gray-700 transition-colors hover:bg-gray-50"
-                          type="button"
-                        >
-                          <span className="material-symbols-outlined text-[19px] text-[#192841]">
-                            edit
-                          </span>
-                          Sửa
-                        </button>
+                        {canUpdate && (
+                          <button
+                            onClick={() => {
+                              onSelectEmployee?.(employee);
+                              setActiveMenuId(null);
+                            }}
+                            className="flex w-full items-center gap-[11px] px-[15px] py-[7px] text-left text-[13px] font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                            type="button"
+                          >
+                            <span className="material-symbols-outlined text-[19px] text-[#192841]">
+                              edit
+                            </span>
+                            Sửa
+                          </button>
+                        )}
+
+                        {!canDelete && !canUpdate && (
+                          <button
+                            onClick={() => {
+                              onSelectEmployee?.(employee);
+                              setActiveMenuId(null);
+                            }}
+                            className="flex w-full items-center gap-[11px] px-[15px] py-[7px] text-left text-[13px] font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                            type="button"
+                          >
+                            <span className="material-symbols-outlined text-[19px] text-[#192841]">
+                              visibility
+                            </span>
+                            Xem
+                          </button>
+                        )}
                       </div>
                     ) : null}
                   </div>

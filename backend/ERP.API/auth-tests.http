@@ -13,13 +13,13 @@ POST {{baseUrl}}/api/auth/sign-up
 Content-Type: {{contentType}}
 
 {
-  "email": "kfrog3333@gmail.com",
+  "email": "kfrog4444@gmail.com",
   "password": "kfrog12333",
   "confirmPassword": "kfrog12333",
   "fullName": "Hùng",
-  "employeeCode": "ADM011",
-  "phoneNumber": "+84232339998",
-  "companyName": "NexaHR11"
+  "employeeCode": "ADM0119",
+  "phoneNumber": "+84232339098",
+  "companyName": "NexaHR112"
 }
 
 ###

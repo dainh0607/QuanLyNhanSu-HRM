@@ -13,7 +13,7 @@ namespace ERP.API.Controllers
     [ApiController]
     [Route("api/employees")]
     [Authorize]
-    [HasPermission("Employee", "View")]
+    [HasPermission("employee", "read")]
     public class EmployeesController : ControllerBase
     {
         private readonly IEmployeeService _employeeService;
@@ -44,7 +44,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpGet("{id}/full-profile")]
-        [HasPermission("Employee", "View")]
+        [HasPermission("employee", "read")]
         public async Task<IActionResult> GetFullProfile(int id)
         {
             var result = await _employeeService.GetFullProfileAsync(id);
@@ -53,7 +53,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpGet("{id}")]
-        [HasPermission("Employee", "View")]
+        [HasPermission("employee", "read")]
         public async Task<IActionResult> GetById(int id)
         {
             var result = await _employeeService.GetByIdAsync(id);
@@ -84,7 +84,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpGet("export")]
-        [HasPermission("Employee", "Export")]
+        [HasPermission("employee", "export")]
         public async Task<IActionResult> Export([FromQuery] EmployeeFilterDto filter, [FromQuery(Name = "columns")] string[]? columns)
         {
             var result = await _employeeService.ExportEmployeesToCsvAsync(filter, columns);
@@ -92,7 +92,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost]
-        [HasPermission("Employee", "Create")]
+        [HasPermission("employee", "create")]
         public async Task<IActionResult> Create([FromBody] EmployeeCreateDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -109,7 +109,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("bulk")]
-        [HasPermission("Employee", "Create")]
+        [HasPermission("employee", "create")]
         public async Task<IActionResult> BulkCreate([FromBody] EmployeeBulkCreateDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -126,7 +126,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("{id}")]
-        [HasPermission("Employee", "Update")]
+        [HasPermission("employee", "update")]
         public async Task<IActionResult> Update(int id, [FromBody] EmployeeUpdateDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -138,7 +138,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpDelete("{id}")]
-        [HasPermission("Employee", "Delete")]
+        [HasPermission("employee", "delete")]
         public async Task<IActionResult> Delete(int id)
         {
             var success = await _employeeService.DeleteAsync(id);
@@ -148,7 +148,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("{id}/resignation")]
-        [HasPermission("Employee", "Update")]
+        [HasPermission("employee", "update")]
         public async Task<IActionResult> Resign(int id, [FromBody] ResignationRequestDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -160,7 +160,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("{id}/promotion")]
-        [HasPermission("Employee", "Update")]
+        [HasPermission("employee", "update")]
         public async Task<IActionResult> Promote(int id, [FromBody] PromotionRequestDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);

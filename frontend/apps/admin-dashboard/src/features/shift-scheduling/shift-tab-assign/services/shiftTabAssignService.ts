@@ -1,6 +1,5 @@
 import { employeeListService } from "../../../../services/employee/list";
 import { API_URL, requestJson } from "../../../../services/employee/core";
-import { getRuntimeShiftTemplateCatalog } from "../../open-shift/openShiftRuntimeStore";
 import { weeklyShiftScheduleService } from "../../services/weeklyShiftScheduleService";
 import type { ShiftScheduleGridData } from "../../types";
 import {
@@ -27,6 +26,8 @@ interface ShiftCatalogApiItem {
   StartTime?: string;
   end_time?: string;
   EndTime?: string;
+  color?: string | null;
+  Color?: string | null;
   branch_id?: number | null;
   BranchId?: number | null;
   branch_name?: string | null;
@@ -148,26 +149,8 @@ const loadShiftCatalog = async (
     .map((item) => mapShiftCatalogItem(item))
     .filter((item): item is ShiftTabAssignTab => Boolean(item));
 
-  /* const branchNumber = branchId ? Number(branchId) : null;
-  const runtimeCatalog = getRuntimeShiftTemplateCatalog()
-    .filter((item) =>
-      branchNumber ? item.branchIds.length === 0 || item.branchIds.includes(branchId) : true,
-    )
-    .map<ShiftTabAssignTab>((item) => ({
-      key: getTabKey(item.shiftId, item.name, item.startTime, item.endTime),
-      shiftId: item.shiftId,
-      shiftName: item.name,
-      startTime: item.startTime,
-      endTime: item.endTime,
-      branchId: item.branchIds[0] ? Number(item.branchIds[0]) : null,
-      branchName: null,
-      days: [],
-    }));
-
-  const merged = [...runtimeCatalog, ...mapped]; */
-  const merged = mapped;
   const seen = new Set<string>();
-  return merged.filter((item) => {
+  return mapped.filter((item) => {
     if (seen.has(item.key)) {
       return false;
     }
@@ -367,10 +350,10 @@ export const shiftTabAssignService = {
         {
           method: "POST",
           body: JSON.stringify({
-            employee_id: employeeId,
-            shift_id: params.shiftId,
-            assignment_date: params.date,
-            note: `Gán từ tab xếp ca ${params.shiftName}`,
+            employeeId: employeeId,
+            shiftId: params.shiftId,
+            date: params.date,
+            notes: `Gán từ tab xếp ca ${params.shiftName}`,
           }),
         },
         "Không thể gán ca hàng loạt",

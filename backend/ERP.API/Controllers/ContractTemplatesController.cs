@@ -11,7 +11,7 @@ namespace ERP.API.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    [HasPermission("Contracts", "View")]
+    [HasPermission("contracts", "read")]
     public class ContractTemplatesController : ControllerBase
     {
         private readonly IContractTemplateService _templateService;

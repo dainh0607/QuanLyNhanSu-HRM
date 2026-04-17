@@ -11,7 +11,7 @@ namespace ERP.API.Controllers
     [ApiController]
     [Route("api/shift-templates")]
     [Authorize]
-    [HasPermission("Attendance", "View")]
+    [HasPermission("attendance", "read")]
     public class ShiftTemplatesController : ControllerBase
     {
         private readonly IShiftTemplateService _templateService;
@@ -44,7 +44,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost]
-        [HasPermission("Attendance", "Update")]
+        [HasPermission("attendance", "update")]
         public async Task<IActionResult> CreateTemplate([FromBody] ShiftTemplateCreateDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -61,7 +61,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("{id}")]
-        [HasPermission("Attendance", "Update")]
+        [HasPermission("attendance", "update")]
         public async Task<IActionResult> UpdateTemplate(int id, [FromBody] ShiftTemplateCreateDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -79,7 +79,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpDelete("{id}")]
-        [HasPermission("Attendance", "Update")]
+        [HasPermission("attendance", "update")]
         public async Task<IActionResult> DeleteTemplate(int id)
         {
             try

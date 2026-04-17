@@ -64,114 +64,90 @@ const mockTaxTypes: LookupItem[] = [
 
 export const lookupsService = {
   async getGenders(): Promise<LookupItem[]> {
-    try {
-      return await requestJson<LookupItem[]>(
-        `${API_URL}/lookups/genders`,
-        { method: "GET" },
-        "Failed to fetch genders",
-      );
-    } catch {
-      return mockGenders;
-    }
+    return await requestJson<LookupItem[]>(
+      `${API_URL}/lookups/genders`,
+      { method: "GET" },
+      "Không thể tải danh sách giới tính",
+    );
   },
 
   async getMaritalStatuses(): Promise<LookupItem[]> {
-    try {
-      return await requestJson<LookupItem[]>(
-        `${API_URL}/lookups/marital-statuses`,
-        { method: "GET" },
-        "Failed to fetch marital statuses",
-      );
-    } catch {
-      return mockMaritalStatuses;
-    }
+    return await requestJson<LookupItem[]>(
+      `${API_URL}/lookups/marital-statuses`,
+      { method: "GET" },
+      "Không thể tải tình trạng hôn nhân",
+    );
   },
 
   async getCountries(): Promise<CountryDto[]> {
-    try {
-      return await requestJson<CountryDto[]>(
-        `${API_URL}/lookups/countries`,
-        { method: "GET" },
-        "Failed to fetch countries",
-      );
-    } catch {
-      return mockCountries;
-    }
+    return await requestJson<CountryDto[]>(
+      `${API_URL}/lookups/countries`,
+      { method: "GET" },
+      "Không thể tải danh sách quốc gia",
+    );
   },
 
   async getProvinces(countryCode: string): Promise<ProvinceDto[]> {
-    try {
-      return await requestJson<ProvinceDto[]>(
-        `${API_URL}/lookups/provinces/${countryCode}`,
-        { method: "GET" },
-        `Failed to fetch provinces for ${countryCode}`,
-      );
-    } catch {
-      return [];
-    }
+    return await requestJson<ProvinceDto[]>(
+      `${API_URL}/lookups/provinces/${countryCode}`,
+      { method: "GET" },
+      `Không thể tải danh sách tỉnh/thành cho ${countryCode}`,
+    );
   },
 
   async getDistricts(provinceCode: string): Promise<DistrictDto[]> {
-    try {
-      return await requestJson<DistrictDto[]>(
-        `${API_URL}/lookups/districts/${provinceCode}`,
-        { method: "GET" },
-        `Failed to fetch districts for ${provinceCode}`,
-      );
-    } catch {
-      return [];
-    }
+    return await requestJson<DistrictDto[]>(
+      `${API_URL}/lookups/districts/${provinceCode}`,
+      { method: "GET" },
+      `Không thể tải danh sách quận/huyện cho ${provinceCode}`,
+    );
   },
 
   async getEducationLevels(): Promise<LookupItem[]> {
-    try {
-      return await requestJson<LookupItem[]>(
-        `${API_URL}/lookups/education-levels`,
-        { method: "GET" },
-        "Failed to fetch education levels",
-      );
-    } catch {
-      return mockEducationLevels;
-    }
+    return await requestJson<LookupItem[]>(
+      `${API_URL}/lookups/education-levels`,
+      { method: "GET" },
+      "Không thể tải trình độ học vấn",
+    );
   },
 
   async getMajors(): Promise<LookupItem[]> {
-    try {
-      return await requestJson<LookupItem[]>(
-        `${API_URL}/lookups/majors`,
-        { method: "GET" },
-        "Failed to fetch majors",
-      );
-    } catch {
-      return [
-        { id: 1, code: "CS", name: "Computer Science" },
-        { id: 2, code: "ECON", name: "Economics" },
-        { id: 3, code: "ACC", name: "Accounting" },
-      ];
-    }
+    return await requestJson<LookupItem[]>(
+      `${API_URL}/lookups/majors`,
+      { method: "GET" },
+      "Không thể tải danh sách chuyên ngành",
+    );
   },
 
   async getContractTypes(): Promise<LookupItem[]> {
-    try {
-      return await requestJson<LookupItem[]>(
-        `${API_URL}/lookups/contract-types`,
-        { method: "GET" },
-        "Failed to fetch contract types",
-      );
-    } catch {
-      return mockContractTypes;
-    }
+    return await requestJson<LookupItem[]>(
+      `${API_URL}/lookups/contract-types`,
+      { method: "GET" },
+      "Không thể tải loại hợp đồng",
+    );
   },
 
   async getTaxTypes(): Promise<LookupItem[]> {
-    try {
-      return await requestJson<LookupItem[]>(
-        `${API_URL}/lookups/tax-types`,
-        { method: "GET" },
-        "Failed to fetch tax types",
-      );
-    } catch {
-      return mockTaxTypes;
-    }
+    return await requestJson<LookupItem[]>(
+      `${API_URL}/lookups/tax-types`,
+      { method: "GET" },
+      "Không thể tải loại thuế",
+    );
+  },
+
+  async getBranches(): Promise<LookupItem[]> {
+    return await requestJson<LookupItem[]>(
+      `${API_URL}/lookups/branches`,
+      { method: "GET" },
+      "Không thể tải danh sách chi nhánh",
+    );
+  },
+
+  async getDepartments(): Promise<LookupItem[]> {
+    return await requestJson<LookupItem[]>(
+      `${API_URL}/lookups/departments`,
+      { method: "GET" },
+      "Không thể tải danh sách phòng ban",
+    );
   },
 };

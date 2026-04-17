@@ -2,12 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using ERP.DTOs;
 using ERP.DTOs.Attendance;
 using ERP.Entities.Models;
 using ERP.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using ERP.Services.Authorization;
 using ERP.Entities.Interfaces;
+using ClosedXML.Excel;
+
 
 namespace ERP.Services.Attendance
 {
@@ -395,6 +398,163 @@ namespace ERP.Services.Attendance
             }
 
             return result;
+        }
+
+        // Shift Configuration Management (T212 - T216)
+        public async Task<PaginatedListDto<ShiftListDto>> GetShiftListAsync(string? search, TimeSpan? startTime, TimeSpan? endTime, bool? isActive, int skip, int take)
+        {
+            var query = _unitOfWork.Repository<Shifts>().AsQueryable();
+
+            if (isActive.HasValue)
+            {
+                query = query.Where(s => s.is_active == isActive.Value);
+            }
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(s => 
+                    (s.shift_name != null && s.shift_name.Contains(search)) || 
+                    (s.shift_code != null && s.shift_code.Contains(search))
+                );
+            }
+
+            if (startTime.HasValue && endTime.HasValue)
+            {
+                query = query.Where(s => s.start_time >= startTime.Value && s.end_time <= endTime.Value);
+            }
+
+            var total = await query.CountAsync();
+            
+            // Allow take=0 to mean "all" or specific handling. Here we just strictly evaluate
+            if (take > 0) 
+            {
+                query = query.OrderBy(s => s.shift_code).Skip(skip).Take(take);
+            }
+            else 
+            {
+                query = query.OrderBy(s => s.shift_code);
+                take = total > 0 ? total : 10;
+            }
+
+            var shifts = await query.ToListAsync();
+
+            var mappedData = shifts.Select(s => new ShiftListDto
+            {
+                Id = s.Id,
+                ShiftCode = s.shift_code,
+                ShiftName = s.shift_name,
+                StartTime = s.start_time.ToString(@"hh\:mm"),
+                EndTime = s.end_time.ToString(@"hh\:mm"),
+                DurationHours = s.is_overnight
+                    ? (decimal)(s.end_time.Add(TimeSpan.FromDays(1)) - s.start_time).TotalHours
+                    : (decimal)(s.end_time - s.start_time).TotalHours,
+                IsActive = s.is_active,
+                IsOvernight = s.is_overnight
+            }).ToList();
+
+            return new PaginatedListDto<ShiftListDto>(mappedData, total, skip / take + 1, take);
+        }
+
+        public async Task<bool> UpdateShiftAsync(int id, ShiftUpdateDto dto)
+        {
+            var shift = await _unitOfWork.Repository<Shifts>().GetByIdAsync(id);
+            if (shift == null) throw new Exception("Không tìm thấy ca làm việc");
+
+            var existingCode = await _unitOfWork.Repository<Shifts>().AsQueryable()
+                .FirstOrDefaultAsync(s => s.shift_code == dto.shift_code && s.Id != id);
+            
+            if (existingCode != null) throw new Exception($"Mã ca {dto.shift_code} đã tồn tại trong hệ thống.");
+
+            shift.shift_name = dto.shift_name;
+            shift.shift_code = dto.shift_code;
+            shift.start_time = TimeSpan.Parse(dto.start_time);
+            shift.end_time = TimeSpan.Parse(dto.end_time);
+            shift.break_start = string.IsNullOrEmpty(dto.break_start) ? null : TimeSpan.Parse(dto.break_start);
+            shift.break_end = string.IsNullOrEmpty(dto.break_end) ? null : TimeSpan.Parse(dto.break_end);
+            shift.grace_period_in = dto.grace_period_in;
+            shift.grace_period_out = dto.grace_period_out;
+            shift.min_checkin_before = dto.min_checkin_before;
+            shift.is_overnight = dto.is_overnight;
+            shift.color = dto.color;
+            shift.shift_type_id = dto.shift_type_id;
+            shift.is_active = dto.is_active;
+            shift.note = dto.note;
+
+            _unitOfWork.Repository<Shifts>().Update(shift);
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+
+        public async Task<bool> DeleteOrDeactivateShiftAsync(int id)
+        {
+            var shift = await _unitOfWork.Repository<Shifts>().GetByIdAsync(id);
+            if (shift == null) throw new Exception("Không tìm thấy ca làm việc");
+
+            var hasAssignments = await _unitOfWork.Repository<ShiftAssignments>().AsQueryable()
+                                     .AnyAsync(a => a.shift_id == id);
+            
+            if (hasAssignments)
+            {
+                shift.is_active = false;
+                _unitOfWork.Repository<Shifts>().Update(shift);
+            }
+            else
+            {
+                _unitOfWork.Repository<Shifts>().Remove(shift);
+            }
+
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+
+        public async Task<byte[]> ExportShiftListAsync(string? search, TimeSpan? startTime, TimeSpan? endTime, bool? isActive)
+        {
+            var query = _unitOfWork.Repository<Shifts>().AsQueryable();
+
+            if (isActive.HasValue) query = query.Where(s => s.is_active == isActive.Value);
+            if (!string.IsNullOrEmpty(search)) query = query.Where(s => s.shift_name.Contains(search) || s.shift_code.Contains(search));
+            if (startTime.HasValue && endTime.HasValue) query = query.Where(s => s.start_time >= startTime.Value && s.end_time <= endTime.Value);
+
+            var shifts = await query.OrderBy(s => s.shift_code).ToListAsync();
+
+            using var workbook = new XLWorkbook();
+            var worksheet = workbook.Worksheets.Add("DanhSachCa");
+
+            worksheet.Cell(1, 1).Value = "STT";
+            worksheet.Cell(1, 2).Value = "Mã ca";
+            worksheet.Cell(1, 3).Value = "Tên ca làm";
+            worksheet.Cell(1, 4).Value = "Giờ vào";
+            worksheet.Cell(1, 5).Value = "Giờ ra";
+            worksheet.Cell(1, 6).Value = "Độ dài ca (Giờ)";
+            worksheet.Cell(1, 7).Value = "Xuyên đêm";
+            worksheet.Cell(1, 8).Value = "Trạng thái";
+
+            var headerRow = worksheet.Row(1);
+            headerRow.Style.Font.Bold = true;
+            headerRow.Style.Fill.BackgroundColor = XLColor.LightBlue;
+
+            for (int i = 0; i < shifts.Count; i++)
+            {
+                var s = shifts[i];
+                var row = i + 2;
+
+                var duration = s.is_overnight 
+                    ? (decimal)(s.end_time.Add(TimeSpan.FromDays(1)) - s.start_time).TotalHours
+                    : (decimal)(s.end_time - s.start_time).TotalHours;
+
+                worksheet.Cell(row, 1).Value = i + 1;
+                worksheet.Cell(row, 2).Value = s.shift_code;
+                worksheet.Cell(row, 3).Value = s.shift_name;
+                worksheet.Cell(row, 4).Value = s.start_time.ToString(@"hh\:mm");
+                worksheet.Cell(row, 5).Value = s.end_time.ToString(@"hh\:mm");
+                worksheet.Cell(row, 6).Value = duration;
+                worksheet.Cell(row, 7).Value = s.is_overnight ? "Có" : "Không";
+                worksheet.Cell(row, 8).Value = s.is_active ? "Hoạt động" : "Ngừng";
+            }
+
+            worksheet.Columns().AdjustToContents();
+
+            using var stream = new System.IO.MemoryStream();
+            workbook.SaveAs(stream);
+            return stream.ToArray();
         }
     }
 }

@@ -1,4 +1,6 @@
 import { API_URL, requestJson } from "../../../services/employee/core";
+import { lookupsService } from "../../../services/lookupsService";
+import { employeeListService } from "../../../services/employee/list";
 import {
   ATTENDANCE_STATUS_META,
   PROJECT_FILTER_OPTIONS,
@@ -8,7 +10,6 @@ import {
 } from "../data/constants";
 import { getRuntimeQuickAddedEmployees } from "../quick-add-employees/stores/quickAddEmployeesRuntimeStore";
 import { shiftSchedulingApi } from "./shiftSchedulingApi";
-import { baseEmployees } from "../data/mockWeeklyShiftSchedule";
 import type {
   SelectOption,
   ShiftScheduleFilters,
@@ -23,7 +24,7 @@ import type {
   WeeklyScheduleRow,
   WeeklyScheduleShift,
 } from "../types";
-import { addDays, getHoursBetween, getWeekDates, parseIsoDate, toIsoDate } from "../utils/week";
+import { addDays, getWeekDates, parseIsoDate, toIsoDate } from "../utils/week";
 
 const buildEmptyCellMap = (weekStartDate: string): Record<string, WeeklyScheduleCell> =>
   Object.fromEntries(
@@ -41,8 +42,7 @@ const getVal = <T>(obj: any, snakeKey: string, camelKey: string): T | undefined 
 const mergeRuntimeEmployees = (
   employees: WeeklyScheduleApiEmployee[] | undefined,
 ): WeeklyScheduleApiEmployee[] => {
-  // Use baseEmployees as fallback if everything else is empty
-  const rawEmployees = (employees && employees.length > 0) ? employees : baseEmployees;
+  const rawEmployees = employees ?? [];
   const merged = [...rawEmployees, ...getRuntimeQuickAddedEmployees()];
   const seen = new Set<number>();
 
@@ -172,7 +172,6 @@ const transformApiResponse = (
 ): WeeklyScheduleGridData => {
   const weekStartDate = getVal<string>(response, "week_start_date", "weekStartDate") || filters.weekStartDate;
   
-  // High resilience: Ensure we have employees even if response is empty
   const employeesFromResponse = (getVal<WeeklyScheduleApiEmployee[]>(response, "employees", "employees") ?? [])
     .map(normalizeEmployee);
   
@@ -252,14 +251,20 @@ const getWeeklySchedule = async (filters: ShiftScheduleFilters): Promise<WeeklyS
 };
 
 const getLookups = async (): Promise<ShiftScheduleLookups & { employees: SelectOption[] }> => {
+  const [branches, jobTitles, employees] = await Promise.all([
+    lookupsService.getBranches(),
+    lookupsService.getMajors(), // Assuming Majors or similar for job titles in this context, or add getJobTitles
+    employeeListService.getEmployees(1, 1000).then(res => res.items),
+  ]);
+
   return {
-    branches: [{ value: "", label: "Tất cả chi nhánh" }, { value: "1", label: "Chi nhánh Quận 1" }, { value: "2", label: "Chi nhánh Thủ Đức" }, { value: "3", label: "Chi nhánh Bình Thạnh" }],
-    jobTitles: [{ value: "", label: "Tất cả công việc" }, { value: "11", label: "Thu ngân" }, { value: "12", label: "Quản lý ca" }, { value: "13", label: "Phục vụ" }, { value: "14", label: "Pha chế" }, { value: "15", label: "Giao nhận" }],
+    branches: [{ value: "", label: "Tất cả chi nhánh" }, ...branches.map(b => ({ value: String(b.id), label: b.name }))],
+    jobTitles: [{ value: "", label: "Tất cả công việc" }, ...jobTitles.map(j => ({ value: String(j.id), label: j.name }))],
     projects: PROJECT_FILTER_OPTIONS,
     workingHours: WORKING_HOURS_OPTIONS,
     workingDays: WORKING_DAYS_OPTIONS,
     workedHours: WORKED_HOURS_OPTIONS,
-    employees: baseEmployees.map(e => ({ value: String(e.id), label: e.full_name || `Nhân viên #${e.id}` })),
+    employees: employees.map(e => ({ value: String(e.id), label: e.fullName || `Nhân viên #${e.id}` })),
   };
 };
 

@@ -10,7 +10,7 @@ namespace ERP.API.Controllers
     [ApiController]
     [Route("api/shift-assignments")]
     [Authorize]
-    [HasPermission("Attendance", "Manage")]
+    [HasPermission("attendance", "read")]
     public class ShiftAssignmentsController : ControllerBase
     {
         private readonly IShiftAssignmentService _assignmentService;
@@ -53,7 +53,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost]
-        [HasPermission("Attendance", "Update")]
+        [HasPermission("attendance", "update")]
         public async Task<IActionResult> CreateAssignment([FromBody] ERP.DTOs.Attendance.ShiftAssignmentCreateDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -70,7 +70,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpDelete("{id}")]
-        [HasPermission("Attendance", "Update")]
+        [HasPermission("attendance", "update")]
         public async Task<IActionResult> DeleteAssignment(int id)
         {
             try
@@ -86,7 +86,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("copy")]
-        [HasPermission("Attendance", "Update")]
+        [HasPermission("attendance", "update")]
         public async Task<IActionResult> CopyAssignments([FromBody] ERP.DTOs.Attendance.ShiftAssignmentCopyDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -103,7 +103,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("{id}/refresh-attendance")]
-        [HasPermission("Attendance", "Update")]
+        [HasPermission("attendance", "update")]
         public async Task<IActionResult> RefreshAttendance(int id)
         {
             try
@@ -119,7 +119,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("bulk-publish")]
-        [HasPermission("Attendance", "Update")]
+        [HasPermission("attendance", "update")]
         public async Task<IActionResult> BulkPublish([FromBody] ERP.DTOs.Attendance.ShiftBulkActionDto dto)
         {
             try
@@ -134,7 +134,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("bulk-approve")]
-        [HasPermission("Attendance", "Approve")]
+        [HasPermission("attendance", "approve")]
         public async Task<IActionResult> BulkApprove([FromBody] ERP.DTOs.Attendance.ShiftBulkActionDto dto)
         {
             try
@@ -149,7 +149,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("bulk-publish-approve")]
-        [HasPermission("Attendance", "Approve")]
+        [HasPermission("attendance", "approve")]
         public async Task<IActionResult> BulkPublishAndApprove([FromBody] ERP.DTOs.Attendance.ShiftBulkActionDto dto)
         {
             try
@@ -164,7 +164,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("bulk-delete-unconfirmed")]
-        [HasPermission("Attendance", "Update")]
+        [HasPermission("attendance", "update")]
         public async Task<IActionResult> BulkDeleteUnconfirmed([FromBody] ERP.DTOs.Attendance.ShiftBulkActionDto dto)
         {
             try
@@ -179,7 +179,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("bulk-update-status")]
-        [HasPermission("Attendance", "Update")]
+        [HasPermission("attendance", "update")]
         public async Task<IActionResult> BulkUpdateStatus([FromBody] ERP.DTOs.Attendance.ShiftBulkUpdateStatusDto dto)
         {
             try

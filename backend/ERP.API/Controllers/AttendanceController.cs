@@ -13,7 +13,7 @@ namespace ERP.API.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    [HasPermission("Attendance", "View")]
+    [HasPermission("attendance", "read")]
     public class AttendanceController : ControllerBase
     {
         private readonly IAttendanceService _attendanceService;
@@ -89,7 +89,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpGet("history/{employeeId}")]
-        [HasPermission("Attendance", "View")]
+        [HasPermission("attendance", "read")]
         public async Task<IActionResult> GetAttendanceHistory(int employeeId, [FromQuery] int skip = 0, [FromQuery] int take = 10)
         {
             try
@@ -132,7 +132,7 @@ namespace ERP.API.Controllers
         }
 
         [HttpPost("manual-adjustment")]
-        [HasPermission("Attendance", "Update")]
+        [HasPermission("attendance", "update")]
         public async Task<IActionResult> ManualAdjustment([FromBody] AttendanceAdjustmentDto dto)
         {
             try

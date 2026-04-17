@@ -17,10 +17,18 @@ import ElectronicContractFlowWizard from '../ElectronicWizard/ElectronicContract
 import RegularContractModal from '../Shared/RegularContractModal';
 import { useNavigate } from 'react-router-dom';
 import type { Employee } from '../../../employees/types';
+import { authService, hasPermission } from '../../../../services/authService';
 
 const ContractsManagementPage: React.FC = () => {
   const navigate = useNavigate();
   const { showToast, ToastComponent } = useToast();
+  const user = authService.getCurrentUser();
+
+  const canRead = hasPermission(user, 'contracts', 'read');
+  const canCreate = hasPermission(user, 'contracts', 'create');
+  const canUpdate = hasPermission(user, 'contracts', 'update');
+  const canDelete = hasPermission(user, 'contracts', 'delete');
+
   const [contracts, setContracts] = useState<ContractListItem[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [metadata, setMetadata] = useState<ContractFilterMetadata>({
@@ -197,8 +205,8 @@ const ContractsManagementPage: React.FC = () => {
     >
       <ContractsPageToolbar
         onBack={() => navigate('/personnel/employees')}
-        onCreateNew={() => setIsCreateMethodOpen(true)}
-        onExport={handleExport}
+        onCreateNew={canCreate ? () => setIsCreateMethodOpen(true) : undefined}
+        onExport={canRead ? handleExport : undefined}
       />
 
       <ContractsSummaryCards summary={summary} />
@@ -255,9 +263,10 @@ const ContractsManagementPage: React.FC = () => {
                 columns={columns}
                 startIndex={startIndex}
                 onView={setPreviewContract}
-                onDelete={(contract) => {
+                onDelete={canDelete ? (contract) => {
                   void handleDeleteContract(contract);
-                }}
+                } : undefined}
+                canUpdate={canUpdate}
               />
             )}
 

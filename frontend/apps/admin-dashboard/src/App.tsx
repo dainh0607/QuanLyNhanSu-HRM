@@ -18,7 +18,7 @@ import { WeeklyShiftSchedulePage } from "./features/shift-scheduling";
 import { EmployeeDetail } from "./features/employee-detail/EmployeeDetailViewIntegrated";
 import type { PersonalTabKey } from "./features/employee-detail/edit-modal/types";
 import type { Employee } from "./features/employees/types";
-import { authService } from "./services/authService";
+import { authService, hasPermission } from "./services/authService";
 import AuthLandingPage from "./pages/AuthLandingPage";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
 import type { User } from "./services/authService";
@@ -78,28 +78,27 @@ const Header = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isProfileOpen, handleClickOutside]);
 
-  const navItems: Array<{
-    name: string;
-    active: boolean;
-    to?: string;
-    hasDropdown?: boolean;
-    menuKey?: "more";
-  }> = [
-    { name: "Lịch", active: false },
+  const canReadPersonnel = hasPermission(user, "employee", "read");
+  const canReadShifts = hasPermission(user, "shifts", "read");
+
+  const navItems = [
+    { name: "Lịch", active: false, visible: true },
     {
       name: "Nhân sự",
       active: isPersonnelSectionActive,
       to: "/personnel/employees",
+      visible: canReadPersonnel,
     },
     {
       name: "Chấm công",
       active: isShiftSchedulingActive,
       to: "/working-day/timekeeping",
+      visible: canReadShifts,
     },
-    { name: "Yêu cầu", active: false },
-    { name: "Tiền lương", active: false },
-    { name: "Thêm", active: false, hasDropdown: true, menuKey: "more" },
-  ];
+    { name: "Yêu cầu", active: false, visible: true },
+    { name: "Tiền lương", active: false, visible: true },
+    { name: "Thêm", active: false, hasDropdown: true, menuKey: "more", visible: true },
+  ].filter(item => item.visible);
 
   const moreMenuItems = [
     { label: "Tuyển dụng", icon: "person_search", note: "Sắp mở" },
@@ -408,6 +407,23 @@ type AuthRedirectState = {
 
 type EmployeeRouteState = {
   employee?: Employee;
+};
+
+const PermissionRoute = ({
+  user,
+  resource,
+  action,
+  children,
+}: {
+  user: User | null;
+  resource: string;
+  action: string;
+  children: React.ReactNode;
+}) => {
+  if (!user || !hasPermission(user, resource, action)) {
+    return <Navigate to="/unauthorized" replace />;
+  }
+  return <>{children}</>;
 };
 
 const LoadingScreen = ({ message }: { message: string }) => (
@@ -747,7 +763,9 @@ function RoutedApp() {
           path="/personnel/employees"
           element={
             isAuthenticated ? (
-              <EmployeeListRoute user={user} onLogout={handleLogout} />
+              <PermissionRoute user={user} resource="employee" action="read">
+                <EmployeeListRoute user={user} onLogout={handleLogout} />
+              </PermissionRoute>
             ) : (
               <Navigate
                 to="/login"
@@ -761,7 +779,9 @@ function RoutedApp() {
           path="/personnel/contracts"
           element={
             isAuthenticated ? (
-              <ContractsRoute user={user} onLogout={handleLogout} />
+              <PermissionRoute user={user} resource="contracts" action="read">
+                <ContractsRoute user={user} onLogout={handleLogout} />
+              </PermissionRoute>
             ) : (
               <Navigate
                 to="/login"
@@ -775,7 +795,9 @@ function RoutedApp() {
           path="/working-day/timekeeping"
           element={
             isAuthenticated ? (
-              <WeeklyShiftSchedulingRoute user={user} onLogout={handleLogout} />
+              <PermissionRoute user={user} resource="shifts" action="read">
+                <WeeklyShiftSchedulingRoute user={user} onLogout={handleLogout} />
+              </PermissionRoute>
             ) : (
               <Navigate
                 to="/login"
@@ -789,7 +811,9 @@ function RoutedApp() {
           path="/personnel/employees/:employeeId"
           element={
             isAuthenticated ? (
-              <EmployeeDetailRoute />
+              <PermissionRoute user={user} resource="employee" action="read">
+                <EmployeeDetailRoute />
+              </PermissionRoute>
             ) : (
               <Navigate
                 to="/login"
