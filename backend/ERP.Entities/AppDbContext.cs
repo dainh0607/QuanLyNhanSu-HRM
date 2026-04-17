@@ -10,6 +10,8 @@ namespace ERP.Entities
     {
         private readonly ERP.Entities.Interfaces.ICurrentUserContext _currentUserContext;
 
+        public int? CurrentTenantId => _currentUserContext?.TenantId;
+
         public AppDbContext(DbContextOptions<AppDbContext> options, ERP.Entities.Interfaces.ICurrentUserContext currentUserContext) : base(options)
         {
             _currentUserContext = currentUserContext;
@@ -189,8 +191,15 @@ namespace ERP.Entities
         {
             var parameter = System.Linq.Expressions.Expression.Parameter(type, "e");
             var tenantIdProperty = System.Linq.Expressions.Expression.Property(parameter, "tenant_id");
-            var currentTenantId = System.Linq.Expressions.Expression.Constant(_currentUserContext.TenantId, typeof(int?));
-            // e => e.tenant_id == _currentUserContext.TenantId || e.tenant_id == null
+            
+            // Fix #1: Use a member access on the context to make it dynamic
+            var contextExpression = System.Linq.Expressions.Expression.Constant(this);
+            var currentTenantId = System.Linq.Expressions.Expression.Property(
+                System.Linq.Expressions.Expression.Constant(this),
+                nameof(CurrentTenantId)
+            );
+
+            // e => e.tenant_id == this.CurrentTenantId || e.tenant_id == null
             var body = System.Linq.Expressions.Expression.OrElse(
                 System.Linq.Expressions.Expression.Equal(tenantIdProperty, currentTenantId),
                 System.Linq.Expressions.Expression.Equal(tenantIdProperty, System.Linq.Expressions.Expression.Constant(null, typeof(int?)))

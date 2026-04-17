@@ -21,7 +21,7 @@ namespace ERP.Services.Auth
 
         // FIX #9: Remove id > 0 check to properly handle tenant_id extraction
         // Allow 0 as valid value (represents default/unset tenant)
-        public int? TenantId => int.TryParse(User?.FindFirst("tenant_id")?.Value, out var id) ? id : null;
+        public int? TenantId => int.TryParse(User?.FindFirst("tenant_id")?.Value, out var id) && id > 0 ? id : null;
 
         public bool IsAuthenticated => User?.Identity?.IsAuthenticated ?? false;
 
