@@ -26,5 +26,11 @@ namespace ERP.Services.Attendance
         Task<ShiftCountersDto> GetShiftCountersAsync(string startDateStr, string endDateStr, int? branchId = null);
         Task<ShiftAssignmentCopyResultDto> CopyAssignmentsAsync(ShiftAssignmentCopyDto dto);
         Task<ShiftBulkActionResultDto> UpdateShiftStatusAsync(ShiftBulkUpdateStatusDto dto);
+
+        // Manage Assignments via Shift Tabs Modal (T223 - T225)
+        Task<IEnumerable<ShiftTabDto>> GetShiftTabsAsync(int branchId);
+        Task<IEnumerable<DayAssignedUsersDto>> GetAssignedUsersByShiftAndWeekAsync(int shiftId, DateTime weekStartDate, int branchId);
+        Task<IEnumerable<ShiftAvailableUserDto>> GetAvailableUsersAsync(int branchId, int shiftId, DateTime date);
+        Task<bool> BulkCreateAssignmentsAsync(BulkShiftAssignmentCreateDto dto);
     }
 }

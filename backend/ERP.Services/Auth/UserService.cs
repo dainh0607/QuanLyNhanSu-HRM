@@ -220,7 +220,8 @@ namespace ERP.Services.Auth
 
                         // Kiểm tra vai trò
                         var currentRoles = await GetUserRoleIdsAsync(localUser.Id);
-                        if (!currentRoles.Contains(targetRoleId))
+                        // Chỉ thêm Role Default (2) nếu user CHƯA CÓ Role Admin (1) và CHƯA CÓ Role được target
+                        if (!currentRoles.Contains(targetRoleId) && (targetRoleId == 1 || !currentRoles.Contains(1)))
                         {
                             await AssignRoleInternalAsync(localUser.Id, targetRoleId, localUser.tenant_id, "Firebase Sync (Role Update)");
                             syncCount++;

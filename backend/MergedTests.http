@@ -1,0 +1,809 @@
+### FILE: contracts-test.http ###
+
+### Variables
+@baseUrl = http://localhost:5122/api
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNCIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWVpZGVudGlmaWVyIjoiMTQiLCJlbWFpbCI6Imtmcm9nMTIzM0BnbWFpbC5jb20iLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9lbWFpbGFkZHJlc3MiOiJrZnJvZzEyMzNAZ21haWwuY29tIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZSI6IkjDuW5nIFN1cGVyIEFkbWluIiwianRpIjoiMmJkNTFjOTItNjhiZi00ZGE2LTgyOWUtZDQ0YjJlNjRmYjc4IiwiU2Vzc2lvbklkIjoiNTY2NzI1NGQ3NzlkNDdjMTk1MTY5MGUwNzFkYTc2YmIiLCJUb2tlblR5cGUiOiJBY2Nlc3MiLCJFbXBsb3llZUlkIjoiMTQiLCJFbXBsb3llZUNvZGUiOiJBRE0wMTEiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOlsiTWFuYWdlciIsIlVzZXIiXSwiZXhwIjoxNzc2MDA2Mzk4LCJpc3MiOiJOZXhhSFJNIiwiYXVkIjoiTmV4YUhSTV9DbGllbnQifQ.-BL0pRxMthysH1sK7h6ZGGIAU9kCS6lgB7GMWdGay-I
+
+### 2. Get Specific Contract Template by ID
+GET {{baseUrl}}/ContractTemplates/1
+Authorization: Bearer {{token}}
+
+### 3. Create Electronic Contract Draft (Step 1)
+POST {{baseUrl}}/Contracts/electronic/draft
+Authorization: Bearer {{token}}
+X-Bypass-CSRF: true
+Content-Type: application/json
+
+{
+    "employeeId": 1,
+    "contractTypeId": 1,
+    "templateId": 1,
+    "note": "Draft created from Step 1 for test",
+    "effectiveDate": "2026-05-01T00:00:00Z"
+}
+
+### 4. Create Normal Contract (For comparison)
+POST {{baseUrl}}/Contracts/manual
+Authorization: Bearer {{token}}
+X-Bypass-CSRF: true
+Content-Type: application/json
+
+{
+    "employeeId": 1,
+    "contractNumber": "HD-2026-001",
+    "contractTypeId": 1,
+    "signDate": "2026-04-01T00:00:00Z",
+    "effectiveDate": "2026-04-15T00:00:00Z",
+    "expiryDate": "2027-04-15T00:00:00Z",
+    "signedBy": "Manager Name",
+    "taxType": "Standard",
+    "status": "Draft"
+}
+
+### 5. Preview Contract (Electronic or Manual)
+GET {{baseUrl}}/Contracts/preview/1
+Authorization: Bearer {{token}}
+
+### 6. Save Contract Signers (Step 3)
+POST {{baseUrl}}/Contracts/electronic/step3
+Authorization: Bearer {{token}}
+X-Bypass-CSRF: true
+Content-Type: application/json
+
+{
+    "contractId": 14,
+    "signers": [
+        {
+            "email": "kfrog1233@gmail.com",
+            "fullName": "Hùng Super Admin",
+            "signOrder": 1,
+            "status": "Pending",
+            "userId": 14
+        },
+        {
+            "email": "kfrog1233@gmail.com",
+            "fullName": "John Doe (Partner)",
+            "signOrder": 2,
+            "status": "Pending"
+        }
+    ]
+}
+
+### 7. Save Signature Coordinates (Step 4)
+POST {{baseUrl}}/Contracts/electronic/step4
+Authorization: Bearer {{token}}
+X-Bypass-CSRF: true
+Content-Type: application/json
+
+{
+    "contractId": 14,
+    "positions": [
+        {
+            "signerId": 14,
+            "type": "signature",
+            "pageNumber": 1,
+            "xPos": 150.5,
+            "yPos": 200.0,
+            "width": 100,
+            "height": 50
+        },
+        {
+            "signerId": 2,
+            "type": "signature",
+            "pageNumber": 1,
+            "xPos": 350.5,
+            "yPos": 200.0,
+            "width": 100,
+            "height": 50
+        }
+    ]
+}
+
+### 8. Finalize & Submit Contract (Step 5)
+POST {{baseUrl}}/Contracts/electronic/submit
+Authorization: Bearer {{token}}
+X-Bypass-CSRF: true
+Content-Type: application/json
+
+{
+    "contractId": 14
+}
+
+### 9. Generate Signer OTP
+POST {{baseUrl}}/Signers/generate-otp
+Content-Type: application/json
+X-Bypass-CSRF: true
+
+{
+    "signatureToken": "5f3a..." 
+}
+
+### 10. Verify Signer OTP
+POST {{baseUrl}}/Signers/verify-otp
+Content-Type: application/json
+X-Bypass-CSRF: true
+
+
+{
+    "signatureToken": "5f3a...",
+    "otp": "123456"
+}
+
+
+### FILE: employee-profile-test.http ###
+
+@base_url = http://localhost:5000/api
+@token = YOUR_ACCESS_TOKEN_HERE
+@employee_id = 1
+
+### 1. Get Full Profile (Include new fields)
+GET {{base_url}}/employees/{{employee_id}}/full-profile
+Authorization: Bearer {{token}}
+
+### 2. Update Basic Info
+PUT {{base_url}}/employees/{{employee_id}}/basic-info
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "fullName": "Nguyễn Văn A (Updated)",
+    "birthDate": "1990-01-01",
+    "genderCode": "MALE",
+    "maritalStatusCode": "SINGLE",
+    "departmentId": 1,
+    "jobTitleId": 1,
+    "branchId": 1,
+    "startDate": "2024-01-01",
+    "avatar": "https://example.com/avatar.jpg"
+}
+
+### 3. Update Contact Info
+PUT {{base_url}}/employees/{{employee_id}}/contact
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "phone": "0987654321",
+    "homePhone": "0243123456",
+    "email": "vana@example.com",
+    "workEmail": "a.nv@company.com",
+    "facebook": "fb.com/van-a"
+}
+
+### 4. Update Identity Info
+PUT {{base_url}}/employees/{{employee_id}}/identity
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "identityNumber": "123456789012",
+    "identityIssueDate": "2020-05-15",
+    "identityIssuePlace": "CA Hà Nội",
+    "passport": "B1234567",
+    "nationality": "Việt Nam",
+    "ethnicity": "Kinh",
+    "religion": "Không"
+}
+
+
+### FILE: rbac-mgmt-test.http ###
+
+### Variables
+@baseUrl = http://localhost:5122/api
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyNyIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWVpZGVudGlmaWVyIjoiMjciLCJlbWFpbCI6Imtmcm9nMTExMUBnbWFpbC5jb20iLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9lbWFpbGFkZHJlc3MiOiJrZnJvZzExMTFAZ21haWwuY29tIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZSI6Imtmcm9nMTExMSIsImp0aSI6ImNlNDY2MDY2LThkNzgtNDU2OC1hZjQzLTFmZjMyZjVkYTBjMiIsIlNlc3Npb25JZCI6IjE4NWZhNDE2YzgwMjQwMTg5MjBjOTQyZmJlZTEzYTZjIiwiVG9rZW5UeXBlIjoiQWNjZXNzIiwidGVuYW50X2lkIjoiMCIsIkVtcGxveWVlSWQiOiIyNyIsIkVtcGxveWVlQ29kZSI6IkVNUF8wMEZBMTMwRjhEMzE0NkY2Iiwic2NvcGVfbGV2ZWwiOiJURU5BTlQiLCJyZWdpb25faWQiOiIiLCJicmFuY2hfaWQiOiIiLCJkZXBhcnRtZW50X2lkIjoiIiwiaXNfc3lzdGVtX2FkbWluIjoiZmFsc2UiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJNYW5hZ2VyIiwiZXhwIjoxNzc2MzQ2Njk3LCJpc3MiOiJOZXhhSFJNIiwiYXVkIjoiTmV4YUhSTV9DbGllbnQifQ.OnNvRBuQubSHHog_7FA9XQrmwioraN0rec6XWAyWTEA
+### 1. Lấy danh sách Vai trò (Roles) - Yêu cầu quyền System:Manage
+GET {{baseUrl}}/auth-mgmt/roles
+Authorization: Bearer {{token}}
+X-Bypass-CSRF: true
+
+### 2. Lấy danh sách gợi ý Permission (Actions, Resources, Scopes)
+GET {{baseUrl}}/auth-mgmt/lookups
+Authorization: Bearer {{token}}
+X-Bypass-CSRF: true
+
+### 3. Tạo một Vai trò mới (Custom Role)
+# @name createRole
+POST {{baseUrl}}/auth-mgmt/roles
+Authorization: Bearer {{token}}
+X-Bypass-CSRF: true
+Content-Type: application/json
+
+{
+    "name": "Quản lý Nhân sự Miền Nam",
+    "description": "Có quyền quản lý nhân sự nhưng chỉ giới hạn trong các chi nhánh Miền Nam",
+    "isActive": true,
+    "scopeLevel": "REGION"
+}
+
+### Lưu ID của Role vừa tạo (Ví dụ: 10)
+@newRoleId = 10
+
+### 4. Lấy chi tiết Vai trò và các Quyền hiện tại
+GET {{baseUrl}}/auth-mgmt/roles/{{newRoleId}}/permissions
+Authorization: Bearer {{token}}
+X-Bypass-CSRF: true
+
+### 5. Cập nhật Mapping Quyền cho Vai trò vừa tạo
+PUT {{baseUrl}}/auth-mgmt/roles/{{newRoleId}}/permissions
+Authorization: Bearer {{token}}
+X-Bypass-CSRF: true
+Content-Type: application/json
+
+{
+    "roleId": {{newRoleId}},
+    "actions": [
+        {
+            "action": "READ",
+            "resource": "EMPLOYEE",
+            "allowedScope": "SAME_REGION",
+            "description": "Xem danh sách nhân viên trong vùng"
+        },
+        {
+            "action": "UPDATE",
+            "resource": "EMPLOYEE",
+            "allowedScope": "SAME_REGION",
+            "description": "Cập nhật thông tin nhân viên trong vùng"
+        }
+    ],
+    "resources": [
+        {
+            "resourceName": "Employees",
+            "scopeLevel": "REGION"
+        }
+    ]
+}
+
+### 6. Gán Vai trò cho một Nhân viên cụ thể kèm theo Scope (RegionId = 3)
+POST {{baseUrl}}/auth-mgmt/user-roles/assign
+Authorization: Bearer {{token}}
+X-Bypass-CSRF: true
+Content-Type: application/json
+
+{
+    "userId": 2,
+    "roleId": {{newRoleId}},
+    "regionId": 3,
+    "validFrom": "2026-04-14T00:00:00Z",
+    "assignmentReason": "Bổ nhiệm Quản lý HR khu vực Miền Nam"
+}
+
+### 7. Kiểm tra các Vai trò đang áp dụng cho một Nhân viên
+GET {{baseUrl}}/auth-mgmt/user-roles/2
+Authorization: Bearer {{token}}
+X-Bypass-CSRF: true
+
+### 8. Xóa Vai trò (Chỉ thực hiện được nếu không có user nào đang sử dụng và không phải Role hệ thống)
+DELETE {{baseUrl}}/auth-mgmt/roles/{{newRoleId}}
+Authorization: Bearer {{token}}
+X-Bypass-CSRF: true
+
+
+### FILE: auth-password-tests.http ###
+
+@baseUrl = http://localhost:5000/api
+@email = manager@nexahrm.com
+@password = Password123
+@newPassword = NewPassword456!
+
+### 1. Đăng nhập để lấy session cookies
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "{{email}}",
+    "password": "{{password}}"
+}
+
+### 2. Đổi mật khẩu (Thành công)
+# Cần chạy step 1 trước để có cookies
+POST {{baseUrl}}/auth/change-password
+Content-Type: application/json
+
+{
+    "oldPassword": "{{password}}",
+    "newPassword": "{{newPassword}}",
+    "confirmPassword": "{{newPassword}}"
+}
+
+### 3. Đổi mật khẩu (Thất bại - Sai mật khẩu cũ)
+POST {{baseUrl}}/auth/change-password
+Content-Type: application/json
+
+{
+    "oldPassword": "WrongOldPassword",
+    "newPassword": "ValidPassword123!",
+    "confirmPassword": "ValidPassword123!"
+}
+
+### 4. Đổi mật khẩu (Thất bại - Mật khẩu mới không khớp)
+POST {{baseUrl}}/auth/change-password
+Content-Type: application/json
+
+{
+    "oldPassword": "{{password}}",
+    "newPassword": "NewPassword123!",
+    "confirmPassword": "DifferentPassword123!"
+}
+
+
+### FILE: auth-tests.http ###
+
+### Auth API Tests
+
+@baseUrl = http://localhost:5122
+@contentType = application/json
+
+############################################################
+### KỊCH BẢN 1: ĐĂNG KÝ QUẢN LÝ (ROLE MẶC ĐỊNH)
+############################################################
+
+# 1. Đăng ký tài khoản mới (Sẽ tự động là Manager)
+# @name managerSignUp
+POST {{baseUrl}}/api/auth/sign-up
+Content-Type: {{contentType}}
+
+{
+  "email": "kfrog4444@gmail.com",
+  "password": "kfrog12333",
+  "confirmPassword": "kfrog12333",
+  "fullName": "Hùng",
+  "employeeCode": "ADM0119",
+  "phoneNumber": "+84232339098",
+  "companyName": "NexaHR112"
+}
+
+###
+
+# 2. Đăng nhập với tài khoản Quản lý để lấy Token
+# @name managerLogin
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "kfrog3333@gmail.com",
+  "password": "kfrog12333"
+}
+
+###
+
+# 3. Kiểm tra thông tin Quản lý (Phải có Roles: ["Manager"])
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{managerLogin.response.body.idToken}}
+
+###
+
+############################################################
+### KỊCH BẢN 2: QUẢN LÝ MỜI NHÂN VIÊN
+############################################################
+
+# 4. Quản lý gọi API "invite-staff" để cấp quyền cho Email nhân viên
+POST {{baseUrl}}/api/auth/invite-staff
+Authorization: Bearer {{managerLogin.response.body.idToken}}
+Content-Type: {{contentType}}
+
+{
+  "email": "staff.invited@company.com",
+  "fullName": "Trần Nhân Viên",
+  "employeeCode": "STAFF_INV_001"
+}
+
+###
+
+############################################################
+### KỊCH BẢN 3: NHÂN VIÊN ĐƯỢC MỜI THỰC HIỆN ĐĂNG KÝ
+############################################################
+
+# 5. Nhân viên sử dụng Email đã được mời để đăng ký
+# @name staffSignUp
+POST {{baseUrl}}/api/auth/sign-up
+Content-Type: {{contentType}}
+
+{
+  "email": "staff.invited@company.com",
+  "password": "StaffPassword123",
+  "confirmPassword": "StaffPassword123",
+  "fullName": "Trần Nhân Viên (Đã Ký)",
+  "employeeCode": "STAFF_INV_001",
+  "phoneNumber": "+84900000002"
+}
+
+###
+
+# 6. Nhân viên đăng nhập
+# @name staffLogin
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "staff.invited@company.com",
+  "password": "StaffPassword123"
+}
+
+###
+
+# 7. Kiểm tra thông tin Nhân viên (Phải có Roles: ["User"])
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{staffLogin.response.body.idToken}}
+
+###
+
+############################################################
+### CÁC TEST CASE KHÁC (CŨ)
+############################################################
+
+### Verify Token
+POST {{baseUrl}}/api/auth/verify-token
+Content-Type: {{contentType}}
+
+"{{managerLogin.response.body.idToken}}"
+
+###
+
+
+### FILE: employee-profile-tests.http ###
+
+@baseUrl = http://localhost:5122/api
+@token = eyJhbGciOiJSUzI1NiIsImtpZCI6IjM3MzAwNzY5YTA3ZTA1MTE2ZjdlNTEzOGZhOTA5MzY4NWVlYmMyNDAiLCJ0eXAiOiJKV1QifQ.eyJuYW1lIjoiTmd1eeG7hW4gUXXhuqNuIEzDvSIsImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9ocm0tcHJvamVjdC1lZjQyYSIsImF1ZCI6ImhybS1wcm9qZWN0LWVmNDJhIiwiYXV0aF90aW1lIjoxNzc0ODU4MDU2LCJ1c2VyX2lkIjoiT1h1MU5Dd1NXMFFocDA1ZGVsc0tEY2laU2ZoMSIsInN1YiI6Ik9YdTFOQ3dTVzBRaHAwNWRlbHNLRGNpWlNmaDEiLCJpYXQiOjE3NzQ4NTgwNTYsImV4cCI6MTc3NDg2MTY1NiwiZW1haWwiOiJtYW5hZ2VyLnRlc3RAY29tcGFueS5jb20iLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsInBob25lX251bWJlciI6Iis4NDkwMDAwMDAwMSIsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsibWFuYWdlci50ZXN0QGNvbXBhbnkuY29tIl0sInBob25lIjpbIis4NDkwMDAwMDAwMSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.kOfa63vmKVzbq9_YqO5xmMAx3vpeaR18hesctzAffo1Ns-txzCuxjR5UIxD8KbtCx5eN1HL9JbGO7sQsNgsptMkmS25mECKDJ0yB-YJztg__FNSymYpFpPtaNhS52HJhcxG8MJHfZGzrWFkx3Sy9DDSz3nxWyza4Ae7LPJnvYchY-qJ75IO1Ap4CPvo1V4S4uOJCJUXRtmSmTqoDWLgaIScyaCf_CaHJ1FURYYmZ_sFwBKSpm-qnafLXqIOSWJHiD192UXEzSW9OsLstS2egYORnqhRDE_2aKuTFBfSF7yegxevjpcMPl_R76Ic3pOsrRppf3m9FSlBqeEYeLHOcdQ
+
+### Get full employee profile
+GET {{baseUrl}}/employees/3/full-profile
+Authorization: Bearer {{token}}
+
+### Update bank accounts
+PUT {{baseUrl}}/employees/3/bank-accounts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+[
+  {
+    "accountHolder": "NGUYEN VAN A",
+    "accountNumber": "123456789",
+    "bankName": "Vietcombank",
+    "branch": "Chi nhánh Ba Đình"
+  }
+]
+
+### Update health record
+PUT {{baseUrl}}/employees/3/health-record
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "height": 175.5,
+  "weight": 70.2,
+  "bloodType": "O",
+  "congenitalDisease": "None",
+  "chronicDisease": "None",
+  "healthStatus": "Good",
+  "checkDate": "2024-03-29"
+}
+
+### Update emergency contacts
+PUT {{baseUrl}}/employees/3/emergency-contacts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+[
+  {
+    "name": "Trần Thị B",
+    "relationship": "Vợ",
+    "mobilePhone": "0987654321",
+    "homePhone": "0243123456",
+    "address": "456 Lạc Long Quân, Hà Nội"
+  }
+]
+
+### Update education
+PUT {{baseUrl}}/employees/3/education
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+[
+  {
+    "level": "Đại học",
+    "major": "Công nghệ thông tin",
+    "institution": "Đại học Bách Khoa Hà Nội",
+    "issueDate": "2020-06-15",
+    "note": "Bằng khá"
+  }
+]
+
+### [US-8] GET - Lấy thông tin khác của nhân viên (AC 8.3)
+# Trả về MaritalStatusCode = "SINGLE" nếu nhân viên chưa có dữ liệu.
+GET {{baseUrl}}/employees/3/profile/other-info
+Authorization: Bearer {{token}}
+
+### [US-8] PUT - Cập nhật thông tin khác: Độc thân (AC 8.4)
+# TaxCode hợp lệ: 10 chữ số
+PUT {{baseUrl}}/employees/3/profile/other-info
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "unionGroup": "Công đoàn cơ sở Phòng CNTT",
+  "ethnicity": "Kinh",
+  "religion": "Không",
+  "taxCode": "0123456789",
+  "maritalStatusCode": "SINGLE",
+  "note": "Nhân viên tiêu biểu quý 1/2026"
+}
+
+### [US-8] PUT - Cập nhật thông tin khác: Đã kết hôn (AC 8.4)
+# TaxCode hợp lệ: 13 chữ số
+PUT {{baseUrl}}/employees/3/profile/other-info
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "unionGroup": "",
+  "ethnicity": "Tày",
+  "religion": "Phật giáo",
+  "taxCode": "0123456789012",
+  "maritalStatusCode": "MARRIED",
+  "note": ""
+}
+
+### [US-8] PUT - Test validation: TaxCode sai định dạng (phải trả 400 Bad Request)
+PUT {{baseUrl}}/employees/3/profile/other-info
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "taxCode": "123ABC",
+  "maritalStatusCode": "SINGLE"
+}
+
+
+### FILE: employee-tests.http ###
+
+### Employee API Tests
+
+@baseUrl = http://localhost:5122
+@contentType = application/json
+
+############################################################
+### 1. Đăng nhập Quản lý để lấy Token
+############################################################
+
+# @name managerLogin
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "manager.test@company.com",
+  "password": "ManagerPassword123"
+}
+
+###
+
+@authToken = {{managerLogin.response.body.idToken}}
+
+
+############################################################
+### 2. Thêm mới nhân viên
+############################################################
+
+# @name createEmployee
+POST {{baseUrl}}/api/employees
+Authorization: Bearer {{authToken}}
+Content-Type: {{contentType}}
+
+{
+  "employeeCode": "EMP_TEST_02",
+  "fullName": "Nguyễn Văn Test Lan 2",
+  "email": "nvtest2@company.com",
+  "phone": "0987654321",
+  "departmentId": 1,
+  "jobTitleId": 1,
+  "branchId": 1,
+  "startDate": "2026-03-28T00:00:00Z",
+  "password": "123456789"
+}
+
+###
+
+############################################################
+### 3. Liệt kê danh sách nhân viên (Phân trang & Tìm kiếm)
+############################################################
+
+GET {{baseUrl}}/api/employees?pageNumber=1&pageSize=10&searchTerm=Nguyễn
+Authorization: Bearer {{authToken}}
+
+###
+
+############################################################
+### 4. Lấy chi tiết nhân viên theo ID
+############################################################
+
+@employeeId = {{createEmployee.response.body.id}}
+
+GET {{baseUrl}}/api/employees/{{employeeId}}
+Authorization: Bearer {{authToken}}
+
+###
+
+############################################################
+### 5. Cập nhật thông tin nhân viên
+############################################################
+
+PUT {{baseUrl}}/api/employees/{{employeeId}}
+Authorization: Bearer {{authToken}}
+Content-Type: {{contentType}}
+
+{
+  "fullName": "Nguyễn Văn Test Updated",
+  "email": "nvtest_upd@company.com",
+  "phone": "0123456789",
+  "isActive": true,
+  "isResigned": false
+}
+
+###
+
+############################################################
+### 6. Xóa nhân viên (Soft Delete)
+############################################################
+
+DELETE {{baseUrl}}/api/employees/{{employeeId}}
+Authorization: Bearer {{authToken}}
+
+###
+
+############################################################
+### 7. Kiểm tra lại sau khi xóa (Phải trả về is_active = false)
+############################################################
+
+GET {{baseUrl}}/api/employees/{{employeeId}}
+Authorization: Bearer {{authToken}}
+
+###
+
+
+### FILE: ERP.API.http ###
+
+@ERP.API_HostAddress = http://localhost:5122
+
+GET {{ERP.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
+
+
+### FILE: lookup-tests.http ###
+
+@baseUrl = http://localhost:5122/api
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtYW5hZ2VyLnRlc3RfY29tcGFueS5jb20iLCJqdGkiOiI0YjQ5YjQ5Yi00OTRiLTQ5NGItNDk0Yi00OTRiNDk0YjQ5NGIiLCJlbWFpbCI6Im1hbmFnZXIudGVzdEBjb21wYW55LmNvbSIsIm5hbWUiOiJNYW5hZ2VyIFRlc3QiLCJyb2xlcyI6WyJBZG1pbiIsIk1hbmFnZXIiXSwiaXNzIjoiZXhwYW5kZWQtYXV0aC1zZXJ2aWNlIiwiYXVkIjoiZXhwYW5kZWQtYXV0aC1zZXJ2aWNlIiwiZXhwIjoxNzQ0NDY2NzY5LCJpYXQiOjE3NDQ0NjMxNjl9.1455555555555555555555555555555555555555
+
+### Get genders
+GET {{baseUrl}}/lookups/genders
+Authorization: Bearer {{token}}
+
+### Get marital statuses
+GET {{baseUrl}}/lookups/marital-statuses
+Authorization: Bearer {{token}}
+
+
+### FILE: organization-tests.http ###
+
+@baseUrl = http://localhost:5122/api
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtYW5hZ2VyLnRlc3RfY29tcGFueS5jb20iLCJqdGkiOiI0YjQ5YjQ5Yi00OTRiLTQ5NGItNDk0Yi00OTRiNDk0YjQ5NGIiLCJlbWFpbCI6Im1hbmFnZXIudGVzdEBjb21wYW55LmNvbSIsIm5hbWUiOiJNYW5hZ2VyIFRlc3QiLCJyb2xlcyI6WyJBZG1pbiIsIk1hbmFnZXIiXSwiaXNzIjoiZXhwYW5kZWQtYXV0aC1zZXJ2aWNlIiwiYXVkIjoiZXhwYW5kZWQtYXV0aC1zZXJ2aWNlIiwiZXhwIjoxNzQ0NDY2NzY5LCJpYXQiOjE3NDQ0NjMxNjl9.1455555555555555555555555555555555555555
+
+### Get all branches
+GET {{baseUrl}}/branches
+Authorization: Bearer {{token}}
+
+### Get a branch by ID
+GET {{baseUrl}}/branches/1
+Authorization: Bearer {{token}}
+
+### Create a new branch
+POST {{baseUrl}}/branches
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Chi nhánh Hà Nội",
+  "code": "HN01",
+  "address": "123 Cầu Giấy, Hà Nội"
+}
+
+### Update a branch
+PUT {{baseUrl}}/branches/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Chi nhánh Hà Nội (Cập nhật)",
+  "address": "456 Trần Duy Hưng, Hà Nội"
+}
+
+### Delete a branch
+DELETE {{baseUrl}}/branches/1
+Authorization: Bearer {{token}}
+
+### Get all departments
+GET {{baseUrl}}/departments
+Authorization: Bearer {{token}}
+
+### Get all job titles
+GET {{baseUrl}}/jobtitles
+Authorization: Bearer {{token}}
+
+### Get all regions
+GET {{baseUrl}}/regions
+Authorization: Bearer {{token}}
+
+
+### FILE: shift-test-requests.http ###
+
+### Shift & Employee API Tests
+
+@baseUrl = http://localhost:5000/api
+@branchId = 1
+@employeeId = 1
+@userId = 1
+@shiftId = 1
+@date = 2026-04-13
+
+### T169: Get list of active employees at branch
+GET {{baseUrl}}/employees/active-by-branch?branchId={{branchId}}
+Authorization: Bearer {{token}}
+
+### T170 & T176: Get weekly shift schedule matrix
+GET {{baseUrl}}/shifts/weekly-schedule?branchId={{branchId}}&startDate={{date}}
+Authorization: Bearer {{token}}
+
+### T199: Get Shift Detail & Attendance
+GET {{baseUrl}}/shifts/detail?employeeId={{employeeId}}&date={{date}}
+Authorization: Bearer {{token}}
+
+### T200: Delete Assigned Shift (Unassign)
+DELETE {{baseUrl}}/shifts/assignment?employeeId={{employeeId}}&date={{date}}
+Authorization: Bearer {{token}}
+
+### T201: Create Shift Template (with optional assignment)
+POST {{baseUrl}}/shifts
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "shiftCode": "HC_AUTO",
+  "shiftName": "Ca Hành Chính (Tự động gán)",
+  "startTime": "08:00:00",
+  "endTime": "17:30:00",
+  "color": "#4e73df",
+  "shiftTypeId": 1,
+  "assignToUserId": {{userId}},
+  "assignDate": "{{date}}T00:00:00"
+}
+
+### T177: Get Shift Type Detail (Defaults)
+GET {{baseUrl}}/shifts/{{shiftId}}/detail
+Authorization: Bearer {{token}}
+
+### T178: Organization Dropdowns
+GET {{baseUrl}}/lookups/branches
+Authorization: Bearer {{token}}
+
+### T178: Organization Dropdowns (Departments)
+GET {{baseUrl}}/lookups/departments
+Authorization: Bearer {{token}}
+
+### T182: Create Open Shift Batch
+POST {{baseUrl}}/shifts/open
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "date": "{{date}}T00:00:00",
+  "shiftId": {{shiftId}},
+  "branchIds": [1],
+  "departmentIds": [1, 2],
+  "positionIds": [1],
+  "quantity": 5,
+  "isAutoPublish": true,
+  "note": "Cần tuyển gấp nhân viên hỗ trợ sự kiện"
+}
+
+

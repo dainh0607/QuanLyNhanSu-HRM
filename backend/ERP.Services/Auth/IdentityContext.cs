@@ -19,7 +19,9 @@ namespace ERP.Services.Auth
 
         public int? UserId => int.TryParse(User?.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id) ? id : null;
 
-        public int? TenantId => int.TryParse(User?.FindFirst("tenant_id")?.Value, out var id) && id > 0 ? id : null;
+        // FIX #9: Remove id > 0 check to properly handle tenant_id extraction
+        // Allow 0 as valid value (represents default/unset tenant)
+        public int? TenantId => int.TryParse(User?.FindFirst("tenant_id")?.Value, out var id) ? id : null;
 
         public bool IsAuthenticated => User?.Identity?.IsAuthenticated ?? false;
 

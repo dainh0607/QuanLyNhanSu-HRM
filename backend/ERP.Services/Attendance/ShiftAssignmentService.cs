@@ -551,5 +551,133 @@ namespace ERP.Services.Attendance
                 Message = $"Đã cập nhật {assignments.Count} ca làm sang trạng thái '{dto.TargetStatus}'."
             };
         }
+
+        // Manage Assignments via Shift Tabs Modal (T223 - T225)
+        public async Task<IEnumerable<ShiftTabDto>> GetShiftTabsAsync(int branchId)
+        {
+            var query = _unitOfWork.Repository<Shifts>().AsQueryable().Where(s => s.is_active);
+            var activeShifts = await query.ToListAsync();
+            
+            return activeShifts.Select(s => new ShiftTabDto 
+            {
+                ShiftId = s.Id,
+                ShiftCode = s.shift_code,
+                ShiftName = s.shift_name,
+                StartTime = s.start_time.ToString(@"hh\:mm"),
+                EndTime = s.end_time.ToString(@"hh\:mm")
+            }).ToList();
+        }
+
+        public async Task<IEnumerable<DayAssignedUsersDto>> GetAssignedUsersByShiftAndWeekAsync(int shiftId, DateTime weekStartDate, int branchId)
+        {
+            var weekEndDate = weekStartDate.AddDays(6).Date;
+            var result = new List<DayAssignedUsersDto>();
+
+            var assignments = await _unitOfWork.Repository<ShiftAssignments>().AsQueryable()
+                .Include(a => a.Employee)
+                .Where(a => a.shift_id == shiftId && 
+                            a.assignment_date.Date >= weekStartDate.Date && 
+                            a.assignment_date.Date <= weekEndDate &&
+                            a.Employee.branch_id == branchId)
+                .ToListAsync();
+
+            var currentLang = System.Globalization.CultureInfo.GetCultureInfo("vi-VN");
+            
+            for (int i = 0; i < 7; i++)
+            {
+                var currentDate = weekStartDate.AddDays(i).Date;
+                var dailyAssignments = assignments.Where(a => a.assignment_date.Date == currentDate).ToList();
+                
+                var dayDto = new DayAssignedUsersDto
+                {
+                    Date = currentDate.ToString("yyyy-MM-dd"),
+                    DayOfWeek = currentLang.DateTimeFormat.GetDayName(currentDate.DayOfWeek),
+                    Users = dailyAssignments.Select(a => new ShiftUserDto
+                    {
+                        AssignmentId = a.Id,
+                        EmployeeId = a.employee_id,
+                        FullName = a.Employee?.full_name ?? "N/A",
+                        Avatar = a.Employee?.avatar,
+                        Phone = string.IsNullOrEmpty(a.Employee?.phone) ? a.Employee?.work_email : a.Employee?.phone
+                    }).ToList()
+                };
+                result.Add(dayDto);
+            }
+
+            return result;
+        }
+
+        public async Task<IEnumerable<ShiftAvailableUserDto>> GetAvailableUsersAsync(int branchId, int shiftId, DateTime date)
+        {
+            var employeesQuery = _unitOfWork.Repository<Entities.Models.Employees>().AsQueryable()
+                .Include(e => e.JobTitle)
+                .Where(e => e.branch_id == branchId && e.is_active && !e.is_resigned);
+
+            var alreadyAssignedIds = await _unitOfWork.Repository<ShiftAssignments>().AsQueryable()
+                .Where(a => a.shift_id == shiftId && a.assignment_date.Date == date.Date)
+                .Select(a => a.employee_id)
+                .ToListAsync();
+
+            var availableEmployees = await employeesQuery
+                .Where(e => !alreadyAssignedIds.Contains(e.Id))
+                .OrderBy(e => e.employee_code)
+                .ToListAsync();
+
+            return availableEmployees.Select(e => new ShiftAvailableUserDto
+            {
+                EmployeeId = e.Id,
+                EmployeeCode = e.employee_code,
+                FullName = e.full_name ?? string.Empty,
+                Avatar = e.avatar,
+                JobTitle = e.JobTitle?.name
+            });
+        }
+
+        public async Task<bool> BulkCreateAssignmentsAsync(BulkShiftAssignmentCreateDto dto)
+        {
+            if (dto.employee_ids == null || !dto.employee_ids.Any()) return false;
+
+            await _unitOfWork.BeginTransactionAsync();
+            try
+            {
+                var assignmentsToInsert = new List<ShiftAssignments>();
+                
+                var existingAssignedIds = await _unitOfWork.Repository<ShiftAssignments>().AsQueryable()
+                    .Where(a => a.shift_id == dto.shift_id && a.assignment_date.Date == dto.assignment_date.Date && dto.employee_ids.Contains(a.employee_id))
+                    .Select(a => a.employee_id)
+                    .ToListAsync();
+
+                foreach (var empId in dto.employee_ids)
+                {
+                    if (!existingAssignedIds.Contains(empId))
+                    {
+                        assignmentsToInsert.Add(new ShiftAssignments
+                        {
+                            employee_id = empId,
+                            shift_id = dto.shift_id,
+                            assignment_date = dto.assignment_date.Date,
+                            is_published = false,
+                            note = dto.note,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        });
+                    }
+                }
+
+                if (assignmentsToInsert.Any())
+                {
+                    await _unitOfWork.Repository<ShiftAssignments>().AddRangeAsync(assignmentsToInsert);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
+                await _unitOfWork.CommitTransactionAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw new Exception("Lỗi khi gán ca hàng loạt: " + ex.Message);
+            }
+        }
     }
 }

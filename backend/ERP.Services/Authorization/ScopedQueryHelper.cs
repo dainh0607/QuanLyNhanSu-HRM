@@ -149,7 +149,7 @@ namespace ERP.Services.Authorization
             var userRoles = await _context.UserRoles
                 .AsNoTracking()
                 .Where(ur => ur.user_id == userId && 
-                       ur.tenant_id == tenantId &&
+                       (ur.tenant_id == tenantId || ur.tenant_id == null) &&
                        ur.is_active &&
                        (!ur.valid_to.HasValue || ur.valid_to > DateTime.UtcNow))
                 .Include(ur => ur.Role)

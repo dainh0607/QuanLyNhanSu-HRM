@@ -52,6 +52,67 @@ namespace ERP.API.Controllers
             }
         }
 
+        // Modal Shift Tabs Management
+        [HttpGet("shift-tabs")]
+        public async Task<IActionResult> GetShiftTabs([FromQuery] int branchId)
+        {
+            try
+            {
+                var result = await _assignmentService.GetShiftTabsAsync(branchId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpGet("assigned-users")]
+        public async Task<IActionResult> GetAssignedUsers([FromQuery] int shiftId, [FromQuery] DateTime weekStartDate, [FromQuery] int branchId)
+        {
+            try
+            {
+                var result = await _assignmentService.GetAssignedUsersByShiftAndWeekAsync(shiftId, weekStartDate, branchId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpGet("available-users")]
+        public async Task<IActionResult> GetAvailableUsers([FromQuery] int branchId, [FromQuery] int shiftId, [FromQuery] DateTime date)
+        {
+            try
+            {
+                var result = await _assignmentService.GetAvailableUsersAsync(branchId, shiftId, date);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpPost("bulk-create")]
+        [HasPermission("attendance", "update")]
+        public async Task<IActionResult> BulkCreateAssignments([FromBody] ERP.DTOs.Attendance.BulkShiftAssignmentCreateDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                var success = await _assignmentService.BulkCreateAssignmentsAsync(dto);
+                if (!success) return BadRequest(new { Message = "Chưa chọn nhân viên nào hoặc dữ liệu không hợp lệ." });
+                return Ok(new { Message = "Phân ca hàng loạt thành công." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
         [HttpPost]
         [HasPermission("attendance", "update")]
         public async Task<IActionResult> CreateAssignment([FromBody] ERP.DTOs.Attendance.ShiftAssignmentCreateDto dto)

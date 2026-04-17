@@ -436,6 +436,37 @@ namespace ERP.Services.Employees
             await _unitOfWork.BeginTransactionAsync();
             try
             {
+                var tenantId = _userContext.TenantId;
+                
+                // FIX #8: Auto-inherit user's scope when not explicitly provided
+                // This ensures employees created without branch/department/region are still visible
+                var effectiveBranchId = dto.BranchId;
+                var effectiveDepartmentId = dto.DepartmentId;
+                int? effectiveRegionId = null;
+                
+                if (!effectiveBranchId.HasValue || !effectiveDepartmentId.HasValue || effectiveRegionId == null)
+                {
+                    var creatorUser = await _unitOfWork.Repository<Users>()
+                        .AsQueryable()
+                        .Include(u => u.Employee)
+                        .FirstOrDefaultAsync(u => u.Id == currentUserId);
+                    
+                    if (creatorUser?.Employee != null)
+                    {
+                        // Auto-assign creator's region if not provided
+                        if (effectiveRegionId == null && creatorUser.Employee.region_id.HasValue)
+                            effectiveRegionId = creatorUser.Employee.region_id;
+                        
+                        // Auto-assign creator's branch if not provided
+                        if (!effectiveBranchId.HasValue && creatorUser.Employee.branch_id.HasValue)
+                            effectiveBranchId = creatorUser.Employee.branch_id;
+                        
+                        // Auto-assign creator's department if not provided
+                        if (!effectiveDepartmentId.HasValue && creatorUser.Employee.department_id.HasValue)
+                            effectiveDepartmentId = creatorUser.Employee.department_id;
+                    }
+                }
+                
                 var employee = new EmployeeEntity
                 {
                     employee_code = dto.EmployeeCode,
@@ -445,15 +476,17 @@ namespace ERP.Services.Employees
                     birth_date = dto.BirthDate,
                     gender_code = dto.GenderCode,
                     marital_status_code = dto.MaritalStatusCode,
-                    department_id = dto.DepartmentId,
+                    department_id = effectiveDepartmentId,
                     job_title_id = dto.JobTitleId,
-                    branch_id = dto.BranchId,
+                    branch_id = effectiveBranchId,
+                    region_id = effectiveRegionId,
                     manager_id = dto.ManagerId,
                     start_date = dto.StartDate,
                     identity_number = dto.IdentityNumber,
                     work_email = dto.WorkEmail,
                     avatar = dto.Avatar,
                     is_active = true,
+                    tenant_id = tenantId,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 };
@@ -476,10 +509,10 @@ namespace ERP.Services.Employees
                 try
                 {
                     // 4. Create local User mapping
-                    var user = await _userService.CreateLocalUserAsync(employee.Id, userArgs.Email, firebaseUser.Uid);
+                    var user = await _userService.CreateLocalUserAsync(employee.Id, userArgs.Email, firebaseUser.Uid, tenantId);
 
                     // 5. Assign selected access group
-                    await _userService.AssignRoleAsync(user.Id, dto.AccessGroupId.Value);
+                    await _userService.AssignRoleAsync(user.Id, dto.AccessGroupId.Value, tenantId);
 
                     await _unitOfWork.CommitTransactionAsync();
                 }
@@ -526,6 +559,8 @@ namespace ERP.Services.Employees
                     string defaultEmail = $"{nextCode.ToLower()}@nexahrm.local";
                     string defaultPassword = "NexaHR" + new Random().Next(1000, 9999) + "!";
 
+                    var tenantId = _userContext.TenantId;
+
                     var employee = new EmployeeEntity
                     {
                         employee_code = nextCode,
@@ -534,6 +569,7 @@ namespace ERP.Services.Employees
                         phone = item.Phone,
                         branch_id = dto.BranchId,
                         is_active = true,
+                        tenant_id = tenantId,
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow
                     };
@@ -553,8 +589,8 @@ namespace ERP.Services.Employees
                     var firebaseUser = await _firebaseService.CreateUserAsync(userArgs);
                     createdFirebaseUids.Add(firebaseUser.Uid);
 
-                    var user = await _userService.CreateLocalUserAsync(employee.Id, userArgs.Email, firebaseUser.Uid);
-                    await _userService.AssignRoleAsync(user.Id, item.AccessGroupId);
+                    var user = await _userService.CreateLocalUserAsync(employee.Id, userArgs.Email, firebaseUser.Uid, tenantId);
+                    await _userService.AssignRoleAsync(user.Id, item.AccessGroupId, tenantId);
 
                     count++;
                 }
@@ -974,7 +1010,8 @@ namespace ERP.Services.Employees
             var currentUserId = _userContext.UserId ?? 0;
             var tenantId = _userContext.TenantId ?? 0;
             
-            if (currentUserId > 0 && tenantId > 0)
+            // FIX #9: Allow scope filtering even when tenantId is 0 (or any value >= 0)
+            if (currentUserId > 0)
             {
                 // Apply scope-based filtering using the ScopedQueryHelper
                 query = await _scopedQueryHelper.ApplyEmployeeScopeFilter(query, currentUserId, tenantId);
