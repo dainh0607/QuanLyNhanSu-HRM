@@ -223,6 +223,37 @@ using (var scope = app.Services.CreateScope())
 
     try
     {
+        // 0. CLI Handling for Super Admin Seed
+        if (args.Contains("--seed-superadmin"))
+        {
+            var email = args.SkipWhile(a => a != "--email").Skip(1).FirstOrDefault();
+            var password = args.SkipWhile(a => a != "--password").Skip(1).FirstOrDefault();
+
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
+            {
+                Console.WriteLine("\n [ERROR] Missing arguments.");
+                Console.WriteLine(" Usage: dotnet run -- --seed-superadmin --email <email> --password <password>");
+                Console.WriteLine(" Note: In dotnet run, use '--' before custom arguments.\n");
+                return;
+            }
+
+            Console.WriteLine($"\n [CLI] Initializing Super Admin: {email}...");
+            db.Database.Migrate(); // Ensure DB is ready
+
+            var authService = services.GetRequiredService<IAuthService>();
+            var result = await authService.InitializeSuperAdminInternalAsync(email, password);
+
+            if (result.Success)
+            {
+                Console.WriteLine($" [SUCCESS] {result.Message}\n");
+            }
+            else
+            {
+                Console.WriteLine($" [FAILED] {result.Message}\n");
+            }
+            return;
+        }
+
         if (app.Environment.IsDevelopment())
         {
             logger.LogInformation("[STARTUP] Ensuring database is migrated and seeded...");

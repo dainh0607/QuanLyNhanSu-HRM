@@ -1365,5 +1365,138 @@ namespace ERP.Services.Auth
                 };
             }
         }
+
+        public async Task<AuthResponseDto> InitializeSuperAdminInternalAsync(string email, string password)
+        {
+            try
+            {
+                // 1. Validate master email
+                if (!IsMasterEmail(email))
+                {
+                    return new AuthResponseDto
+                    {
+                        Success = false,
+                        Message = $"Email {email} không phải là MasterEmail được cấu hình trong hệ thống."
+                    };
+                }
+
+                _logger.LogInformation("[CLI-INIT] Starting Enterprise Super Admin Initialization for {Email}", email);
+
+                // 2. Ensure Firebase user exists with the provided password
+                string firebaseUid;
+                try
+                {
+                    // Check if exists
+                    var existingFirebaseUser = await _firebaseService.ListAllUsersAsync();
+                    var match = existingFirebaseUser.FirstOrDefault(u => string.Equals(u.Email, email, StringComparison.OrdinalIgnoreCase));
+
+                    if (match != null)
+                    {
+                        _logger.LogInformation("[CLI-INIT] User already exists in Firebase. Updating password...");
+                        await _firebaseService.UpdateUserPasswordAsync(match.Uid, password);
+                        firebaseUid = match.Uid;
+                    }
+                    else
+                    {
+                        _logger.LogInformation("[CLI-INIT] User does not exist in Firebase. Creating...");
+                        var userArgs = new UserRecordArgs
+                        {
+                            Email = email,
+                            Password = password,
+                            DisplayName = "System Administrator",
+                            Disabled = false
+                        };
+                        var createdUser = await _firebaseService.CreateUserAsync(userArgs);
+                        firebaseUid = createdUser.Uid;
+                    }
+                }
+                catch (Exception fbEx)
+                {
+                    _logger.LogError(fbEx, "[CLI-INIT] Firebase Auth error");
+                    return new AuthResponseDto { Success = false, Message = $"Lỗi Firebase: {fbEx.Message}" };
+                }
+
+                // 3. Ensure role, employee, user in local DB (similar to bootstrap)
+                var adminRole = await _context.Roles.FirstOrDefaultAsync(r => r.name == AuthSecurityConstants.RoleAdmin);
+                if (adminRole == null)
+                {
+                    adminRole = new Roles
+                    {
+                        name = AuthSecurityConstants.RoleAdmin,
+                        description = "Hệ thống quản trị cao cấp (Super Admin)",
+                        is_active = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+                    _context.Roles.Add(adminRole);
+                    await _context.SaveChangesAsync();
+                }
+
+                var employee = await _context.Employees.IgnoreQueryFilters().FirstOrDefaultAsync(e => e.email == email);
+                if (employee == null)
+                {
+                    employee = new ERP.Entities.Models.Employees
+                    {
+                        employee_code = "SA_ADMIN",
+                        full_name = "System Administrator",
+                        email = email,
+                        is_active = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+                    _context.Employees.Add(employee);
+                    await _context.SaveChangesAsync();
+                }
+
+                var user = await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.employee_id == employee.Id);
+                if (user == null)
+                {
+                    user = new Users
+                    {
+                        employee_id = employee.Id,
+                        username = email,
+                        firebase_uid = firebaseUid,
+                        is_active = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+                    _context.Users.Add(user);
+                    await _context.SaveChangesAsync();
+                }
+                else if (user.firebase_uid != firebaseUid)
+                {
+                    user.firebase_uid = firebaseUid;
+                    user.UpdatedAt = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                }
+
+                var hasRole = await _context.UserRoles.AnyAsync(ur => ur.user_id == user.Id && ur.role_id == adminRole.Id);
+                if (!hasRole)
+                {
+                    _context.UserRoles.Add(new UserRoles
+                    {
+                        user_id = user.Id,
+                        role_id = adminRole.Id,
+                        is_active = true,
+                        assignment_reason = "CLI Root Initialization",
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                    await _context.SaveChangesAsync();
+                }
+
+                return new AuthResponseDto
+                {
+                    Success = true,
+                    Message = $"Khởi tạo tài khoản Super Admin ({email}) thành công trên cả Firebase và Local DB.",
+                    User = await BuildUserInfoAsync(user)
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[CLI-INIT] Fatal error during initialization");
+                return new AuthResponseDto { Success = false, Message = $"Lỗi hệ thống: {ex.Message}" };
+            }
+        }
     }
 }

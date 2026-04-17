@@ -10,6 +10,7 @@ export interface User {
   isActive: boolean;
   roles: string[];
   photoUrl?: string;
+  isSystemAdmin?: boolean;
 }
 
 export interface AuthResponse {
