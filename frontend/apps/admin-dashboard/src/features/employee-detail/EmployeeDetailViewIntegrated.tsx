@@ -10,6 +10,7 @@ import EmployeeEditModal from './edit-modal/EmployeeEditModal';
 import type {
   PersonalTabKey,
   WorkTabKey,
+  LeaveTabKey,
 } from './edit-modal/types';
 import EmployeeDetailTabs from './components/EmployeeDetailTabs';
 import PasswordChangeDialog from './components/PasswordChangeDialog';
@@ -17,6 +18,19 @@ import PersonalTabContent from './components/PersonalTabContent';
 import ProfileSummarySection from './components/ProfileSummarySection';
 import SecondaryTabPlaceholder from './components/SecondaryTabPlaceholder';
 import WorkTabContent from './components/WorkTabContent';
+import AssetsTabContent from './components/AssetsTabContent';
+import LeaveTabContent from './components/LeaveTabContent';
+import DocumentsTabContent from './components/DocumentsTabContent';
+import AttendanceTabContent from './components/AttendanceTabContent';
+import SignatureTabContent from '../signature-management/components/SignatureTabContent';
+import HistoryTabContent from './components/HistoryTabContent';
+import AssetIssueModal from './edit-modal/components/AssetIssueModal';
+import AddFolderModal from './edit-modal/components/AddFolderModal';
+import AddFileModal from './edit-modal/components/AddFileModal';
+import RenameFileModal from './edit-modal/components/RenameFileModal';
+import DeleteFolderModal from './edit-modal/components/DeleteFolderModal';
+import FolderDetailModal from './edit-modal/components/FolderDetailModal';
+import type { DocumentFolder } from '../../services/employeeService';
 import {
   AVATAR_LARGE_FILE_THRESHOLD_BYTES,
   MAX_AVATAR_SOURCE_FILE_SIZE_BYTES,
@@ -69,6 +83,9 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
   const [editModalInitialWorkTab, setEditModalInitialWorkTab] = useState<WorkTabKey | undefined>(
     undefined,
   );
+  const [editModalInitialLeaveTab, setEditModalInitialLeaveTab] = useState<LeaveTabKey | undefined>(
+    undefined,
+  );
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState<boolean>(false);
   const [isAvatarUploading, setIsAvatarUploading] = useState<boolean>(false);
   const [passwordForm, setPasswordForm] = useState({
@@ -78,6 +95,14 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
   });
   const [passwordSubmitError, setPasswordSubmitError] = useState<string | null>(null);
   const [isPasswordSubmitting, setIsPasswordSubmitting] = useState<boolean>(false);
+  const [isAssetIssueModalOpen, setIsAssetIssueModalOpen] = useState<boolean>(false);
+  const [isAddFolderModalOpen, setIsAddFolderModalOpen] = useState<boolean>(false);
+  const [isAddFileModalOpen, setIsAddFileModalOpen] = useState<boolean>(false);
+  const [isRenameFolderModalOpen, setIsRenameFolderModalOpen] = useState<boolean>(false);
+  const [isDeleteFolderModalOpen, setIsDeleteFolderModalOpen] = useState<boolean>(false);
+  const [uploadTargetFolderId, setUploadTargetFolderId] = useState<string | undefined>(undefined);
+  const [selectedFolder, setSelectedFolder] = useState<DocumentFolder | null>(null);
+  const [selectedFolderForAction, setSelectedFolderForAction] = useState<DocumentFolder | null>(null);
 
   useEffect(() => {
     setDisplayEmployee(employee);
@@ -311,13 +336,6 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
     }
   };
 
-  const handleOpenEditModal = () => {
-    setEditModalInitialSectionLabel(EMPLOYEE_DETAIL_TABS[0]);
-    setEditModalInitialPersonalTab('basicInfo');
-    setEditModalInitialWorkTab(undefined);
-    setIsEditModalOpen(true);
-  };
-
   const handleOpenEditPersonalTab = (tab: PersonalTabKey) => {
     setEditModalInitialSectionLabel(EMPLOYEE_DETAIL_TABS[0]);
     setEditModalInitialPersonalTab(tab);
@@ -328,6 +346,21 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
   const handleOpenEditWorkTab = (tab: WorkTabKey) => {
     setEditModalInitialSectionLabel(EMPLOYEE_DETAIL_TABS[1]);
     setEditModalInitialWorkTab(tab);
+    setEditModalInitialLeaveTab(undefined);
+    setIsEditModalOpen(true);
+  };
+
+  const handleOpenEditLeaveTab = (tab: LeaveTabKey) => {
+    setEditModalInitialSectionLabel(EMPLOYEE_DETAIL_TABS[2]);
+    setEditModalInitialLeaveTab(tab);
+    setEditModalInitialWorkTab(undefined);
+    setIsEditModalOpen(true);
+  };
+
+  const handleOpenEditCurrentTab = () => {
+    setEditModalInitialSectionLabel(activeTab);
+    setEditModalInitialWorkTab(undefined);
+    setEditModalInitialLeaveTab(undefined);
     setIsEditModalOpen(true);
   };
 
@@ -392,6 +425,83 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
     }
   };
 
+  const handleOpenAssetIssueModal = () => {
+    setIsAssetIssueModalOpen(true);
+  };
+
+  const handleIssueAsset = async (asset: any) => {
+    try {
+      await employeeService.issueEmployeeAssetMock(displayEmployee.id, asset);
+      showToast(`Đã cấp phát ${asset.assetName} cho nhân viên.`, 'success');
+      setProfileReloadToken((prev) => prev + 1);
+    } catch (error) {
+      showToast('Có lỗi xảy ra khi cấp phát tài sản.', 'error');
+    }
+  };
+
+  const handleCreateFolder = async (name: string) => {
+    try {
+      await employeeService.createDocumentFolderMock(displayEmployee.id, name);
+      showToast(`Đã tạo thư mục "${name}" thành công.`, 'success');
+      setProfileReloadToken((prev) => prev + 1);
+    } catch (error) {
+      showToast('Có lỗi xảy ra khi tạo thư mục.', 'error');
+    }
+  };
+
+  const handleUploadFile = async (file: File, folderId: string) => {
+    try {
+      await employeeService.uploadDocumentFileMock(displayEmployee.id, file, folderId);
+      showToast(`Đã tải lên tệp "${file.name}" thành công.`, 'success');
+      setProfileReloadToken((prev) => prev + 1);
+    } catch (error) {
+      showToast('Có lỗi xảy ra khi tải lên tệp.', 'error');
+    }
+  };
+
+  const handleDeleteFile = async (fileId: string) => {
+    if (!selectedFolder) return;
+    try {
+      await employeeService.deleteDocumentFileMock(employee.id, fileId, selectedFolder.id);
+      showToast('Đã xóa tệp thành công.', 'success');
+      // Trigger reload
+      setProfileReloadToken((prev) => prev + 1);
+    } catch (error) {
+      showToast('Có lỗi xảy ra khi xóa tệp.', 'error');
+    }
+  };
+
+  const handleRenameFolder = async (folderId: string, newName: string) => {
+    try {
+      await employeeService.renameDocumentFolderMock(employee.id, folderId, newName);
+      showToast('Đã đổi tên thư mục thành công.', 'success');
+      setProfileReloadToken((prev) => prev + 1);
+    } catch (error) {
+      showToast('Có lỗi xảy ra khi đổi tên thư mục.', 'error');
+    }
+  };
+
+  const handleDeleteFolder = async () => {
+    if (!selectedFolderForAction) return;
+    try {
+      await employeeService.deleteDocumentFolderMock(employee.id, selectedFolderForAction.id);
+      showToast('Đã xóa thư mục thành công.', 'success');
+      setProfileReloadToken((prev) => prev + 1);
+    } catch (error) {
+      showToast('Có lỗi xảy ra khi xóa thư mục.', 'error');
+    }
+  };
+
+  const handleRenameFile = async (fileId: string, newName: string) => {
+    try {
+      await employeeService.renameDocumentFileMock(employee.id, fileId, newName);
+      showToast('Đã đổi tên tệp thành công.', 'success');
+      setProfileReloadToken((prev) => prev + 1);
+    } catch (error) {
+      showToast('Có lỗi xảy ra khi đổi tên tệp.', 'error');
+    }
+  };
+
   return (
     <div className="h-screen overflow-y-auto overflow-x-hidden bg-[#f3f4f6]">
       <div className="w-full px-6 py-8 lg:px-8 xl:px-10">
@@ -434,34 +544,40 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
         />
 
         <section className="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-500">
-              {activeTab === EMPLOYEE_DETAIL_TABS[0] ? 'THÔNG TIN CÁ NHÂN' : activeTab === EMPLOYEE_DETAIL_TABS[1] ? 'THÔNG TIN CÔNG VIỆC' : activeTab.toUpperCase()}
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleOpenPasswordModal}
-                disabled={!canChangeOwnPassword}
-                title={
-                  canChangeOwnPassword
-                    ? 'Đổi mật khẩu'
-                    : 'API hiện tại chỉ hỗ trợ đổi mật khẩu cho hồ sơ của chính bạn.'
-                }
-                className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
-              >
-                Đổi mật khẩu
-              </button>
-              <button
-                type="button"
-                onClick={handleOpenEditModal}
-                className="inline-flex items-center rounded-md bg-[#1f2937] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#111827]"
-              >
-                <span className="material-symbols-outlined mr-1.5 text-[14px]">edit</span>
-                Sửa
-              </button>
+          {activeTab !== EMPLOYEE_DETAIL_TABS[2] && (
+            <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-500">
+                {activeTab === EMPLOYEE_DETAIL_TABS[0]
+                  ? 'THÔNG TIN CÁ NHÂN'
+                  : activeTab === EMPLOYEE_DETAIL_TABS[1]
+                  ? 'THÔNG TIN CÔNG VIỆC'
+                  : activeTab.toUpperCase()}
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleOpenPasswordModal}
+                  disabled={!canChangeOwnPassword}
+                  title={
+                    canChangeOwnPassword
+                      ? 'Đổi mật khẩu'
+                      : 'API hiện tại chỉ hỗ trợ đổi mật khẩu cho hồ sơ của chính bạn.'
+                  }
+                  className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+                >
+                  Đổi mật khẩu
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenEditCurrentTab}
+                  className="inline-flex items-center rounded-md bg-[#1f2937] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#111827]"
+                >
+                  <span className="material-symbols-outlined mr-1.5 text-[14px]">edit</span>
+                  Sửa
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="px-6 py-6 pb-8">
             {activeTab === EMPLOYEE_DETAIL_TABS[0] ? (
@@ -510,6 +626,50 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
                 profile={profile}
                 onOpenEditTab={handleOpenEditWorkTab}
               />
+            ) : activeTab === EMPLOYEE_DETAIL_TABS[2] ? (
+              <LeaveTabContent
+                leaveBalance={profile?.leaveBalance}
+                isLoading={isLoading}
+                loadError={loadError}
+                onOpenEditTab={handleOpenEditLeaveTab}
+              />
+            ) : activeTab === EMPLOYEE_DETAIL_TABS[3] ? (
+              <AssetsTabContent
+                assets={profile?.assets}
+                isLoading={isLoading}
+                loadError={loadError}
+                onOpenEditTab={handleOpenAssetIssueModal}
+              />
+            ) : activeTab === EMPLOYEE_DETAIL_TABS[4] ? (
+              <DocumentsTabContent
+                documents={profile?.documents}
+                isLoading={isLoading}
+                loadError={loadError}
+                onOpenAddFolder={() => setIsAddFolderModalOpen(true)}
+                onOpenAddFile={() => setIsAddFileModalOpen(true)}
+                onOpenFolder={(folder) => setSelectedFolder(folder)}
+                onEditFolder={(folder) => {
+                  setSelectedFolderForAction(folder);
+                  setIsRenameFolderModalOpen(true);
+                }}
+                onDeleteFolder={(folder) => {
+                  setSelectedFolderForAction(folder);
+                  setIsDeleteFolderModalOpen(true);
+                }}
+              />
+            ) : activeTab === (window as any).EMPLOYEE_DETAIL_TABS?.[5] || activeTab === 'Chấm công' ? (
+              <AttendanceTabContent
+                settings={profile?.attendanceSettings}
+                isLoading={isLoading}
+                loadError={loadError}
+              />
+            ) : activeTab.includes('Chữ ký số') ? (
+              <SignatureTabContent 
+                employeeId={employee.id} 
+                employeeName={displayEmployee.fullName || ''} 
+              />
+            ) : activeTab === EMPLOYEE_DETAIL_TABS[8] ? (
+              <HistoryTabContent employeeId={employee.id} />
             ) : (
               <SecondaryTabPlaceholder activeTab={activeTab} />
             )}
@@ -537,12 +697,69 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
             initialSectionLabel={editModalInitialSectionLabel}
             initialPersonalTab={editModalInitialPersonalTab}
             initialWorkTab={editModalInitialWorkTab}
+            initialLeaveTab={editModalInitialLeaveTab}
             onClose={handleCloseEditModal}
             onSaved={handleEditSaved}
           />
         ) : null}
 
         {ToastComponent}
+
+        <AssetIssueModal
+          isOpen={isAssetIssueModalOpen}
+          onClose={() => setIsAssetIssueModalOpen(false)}
+          onIssue={handleIssueAsset}
+          employeeName={displayEmployee.fullName || ''}
+        />
+
+        <AddFolderModal
+          isOpen={isAddFolderModalOpen}
+          onClose={() => setIsAddFolderModalOpen(false)}
+          onCreate={handleCreateFolder}
+        />
+
+        <RenameFileModal
+          isOpen={isRenameFolderModalOpen}
+          onClose={() => setIsRenameFolderModalOpen(false)}
+          onRename={(newName) => selectedFolderForAction ? handleRenameFolder(selectedFolderForAction.id, newName) : Promise.resolve()}
+          initialName={selectedFolderForAction?.name || ''}
+          type="folder"
+        />
+
+        <DeleteFolderModal
+          isOpen={isDeleteFolderModalOpen}
+          onClose={() => setIsDeleteFolderModalOpen(false)}
+          onConfirm={handleDeleteFolder}
+          folder={selectedFolderForAction}
+          employeeName={displayEmployee.fullName || ''}
+        />
+
+        <AddFileModal
+          isOpen={isAddFileModalOpen}
+          onClose={() => {
+            setIsAddFileModalOpen(false);
+            setUploadTargetFolderId(undefined);
+          }}
+          onUpload={handleUploadFile}
+          folders={profile?.documents?.folders || []}
+          initialFolderId={uploadTargetFolderId}
+        />
+
+        <FolderDetailModal
+          isOpen={!!selectedFolder}
+          onClose={() => setSelectedFolder(null)}
+          folder={selectedFolder}
+          files={profile?.documents?.files || []}
+          employeeName={displayEmployee.fullName || ''}
+          onOpenUpload={() => {
+            if (selectedFolder) {
+              setUploadTargetFolderId(selectedFolder.id);
+              setIsAddFileModalOpen(true);
+            }
+          }}
+          onDeleteFile={handleDeleteFile}
+          onRenameFile={handleRenameFile}
+        />
       </div>
     </div>
   );

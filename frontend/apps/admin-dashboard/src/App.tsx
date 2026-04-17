@@ -18,11 +18,12 @@ import { WeeklyShiftSchedulePage } from "./features/shift-scheduling";
 import { EmployeeDetail } from "./features/employee-detail/EmployeeDetailViewIntegrated";
 import type { PersonalTabKey } from "./features/employee-detail/edit-modal/types";
 import type { Employee } from "./features/employees/types";
-import { authService, MOCK_USER } from "./services/authService";
+import { authService } from "./services/authService";
 import AuthLandingPage from "./pages/AuthLandingPage";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
 import type { User } from "./services/authService";
 import { employeeService } from "./services/employeeService";
+import { SignatureManagementPage } from "./features/signature-management/SignatureListPage";
 import "./index.css";
 
 const getInitials = (fullName: string | undefined) => {
@@ -108,6 +109,7 @@ const Header = ({
 
   const profileMenuItems = [
     { label: "Tài khoản", icon: "person" },
+    { label: "Chữ ký mẫu", icon: "draw", to: "/account/signatures" },
     { label: "Tích hợp", icon: "widgets" },
     { label: "Cài đặt", icon: "settings" },
     { label: "Trung tâm bảo mật", icon: "shield" },
@@ -265,6 +267,10 @@ const Header = ({
                 {profileMenuItems.map((item) => (
                   <button
                     key={item.label}
+                    onClick={() => {
+                      setIsProfileOpen(false);
+                      if (item.to) navigate(item.to);
+                    }}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#475569] hover:bg-[#f1f5f9] hover:text-[#1e293b] transition-colors text-sm font-medium"
                   >
                     <span className="material-symbols-outlined text-[20px]">
@@ -784,6 +790,23 @@ function RoutedApp() {
           element={
             isAuthenticated ? (
               <EmployeeDetailRoute />
+            ) : (
+              <Navigate
+                to="/login"
+                replace
+                state={{ from: loginRedirectPath }}
+              />
+            )
+          }
+        />
+        <Route
+          path="/account/signatures"
+          element={
+            isAuthenticated ? (
+              <div className="min-h-screen bg-[#f8fafc] flex flex-col">
+                <Header user={user} onLogout={handleLogout} />
+                <SignatureManagementPage />
+              </div>
             ) : (
               <Navigate
                 to="/login"
