@@ -14,6 +14,7 @@ import {
   type DepartmentMetadata,
   type JobTitleMetadata,
   type AccessGroupMetadata,
+  type AttendanceSettings,
 } from '../../../services/employeeService';
 import {
   MODAL_SECTIONS,
@@ -29,7 +30,15 @@ import WorkTabPanel from './components/WorkTabPanel';
 import LeaveTabNavigation from './components/LeaveTabNavigation';
 import LeaveTabPanel from './components/LeaveTabPanel';
 import AssetForm from './forms/AssetForm';
+import DocumentForm from './forms/DocumentForm';
+import AttendanceForm from './forms/AttendanceForm';
+import AddFolderModal from './components/AddFolderModal';
+import AddFileModal from './components/AddFileModal';
+import FolderDetailModal from './components/FolderDetailModal';
+import RenameFileModal from './components/RenameFileModal';
+import DeleteFolderModal from './components/DeleteFolderModal';
 import SectionPlaceholder from './components/SectionPlaceholder';
+import SignatureTabContent from '../../signature-management/components/SignatureTabContent';
 import { isModalSectionAvailable } from './sectionAvailability';
 import UnsavedChangesDialog from './components/UnsavedChangesDialog';
 import useUnsavedChangesGuard from '../../../hooks/useUnsavedChangesGuard';
@@ -45,6 +54,7 @@ import type {
   AssetFormMap,
   AssetTabKey,
 } from './types';
+import type { DocumentFolder } from '../../../services/employee/types';
 import { LEAVE_TABS } from './constants';
 import {
   buildSeedForms,
@@ -190,6 +200,14 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
   const [assetForms, setAssetForms] = useState(() =>
     createAssetFormsState(buildAssetSeedForms()),
   );
+
+  const [isAddFolderModalOpen, setIsAddFolderModalOpen] = useState(false);
+  const [isAddFileModalOpen, setIsAddFileModalOpen] = useState(false);
+  const [isRenameFolderModalOpen, setIsRenameFolderModalOpen] = useState(false);
+  const [isDeleteFolderModalOpen, setIsDeleteFolderModalOpen] = useState(false);
+  const [uploadTargetFolderId, setUploadTargetFolderId] = useState<string | undefined>(undefined);
+  const [selectedFolder, setSelectedFolder] = useState<DocumentFolder | null>(null);
+  const [selectedFolderForAction, setSelectedFolderForAction] = useState<DocumentFolder | null>(null);
 
   const [metadata, setMetadata] = useState<{
     regions: RegionMetadata[];
@@ -476,6 +494,79 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
       }));
     }
   }, [employee.id]);
+
+  const handleCreateFolder = async (name: string) => {
+    try {
+      await employeeService.createDocumentFolderMock(employee.id, name);
+      showToast(`Đã tạo thư mục "${name}" thành công.`, 'success');
+      onSaved?.();
+    } catch (error) {
+      showToast('Có lỗi xảy ra khi tạo thư mục.', 'error');
+    }
+  };
+
+  const handleUploadFile = async (file: File, folderId: string) => {
+    try {
+      await employeeService.uploadDocumentFileMock(employee.id, file, folderId);
+      showToast(`Đã tải lên tệp "${file.name}" thành công.`, 'success');
+      onSaved?.();
+    } catch (error) {
+      showToast('Có lỗi xảy ra khi tải lên tệp.', 'error');
+    }
+  };
+
+  const handleDeleteFile = async (fileId: string) => {
+    if (!selectedFolder) return;
+    try {
+      await employeeService.deleteDocumentFileMock(employee.id, fileId, selectedFolder.id);
+      showToast('Đã xóa tệp thành công.', 'success');
+      onSaved?.();
+    } catch (error) {
+      showToast('Có lỗi xảy ra khi xóa tệp.', 'error');
+    }
+  };
+
+  const handleRenameFile = async (fileId: string, newName: string) => {
+    try {
+      await employeeService.renameDocumentFileMock(employee.id, fileId, newName);
+      showToast('Đã đổi tên tệp thành công.', 'success');
+      onSaved?.();
+    } catch (error) {
+      showToast('Có lỗi xảy ra khi đổi tên tệp.', 'error');
+    }
+  };
+
+  const handleRenameFolder = async (folderId: string, newName: string) => {
+    try {
+      await employeeService.renameDocumentFolderMock(employee.id, folderId, newName);
+      showToast('Đã đổi tên thư mục thành công.', 'success');
+      onSaved?.();
+    } catch (error) {
+      showToast('Có lỗi xảy ra khi đổi tên thư mục.', 'error');
+    }
+  };
+
+  const handleDeleteFolder = async () => {
+    if (!selectedFolderForAction) return;
+    try {
+      await employeeService.deleteDocumentFolderMock(employee.id, selectedFolderForAction.id);
+      showToast('Đã xóa thư mục thành công.', 'success');
+      onSaved?.();
+    } catch (error) {
+      showToast('Có lỗi xảy ra khi xóa thư mục.', 'error');
+    }
+  };
+
+  const handleSaveAttendance = async (settings: AttendanceSettings) => {
+    try {
+      await employeeService.updateAttendanceSettingsMock(employee.id, settings);
+      showToast('Cập nhật cấu hình chấm công thành công.', 'success');
+      onSaved?.();
+    } catch (error) {
+      showToast('Có lỗi xảy ra khi cập nhật cấu hình chấm công.', 'error');
+      throw error;
+    }
+  };
 
   const loadMetadata = useCallback(async () => {
     setMetadata((prev) => ({ ...prev, isLoading: true }));
@@ -1123,55 +1214,57 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
             <EditModalSidebar activeSection={activeSection} onChange={handleSectionChange} />
 
             <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-              <div className="min-w-0 border-b border-slate-200 px-[1.1rem] pt-4 pb-[0.6rem] lg:px-[1.1rem]">
-                <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-                  <div>
-                    <h3 className="mt-1 text-[26px] font-bold tracking-tight text-[#253a69]">
-                      {activeSectionConfig.label}
-                    </h3>
-                    <p className="text-sm font-semibold text-slate-500">{employee.fullName}</p>
+              {activeSection !== 'timekeeping' && (
+                <div className="min-w-0 border-b border-slate-200 px-[1.1rem] pt-4 pb-[0.6rem] lg:px-[1.1rem]">
+                  <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+                    <div>
+                      <h3 className="mt-1 text-[26px] font-bold tracking-tight text-[#253a69]">
+                        {activeSectionConfig.label}
+                      </h3>
+                      <p className="text-sm font-semibold text-slate-500">{employee.fullName}</p>
+                    </div>
+
+                    {activeSection !== 'leave' && activeSection !== 'asset' && (
+                      <button
+                        type="button"
+                        onClick={handleSave}
+                        disabled={!isSaveEnabled}
+                        className={`inline-flex min-h-11 items-center justify-center rounded-2xl px-6 text-sm font-bold transition-all ${
+                          isSaveEnabled
+                            ? 'bg-emerald-500 text-white shadow-[0_16px_30px_rgba(16,185,129,0.25)] hover:bg-emerald-600'
+                            : 'cursor-not-allowed bg-slate-200 text-slate-500'
+                        }`}
+                      >
+                        {(activeSection === 'personal' && activePersonalState.isSubmitting) ||
+                        (activeSection === 'work' && activeWorkState.isSubmitting) ? (
+                          <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+                        ) : null}
+                        Lưu
+                      </button>
+                    )}
                   </div>
 
-                  {activeSection !== 'leave' && activeSection !== 'asset' && (
-                    <button
-                      type="button"
-                      onClick={handleSave}
-                      disabled={!isSaveEnabled}
-                      className={`inline-flex min-h-11 items-center justify-center rounded-2xl px-6 text-sm font-bold transition-all ${
-                        isSaveEnabled
-                          ? 'bg-emerald-500 text-white shadow-[0_16px_30px_rgba(16,185,129,0.25)] hover:bg-emerald-600'
-                          : 'cursor-not-allowed bg-slate-200 text-slate-500'
-                      }`}
-                    >
-                      {(activeSection === 'personal' && activePersonalState.isSubmitting) ||
-                      (activeSection === 'work' && activeWorkState.isSubmitting) ? (
-                        <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
-                      ) : null}
-                      Lưu
-                    </button>
-                  )}
+                  {activeSection === 'personal' ? (
+                    <PersonalTabNavigation
+                      activeTab={activePersonalTab}
+                      personalForms={personalForms}
+                      onChange={handlePersonalTabChange}
+                    />
+                  ) : activeSection === 'work' ? (
+                    <WorkTabNavigation
+                      activeTab={activeWorkTab}
+                      workForms={workForms}
+                      onChange={handleWorkTabChange}
+                    />
+                  ) : activeSection === 'leave' && LEAVE_TABS.length > 1 ? (
+                    <LeaveTabNavigation
+                      activeTab={activeLeaveTab}
+                      leaveForms={leaveForms}
+                      onChange={handleLeaveTabChange}
+                    />
+                  ) : null}
                 </div>
-
-                {activeSection === 'personal' ? (
-                  <PersonalTabNavigation
-                    activeTab={activePersonalTab}
-                    personalForms={personalForms}
-                    onChange={handlePersonalTabChange}
-                  />
-                ) : activeSection === 'work' ? (
-                  <WorkTabNavigation
-                    activeTab={activeWorkTab}
-                    workForms={workForms}
-                    onChange={handleWorkTabChange}
-                  />
-                ) : activeSection === 'leave' && LEAVE_TABS.length > 1 ? (
-                  <LeaveTabNavigation
-                    activeTab={activeLeaveTab}
-                    leaveForms={leaveForms}
-                    onChange={handleLeaveTabChange}
-                  />
-                ) : null}
-              </div>
+              )}
 
               <div className="min-h-0 min-w-0 flex-1 overflow-y-auto px-6 py-8 lg:px-9">
                 {currentLoadError ? (
@@ -1258,6 +1351,48 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
                       }
                     }}
                   />
+                ) : activeSectionConfig.key === 'signature' ? (
+                  <SignatureTabContent 
+                    employeeId={employee.id} 
+                    employeeName={employee.fullName} 
+                  />
+                ) : activeSection === 'document' ? (
+                  <DocumentForm
+                    documents={profile?.documents}
+                    onOpenAddFile={() => setIsAddFileModalOpen(true)}
+                    onOpenAddFolder={() => setIsAddFolderModalOpen(true)}
+                    onOpenFolder={(folder) => setSelectedFolder(folder)}
+                    onEditFolder={(folder) => {
+                      setSelectedFolderForAction(folder);
+                      setIsRenameFolderModalOpen(true);
+                    }}
+                    onDeleteFolder={(folder) => {
+                      setSelectedFolderForAction(folder);
+                      setIsDeleteFolderModalOpen(true);
+                    }}
+                  />
+                ) : activeSection === 'timekeeping' ? (
+                  <AttendanceForm
+                    settings={profile?.attendanceSettings || {
+                      multiDeviceLogin: false,
+                      locationTracking: true,
+                      noAttendanceRequired: false,
+                      lateInLateOutAllowed: true,
+                      earlyInEarlyOutAllowed: false,
+                      autoAttendanceIn: false,
+                      autoAttendanceOut: true,
+                      faceIdInRequired: true,
+                      faceIdOutRequired: false,
+                      proxyAttendanceAllowed: false,
+                      proxyAttendanceImageRequired: false,
+                      unconstrainedAttendance: {
+                        enabled: false,
+                        gpsOption: 'not_required'
+                      }
+                    }}
+                    onSave={handleSaveAttendance}
+                    employeeName={employee.fullName}
+                  />
                 ) : (
                   <SectionPlaceholder
                     section={activeSection}
@@ -1273,6 +1408,55 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
             isOpen={isDialogOpen}
             onConfirm={confirmAction}
             onCancel={cancelAction}
+          />
+
+          <AddFolderModal
+            isOpen={isAddFolderModalOpen}
+            onClose={() => setIsAddFolderModalOpen(false)}
+            onCreate={handleCreateFolder}
+          />
+
+          <RenameFileModal
+            isOpen={isRenameFolderModalOpen}
+            onClose={() => setIsRenameFolderModalOpen(false)}
+            onRename={(newName) => selectedFolderForAction ? handleRenameFolder(selectedFolderForAction.id, newName) : Promise.resolve()}
+            initialName={selectedFolderForAction?.name || ''}
+            type="folder"
+          />
+
+          <DeleteFolderModal
+            isOpen={isDeleteFolderModalOpen}
+            onClose={() => setIsDeleteFolderModalOpen(false)}
+            onConfirm={handleDeleteFolder}
+            folder={selectedFolderForAction}
+            employeeName={employee.fullName}
+          />
+
+          <AddFileModal
+            isOpen={isAddFileModalOpen}
+            onClose={() => {
+              setIsAddFileModalOpen(false);
+              setUploadTargetFolderId(undefined);
+            }}
+            onUpload={handleUploadFile}
+            folders={profile?.documents?.folders || []}
+            initialFolderId={uploadTargetFolderId}
+          />
+
+          <FolderDetailModal
+            isOpen={!!selectedFolder}
+            onClose={() => setSelectedFolder(null)}
+            folder={selectedFolder}
+            files={profile?.documents?.files || []}
+            employeeName={employee.fullName || ''}
+            onOpenUpload={() => {
+              if (selectedFolder) {
+                setUploadTargetFolderId(selectedFolder.id);
+                setIsAddFileModalOpen(true);
+              }
+            }}
+            onDeleteFile={handleDeleteFile}
+            onRenameFile={handleRenameFile}
           />
         </div>
       </div>
