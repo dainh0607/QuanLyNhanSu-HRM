@@ -186,6 +186,55 @@ export interface EmployeeFullProfile {
   salaryInfo?: EmployeeSalaryAllowanceProfile | null;
   contracts: EmployeeContractProfile[];
   insurances: EmployeeInsuranceProfile[];
+  assets: EmployeeEditAssetPayload;
+  leaveBalance: EmployeeEditLeaveBalancePayload;
+  documents?: {
+    folders: DocumentFolder[];
+    files: DocumentFile[];
+  };
+  attendanceSettings: AttendanceSettings;
+}
+
+export interface AttendanceSettings {
+  multiDeviceLogin: boolean;
+  locationTracking: boolean;
+  noAttendanceRequired: boolean;
+  lateInLateOutAllowed: boolean;
+  earlyInEarlyOutAllowed: boolean;
+  autoAttendanceIn: boolean;
+  autoAttendanceOut: boolean;
+  faceIdInRequired: boolean;
+  faceIdOutRequired: boolean;
+  proxyAttendanceAllowed: boolean;
+  proxyAttendanceImageRequired: boolean;
+  unconstrainedAttendance: {
+    enabled: boolean;
+    gpsOption: 'required' | 'not_required' | 'image_required';
+  };
+}
+
+export interface DocumentFolder {
+  id: string;
+  name: string;
+  fileCount: number;
+}
+
+export interface DocumentFile {
+  id: string;
+  name: string;
+  size: string;
+  uploadDate: string;
+  uploadedBy: string;
+  folderId: string;
+}
+
+export interface CreateDocumentFolderPayload {
+  name: string;
+}
+
+export interface UploadDocumentFilePayload {
+  file: File;
+  folderId: string;
 }
 
 export interface EmployeeCreatePayload {

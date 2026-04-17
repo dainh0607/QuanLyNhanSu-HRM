@@ -18,11 +18,12 @@ import { WeeklyShiftSchedulePage } from "./features/shift-scheduling";
 import { EmployeeDetail } from "./features/employee-detail/EmployeeDetailViewIntegrated";
 import type { PersonalTabKey } from "./features/employee-detail/edit-modal/types";
 import type { Employee } from "./features/employees/types";
-import { authService, MOCK_USER } from "./services/authService";
+import { authService, hasPermission } from "./services/authService";
 import AuthLandingPage from "./pages/AuthLandingPage";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
 import type { User } from "./services/authService";
 import { employeeService } from "./services/employeeService";
+import { SignatureManagementPage } from "./features/signature-management/SignatureListPage";
 import "./index.css";
 
 const getInitials = (fullName: string | undefined) => {
@@ -77,28 +78,27 @@ const Header = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isProfileOpen, handleClickOutside]);
 
-  const navItems: Array<{
-    name: string;
-    active: boolean;
-    to?: string;
-    hasDropdown?: boolean;
-    menuKey?: "more";
-  }> = [
-    { name: "Lịch", active: false },
+  const canReadPersonnel = hasPermission(user, "employee", "read");
+  const canReadShifts = hasPermission(user, "shifts", "read");
+
+  const navItems = [
+    { name: "Lịch", active: false, visible: true },
     {
       name: "Nhân sự",
       active: isPersonnelSectionActive,
       to: "/personnel/employees",
+      visible: canReadPersonnel,
     },
     {
       name: "Chấm công",
       active: isShiftSchedulingActive,
       to: "/working-day/timekeeping",
+      visible: canReadShifts,
     },
-    { name: "Yêu cầu", active: false },
-    { name: "Tiền lương", active: false },
-    { name: "Thêm", active: false, hasDropdown: true, menuKey: "more" },
-  ];
+    { name: "Yêu cầu", active: false, visible: true },
+    { name: "Tiền lương", active: false, visible: true },
+    { name: "Thêm", active: false, hasDropdown: true, menuKey: "more", visible: true },
+  ].filter(item => item.visible);
 
   const moreMenuItems = [
     { label: "Tuyển dụng", icon: "person_search", note: "Sắp mở" },
@@ -108,6 +108,7 @@ const Header = ({
 
   const profileMenuItems = [
     { label: "Tài khoản", icon: "person" },
+    { label: "Chữ ký mẫu", icon: "draw", to: "/account/signatures" },
     { label: "Tích hợp", icon: "widgets" },
     { label: "Cài đặt", icon: "settings" },
     { label: "Trung tâm bảo mật", icon: "shield" },
@@ -265,6 +266,10 @@ const Header = ({
                 {profileMenuItems.map((item) => (
                   <button
                     key={item.label}
+                    onClick={() => {
+                      setIsProfileOpen(false);
+                      if (item.to) navigate(item.to);
+                    }}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#475569] hover:bg-[#f1f5f9] hover:text-[#1e293b] transition-colors text-sm font-medium"
                   >
                     <span className="material-symbols-outlined text-[20px]">
@@ -402,6 +407,23 @@ type AuthRedirectState = {
 
 type EmployeeRouteState = {
   employee?: Employee;
+};
+
+const PermissionRoute = ({
+  user,
+  resource,
+  action,
+  children,
+}: {
+  user: User | null;
+  resource: string;
+  action: string;
+  children: React.ReactNode;
+}) => {
+  if (!user || !hasPermission(user, resource, action)) {
+    return <Navigate to="/unauthorized" replace />;
+  }
+  return <>{children}</>;
 };
 
 const LoadingScreen = ({ message }: { message: string }) => (
@@ -741,7 +763,9 @@ function RoutedApp() {
           path="/personnel/employees"
           element={
             isAuthenticated ? (
-              <EmployeeListRoute user={user} onLogout={handleLogout} />
+              <PermissionRoute user={user} resource="employee" action="read">
+                <EmployeeListRoute user={user} onLogout={handleLogout} />
+              </PermissionRoute>
             ) : (
               <Navigate
                 to="/login"
@@ -755,7 +779,9 @@ function RoutedApp() {
           path="/personnel/contracts"
           element={
             isAuthenticated ? (
-              <ContractsRoute user={user} onLogout={handleLogout} />
+              <PermissionRoute user={user} resource="contracts" action="read">
+                <ContractsRoute user={user} onLogout={handleLogout} />
+              </PermissionRoute>
             ) : (
               <Navigate
                 to="/login"
@@ -769,7 +795,9 @@ function RoutedApp() {
           path="/working-day/timekeeping"
           element={
             isAuthenticated ? (
-              <WeeklyShiftSchedulingRoute user={user} onLogout={handleLogout} />
+              <PermissionRoute user={user} resource="shifts" action="read">
+                <WeeklyShiftSchedulingRoute user={user} onLogout={handleLogout} />
+              </PermissionRoute>
             ) : (
               <Navigate
                 to="/login"
@@ -783,7 +811,26 @@ function RoutedApp() {
           path="/personnel/employees/:employeeId"
           element={
             isAuthenticated ? (
-              <EmployeeDetailRoute />
+              <PermissionRoute user={user} resource="employee" action="read">
+                <EmployeeDetailRoute />
+              </PermissionRoute>
+            ) : (
+              <Navigate
+                to="/login"
+                replace
+                state={{ from: loginRedirectPath }}
+              />
+            )
+          }
+        />
+        <Route
+          path="/account/signatures"
+          element={
+            isAuthenticated ? (
+              <div className="min-h-screen bg-[#f8fafc] flex flex-col">
+                <Header user={user} onLogout={handleLogout} />
+                <SignatureManagementPage />
+              </div>
             ) : (
               <Navigate
                 to="/login"

@@ -5,6 +5,7 @@ const SUPER_ADMIN_ROLE_KEYS = [
   "admin",
   "superadmin",
   "super admin",
+  "quản trị",
   "quan tri",
 ] as const;
 

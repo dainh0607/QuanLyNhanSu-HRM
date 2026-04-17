@@ -38,6 +38,9 @@ import type {
   EmployeeEditAssetPayload,
   AssetMetadata,
   AssetLocationMetadata,
+  AttendanceSettings,
+  DocumentFolder,
+  DocumentFile,
 } from "./types";
 
 interface EmployeeBasicInfoUpdateRequest {
@@ -99,6 +102,276 @@ interface EmployeeEmergencyContactUpdateItemRequest {
 
 
 
+
+const getMockLeaveBalance = (_id: number): EmployeeEditLeaveBalancePayload => ({
+  details: [
+    { leaveTypeName: 'Nghỉ phép năm', totalDays: '12', usedDays: '3.5', remainingDays: '8.5' },
+    { leaveTypeName: 'Nghỉ chế độ', totalDays: '5', usedDays: '0', remainingDays: '5' },
+    { leaveTypeName: 'Nghỉ việc riêng (Có lương)', totalDays: '3', usedDays: '1', remainingDays: '2' },
+  ],
+  paidLeaveDays: '12',
+  unpaidLeaveDays: '0',
+});
+
+// PERSISTENT MOCK ASSETS STORE FOR THE SESSION
+const mockAssetsStore: Record<number, EmployeeEditAssetPayload> = {};
+
+const getMockAssets = (id: number): EmployeeEditAssetPayload => {
+  if (mockAssetsStore[id]) {
+    return mockAssetsStore[id];
+  }
+
+  const defaultAssets = [
+    {
+      assetName: 'Laptop Dell Latitude 7420',
+      assetCode: 'LP-DELL-001',
+      issueCode: 'ISS-2024-001',
+      quantity: '1',
+      description: 'Máy mới 100%, kèm sạc và túi chống sốc',
+      issueDate: '2024-01-15',
+    },
+    {
+      assetName: 'Màn hình Dell UltraSharp 27"',
+      assetCode: 'MON-DELL-27-01',
+      issueCode: 'ISS-2024-002',
+      quantity: '1',
+      description: 'Bao gồm cáp HDMI và DisplayPort',
+      issueDate: '2024-01-15',
+    },
+    {
+      assetName: 'Chuột Logitech MX Master 3',
+      assetCode: 'MSE-LOGI-MX3',
+      issueCode: 'ISS-2024-003',
+      quantity: '1',
+      description: 'Thiết bị ngoại vi',
+      issueDate: '2024-02-10',
+    },
+  ];
+
+  mockAssetsStore[id] = defaultAssets;
+  return defaultAssets;
+};
+
+export const issueEmployeeAssetMock = async (id: number, asset: any): Promise<void> => {
+  // Simulate network delay
+  await new Promise(resolve => setTimeout(resolve, 800));
+  
+  const currentAssets = getMockAssets(id);
+  const newAsset = {
+    assetName: asset.assetName,
+    assetCode: asset.assetCode || `ASSET-${Math.random().toString(36).substring(7).toUpperCase()}`,
+    issueCode: asset.issueCode,
+    quantity: asset.quantity.toString(),
+    description: asset.description || asset.note || '',
+    issueDate: asset.issueDate,
+  };
+
+  mockAssetsStore[id] = [newAsset, ...currentAssets];
+};
+
+// PERSISTENT MOCK DOCUMENTS STORE FOR THE SESSION
+const mockDocumentsStore: Record<number, { folders: DocumentFolder[], files: DocumentFile[] }> = {};
+
+const mockAttendanceStore: Record<number, AttendanceSettings> = {};
+function getMockAttendanceSettings(id: number): AttendanceSettings {
+  if (mockAttendanceStore[id]) return mockAttendanceStore[id];
+  mockAttendanceStore[id] = {
+    multiDeviceLogin: false,
+    locationTracking: true,
+    noAttendanceRequired: false,
+    lateInLateOutAllowed: true,
+    earlyInEarlyOutAllowed: false,
+    autoAttendanceIn: false,
+    autoAttendanceOut: true,
+    faceIdInRequired: true,
+    faceIdOutRequired: false,
+    proxyAttendanceAllowed: false,
+    proxyAttendanceImageRequired: false,
+    unconstrainedAttendance: {
+      enabled: false,
+      gpsOption: 'not_required'
+    }
+  };
+  return mockAttendanceStore[id];
+}
+
+function getMockDocuments(id: number) {
+  if (mockDocumentsStore[id]) {
+    return mockDocumentsStore[id];
+  }
+
+  const defaultData = {
+    folders: [
+      { id: 'f1', name: 'Hồ sơ cá nhân', fileCount: 3 },
+      { id: 'f2', name: 'Bằng cấp & Chứng chỉ', fileCount: 2 },
+      { id: 'f3', name: 'Hợp đồng lao động', fileCount: 1 },
+    ],
+    files: [
+      { id: 'file1', name: 'CCCD_MatTruoc.jpg', size: '1.2 MB', uploadDate: '2024-01-15', uploadedBy: 'Admin', folderId: 'f1' },
+      { id: 'file2', name: 'CCCD_MatSau.jpg', size: '1.1 MB', uploadDate: '2024-01-15', uploadedBy: 'Admin', folderId: 'f1' },
+      { id: 'file3', name: 'SoHoKhau.pdf', size: '5.4 MB', uploadDate: '2024-01-16', uploadedBy: 'Admin', folderId: 'f1' },
+      { id: 'file4', name: 'BangDaiHoc.pdf', size: '2.3 MB', uploadDate: '2024-01-20', uploadedBy: 'Admin', folderId: 'f2' },
+      { id: 'file5', name: 'ChungChiTiengAnh.jpg', size: '0.8 MB', uploadDate: '2024-01-20', uploadedBy: 'Admin', folderId: 'f2' },
+      { id: 'file6', name: 'HopDong_2024.pdf', size: '3.1 MB', uploadDate: '2024-01-01', uploadedBy: 'System', folderId: 'f3' },
+    ]
+  };
+
+  mockDocumentsStore[id] = defaultData;
+  return defaultData;
+}
+
+export const createDocumentFolderMock = async (id: number, name: string): Promise<void> => {
+  await new Promise(resolve => setTimeout(resolve, 600));
+  const data = getMockDocuments(id);
+  const newFolder: DocumentFolder = {
+    id: `f${Math.random().toString(36).substring(7)}`,
+    name,
+    fileCount: 0
+  };
+  data.folders = [...data.folders, newFolder];
+  mockDocumentsStore[id] = data;
+};
+
+export const uploadDocumentFileMock = async (id: number, file: File, folderId: string): Promise<void> => {
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  const data = getMockDocuments(id);
+  const newFile: DocumentFile = {
+    id: `file${Math.random().toString(36).substring(7)}`,
+    name: file.name,
+    size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+    uploadDate: new Date().toISOString().split('T')[0],
+    uploadedBy: 'minh / Người giám sát',
+    folderId
+  };
+  
+  data.files = [...data.files, newFile];
+  
+  // Update file count in folder
+  data.folders = data.folders.map(f => 
+    f.id === folderId ? { ...f, fileCount: f.fileCount + 1 } : f
+  );
+  
+  mockDocumentsStore[id] = data;
+};
+
+export const deleteDocumentFileMock = async (id: number, fileId: string, folderId: string): Promise<void> => {
+  await new Promise(resolve => setTimeout(resolve, 500));
+  const data = getMockDocuments(id);
+  
+  // Remove file
+  data.files = data.files.filter(f => f.id !== fileId);
+  
+  // Update file count in folder
+  data.folders = data.folders.map(f => 
+    f.id === folderId ? { ...f, fileCount: Math.max(0, f.fileCount - 1) } : f
+  );
+  
+  mockDocumentsStore[id] = data;
+};
+
+export const deleteDocumentFolderMock = async (id: number, folderId: string): Promise<void> => {
+  await new Promise(resolve => setTimeout(resolve, 500));
+  const data = getMockDocuments(id);
+  
+  // Remove folder
+  data.folders = data.folders.filter(f => f.id !== folderId);
+  
+  // Remove all files in that folder
+  data.files = data.files.filter(f => f.folderId !== folderId);
+  
+  mockDocumentsStore[id] = data;
+};
+
+export const renameDocumentFileMock = async (id: number, fileId: string, newName: string): Promise<void> => {
+  await new Promise(resolve => setTimeout(resolve, 500));
+  const data = getMockDocuments(id);
+  
+  data.files = data.files.map(f => 
+    f.id === fileId ? { ...f, name: newName } : f
+  );
+  
+  mockDocumentsStore[id] = data;
+};
+
+export const renameDocumentFolderMock = async (id: number, folderId: string, newName: string): Promise<void> => {
+  await new Promise(resolve => setTimeout(resolve, 500));
+  const data = getMockDocuments(id);
+  
+  data.folders = data.folders.map(f => 
+    f.id === folderId ? { ...f, name: newName } : f
+  );
+  
+  mockDocumentsStore[id] = data;
+};
+
+export async function updateAttendanceSettingsMock(id: number, settings: AttendanceSettings): Promise<void> {
+  await new Promise(resolve => setTimeout(resolve, 800));
+  mockAttendanceStore[id] = settings;
+}
+
+const getMockFullProfile = (id: number, fallbackBasicInfo: any): EmployeeFullProfile => ({
+  basicInfo: {
+    id,
+    employeeCode: fallbackBasicInfo?.employeeCode || 'EMP001',
+    fullName: fallbackBasicInfo?.fullName || 'Nguyễn Văn A',
+    genderCode: 'M',
+    gender: 'Nam',
+    birthDate: '1990-01-01',
+    displayOrder: 1,
+    maritalStatusCode: 'S',
+    departmentId: 1,
+    departmentName: 'Phòng Công nghệ Thông tin',
+    jobTitleId: 1,
+    jobTitleName: 'Kỹ sư Phần mềm Senior',
+    branchId: 1,
+    branchName: 'Văn phòng chính (Hà Nội)',
+    managerId: 0,
+    managerName: 'Trần Thị Quản Lý',
+    startDate: '2023-01-01',
+    avatar: undefined,
+    workType: 'Toàn thời gian',
+    accessGroup: 'Nhân viên',
+    identityNumber: '123456789012',
+    taxCode: '8123456789',
+    phone: '0987654321',
+    email: 'nguyenvana@example.com',
+    workEmail: 'nguyenvana@company.com',
+  },
+  addresses: [],
+  emergencyContacts: [],
+  education: [],
+  bankAccounts: [],
+  healthRecord: null,
+  dependents: [],
+  promotionHistory: [],
+  workHistory: [],
+  salaryInfo: null,
+  contracts: [],
+  insurances: [],
+  leaveBalance: getMockLeaveBalance(id),
+  assets: getMockAssets(id),
+  documents: getMockDocuments(id),
+  attendanceSettings: getMockAttendanceSettings(id),
+});
+
+const getEmployeeFullProfile = async (id: number): Promise<EmployeeFullProfile> => {
+  try {
+    const profile = await fetchEmployeeFullProfileFallback(id);
+    
+    // Trộn dữ liệu Mock cho các phần chưa có API
+    return {
+      ...profile,
+      leaveBalance: profile.leaveBalance || getMockLeaveBalance(id),
+      assets: profile.assets || getMockAssets(id),
+      documents: profile.documents || getMockDocuments(id),
+      attendanceSettings: profile.attendanceSettings || getMockAttendanceSettings(id),
+    };
+  } catch (error) {
+    console.warn('Backend chưa sẵn sàng hoặc lỗi kết nối, đang sử dụng Full Mock Data:', error);
+    // Trả về full mock profile để Frontend vẫn hiển thị đẹp
+    return getMockFullProfile(id, null);
+  }
+};
 
 const fetchEmployeeFullProfileFallback = async (id: number): Promise<EmployeeFullProfile> =>
   requestJson<EmployeeFullProfile>(
@@ -1144,6 +1417,7 @@ const updateEmployeeEditAsset = async (
 };
 
 export {
+  getEmployeeFullProfile,
   fetchEmployeeFullProfileFallback,
   getEmployeeEditBasicInfo,
   updateEmployeeEditBasicInfo,
@@ -1181,6 +1455,7 @@ export {
 };
 
 export const employeeProfileService = {
+  getEmployeeFullProfile,
   fetchEmployeeFullProfileFallback,
   getEmployeeEditBasicInfo,
   updateEmployeeEditBasicInfo,
@@ -1215,4 +1490,12 @@ export const employeeProfileService = {
   updateEmployeeEditAsset,
   getAssetsMetadata,
   getAssetLocationsMetadata,
+  issueEmployeeAssetMock,
+  createDocumentFolderMock,
+  uploadDocumentFileMock,
+  deleteDocumentFileMock,
+  deleteDocumentFolderMock,
+  renameDocumentFileMock,
+  renameDocumentFolderMock,
+  updateAttendanceSettingsMock,
 };

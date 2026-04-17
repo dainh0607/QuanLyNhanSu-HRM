@@ -55,10 +55,10 @@ const mockRoles: Role[] = [
 ];
 
 const mockPermissions: Permission[] = [
-  { id: 1, name: "View", resource: "Employee", action: "view" },
-  { id: 2, name: "Create", resource: "Employee", action: "create" },
-  { id: 3, name: "Edit", resource: "Employee", action: "edit" },
-  { id: 4, name: "Delete", resource: "Employee", action: "delete" },
+  { id: 1, name: "View", resource: "employee", action: "read" },
+  { id: 2, name: "Create", resource: "employee", action: "create" },
+  { id: 3, name: "Edit", resource: "employee", action: "update" },
+  { id: 4, name: "Delete", resource: "employee", action: "delete" },
 ];
 
 export const authorizationService = {

@@ -40,5 +40,10 @@ namespace ERP.Services.Auth
         /// Khởi tạo hệ thống với tài khoản admin đầu tiên
         /// </summary>
         Task<AuthResponseDto> BootstrapSystemAsync();
+
+        /// <summary>
+        /// Khởi tạo tài khoản Super Admin (quy trình bảo mật CLI)
+        /// </summary>
+        Task<AuthResponseDto> InitializeSuperAdminInternalAsync(string email, string password);
     }
 }

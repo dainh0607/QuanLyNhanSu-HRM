@@ -158,9 +158,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigateToActivation, onLoginSu
           <span className="material-symbols-outlined">phone</span>
           Số điện thoại
         </button>
-        <div className="login-info-box">
-          Tai khoan admin-dashboard duoc cap boi Workspace Owner provisioning trong SuperAdmin.
-        </div>
 
         <p className="login-footer">
           Da nhan activation link cho Workspace Owner?{' '}

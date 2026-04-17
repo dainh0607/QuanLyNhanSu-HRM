@@ -82,6 +82,24 @@
   min-height: 110px;
 }
 
+.sa-form-helper {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.sa-form-helper--info {
+  color: var(--sa-text-muted);
+}
+
+.sa-form-helper--success {
+  color: var(--sa-emerald);
+}
+
+.sa-form-helper--error {
+  color: #fda4af;
+}
+
 .sa-form-field input:focus,
 .sa-form-field select:focus,
 .sa-form-field textarea:focus {
@@ -106,6 +124,12 @@
   text-align: center;
   border-color: rgba(148, 163, 184, 0.16);
   background: rgba(255, 255, 255, 0.03);
+}
+
+.sa-preview-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .sa-pill {
@@ -141,6 +165,12 @@
   background: rgba(244, 63, 94, 0.12);
   color: var(--sa-rose);
   border-color: rgba(244, 63, 94, 0.3);
+}
+
+.sa-pill.is-fuchsia {
+  background: rgba(217, 70, 239, 0.12);
+  color: #f0abfc;
+  border-color: rgba(217, 70, 239, 0.28);
 }
 
 .sa-pill.is-slate {
@@ -235,6 +265,10 @@
   background: linear-gradient(90deg, #fb7185, #f43f5e);
 }
 
+.sa-usage-fill.is-amber {
+  background: linear-gradient(90deg, #fbbf24, #f97316);
+}
+
 .sa-usage-fill.is-emerald {
   background: linear-gradient(90deg, #34d399, #10b981);
 }
@@ -246,10 +280,381 @@
   white-space: nowrap;
 }
 
+.sa-card-link,
+.sa-note-copy {
+  color: var(--sa-text-dim);
+  line-height: 1.7;
+}
+
+.sa-card-link {
+  display: block;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+}
+
+.sa-note-copy {
+  margin-top: 14px;
+}
+
+.sa-toast-stack {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 1200;
+  display: grid;
+  gap: 12px;
+  width: min(420px, calc(100vw - 32px));
+}
+
+.sa-toast {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(2, 6, 23, 0.92);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(14px);
+}
+
+.sa-toast p {
+  color: var(--sa-text-main);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.sa-toast .ghost-icon-button {
+  width: 28px;
+  height: 28px;
+}
+
+.sa-toast--success {
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.sa-toast--success p {
+  color: #d1fae5;
+}
+
+.sa-toast--error {
+  border-color: rgba(244, 63, 94, 0.35);
+}
+
+.sa-toast--error p {
+  color: #ffe4e6;
+}
+
+.sa-toast--info {
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+.sa-toast--info p {
+  color: #e0f2fe;
+}
+
+.sa-plan-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.sa-plan-card-title,
+.sa-dialog-title {
+  color: var(--sa-text-main);
+  font-size: 24px;
+}
+
+.sa-plan-card-copy,
+.sa-dialog-copy p {
+  color: var(--sa-text-dim);
+  line-height: 1.7;
+}
+
+.sa-billing-note {
+  margin-top: 16px;
+  color: var(--sa-text-dim);
+  line-height: 1.7;
+}
+
+.sa-plan-card-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sa-card-menu {
+  position: relative;
+}
+
+.sa-card-menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  min-width: 180px;
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(2, 6, 23, 0.96);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(14px);
+}
+
+.sa-card-menu-panel button {
+  min-height: 38px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--sa-text-dim);
+  text-align: left;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sa-card-menu-panel button:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--sa-text-main);
+}
+
+.sa-card-menu-panel button.is-danger:hover {
+  background: rgba(244, 63, 94, 0.12);
+  color: #ffe4e6;
+}
+
+.sa-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(10px);
+}
+
+.sa-dialog {
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  border-radius: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(3, 7, 18, 0.98);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.42);
+}
+
+.sa-dialog--wide {
+  width: min(880px, calc(100vw - 32px));
+}
+
+.sa-dialog-header,
+.sa-dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 22px;
+}
+
+.sa-dialog-header {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.sa-dialog-body {
+  display: grid;
+  gap: 18px;
+  padding: 20px 22px 22px;
+}
+
+.sa-dialog-copy {
+  display: grid;
+  gap: 16px;
+  padding: 20px 22px 0;
+}
+
+.sa-dialog-actions {
+  justify-content: flex-end;
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.sa-plan-section {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(2, 6, 23, 0.4);
+}
+
+.sa-plan-section-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.sa-plan-section-heading h3 {
+  color: var(--sa-text-main);
+  font-size: 16px;
+}
+
+.sa-plan-section-heading p {
+  color: var(--sa-text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.sa-toggle-group {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sa-toggle-button {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--sa-text-dim);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sa-toggle-button.is-active {
+  border-color: rgba(16, 185, 129, 0.32);
+  background: rgba(16, 185, 129, 0.12);
+  color: #d1fae5;
+}
+
+.sa-toggle-button.is-active.is-hidden {
+  border-color: rgba(244, 63, 94, 0.25);
+  background: rgba(244, 63, 94, 0.12);
+  color: #ffe4e6;
+}
+
+.sa-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.sa-feature-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--sa-text-dim);
+  cursor: pointer;
+}
+
+.sa-feature-option input {
+  accent-color: #14b8a6;
+}
+
+.sa-feature-option.is-checked {
+  border-color: rgba(56, 189, 248, 0.28);
+  background: rgba(56, 189, 248, 0.08);
+  color: #e0f2fe;
+}
+
+.sa-billing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.support-card,
+.plan-card {
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+  border-radius: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(2, 6, 23, 0.92)),
+    rgba(2, 6, 23, 0.86);
+  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.24);
+}
+
+.plan-grid,
+.support-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.support-list {
+  display: grid;
+  gap: 16px;
+}
+
+.support-ticket-card {
+  align-content: start;
+}
+
+.sa-support-audit-note {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(56, 189, 248, 0.14);
+  background: rgba(15, 23, 42, 0.72);
+  color: var(--sa-text-dim);
+  line-height: 1.7;
+}
+
+.sa-support-audit-note strong {
+  color: var(--sa-text-main);
+}
+
+.sa-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-top: 18px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(2, 6, 23, 0.4);
+  color: var(--sa-text-dim);
+}
+
+.sa-pagination-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.toolbar-controls .primary-button {
+  white-space: nowrap;
+}
+
 @media (max-width: 1180px) {
   .sa-split-layout,
   .sa-form-grid,
-  .sa-meta-grid {
+  .sa-meta-grid,
+  .sa-preview-grid,
+  .sa-feature-grid {
     grid-template-columns: 1fr;
+  }
+
+  .sa-pagination {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sa-pagination-actions {
+    width: 100%;
   }
 }

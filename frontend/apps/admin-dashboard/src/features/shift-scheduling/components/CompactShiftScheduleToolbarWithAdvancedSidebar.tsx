@@ -7,6 +7,7 @@ import type {
 import FilterSelect from "./FilterSelect";
 import IconActionButton from "./IconActionButton";
 import ShiftBulkActionsBar from "./ShiftBulkActionsBar";
+import { authService, hasPermission } from "../../../services/authService";
 
 interface CompactShiftScheduleToolbarWithAdvancedSidebarProps {
   filters: ShiftScheduleFilters;
@@ -76,6 +77,10 @@ export const CompactShiftScheduleToolbarWithAdvancedSidebar = ({
   onPublishAndApproveAll,
   onDeleteUnconfirmed,
 }: CompactShiftScheduleToolbarWithAdvancedSidebarProps) => {
+  const user = authService.getCurrentUser();
+  const canRead = hasPermission(user, "shifts", "read");
+  const canCreate = hasPermission(user, "shifts", "create");
+
   return (
     <section className="space-y-3">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -87,137 +92,141 @@ export const CompactShiftScheduleToolbarWithAdvancedSidebar = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <div className="group relative inline-block text-left">
-            <button
-              type="button"
-              onClick={onExport}
-              className="flex items-center rounded-lg border border-[#192841] bg-white px-4 py-2 text-sm font-semibold text-[#192841] transition-colors hover:bg-[#192841]/5"
-            >
-              Xuất file
-              <svg
-                className="ml-2 h-4 w-4 text-[#192841] transition-transform duration-200 group-hover:rotate-180"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
-
-            <div className="absolute right-0 top-full z-50 hidden pt-1.5 transition-all duration-200 group-hover:block">
-              <div className="w-52 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
-                <button
-                  type="button"
-                  className="block min-h-[28px] w-full px-4 py-1 text-left text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                >
-                  Xuất theo ngày công
-                </button>
-                <button
-                  type="button"
-                  className="block min-h-[28px] w-full px-4 py-1 text-left text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                >
-                  Xuất theo giờ công
-                </button>
-                <button
-                  type="button"
-                  className="block min-h-[28px] w-full px-4 py-1 text-left text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                >
-                  Bảng phân ca
-                </button>
-                <button
-                  type="button"
-                  className="block min-h-[28px] w-full px-4 py-1 text-left text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                >
-                  Bảng đi muộn, về sớm
-                </button>
-                <button
-                  type="button"
-                  className="block min-h-[28px] w-full px-4 py-1 text-left text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                >
-                  Bảng tăng ca
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center">
-            <div className="flex items-center rounded-lg bg-[#134BBA] shadow-md transition-all duration-200 hover:shadow-lg">
+          {canRead && (
+            <div className="group relative inline-block text-left">
               <button
                 type="button"
-                onClick={onImport}
-                className="flex items-center rounded-l-lg border-r border-white/20 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[#0e378c]"
+                onClick={onExport}
+                className="flex items-center rounded-lg border border-[#192841] bg-white px-4 py-2 text-sm font-semibold text-[#192841] transition-colors hover:bg-[#192841]/5"
               >
-                Nhập dữ liệu
+                Xuất file
+                <svg
+                  className="ml-2 h-4 w-4 text-[#192841] transition-transform duration-200 group-hover:rotate-180"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
               </button>
 
-              <div className="group/chevron relative h-full">
+              <div className="absolute right-0 top-full z-50 hidden pt-1.5 transition-all duration-200 group-hover:block">
+                <div className="w-52 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
+                  <button
+                    type="button"
+                    className="block min-h-[28px] w-full px-4 py-1 text-left text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
+                  >
+                    Xuất theo ngày công
+                  </button>
+                  <button
+                    type="button"
+                    className="block min-h-[28px] w-full px-4 py-1 text-left text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
+                  >
+                    Xuất theo giờ công
+                  </button>
+                  <button
+                    type="button"
+                    className="block min-h-[28px] w-full px-4 py-1 text-left text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
+                  >
+                    Bảng phân ca
+                  </button>
+                  <button
+                    type="button"
+                    className="block min-h-[28px] w-full px-4 py-1 text-left text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
+                  >
+                    Bảng đi muộn, về sớm
+                  </button>
+                  <button
+                    type="button"
+                    className="block min-h-[28px] w-full px-4 py-1 text-left text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
+                  >
+                    Bảng tăng ca
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {canCreate && (
+            <div className="flex items-center">
+              <div className="flex items-center rounded-lg bg-[#134BBA] shadow-md transition-all duration-200 hover:shadow-lg">
                 <button
                   type="button"
-                  className="flex h-full items-center justify-center rounded-r-lg px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#0e378c]"
+                  onClick={onImport}
+                  className="flex items-center rounded-l-lg border-r border-white/20 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[#0e378c]"
                 >
-                  <span className="material-symbols-outlined text-[18px] text-white transition-transform duration-200 group-hover/chevron:rotate-180">
-                    expand_more
-                  </span>
+                  Nhập dữ liệu
                 </button>
 
-                <div className="absolute right-0 top-full z-[1000] hidden animate-[fadeSlideDown_0.2s_ease-out] pt-1.5 group-hover/chevron:block">
-                  <div className="w-52 overflow-hidden rounded-xl border border-gray-200 bg-white py-2 shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
-                    <div className="mb-1 border-b border-gray-50 px-4 py-2">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                        Tùy chọn nhập
-                      </span>
+                <div className="group/chevron relative h-full">
+                  <button
+                    type="button"
+                    className="flex h-full items-center justify-center rounded-r-lg px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#0e378c]"
+                  >
+                    <span className="material-symbols-outlined text-[18px] text-white transition-transform duration-200 group-hover/chevron:rotate-180">
+                      expand_more
+                    </span>
+                  </button>
+
+                  <div className="absolute right-0 top-full z-[1000] hidden animate-[fadeSlideDown_0.2s_ease-out] pt-1.5 group-hover/chevron:block">
+                    <div className="w-52 overflow-hidden rounded-xl border border-gray-200 bg-white py-2 shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
+                      <div className="mb-1 border-b border-gray-100 px-4 py-[7px]">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                          Tùy chọn nhập
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={onImport}
+                        className="flex min-h-[28px] w-full items-center gap-3 px-4 py-1 text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
+                      >
+                        Tạo ca làm
+                      </button>
+                      <button
+                        type="button"
+                        onClick={onOpenShiftTemplateList}
+                        className="flex min-h-[28px] w-full items-center gap-3 px-4 py-1 text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
+                      >
+                        Danh sách ca
+                      </button>
+                      <button
+                        type="button"
+                        onClick={onOpenAssignShift}
+                        className="flex min-h-[28px] w-full items-center gap-3 px-4 py-1 text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
+                      >
+                        Xếp ca
+                      </button>
+                      <button
+                        type="button"
+                        onClick={onOpenCopyShift}
+                        className="flex min-h-[28px] w-full items-center gap-3 px-4 py-1 text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
+                      >
+                        Sao chép ca
+                      </button>
+                      <button
+                        type="button"
+                        onClick={onImport}
+                        className="flex min-h-[28px] w-full items-center gap-3 px-4 py-1 text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
+                      >
+                        Nhập dữ liệu
+                      </button>
+                      <button
+                        type="button"
+                        className="flex min-h-[28px] w-full items-center gap-3 px-4 py-1 text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
+                      >
+                        Phân ca thông minh
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={onImport}
-                      className="flex min-h-[28px] w-full items-center gap-3 px-4 py-1 text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                    >
-                      Tạo ca làm
-                    </button>
-                    <button
-                      type="button"
-                      onClick={onOpenShiftTemplateList}
-                      className="flex min-h-[28px] w-full items-center gap-3 px-4 py-1 text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                    >
-                      Danh sách ca
-                    </button>
-                    <button
-                      type="button"
-                      onClick={onOpenAssignShift}
-                      className="flex min-h-[28px] w-full items-center gap-3 px-4 py-1 text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                    >
-                      Xếp ca
-                    </button>
-                    <button
-                      type="button"
-                      onClick={onOpenCopyShift}
-                      className="flex min-h-[28px] w-full items-center gap-3 px-4 py-1 text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                    >
-                      Sao chép ca
-                    </button>
-                    <button
-                      type="button"
-                      onClick={onImport}
-                      className="flex min-h-[28px] w-full items-center gap-3 px-4 py-1 text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                    >
-                      Nhập dữ liệu
-                    </button>
-                    <button
-                      type="button"
-                      className="flex min-h-[28px] w-full items-center gap-3 px-4 py-1 text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                    >
-                      Phân ca thông minh
-                    </button>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Nút Công bố / Chấp thuận - hiện khi có ca nháp hoặc chờ duyệt */}
           <ShiftBulkActionsBar

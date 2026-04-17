@@ -7,7 +7,8 @@ interface ContractsDataTableProps {
   columns: ContractColumnConfig[];
   startIndex: number;
   onView: (contract: ContractListItem) => void;
-  onDelete: (contract: ContractListItem) => void;
+  onDelete?: (contract: ContractListItem) => void;
+  canUpdate?: boolean;
 }
 
 const ContractsDataTable: React.FC<ContractsDataTableProps> = ({
@@ -208,21 +209,43 @@ const ContractsDataTable: React.FC<ContractsDataTableProps> = ({
                         Xem
                       </button>
 
-                      <div className="mx-2 my-0.5 h-px bg-gray-50" />
+                      {canUpdate && (
+                        <>
+                          <div className="mx-2 my-0.5 h-px bg-gray-50" />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              // Chức năng sửa sẽ được triển khai sau
+                              setActiveMenuId(null);
+                            }}
+                            className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                          >
+                            <span className="material-symbols-outlined text-[20px] text-[#192841]">
+                              edit
+                            </span>
+                            Sửa
+                          </button>
+                        </>
+                      )}
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onDelete(contract);
-                          setActiveMenuId(null);
-                        }}
-                        className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-                      >
-                        <span className="material-symbols-outlined text-[20px] text-[#192841]">
-                          delete
-                        </span>
-                        Xóa
-                      </button>
+                      {onDelete && (
+                        <>
+                          <div className="mx-2 my-0.5 h-px bg-gray-50" />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onDelete(contract);
+                              setActiveMenuId(null);
+                            }}
+                            className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+                          >
+                            <span className="material-symbols-outlined text-[20px] text-red-600">
+                              delete
+                            </span>
+                            Xóa
+                          </button>
+                        </>
+                      )}
                     </div>
                   ) : null}
                 </div>
