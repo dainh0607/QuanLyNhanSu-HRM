@@ -11,6 +11,7 @@ export interface User {
   photoUrl?: string;
   isActive: boolean;
   roles: string[];
+  permissions?: string[]; // Thêm permissions
   scopeLevel?: string;
   regionId?: number;
   branchId?: number;
@@ -29,6 +30,23 @@ export const MOCK_USER: User = {
   phoneNumber: "0912 345 678",
   isActive: true,
   roles: ["Admin"],
+  permissions: [
+    "employee:read",
+    "employee:create",
+    "employee:update",
+    "employee:delete",
+    "contracts:read",
+    "contracts:create",
+    "contracts:update",
+    "contracts:delete",
+    "shifts:read",
+    "shifts:create",
+    "shifts:update",
+    "shifts:delete",
+    "attendance:read",
+    "attendance:update",
+    "system:manage",
+  ],
   isSystemAdmin: true,
   role: "admin",
 };
@@ -77,6 +95,17 @@ export const hasAdministrativeAccess = (
 ): boolean => {
   if (user?.isSystemAdmin) return true;
   return Boolean(user?.roles?.some((role) => ADMIN_ACCESS_ROLES.has(role)));
+};
+
+export const hasPermission = (
+  user: User | null,
+  resource: string,
+  action: string,
+): boolean => {
+  if (user?.isSystemAdmin) return true;
+  if (!user?.permissions) return false;
+  const permissionString = `${resource.toLowerCase()}:${action.toLowerCase()}`;
+  return user.permissions.includes(permissionString);
 };
 
 const normalizeUser = (user?: User | null): User | null => {

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { isTodayIsoDate } from "../utils/week";
 import type { AssignedShiftActionContext, AssignedShiftQuickActionHandlers } from "./types";
+import { authService, hasPermission } from "../../../services/authService";
 
 interface AssignedShiftQuickActionsProps {
   context: AssignedShiftActionContext;
@@ -34,6 +35,13 @@ export const AssignedShiftQuickActions = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const isToday = isTodayIsoDate(context.shift.date);
+  const user = authService.getCurrentUser();
+
+  const canRead = hasPermission(user, "shifts", "read");
+  const canUpdate = hasPermission(user, "shifts", "update");
+  const canDelete = hasPermission(user, "shifts", "delete");
+  const canCreate = hasPermission(user, "shifts", "create");
+  const canUpdateEmployee = hasPermission(user, "employee", "update");
 
   useEffect(() => {
     if (!isMenuOpen) {
@@ -57,21 +65,24 @@ export const AssignedShiftQuickActions = ({
       <div className="absolute inset-0 rounded-[6px] bg-white/35 backdrop-blur-[1px]" />
 
       <div className="relative flex items-center justify-center gap-1.5 rounded-xl border border-white/90 bg-white/95 p-1.5 shadow-md backdrop-blur">
-        <QuickActionButton
-          icon="visibility"
-          label="Xem chi tiết ca"
-          onClick={() => handlers.onViewDetails(context)}
-        />
-
-        {["upcoming", "untracked", "paidLeave", "unpaidLeave", "businessTrip"].includes(
-          context.shift.attendanceStatus
-        ) ? (
+        {canRead && (
           <QuickActionButton
-            icon="add"
-            label="Thêm ca phụ"
-            onClick={() => handlers.onAddSecondaryShift(context)}
+            icon="visibility"
+            label="Xem chi tiết ca"
+            onClick={() => handlers.onViewDetails(context)}
           />
-        ) : null}
+        )}
+
+        {canCreate &&
+          ["upcoming", "untracked", "paidLeave", "unpaidLeave", "businessTrip"].includes(
+            context.shift.attendanceStatus
+          ) ? (
+            <QuickActionButton
+              icon="add"
+              label="Thêm ca phụ"
+              onClick={() => handlers.onAddSecondaryShift(context)}
+            />
+          ) : null}
 
         <div className="relative" ref={menuRef}>
           <QuickActionButton
@@ -82,61 +93,69 @@ export const AssignedShiftQuickActions = ({
 
           {isMenuOpen ? (
             <div className="absolute right-0 top-[calc(100%+8px)] w-56 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  handlers.onOpenLeaveRequest(context);
-                }}
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50"
-              >
-                <span className="material-symbols-outlined text-[18px] text-slate-500">
-                  event_note
-                </span>
-                Tạo yêu cầu nghỉ phép
-              </button>
+              {canUpdateEmployee && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    handlers.onOpenLeaveRequest(context);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50"
+                >
+                  <span className="material-symbols-outlined text-[18px] text-slate-500">
+                    event_note
+                  </span>
+                  Tạo yêu cầu nghỉ phép
+                </button>
+              )}
 
-              <button
-                type="button"
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  handlers.onRefreshAttendance(context);
-                }}
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50"
-              >
-                <span className="material-symbols-outlined text-[18px] text-slate-500">
-                  sync
-                </span>
-                Tải lại yêu cầu chấm công
-              </button>
+              {canRead && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    handlers.onRefreshAttendance(context);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50"
+                >
+                  <span className="material-symbols-outlined text-[18px] text-slate-500">
+                    sync
+                  </span>
+                  Tải lại yêu cầu chấm công
+                </button>
+              )}
 
-              <button
-                type="button"
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  handlers.onOpenMap(context);
-                }}
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50"
-              >
-                <span className="material-symbols-outlined text-[18px] text-slate-500">
-                  location_on
-                </span>
-                Xem trên bản đồ
-              </button>
+              {canRead && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    handlers.onOpenMap(context);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50"
+                >
+                  <span className="material-symbols-outlined text-[18px] text-slate-500">
+                    location_on
+                  </span>
+                  Xem trên bản đồ
+                </button>
+              )}
 
-              <button
-                type="button"
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  handlers.onDeleteShift(context);
-                }}
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-rose-600 transition hover:bg-rose-50"
-              >
-                <span className="material-symbols-outlined text-[18px] text-rose-500">
-                  delete
-                </span>
-                Xóa
-              </button>
+              {canDelete && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    handlers.onDeleteShift(context);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-rose-600 transition hover:bg-rose-50"
+                >
+                  <span className="material-symbols-outlined text-[18px] text-rose-500">
+                    delete
+                  </span>
+                  Xóa
+                </button>
+              )}
             </div>
           ) : null}
         </div>
