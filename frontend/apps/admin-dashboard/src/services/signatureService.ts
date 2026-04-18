@@ -1,5 +1,3 @@
-
-import { authService } from "./authService";
 import type { SampleSignature } from "../features/signature-management/types";
 
 const STORAGE_KEY = 'hr_sample_signatures';

@@ -8,6 +8,7 @@ import type {
   LeaveRequestFormValues,
   ShiftAssignmentDetail,
 } from "../types";
+import type { WeeklyScheduleEmployee } from "../../types";
 
 interface UseAssignedShiftQuickActionsOptions {
   notify: (message: string, type?: "success" | "error" | "info") => void;

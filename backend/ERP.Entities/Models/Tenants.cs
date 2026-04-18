@@ -15,6 +15,10 @@ namespace ERP.Entities.Models
         [StringLength(50)]
         public string code { get; set; }
 
+        [Column("subdomain")]
+        [StringLength(100)]
+        public string? subdomain { get; set; }
+
         [Column("is_active")]
         public bool is_active { get; set; } = true;
 

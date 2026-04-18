@@ -489,7 +489,10 @@ export const WeeklyShiftSchedulePage = () => {
             const result = await shiftBulkActionsService.deleteUnconfirmed(
               filters.weekStartDate,
             );
-            notify(result.message, "success");
+            notify(
+              result.message || "Da xoa ca chua xac nhan thanh cong.",
+              "success",
+            );
             setIsDeleteModalOpen(false);
             void reload();
           } catch {

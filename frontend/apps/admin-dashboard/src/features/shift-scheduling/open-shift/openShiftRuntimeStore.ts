@@ -239,7 +239,7 @@ const persistDeletedRuntimeShiftTemplateIds = (): void => {
 };
 
 let runtimeShiftTemplates: RuntimeShiftTemplate[] = loadStoredRuntimeShiftTemplates();
-let deletedRuntimeShiftTemplateIds: Set<number> = loadDeletedRuntimeShiftTemplateIds();
+const deletedRuntimeShiftTemplateIds: Set<number> = loadDeletedRuntimeShiftTemplateIds();
 let runtimeOpenShifts: WeeklyScheduleApiOpenShift[] = [];
 let nextRuntimeShiftId =
   Math.max(

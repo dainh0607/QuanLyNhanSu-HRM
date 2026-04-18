@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { isTodayIsoDate } from "../utils/week";
 import type { AssignedShiftActionContext, AssignedShiftQuickActionHandlers } from "./types";
 import { authService, hasPermission } from "../../../services/authService";
 
@@ -34,11 +33,9 @@ export const AssignedShiftQuickActions = ({
 }: AssignedShiftQuickActionsProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
-  const isToday = isTodayIsoDate(context.shift.date);
   const user = authService.getCurrentUser();
 
   const canRead = hasPermission(user, "shifts", "read");
-  const canUpdate = hasPermission(user, "shifts", "update");
   const canDelete = hasPermission(user, "shifts", "delete");
   const canCreate = hasPermission(user, "shifts", "create");
   const canUpdateEmployee = hasPermission(user, "employee", "update");

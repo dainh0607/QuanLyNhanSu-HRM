@@ -12,6 +12,7 @@ namespace ERP.DTOs.Auth
         public const string RefreshTokenType = "Refresh";
         public const string SignerTokenType = "Signer";
         public const string SuperAdminPolicyName = "SuperAdminOnly";
+        public const string WorkspaceMismatchMessage = "Workspace khong khop voi tai khoan dang nhap.";
 
         // Access Groups (Roles)
         public const string RoleAdmin = "Admin";

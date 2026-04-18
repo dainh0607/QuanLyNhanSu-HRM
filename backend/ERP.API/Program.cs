@@ -347,6 +347,7 @@ if (!app.Environment.IsDevelopment())
 }
 app.UseCors("AllowFrontend");
 
+app.UseSubdomainResolution();
 app.UseAuthentication();
 app.UseRlsSessionContext();
 app.UseMiddleware<CsrfProtectionMiddleware>();

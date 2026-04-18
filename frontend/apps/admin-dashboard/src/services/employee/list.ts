@@ -3,7 +3,6 @@ import { API_URL, parseDownloadFilename, requestBlob, requestJson } from "./core
 import {
   appendEmployeeListQueryParams,
 } from "./helpers";
-import { mockEmployees } from "../../features/employees/data/mockData";
 import type {
   EmployeeCreatePayload,
   EmployeeBulkCreatePayload,
