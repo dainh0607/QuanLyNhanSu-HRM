@@ -24,8 +24,13 @@ namespace ERP.Services.Attendance
         Task<ShiftBulkActionResultDto> PublishAndApproveAssignmentsAsync(string weekStartDate, List<int>? assignmentIds);
         Task<ShiftBulkActionResultDto> DeleteUnconfirmedAssignmentsAsync(string weekStartDate);
         Task<ShiftCountersDto> GetShiftCountersAsync(string startDateStr, string endDateStr, int? branchId = null);
-        Task<ShiftAssignmentCopyResultDto> CopyAssignmentsAsync(ShiftAssignmentCopyDto dto);
+        Task<ShiftAssignmentCopyResultDto> CopyAssignmentsAsync(ShiftAssignmentCopyDto dto, int currentUserId);
         Task<ShiftBulkActionResultDto> UpdateShiftStatusAsync(ShiftBulkUpdateStatusDto dto);
+
+        // Copy Assignments Expansion (T233, T234)
+        Task<IEnumerable<ShiftWeekItemDto>> GetWeeksListAsync(int? year);
+        Task<ShiftAssignmentCopyPreviewResultDto> PreviewCopyAssignmentsAsync(ShiftAssignmentCopyPreviewDto dto);
+
 
         // Manage Assignments via Shift Tabs Modal (T223 - T225)
         Task<IEnumerable<ShiftTabDto>> GetShiftTabsAsync(int branchId);

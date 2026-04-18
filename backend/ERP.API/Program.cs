@@ -209,6 +209,10 @@ builder.Services.AddScoped<IPermissionAuditLogService, PermissionAuditLogService
 builder.Services.AddScoped<IBreakGlassService, BreakGlassService>();
 builder.Services.AddScoped<ILoginAttemptService, LoginAttemptService>();
 
+// Audit Log & Workspace Activation
+builder.Services.AddScoped<ERP.Services.AuditLog.IAuditLogService, ERP.Services.AuditLog.AuditLogService>();
+builder.Services.AddScoped<ERP.Services.ControlPlane.IWorkspaceActivationService, ERP.Services.ControlPlane.WorkspaceActivationService>();
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 

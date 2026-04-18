@@ -157,11 +157,11 @@ export const metadataService = {
   },
 
   async getAddressCities(
-    countryCode?: string,
+    country?: string,
   ): Promise<{ code: string; name: string }[]> {
     try {
       const url = new URL(`${API_URL}/metadata/address-cities`);
-      if (countryCode) url.searchParams.set("countryCode", countryCode);
+      if (country) url.searchParams.set("country", country);
 
       return await requestJson<{ code: string; name: string }[]>(
         url.toString(),
@@ -174,11 +174,13 @@ export const metadataService = {
   },
 
   async getAddressDistricts(
-    cityCode?: string,
+    country?: string,
+    city?: string,
   ): Promise<{ code: string; name: string }[]> {
     try {
       const url = new URL(`${API_URL}/metadata/address-districts`);
-      if (cityCode) url.searchParams.set("cityCode", cityCode);
+      if (country) url.searchParams.set("country", country);
+      if (city) url.searchParams.set("city", city);
 
       return await requestJson<{ code: string; name: string }[]>(
         url.toString(),
