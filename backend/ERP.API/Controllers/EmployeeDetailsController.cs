@@ -21,6 +21,55 @@ namespace ERP.API.Controllers
             _profileService = profileService;
         }
 
+        [HttpGet("education")]
+        public async Task<IActionResult> GetEducation(int id)
+        {
+            var data = await _profileService.GetEducationAsync(id);
+            return Ok(data);
+        }
+
+        [HttpGet("skills")]
+        public async Task<IActionResult> GetSkills(int id)
+        {
+            var data = await _profileService.GetSkillsAsync(id);
+            return Ok(data);
+        }
+
+        [HttpGet("certificates")]
+        public async Task<IActionResult> GetCertificates(int id)
+        {
+            var data = await _profileService.GetCertificatesAsync(id);
+            return Ok(data);
+        }
+
+        [HttpGet("work-history")]
+        public async Task<IActionResult> GetWorkHistory(int id)
+        {
+            var data = await _profileService.GetWorkHistoryAsync(id);
+            return Ok(data);
+        }
+
+        [HttpGet("bank-accounts")]
+        public async Task<IActionResult> GetBankAccounts(int id)
+        {
+            var data = await _profileService.GetBankAccountsAsync(id);
+            return Ok(data);
+        }
+
+        [HttpGet("health-record")]
+        public async Task<IActionResult> GetHealthRecord(int id)
+        {
+            var data = await _profileService.GetHealthRecordAsync(id);
+            return Ok(data);
+        }
+
+        [HttpGet("dependents")]
+        public async Task<IActionResult> GetDependents(int id)
+        {
+            var data = await _profileService.GetDependentsAsync(id);
+            return Ok(data);
+        }
+
         [HttpPut("education")]
         [HasPermission("employee", "update")]
     public async Task<IActionResult> UpdateEducation(int id, [FromBody] List<EducationDto> dtos)

@@ -113,7 +113,7 @@ namespace ERP.Services.Attendance
             });
         }
 
-        public async Task<PaginatedListDto<AttendanceRecordDto>> GetAttendanceHistoryAsync(int employeeId, int skip, int take)
+        public async Task<PaginatedListDto<AttendanceRecordDto>> GetAttendanceHistoryAsync(int employeeId, DateTime? fromDate, DateTime? toDate, int skip, int take)
         {
             // SCOPING: Check if current user can access this employee
             var currentUserId = _userContext.UserId ?? 0;
@@ -130,6 +130,16 @@ namespace ERP.Services.Attendance
                 .AsQueryable()
                 .Include(r => r.Employee)
                 .Where(r => r.employee_id == employeeId);
+
+            if (fromDate.HasValue)
+            {
+                query = query.Where(r => r.record_time >= fromDate.Value);
+            }
+
+            if (toDate.HasValue)
+            {
+                query = query.Where(r => r.record_time <= toDate.Value);
+            }
 
             var total = await query.CountAsync();
             var records = await query

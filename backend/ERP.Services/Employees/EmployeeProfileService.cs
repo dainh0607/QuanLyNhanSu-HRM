@@ -17,14 +17,17 @@ namespace ERP.Services.Employees
         private readonly IUnitOfWork _unitOfWork;
         private readonly IAuthorizationService _authService;
         private readonly ICurrentUserContext _userContext;
+        private readonly ERP.Services.Common.IStorageService _storageService;
 
         public EmployeeProfileService(IUnitOfWork unitOfWork,
             IAuthorizationService authService,
-            ICurrentUserContext userContext)
+            ICurrentUserContext userContext,
+            ERP.Services.Common.IStorageService storageService)
         {
             _unitOfWork = unitOfWork;
             _authService = authService;
             _userContext = userContext;
+            _storageService = storageService;
         }
 
         private async Task EnsureEmployeeAccess(int employeeId)
@@ -358,14 +361,24 @@ namespace ERP.Services.Employees
             return await _unitOfWork.SaveChangesAsync() > 0;
         }
 
-        public async Task<bool> UpdateAvatarAsync(int employeeId, string? avatar)
+        public async Task<bool> UpdateAvatarAsync(int employeeId, Microsoft.AspNetCore.Http.IFormFile file)
         {
             await EnsureEmployeeAccess(employeeId);
             var emp = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(employeeId);
             if (emp == null) return false;
 
-            emp.avatar = string.IsNullOrWhiteSpace(avatar) ? null : avatar.Trim();
+            // Xóa avatar cũ nếu có
+            if (!string.IsNullOrEmpty(emp.avatar))
+            {
+                await _storageService.DeleteFileAsync(emp.avatar);
+            }
 
+            // Tải avatar mới lên
+            var fileName = $"avatars/emp_{employeeId}_{DateTime.UtcNow.Ticks}{System.IO.Path.GetExtension(file.FileName)}";
+            using var stream = file.OpenReadStream();
+            var url = await _storageService.UploadFileAsync(stream, fileName, file.ContentType);
+
+            emp.avatar = url;
             _unitOfWork.Repository<EmployeeEntity>().Update(emp);
             return await _unitOfWork.SaveChangesAsync() > 0;
         }
@@ -389,6 +402,106 @@ namespace ERP.Services.Employees
     
             await _unitOfWork.Repository<WorkHistory>().AddRangeAsync(newEntities);
             return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+
+        public async Task<IEnumerable<EducationDto>> GetEducationAsync(int employeeId)
+        {
+            await EnsureEmployeeAccess(employeeId);
+            var data = await _unitOfWork.Repository<Education>().FindAsync(x => x.employee_id == employeeId);
+            return data.Select(d => new EducationDto
+            {
+                Level = d.level,
+                Major = d.major,
+                Institution = d.institution,
+                IssueDate = d.issue_date,
+                Note = d.note
+            });
+        }
+
+        public async Task<IEnumerable<EmployeeSkillDto>> GetSkillsAsync(int employeeId)
+        {
+            await EnsureEmployeeAccess(employeeId);
+            var data = await _unitOfWork.Repository<EmployeeSkills>().FindAsync(x => x.employee_id == employeeId);
+            return data.Select(d => new EmployeeSkillDto
+            {
+                SkillId = d.skill_id,
+                Level = d.level
+            });
+        }
+
+        public async Task<IEnumerable<EmployeeCertificateDto>> GetCertificatesAsync(int employeeId)
+        {
+            await EnsureEmployeeAccess(employeeId);
+            var data = await _unitOfWork.Repository<EmployeeCertificates>().FindAsync(x => x.employee_id == employeeId);
+            return data.Select(d => new EmployeeCertificateDto
+            {
+                CertificateId = d.certificate_id,
+                IssueDate = d.issue_date,
+                Attachment = d.attachment
+            });
+        }
+
+        public async Task<IEnumerable<WorkHistoryDto>> GetWorkHistoryAsync(int employeeId)
+        {
+            await EnsureEmployeeAccess(employeeId);
+            var data = await _unitOfWork.Repository<WorkHistory>().FindAsync(x => x.employee_id == employeeId);
+            return data.Select(d => new WorkHistoryDto
+            {
+                CompanyName = d.company_name,
+                JobTitle = d.job_title,
+                WorkDuration = d.work_duration,
+                StartDate = d.start_date,
+                EndDate = d.end_date,
+                IsCurrent = d.is_current
+            });
+        }
+
+        public async Task<IEnumerable<BankAccountDto>> GetBankAccountsAsync(int employeeId)
+        {
+            await EnsureEmployeeAccess(employeeId);
+            var data = await _unitOfWork.Repository<BankAccounts>().FindAsync(x => x.employee_id == employeeId);
+            return data.Select(d => new BankAccountDto
+            {
+                AccountHolder = d.account_holder,
+                AccountNumber = d.account_number,
+                BankName = d.bank_name,
+                Branch = d.branch
+            });
+        }
+
+        public async Task<HealthRecordDto?> GetHealthRecordAsync(int employeeId)
+        {
+            await EnsureEmployeeAccess(employeeId);
+            var d = (await _unitOfWork.Repository<HealthRecords>().FindAsync(x => x.employee_id == employeeId)).FirstOrDefault();
+            if (d == null) return null;
+            return new HealthRecordDto
+            {
+                Height = d.height,
+                Weight = d.weight,
+                BloodType = d.blood_type,
+                CongenitalDisease = d.congenital_disease,
+                ChronicDisease = d.chronic_disease,
+                HealthStatus = d.health_status,
+                CheckDate = d.check_date
+            };
+        }
+
+        public async Task<IEnumerable<DependentDto>> GetDependentsAsync(int employeeId)
+        {
+            await EnsureEmployeeAccess(employeeId);
+            var data = await _unitOfWork.Repository<Dependents>().FindAsync(x => x.employee_id == employeeId);
+            return data.Select(d => new DependentDto
+            {
+                FullName = d.full_name,
+                BirthDate = d.birth_date,
+                Gender = d.gender,
+                IdentityNumber = d.identity_number,
+                Relationship = d.relationship,
+                PermanentAddress = d.permanent_address,
+                TemporaryAddress = d.temporary_address,
+                DependentDuration = d.dependent_duration,
+                Reason = d.reason
+            });
         }
 
         // ─── Thông tin khác (AC 8) ────────────────────────────────────────────────

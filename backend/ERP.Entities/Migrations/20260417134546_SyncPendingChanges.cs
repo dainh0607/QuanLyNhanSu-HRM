@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -13,6 +13,9 @@ namespace ERP.Entities.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            // Defensive cleanup for ActionPermissions duplicate ID conflict
+            migrationBuilder.Sql("DELETE FROM ActionPermissions WHERE id >= 27 AND id <= 64;");
+
             migrationBuilder.UpdateData(
                 table: "ActionPermissions",
                 keyColumn: "id",

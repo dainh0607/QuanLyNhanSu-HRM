@@ -335,10 +335,10 @@ namespace ERP.Services.Attendance
             };
         }
 
-        public async Task<ShiftAssignmentCopyResultDto> CopyAssignmentsAsync(ShiftAssignmentCopyDto dto)
+        public async Task<ShiftAssignmentCopyResultDto> CopyAssignmentsAsync(ShiftAssignmentCopyDto dto, int currentUserId)
         {
             if (dto.TargetWeekStartDates == null || dto.TargetWeekStartDates.Count == 0)
-                throw new Exception("Danh sĂ¡ch tuáº§n Ä‘Ă­ch khĂ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
+                throw new Exception("Danh sáº¡ch tuáº§n Ä‘Ă­ch khĂ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
 
             var sourceWeekStartDate = ParseDate(dto.SourceWeekStartDate, "Tuáº§n nguá»“n");
             var targetWeekStartDates = dto.TargetWeekStartDates
@@ -403,6 +403,7 @@ namespace ERP.Services.Attendance
                     assignment.assignment_date < targetRangeEndDate)
                 .ToListAsync();
 
+            List<ShiftAssignments> assignmentsToRemove = new List<ShiftAssignments>();
             if (mergeMode == "overwrite")
             {
                 var overwriteSlotKeys = new HashSet<string>(
@@ -413,13 +414,12 @@ namespace ERP.Services.Attendance
                                 targetWeekStartDate.AddDays((sourceAssignment.assignment_date.Date - sourceWeekStartDate).Days)))),
                     StringComparer.OrdinalIgnoreCase);
 
-                var assignmentsToRemove = existingTargetAssignments
+                assignmentsToRemove = existingTargetAssignments
                     .Where(assignment => overwriteSlotKeys.Contains(BuildSlotKey(assignment.employee_id, assignment.assignment_date.Date)))
                     .ToList();
 
                 if (assignmentsToRemove.Count > 0)
                 {
-                    _unitOfWork.Repository<ShiftAssignments>().RemoveRange(assignmentsToRemove);
                     existingTargetAssignments = existingTargetAssignments
                         .Except(assignmentsToRemove)
                         .ToList();
@@ -456,7 +456,7 @@ namespace ERP.Services.Attendance
                         note = sourceAssignment.note,
                         is_published = false,
                         status = "draft",
-                        created_by = sourceAssignment.created_by,
+                        created_by = currentUserId > 0 ? currentUserId : sourceAssignment.created_by,
                         CreatedAt = now,
                         UpdatedAt = now
                     });
@@ -466,12 +466,28 @@ namespace ERP.Services.Attendance
                 }
             }
 
-            if (assignmentsToCreate.Count > 0)
+            try
             {
-                await _unitOfWork.Repository<ShiftAssignments>().AddRangeAsync(assignmentsToCreate);
-            }
+                await _unitOfWork.BeginTransactionAsync();
 
-            await _unitOfWork.SaveChangesAsync();
+                if (mergeMode == "overwrite" && assignmentsToRemove != null && assignmentsToRemove.Count > 0)
+                {
+                    _unitOfWork.Repository<ShiftAssignments>().RemoveRange(assignmentsToRemove);
+                }
+
+                if (assignmentsToCreate.Count > 0)
+                {
+                    await _unitOfWork.Repository<ShiftAssignments>().AddRangeAsync(assignmentsToCreate);
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw new Exception("Lỗi khi sao chép ca hàng loạt: " + ex.Message);
+            }
 
             return new ShiftAssignmentCopyResultDto
             {
@@ -479,6 +495,94 @@ namespace ERP.Services.Attendance
                 SkippedCount = skippedCount
             };
         }
+
+        public async Task<IEnumerable<ShiftWeekItemDto>> GetWeeksListAsync(int? year)
+        {
+            var targetYear = year ?? DateTime.Now.Year;
+            var weeks = new List<ShiftWeekItemDto>();
+
+            // Calculate start of year and the first Monday
+            var startOfYear = new DateTime(targetYear, 1, 1);
+            var daysToMonday = ((int)DayOfWeek.Monday - (int)startOfYear.DayOfWeek + 7) % 7;
+            if (startOfYear.DayOfWeek != DayOfWeek.Monday)
+            {
+                // ISO 8601 week 1 can start in the previous year
+                // We'll just simple approach: Find first Monday of course
+                // But generally, let's just find the first Monday near 1/1
+            }
+            // A simpler, accurate ISO week approach
+            var currentDay = new DateTime(targetYear, 1, 1);
+            if (currentDay.DayOfWeek != DayOfWeek.Monday)
+            {
+                var diff = (7 + (currentDay.DayOfWeek - DayOfWeek.Monday)) % 7;
+                currentDay = currentDay.AddDays(-diff);
+            }
+
+            // Move through the year
+            int weekNumber = 1;
+            var today = DateTime.Now.Date;
+
+            while (currentDay.Year <= targetYear || weekNumber <= 52)
+            {
+                // Generate week
+                var endDay = currentDay.AddDays(6);
+                var isCurrent = today >= currentDay && today <= endDay;
+                var isPast = endDay < today;
+                var isFuture = currentDay > today;
+
+                weeks.Add(new ShiftWeekItemDto
+                {
+                    WeekNumber = weekNumber,
+                    Year = targetYear,
+                    WeekLabel = $"Tuần {weekNumber}-{targetYear}",
+                    StartDate = currentDay.ToString("yyyy-MM-dd"),
+                    EndDate = endDay.ToString("yyyy-MM-dd"),
+                    IsCurrent = isCurrent,
+                    IsPast = isPast,
+                    IsFuture = isFuture
+                });
+
+                currentDay = currentDay.AddDays(7);
+                weekNumber++;
+                
+                // Break if we've crossed into next year significantly and done 52 weeks
+                // Some years have 53 weeks.
+                if (weekNumber > 53 && currentDay.Year > targetYear) break;
+            }
+
+            return await Task.FromResult(weeks);
+        }
+
+        public async Task<ShiftAssignmentCopyPreviewResultDto> PreviewCopyAssignmentsAsync(ShiftAssignmentCopyPreviewDto dto)
+        {
+            var sourceWeekStartDate = ParseDate(dto.SourceWeekStartDate, "Tuần nguồn");
+            var sourceWeekEndDate = sourceWeekStartDate.AddDays(7);
+
+            var branchIds = NormalizeIds(dto.BranchIds);
+            var departmentIds = NormalizeIds(dto.DepartmentIds);
+
+            var sourceQuery = _unitOfWork.Repository<ShiftAssignments>()
+                .AsQueryable()
+                .Include(assignment => assignment.Employee)
+                .Where(assignment => assignment.assignment_date >= sourceWeekStartDate && assignment.assignment_date < sourceWeekEndDate);
+
+            if (branchIds.Count > 0)
+                sourceQuery = sourceQuery.Where(assignment => assignment.Employee != null && assignment.Employee.branch_id.HasValue && branchIds.Contains(assignment.Employee.branch_id.Value));
+
+            if (departmentIds.Count > 0)
+                sourceQuery = sourceQuery.Where(assignment => assignment.Employee != null && assignment.Employee.department_id.HasValue && departmentIds.Contains(assignment.Employee.department_id.Value));
+
+            var count = await sourceQuery.CountAsync();
+            var distinctEmployees = await sourceQuery.Select(a => a.employee_id).Distinct().CountAsync();
+
+            return new ShiftAssignmentCopyPreviewResultDto
+            {
+                HasData = count > 0,
+                TotalShifts = count,
+                TotalEmployees = distinctEmployees
+            };
+        }
+
 
         public async Task<ShiftCountersDto> GetShiftCountersAsync(string startDateStr, string endDateStr, int? branchId = null)
         {

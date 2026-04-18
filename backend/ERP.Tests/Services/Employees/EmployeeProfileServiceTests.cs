@@ -12,6 +12,7 @@ using ERP.Services.Authorization;
 using ERP.Entities.Interfaces;
 using MockQueryable.Moq;
 using MockQueryable;
+using ERP.Services.Common;
 
 namespace ERP.Tests.Services.EmployeeProfiles
 {
@@ -23,6 +24,7 @@ namespace ERP.Tests.Services.EmployeeProfiles
         private readonly Mock<IGenericRepository<EmergencyContacts>> _mockEmergencyRepo;
         private readonly Mock<IAuthorizationService> _mockAuthService;
         private readonly Mock<ICurrentUserContext> _mockUserContext;
+        private readonly Mock<IStorageService> _mockStorageService;
 
         private readonly EmployeeProfileService _service;
 
@@ -39,12 +41,13 @@ namespace ERP.Tests.Services.EmployeeProfiles
 
             _mockAuthService = new Mock<IAuthorizationService>();
             _mockUserContext = new Mock<ICurrentUserContext>();
+            _mockStorageService = new Mock<IStorageService>();
 
             // Allow access by default
             _mockUserContext.Setup(u => u.UserId).Returns(1);
             _mockAuthService.Setup(a => a.CanAccessEmployee(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(true);
 
-            _service = new EmployeeProfileService(_mockUow.Object, _mockAuthService.Object, _mockUserContext.Object);
+            _service = new EmployeeProfileService(_mockUow.Object, _mockAuthService.Object, _mockUserContext.Object, _mockStorageService.Object);
         }
 
         [Fact]

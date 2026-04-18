@@ -129,6 +129,9 @@ namespace ERP.Entities
         public DbSet<WorkHistory> WorkHistory { get; set; }
         public DbSet<InvitationTokens> InvitationTokens { get; set; }
         public DbSet<EmployeeDocuments> EmployeeDocuments { get; set; }
+        public DbSet<Countries> Countries { get; set; }
+        public DbSet<Provinces> Provinces { get; set; }
+        public DbSet<Districts> Districts { get; set; }
 
         // NEW: RBAC Authorization Tables (FIX)
         public DbSet<RoleScopes> RoleScopes { get; set; }

@@ -146,6 +146,37 @@ namespace ERP.API.Controllers
             }
         }
 
+        [HttpGet("weeks")]
+        public async Task<IActionResult> GetWeeksList([FromQuery] int? year = null)
+        {
+            try
+            {
+                var result = await _assignmentService.GetWeeksListAsync(year);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpPost("copy-preview")]
+        [HasPermission("attendance", "read")]
+        public async Task<IActionResult> PreviewCopyAssignments([FromBody] ERP.DTOs.Attendance.ShiftAssignmentCopyPreviewDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                var result = await _assignmentService.PreviewCopyAssignmentsAsync(dto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
         [HttpPost("copy")]
         [HasPermission("attendance", "update")]
         public async Task<IActionResult> CopyAssignments([FromBody] ERP.DTOs.Attendance.ShiftAssignmentCopyDto dto)
@@ -154,7 +185,13 @@ namespace ERP.API.Controllers
 
             try
             {
-                var result = await _assignmentService.CopyAssignmentsAsync(dto);
+                var currentUserId = 0;
+                if (int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var id))
+                {
+                    currentUserId = id;
+                }
+
+                var result = await _assignmentService.CopyAssignmentsAsync(dto, currentUserId);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -162,6 +199,7 @@ namespace ERP.API.Controllers
                 return BadRequest(new { Message = ex.Message });
             }
         }
+
 
         [HttpPost("{id}/refresh-attendance")]
         [HasPermission("attendance", "update")]

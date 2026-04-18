@@ -90,11 +90,11 @@ namespace ERP.API.Controllers
 
         [HttpGet("history/{employeeId}")]
         [HasPermission("attendance", "read")]
-        public async Task<IActionResult> GetAttendanceHistory(int employeeId, [FromQuery] int skip = 0, [FromQuery] int take = 10)
+        public async Task<IActionResult> GetAttendanceHistory(int employeeId, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate, [FromQuery] int skip = 0, [FromQuery] int take = 10)
         {
             try
             {
-                var history = await _attendanceService.GetAttendanceHistoryAsync(employeeId, skip, take);
+                var history = await _attendanceService.GetAttendanceHistoryAsync(employeeId, fromDate, toDate, skip, take);
                 return Ok(history);
             }
             catch (Exception ex)

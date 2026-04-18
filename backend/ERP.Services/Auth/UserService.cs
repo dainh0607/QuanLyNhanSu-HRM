@@ -116,9 +116,9 @@ namespace ERP.Services.Auth
                     }
 
                     int targetRoleId = 2; // Default Manager
-                    string masterEmail = _configuration["AdminSettings:MasterEmail"];
-                    if (!string.IsNullOrEmpty(masterEmail) && 
-                        string.Equals(fbUser.Email, masterEmail, StringComparison.OrdinalIgnoreCase))
+                    string masterEmailSetting = _configuration["AdminSettings:MasterEmail"];
+                    if (!string.IsNullOrEmpty(masterEmailSetting) && 
+                        string.Equals(fbUser.Email, masterEmailSetting, StringComparison.OrdinalIgnoreCase))
                     {
                         targetRoleId = 1; // Admin
                     }
@@ -191,7 +191,7 @@ namespace ERP.Services.Auth
                         // TRƯỜNG HỢP 2: USER ĐÃ TỒN TẠI - CẬP NHẬT THÔNG TIN
                         bool wasUpdated = false;
 
-                        // Cập nhật Firebase UID nếu trước đó chỉ có Email (do SignUp thủ công hoặc sync cũ)
+                        // Cập nhật Firebase UID nếu trước đó chỉ có Email
                         if (string.IsNullOrEmpty(localUser.firebase_uid) || localUser.firebase_uid != fbUser.Uid)
                         {
                             localUser.firebase_uid = fbUser.Uid;
@@ -201,8 +201,6 @@ namespace ERP.Services.Auth
                         // Đảm bảo username đồng nhất với Email nếu có thể
                         if (!string.IsNullOrEmpty(fbUser.Email) && localUser.username != fbUser.Email)
                         {
-                            // Chỉ cập nhật nếu username cũ có dạng usr_EMP_ (tức là username tự sinh)
-                            // Tránh đổi username nếu người dùng đã đặt thủ công cái gì đó khác
                             if (localUser.username.StartsWith("usr_EMP_", StringComparison.OrdinalIgnoreCase))
                             {
                                 localUser.username = fbUser.Email;
@@ -214,19 +212,57 @@ namespace ERP.Services.Auth
                         {
                             localUser.UpdatedAt = DateTime.UtcNow;
                             await _context.SaveChangesAsync();
-                            _logger.LogInformation($"Updated existing user UID/Username during sync: {fbUser.Email}");
+                            _logger.LogInformation($"Updated existing user during sync: {fbUser.Email}");
                             syncCount++;
                         }
 
                         // Kiểm tra vai trò
                         var currentRoles = await GetUserRoleIdsAsync(localUser.Id);
-                        // Chỉ thêm Role Default (2) nếu user CHƯA CÓ Role Admin (1) và CHƯA CÓ Role được target
                         if (!currentRoles.Contains(targetRoleId) && (targetRoleId == 1 || !currentRoles.Contains(1)))
                         {
                             await AssignRoleInternalAsync(localUser.Id, targetRoleId, localUser.tenant_id, "Firebase Sync (Role Update)");
                             syncCount++;
                         }
                     }
+                }
+
+                // PRUNING LOGIC: Remove/Deactivate local users NOT in Firebase
+                var firebaseUids = fbUsers.Select(u => u.Uid).ToHashSet();
+                string masterEmailPrune = _configuration["AdminSettings:MasterEmail"];
+
+                var localUsersToPrune = await _context.Users
+                    .IgnoreQueryFilters()
+                    .Include(u => u.Employee)
+                    .Where(u => !string.IsNullOrEmpty(u.firebase_uid) && !firebaseUids.Contains(u.firebase_uid))
+                    .ToListAsync();
+
+                foreach (var user in localUsersToPrune)
+                {
+                    // Skip if master email
+                    if (!string.IsNullOrEmpty(masterEmailPrune) && 
+                        string.Equals(user.username, masterEmailPrune, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    if (user.is_active)
+                    {
+                        _logger.LogWarning($"User {user.username} (UID: {user.firebase_uid}) not found in Firebase. Deactivating locally.");
+                        user.is_active = false;
+                        user.UpdatedAt = DateTime.UtcNow;
+                        
+                        if (user.Employee != null)
+                        {
+                            user.Employee.is_active = false;
+                            user.Employee.UpdatedAt = DateTime.UtcNow;
+                        }
+                        syncCount++;
+                    }
+                }
+                
+                if (syncCount > 0)
+                {
+                    await _context.SaveChangesAsync();
                 }
             }
             catch (Exception ex)

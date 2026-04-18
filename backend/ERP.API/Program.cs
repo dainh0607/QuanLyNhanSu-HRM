@@ -17,6 +17,7 @@ using ERP.Services.Contracts;
 using ERP.Services.Attendance;
 using ERP.Services.Common;
 using ERP.Services.Authorization;
+using ERP.Services.Payroll;
 using ERP.Services;
 using ERP.API.Middleware;
 using ERP.API.Extensions;
@@ -179,6 +180,8 @@ builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationP
 
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IEmployeeProfileService, EmployeeProfileService>();
+builder.Services.AddScoped<IPayrollService, PayrollService>();
+builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 builder.Services.AddScoped<ILookupService, LookupService>();
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
@@ -208,6 +211,10 @@ builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
 builder.Services.AddScoped<IPermissionAuditLogService, PermissionAuditLogService>();
 builder.Services.AddScoped<IBreakGlassService, BreakGlassService>();
 builder.Services.AddScoped<ILoginAttemptService, LoginAttemptService>();
+
+// Audit Log & Workspace Activation
+builder.Services.AddScoped<ERP.Services.AuditLog.IAuditLogService, ERP.Services.AuditLog.AuditLogService>();
+builder.Services.AddScoped<ERP.Services.ControlPlane.IWorkspaceActivationService, ERP.Services.ControlPlane.WorkspaceActivationService>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));

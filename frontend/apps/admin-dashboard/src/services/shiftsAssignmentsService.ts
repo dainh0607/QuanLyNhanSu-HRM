@@ -20,33 +20,105 @@ export interface BulkShiftAssignmentDto {
 }
 
 export interface ShiftCountersDto {
-  totalAssignments: number;
-  draftCount: number;
-  publishedCount: number;
-  approvedCount: number;
-  rejectedCount?: number;
+  pendingPublishCount: number;
+  pendingApprovalCount: number;
 }
 
 export interface CopyShiftRequest {
-  fromDate: string;
-  toDate: string;
-  branchId?: number;
-  departmentId?: number;
+  SourceWeekStartDate: string;
+  TargetWeekStartDates: string[];
+  BranchIds?: number[];
+  DepartmentIds?: number[];
+  EmployeeIds?: number[];
+  AssignmentIds?: number[];
+  MergeMode?: "merge" | "overwrite";
+}
+
+export interface CopyShiftResult {
+  copiedCount: number;
+  skippedCount: number;
+}
+
+export interface CopyPreviewRequest {
+  SourceWeekStartDate: string;
+  BranchIds?: number[];
+  DepartmentIds?: number[];
+}
+
+export interface CopyPreviewResult {
+  hasData: boolean;
+  totalShifts: number;
+  totalEmployees: number;
+}
+
+export interface ShiftWeekItem {
+  weekNumber: number;
+  year: number;
+  weekLabel: string;
+  startDate: string;
+  endDate: string;
+  isPast: boolean;
+  isCurrent: boolean;
+  isFuture: boolean;
+}
+
+export interface ShiftTab {
+  shiftId: number;
+  shiftCode: string;
+  shiftName: string;
+  startTime: string;
+  endTime: string;
+}
+
+export interface ShiftUserDto {
+  assignmentId: number;
+  employeeId: number;
+  fullName: string;
+  avatar?: string;
+  phone?: string;
+}
+
+export interface DayAssignedUsers {
+  date: string;
+  dayOfWeek: string;
+  users: ShiftUserDto[];
+}
+
+export interface ShiftAvailableUser {
+  employeeId: number;
+  employeeCode: string;
+  fullName: string;
+  avatar?: string;
+  jobTitle?: string;
+}
+
+export interface BulkCreateAssignmentDto {
+  shift_id: number;
+  assignment_date: string;
+  employee_ids: number[];
+  note?: string;
+}
+
+export interface ShiftBulkActionResult {
+  affectedCount: number;
+  message: string;
 }
 
 export const shiftAssignmentsService = {
+  // FIX #3: Changed param from startDate→weekStartDate to match BE
   async getWeeklyAssignments(
-    startDate: string,
+    weekStartDate: string,
     branchId?: number,
-  ): Promise<{ week: string; assignments: ShiftAssignment[] }> {
+    departmentId?: number,
+    searchTerm?: string,
+  ) {
     const url = new URL(`${API_URL}/shift-assignments/weekly`);
-    url.searchParams.set("startDate", startDate);
+    url.searchParams.set("weekStartDate", weekStartDate);
     if (branchId) url.searchParams.set("branchId", String(branchId));
+    if (departmentId) url.searchParams.set("departmentId", String(departmentId));
+    if (searchTerm) url.searchParams.set("searchTerm", searchTerm);
 
-    return await requestJson<{
-      week: string;
-      assignments: ShiftAssignment[];
-    }>(
+    return await requestJson(
       url.toString(),
       { method: "GET" },
       "Không thể tải danh sách gán ca tuần",
@@ -54,12 +126,13 @@ export const shiftAssignmentsService = {
   },
 
   async createAssignment(data: {
-    employeeId: number;
-    shiftId: number;
-    date: string;
-  }): Promise<ShiftAssignment> {
+    employee_id: number;
+    shift_id: number;
+    assignment_date: string;
+    note?: string;
+  }): Promise<{ message: string; assignmentId: number }> {
     try {
-      return await requestJson<ShiftAssignment>(
+      return await requestJson<{ message: string; assignmentId: number }>(
         `${API_URL}/shift-assignments`,
         {
           method: "POST",
@@ -73,9 +146,9 @@ export const shiftAssignmentsService = {
     }
   },
 
-  async deleteAssignment(id: number): Promise<{ success: boolean }> {
+  async deleteAssignment(id: number): Promise<{ message: string }> {
     try {
-      return await requestJson<{ success: boolean }>(
+      return await requestJson<{ message: string }>(
         `${API_URL}/shift-assignments/${id}`,
         { method: "DELETE" },
         `Không thể xóa gán ca ${id}`,
@@ -86,28 +159,10 @@ export const shiftAssignmentsService = {
     }
   },
 
-  async unassignShift(employeeId: number, date: string): Promise<{ success: boolean }> {
+  // FIX #5: Updated to match new ShiftAssignmentCopyDto
+  async copyShifts(request: CopyShiftRequest): Promise<CopyShiftResult> {
     try {
-      const url = new URL(`${API_URL}/shifts/assignment`);
-      url.searchParams.set("employeeId", String(employeeId));
-      url.searchParams.set("date", date);
-
-      return await requestJson<{ success: boolean }>(
-        url.toString(),
-        { method: "DELETE" },
-        "Không thể hủy gán ca cho nhân viên",
-      );
-    } catch (error) {
-      console.error("Unassign shift error:", error);
-      throw error;
-    }
-  },
-
-  async copyShifts(
-    request: CopyShiftRequest,
-  ): Promise<{ copiedCount: number }> {
-    try {
-      return await requestJson<{ copiedCount: number }>(
+      return await requestJson<CopyShiftResult>(
         `${API_URL}/shift-assignments/copy`,
         {
           method: "POST",
@@ -121,9 +176,43 @@ export const shiftAssignmentsService = {
     }
   },
 
-  async refreshAttendance(assignmentId: number): Promise<{ success: boolean }> {
+  // NEW: T234 - Preview copy assignments
+  async previewCopy(request: CopyPreviewRequest): Promise<CopyPreviewResult> {
     try {
-      return await requestJson<{ success: boolean }>(
+      return await requestJson<CopyPreviewResult>(
+        `${API_URL}/shift-assignments/copy-preview`,
+        {
+          method: "POST",
+          body: JSON.stringify(request),
+        },
+        "Không thể kiểm tra dữ liệu sao chép",
+      );
+    } catch (error) {
+      console.error("Preview copy error:", error);
+      throw error;
+    }
+  },
+
+  // NEW: T233 - Get weeks list
+  async getWeeksList(year?: number): Promise<ShiftWeekItem[]> {
+    try {
+      const url = new URL(`${API_URL}/shift-assignments/weeks`);
+      if (year) url.searchParams.set("year", String(year));
+
+      return await requestJson<ShiftWeekItem[]>(
+        url.toString(),
+        { method: "GET" },
+        "Không thể tải danh sách tuần",
+      );
+    } catch (error) {
+      console.error("Get weeks list error:", error);
+      throw error;
+    }
+  },
+
+  async refreshAttendance(assignmentId: number): Promise<{ message: string }> {
+    try {
+      return await requestJson<{ message: string }>(
         `${API_URL}/shift-assignments/${assignmentId}/refresh-attendance`,
         { method: "POST" },
         "Không thể làm mới chấm công",
@@ -134,15 +223,17 @@ export const shiftAssignmentsService = {
     }
   },
 
+  // FIX #4: Added weekStartDate to bulkPublish body
   async bulkPublish(
-    assignmentIds: number[],
-  ): Promise<{ publishedCount: number }> {
+    weekStartDate: string,
+    assignmentIds?: number[],
+  ): Promise<ShiftBulkActionResult> {
     try {
-      return await requestJson<{ publishedCount: number }>(
+      return await requestJson<ShiftBulkActionResult>(
         `${API_URL}/shift-assignments/bulk-publish`,
         {
           method: "POST",
-          body: JSON.stringify({ assignmentIds }),
+          body: JSON.stringify({ weekStartDate, assignmentIds }),
         },
         "Không thể chốt công hàng loạt",
       );
@@ -152,15 +243,17 @@ export const shiftAssignmentsService = {
     }
   },
 
+  // FIX #4: Added weekStartDate to bulkApprove body
   async bulkApprove(
-    assignmentIds: number[],
-  ): Promise<{ approvedCount: number }> {
+    weekStartDate: string,
+    assignmentIds?: number[],
+  ): Promise<ShiftBulkActionResult> {
     try {
-      return await requestJson<{ approvedCount: number }>(
+      return await requestJson<ShiftBulkActionResult>(
         `${API_URL}/shift-assignments/bulk-approve`,
         {
           method: "POST",
-          body: JSON.stringify({ assignmentIds }),
+          body: JSON.stringify({ weekStartDate, assignmentIds }),
         },
         "Không thể duyệt ca hàng loạt",
       );
@@ -170,13 +263,32 @@ export const shiftAssignmentsService = {
     }
   },
 
-  async bulkDelete(assignmentIds: number[]): Promise<{ deletedCount: number }> {
+  async bulkPublishAndApprove(
+    weekStartDate: string,
+    assignmentIds?: number[],
+  ): Promise<ShiftBulkActionResult> {
     try {
-      return await requestJson<{ deletedCount: number }>(
+      return await requestJson<ShiftBulkActionResult>(
+        `${API_URL}/shift-assignments/bulk-publish-approve`,
+        {
+          method: "POST",
+          body: JSON.stringify({ weekStartDate, assignmentIds }),
+        },
+        "Không thể chốt & duyệt ca hàng loạt",
+      );
+    } catch (error) {
+      console.error("Bulk publish-approve error:", error);
+      throw error;
+    }
+  },
+
+  async bulkDelete(weekStartDate: string): Promise<ShiftBulkActionResult> {
+    try {
+      return await requestJson<ShiftBulkActionResult>(
         `${API_URL}/shift-assignments/bulk-delete-unconfirmed`,
         {
           method: "POST",
-          body: JSON.stringify({ assignmentIds }),
+          body: JSON.stringify({ weekStartDate }),
         },
         "Không thể xóa các ca chưa chốt",
       );
@@ -186,14 +298,111 @@ export const shiftAssignmentsService = {
     }
   },
 
-  async getCounters(startDate?: string): Promise<ShiftCountersDto> {
+  async bulkUpdateStatus(
+    weekStartDate: string,
+    targetStatus: string,
+    assignmentIds?: number[],
+  ): Promise<ShiftBulkActionResult> {
+    try {
+      return await requestJson<ShiftBulkActionResult>(
+        `${API_URL}/shift-assignments/bulk-update-status`,
+        {
+          method: "POST",
+          body: JSON.stringify({ weekStartDate, targetStatus, assignmentIds }),
+        },
+        "Không thể cập nhật trạng thái ca",
+      );
+    } catch (error) {
+      console.error("Bulk update status error:", error);
+      throw error;
+    }
+  },
+
+  // FIX #6: Added endDate required param to getCounters
+  async getCounters(startDate: string, endDate: string, branchId?: number): Promise<ShiftCountersDto> {
     const url = new URL(`${API_URL}/shift-assignments/counters`);
-    if (startDate) url.searchParams.set("startDate", startDate);
+    url.searchParams.set("startDate", startDate);
+    url.searchParams.set("endDate", endDate);
+    if (branchId) url.searchParams.set("branchId", String(branchId));
 
     return await requestJson<ShiftCountersDto>(
       url.toString(),
       { method: "GET" },
       "Không thể tải bộ đếm ca",
     );
+  },
+
+  // NEW: Shift tabs management
+  async getShiftTabs(branchId: number): Promise<ShiftTab[]> {
+    try {
+      return await requestJson<ShiftTab[]>(
+        `${API_URL}/shift-assignments/shift-tabs?branchId=${branchId}`,
+        { method: "GET" },
+        "Không thể tải danh sách ca",
+      );
+    } catch (error) {
+      console.error("Get shift tabs error:", error);
+      throw error;
+    }
+  },
+
+  async getAssignedUsers(
+    shiftId: number,
+    weekStartDate: string,
+    branchId: number,
+  ): Promise<DayAssignedUsers[]> {
+    try {
+      const url = new URL(`${API_URL}/shift-assignments/assigned-users`);
+      url.searchParams.set("shiftId", String(shiftId));
+      url.searchParams.set("weekStartDate", weekStartDate);
+      url.searchParams.set("branchId", String(branchId));
+
+      return await requestJson<DayAssignedUsers[]>(
+        url.toString(),
+        { method: "GET" },
+        "Không thể tải nhân viên đã phân ca",
+      );
+    } catch (error) {
+      console.error("Get assigned users error:", error);
+      throw error;
+    }
+  },
+
+  async getAvailableUsers(
+    branchId: number,
+    shiftId: number,
+    date: string,
+  ): Promise<ShiftAvailableUser[]> {
+    try {
+      const url = new URL(`${API_URL}/shift-assignments/available-users`);
+      url.searchParams.set("branchId", String(branchId));
+      url.searchParams.set("shiftId", String(shiftId));
+      url.searchParams.set("date", date);
+
+      return await requestJson<ShiftAvailableUser[]>(
+        url.toString(),
+        { method: "GET" },
+        "Không thể tải nhân viên khả dụng",
+      );
+    } catch (error) {
+      console.error("Get available users error:", error);
+      throw error;
+    }
+  },
+
+  async bulkCreateAssignments(dto: BulkCreateAssignmentDto): Promise<{ message: string }> {
+    try {
+      return await requestJson<{ message: string }>(
+        `${API_URL}/shift-assignments/bulk-create`,
+        {
+          method: "POST",
+          body: JSON.stringify(dto),
+        },
+        "Không thể gán ca hàng loạt",
+      );
+    } catch (error) {
+      console.error("Bulk create assignments error:", error);
+      throw error;
+    }
   },
 };
