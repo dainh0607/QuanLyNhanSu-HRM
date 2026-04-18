@@ -437,10 +437,12 @@ export const shiftSchedulingApi = {
 
   getOpenShifts(params: {
     weekStartDate: string;
+    endDate: string;
     branchId?: string;
   }): Promise<WeeklyScheduleApiOpenShift[]> {
-    const url = new URL(`${API_URL}/shifts/open`);
+    const url = new URL(`${API_URL}/open-shifts`);
     url.searchParams.set("startDate", params.weekStartDate);
+    url.searchParams.set("endDate", params.endDate);
     if (params.branchId) url.searchParams.set("branchId", params.branchId);
 
     return requestJson<WeeklyScheduleApiOpenShift[]>(
