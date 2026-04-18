@@ -1,6 +1,7 @@
 using Microsoft.IdentityModel.JsonWebTokens;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using ERP.API.Middleware;
 using ERP.DTOs.Auth;
 using ERP.Services.Auth;
 using Microsoft.AspNetCore.Authorization;
@@ -59,7 +60,14 @@ namespace ERP.API.Controllers
 
             var result = await _authService.LoginAsync(dto, BuildSessionContext());
             if (!result.Success)
+            {
+                if (IsWorkspaceMismatch(result))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, CreateClientAuthResponse(result));
+                }
+
                 return Unauthorized(result);
+            }
 
             Response.Headers.CacheControl = "no-store";
             WriteSessionCookies(result);
@@ -144,6 +152,11 @@ namespace ERP.API.Controllers
             if (!result.Success)
             {
                 ClearSessionCookies();
+                if (IsWorkspaceMismatch(result))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, CreateClientAuthResponse(result));
+                }
+
                 return Unauthorized(CreateClientAuthResponse(result));
             }
 
@@ -424,11 +437,32 @@ namespace ERP.API.Controllers
 
         private AuthSessionContextDto BuildSessionContext()
         {
+            int? resolvedTenantId = null;
+            if (HttpContext.Items.TryGetValue(TenantResolutionContext.TenantIdItemKey, out var tenantIdObj) &&
+                tenantIdObj is int tenantId)
+            {
+                resolvedTenantId = tenantId;
+            }
+
+            var resolvedSubdomain = HttpContext.Items.TryGetValue(TenantResolutionContext.SubdomainItemKey, out var subdomainObj)
+                ? subdomainObj as string
+                : null;
+
             return new AuthSessionContextDto
             {
                 IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
-                UserAgent = Request.Headers.UserAgent.ToString()
+                UserAgent = Request.Headers.UserAgent.ToString(),
+                ResolvedTenantId = resolvedTenantId,
+                ResolvedTenantSubdomain = resolvedSubdomain
             };
+        }
+
+        private static bool IsWorkspaceMismatch(AuthResponseDto result)
+        {
+            return string.Equals(
+                result.Message,
+                AuthSecurityConstants.WorkspaceMismatchMessage,
+                StringComparison.Ordinal);
         }
 
         private bool IsSecureRequest()

@@ -280,6 +280,12 @@ namespace ERP.Services.Auth
                     return new AuthResponseDto { Success = false, Message = "Khong the tai thong tin nguoi dung" };
                 }
 
+                var workspaceMismatch = ValidateResolvedWorkspace(userInfo, sessionContext, "login");
+                if (workspaceMismatch != null)
+                {
+                    return workspaceMismatch;
+                }
+
                 // Chặn nhân viên không có quyền quản lý đăng nhập vào hệ thống quản trị
                 var allowedManagementRoles = new[] { "Admin", "Manager", "Regional Manager", "Branch Manager", "Department Head", "Module Admin" };
                 if (userInfo.Roles == null || !userInfo.Roles.Any(r => allowedManagementRoles.Contains(r)))
@@ -359,6 +365,12 @@ namespace ERP.Services.Auth
                         Success = false,
                         Message = "Nguoi dung khong con hieu luc"
                     };
+                }
+
+                var workspaceMismatch = ValidateResolvedWorkspace(userInfo, sessionContext, "refresh");
+                if (workspaceMismatch != null)
+                {
+                    return workspaceMismatch;
                 }
 
                 var newSessionId = Guid.NewGuid().ToString("N");
@@ -1052,6 +1064,33 @@ namespace ERP.Services.Auth
             await _context.SaveChangesAsync();
 
             return BuildAuthResponse(userInfo, sessionId, refreshToken, csrfToken, message);
+        }
+
+        private AuthResponseDto? ValidateResolvedWorkspace(UserInfoDto userInfo, AuthSessionContextDto sessionContext, string flowName)
+        {
+            if (!sessionContext.ResolvedTenantId.HasValue)
+            {
+                return null;
+            }
+
+            if (!userInfo.TenantId.HasValue || userInfo.TenantId.Value != sessionContext.ResolvedTenantId.Value)
+            {
+                _logger.LogWarning(
+                    "[Auth] Workspace mismatch during {Flow}. UserId={UserId}, UserTenantId={UserTenantId}, RequestedTenantId={RequestedTenantId}, RequestedSubdomain={RequestedSubdomain}",
+                    flowName,
+                    userInfo.UserId,
+                    userInfo.TenantId,
+                    sessionContext.ResolvedTenantId,
+                    sessionContext.ResolvedTenantSubdomain);
+
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = AuthSecurityConstants.WorkspaceMismatchMessage
+                };
+            }
+
+            return null;
         }
 
         private AuthSessions BuildSession(int userId, string sessionId, string refreshToken, string csrfToken, AuthSessionContextDto sessionContext, DateTime utcNow)

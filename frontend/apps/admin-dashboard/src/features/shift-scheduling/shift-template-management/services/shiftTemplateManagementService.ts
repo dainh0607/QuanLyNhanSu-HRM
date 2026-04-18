@@ -1,7 +1,3 @@
-import {
-  API_URL,
-  requestJson,
-} from "../../../../services/employee/core";
 import { shiftSchedulingApi } from "../../services/shiftSchedulingApi";
 import {
   getRuntimeShiftTemplateById,
@@ -225,8 +221,6 @@ const mergeRuntimeOverlay = (item: ShiftTemplateListItem): ShiftTemplateListItem
   };
 };
 
-const buildListUrl = (): URL => new URL(`${API_URL}/shift-templates`);
-
 const buildFallbackItems = (): ShiftTemplateListItem[] =>
   getRuntimeShiftTemplateCatalog().map((item) => mapRuntimeItemToListItem(item));
 
@@ -255,7 +249,7 @@ const doesShiftMatchTimeRange = (
     return true;
   }
 
-  let shiftStart = getMinutesFromTime(item.startTime);
+  const shiftStart = getMinutesFromTime(item.startTime);
   let shiftEnd = getMinutesFromTime(item.endTime);
   if (shiftEnd <= shiftStart) {
     shiftEnd += 24 * 60;
@@ -349,22 +343,42 @@ const toExportRows = (items: ShiftTemplateListItem[]): Array<Array<string | numb
   ]),
 ];
 
+const buildRuntimeOverlayOptions = (
+  item: Pick<ShiftTemplateListItem, "code" | "displayOrder" | "isActive" | "note">,
+) => ({
+  code: item.code,
+  displayOrder: item.displayOrder,
+  isActive: item.isActive,
+  note: item.note ?? null,
+});
+
 export const shiftTemplateManagementService = {
   async getShiftTemplates(
     filters: ShiftTemplateListQuery,
   ): Promise<ShiftTemplateListResponse> {
-    const response = await shiftSchedulingApi.getShiftTemplates() as ShiftTemplateApiItem[];
+    let response: ShiftTemplateApiItem[] = [];
+
+    try {
+      response = await shiftSchedulingApi.getShiftTemplates() as ShiftTemplateApiItem[];
+    } catch (error) {
+      console.warn("Shift template catalog is unavailable, using runtime overlay.", error);
+    }
 
     const items = response
       .map((item, index) => mapApiItemToListItem(item, index))
       .filter((item): item is ShiftTemplateListItem => Boolean(item));
 
-    return paginateItems(applyFilters(items, filters), filters);
+    return paginateItems(applyFilters(mergeApiItemsWithRuntime(items), filters), filters);
   },
 
   async getShiftTemplateDetail(
     templateId: number,
   ): Promise<ShiftTemplateInitialData> {
+    const runtimeItem = getRuntimeShiftTemplateById(templateId);
+    if (runtimeItem) {
+      return toShiftTemplateInitialData(runtimeItem);
+    }
+
     const response = await shiftSchedulingApi.getShiftTemplate(templateId) as ShiftTemplateApiItem;
     const mapped = mapApiItemToListItem(response, 0);
 
@@ -378,13 +392,36 @@ export const shiftTemplateManagementService = {
   async updateShiftTemplate(
     payload: ShiftTemplateUpdatePayload,
   ): Promise<void> {
+    const runtimeItem = getRuntimeShiftTemplateById(payload.id);
+
+    if (runtimeItem && payload.id >= 1700) {
+      updateRuntimeShiftTemplate(
+        payload.id,
+        payload.values,
+        buildRuntimeOverlayOptions(payload.existing),
+      );
+      return;
+    }
+
     await shiftSchedulingApi.updateShiftTemplate(payload.id, payload.values);
+    updateRuntimeShiftTemplate(
+      payload.id,
+      payload.values,
+      buildRuntimeOverlayOptions(payload.existing),
+    );
   },
 
   async deleteShiftTemplate(
     templateId: number,
   ): Promise<void> {
+    const runtimeItem = getRuntimeShiftTemplateById(templateId);
+    if (runtimeItem && templateId >= 1700) {
+      markRuntimeShiftTemplateDeleted(templateId);
+      return;
+    }
+
     await shiftSchedulingApi.deleteShiftTemplate(templateId);
+    markRuntimeShiftTemplateDeleted(templateId);
   },
 
   async exportShiftTemplates(

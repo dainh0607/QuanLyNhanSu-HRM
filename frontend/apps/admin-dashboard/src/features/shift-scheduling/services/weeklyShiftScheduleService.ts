@@ -1,4 +1,3 @@
-import { API_URL, requestJson } from "../../../services/employee/core";
 import { lookupsService } from "../../../services/lookupsService";
 import { employeeListService } from "../../../services/employee/list";
 import {
@@ -34,9 +33,22 @@ const buildEmptyCellMap = (weekStartDate: string): Record<string, WeeklySchedule
     }),
   );
 
-const getVal = <T>(obj: any, snakeKey: string, camelKey: string): T | undefined => {
+const getVal = <T>(
+  obj: object | null | undefined,
+  snakeKey: string,
+  camelKey: string,
+): T | undefined => {
   if (!obj) return undefined;
-  return obj[snakeKey] !== undefined ? obj[snakeKey] : (obj[camelKey] !== undefined ? obj[camelKey] : undefined);
+
+  const source = obj as Record<string, unknown>;
+
+  const snakeValue = source[snakeKey];
+  if (snakeValue !== undefined) {
+    return snakeValue as T;
+  }
+
+  const camelValue = source[camelKey];
+  return camelValue !== undefined ? (camelValue as T) : undefined;
 };
 
 const mergeRuntimeEmployees = (
@@ -69,6 +81,23 @@ const normalizeAttendanceStatus = (value?: string | null): WeeklyScheduleShift["
   }
 };
 
+const normalizeAssignmentStatus = (
+  value?: string | null,
+  isPublished?: boolean,
+): NonNullable<WeeklyScheduleShift["assignmentStatus"]> => {
+  const normalized = value?.trim().toLowerCase();
+  switch (normalized) {
+    case "draft":
+      return "draft";
+    case "published":
+      return "published";
+    case "approved":
+      return "approved";
+    default:
+      return isPublished ? "approved" : "draft";
+  }
+};
+
 const normalizeEmployee = (
   employee: WeeklyScheduleApiEmployee,
 ): WeeklyScheduleEmployee => {
@@ -94,6 +123,7 @@ const normalizeEmployee = (
 
 const createShiftFromAssignment = (assignment: WeeklyScheduleApiAssignment): WeeklyScheduleShift => {
   const attendanceStatus = normalizeAttendanceStatus(getVal<string>(assignment, "attendance_status", "attendanceStatus"));
+  const isPublished = getVal<boolean>(assignment, "is_published", "isPublished") ?? true;
   return {
     id: `assignment-${assignment.id}`,
     sourceId: assignment.id,
@@ -105,7 +135,7 @@ const createShiftFromAssignment = (assignment: WeeklyScheduleApiAssignment): Wee
     attendanceStatus,
     note: assignment.note,
     color: assignment.color,
-    isPublished: getVal<boolean>(assignment, "is_published", "isPublished") ?? true,
+    isPublished,
     branchId: getVal<number>(assignment, "branch_id", "branchId") ?? null,
     branchName: getVal<string>(assignment, "branch_name", "branchName") ?? null,
     jobTitleId: getVal<number>(assignment, "job_title_id", "jobTitleId") ?? null,
@@ -113,7 +143,10 @@ const createShiftFromAssignment = (assignment: WeeklyScheduleApiAssignment): Wee
     projectId: getVal<string>(assignment, "project_id", "projectId") ?? null,
     projectName: getVal<string>(assignment, "project_name", "projectName") ?? null,
     statusLabel: ATTENDANCE_STATUS_META[attendanceStatus]?.label || "Chưa xác định",
-    assignmentStatus: (getVal<string>(assignment, "status", "status") as any) || (getVal<boolean>(assignment, "is_published", "isPublished") ? "approved" : "draft"),
+    assignmentStatus: normalizeAssignmentStatus(
+      getVal<string>(assignment, "status", "status"),
+      isPublished,
+    ),
   };
 };
 

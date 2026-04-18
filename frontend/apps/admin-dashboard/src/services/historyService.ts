@@ -1,6 +1,3 @@
-
-import { API_URL, requestJson } from "./employee/core";
-
 export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE';
 
 export interface AuditLog {

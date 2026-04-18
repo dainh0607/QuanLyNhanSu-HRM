@@ -20,6 +20,10 @@ namespace ERP.Entities.Models.ControlPlane
         [StringLength(100)]
         public string Name { get; set; } = string.Empty;
 
+        [Required]
+        [StringLength(500)]
+        public string Description { get; set; } = string.Empty;
+
         [Column(TypeName = "decimal(18,2)")]
         public decimal MonthlyPriceVnd { get; set; }
 

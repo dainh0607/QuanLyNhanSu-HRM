@@ -22,6 +22,11 @@ namespace ERP.Entities.Models.ControlPlane
         [StringLength(500)]
         public string RequestedScope { get; set; } = string.Empty;
 
+        [StringLength(150)]
+        public string RequestedBy { get; set; } = string.Empty;
+
+        public int RequestedDurationHours { get; set; } = 1;
+
         [Required]
         [StringLength(50)]
         public string Status { get; set; } = "not_requested"; // "not_requested", "pending_customer_approval", "granted", "expired", "revoked"
@@ -32,6 +37,12 @@ namespace ERP.Entities.Models.ControlPlane
         public string? ApprovedByCustomerContact { get; set; }
 
         public DateTime? ExpiresAt { get; set; }
+
+        public DateTime? ActivatedAt { get; set; }
+
+        public DateTime? RevokedAt { get; set; }
+
+        public DateTime? LastNotifiedAt { get; set; }
 
         [StringLength(500)]
         public string? Note { get; set; }

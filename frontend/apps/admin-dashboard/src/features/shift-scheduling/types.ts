@@ -276,4 +276,7 @@ export interface WeeklyScheduleApiResponse {
   openShifts?: WeeklyScheduleApiOpenShift[];
   last_updated_at?: string;
   lastUpdatedAt?: string;
+  draftCount?: number;
+  publishedCount?: number;
+  approvedCount?: number;
 }

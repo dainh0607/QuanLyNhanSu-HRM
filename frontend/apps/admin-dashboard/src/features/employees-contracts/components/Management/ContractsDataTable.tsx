@@ -17,6 +17,7 @@ const ContractsDataTable: React.FC<ContractsDataTableProps> = ({
   startIndex,
   onView,
   onDelete,
+  canUpdate = false,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
