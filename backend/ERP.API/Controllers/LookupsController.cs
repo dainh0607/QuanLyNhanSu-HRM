@@ -48,9 +48,21 @@ namespace ERP.API.Controllers
         public async Task<IActionResult> GetBranches() => Ok(await _lookupService.GetBranchesLookupAsync());
 
         [HttpGet("departments")]
-        public async Task<IActionResult> GetDepartments([FromQuery] List<int>? branchIds) => Ok(await _lookupService.GetDepartmentsLookupAsync(branchIds));
+        public async Task<IActionResult> GetDepartments([FromQuery] List<int>? branchIds, [FromQuery] int? branchId)
+        {
+            var targetIds = new List<int>();
+            if (branchId.HasValue) targetIds.Add(branchId.Value);
+            if (branchIds != null) targetIds.AddRange(branchIds);
+            return Ok(await _lookupService.GetDepartmentsLookupAsync(targetIds.Any() ? targetIds : null));
+        }
 
         [HttpGet("job-titles")]
-        public async Task<IActionResult> GetJobTitles([FromQuery] List<int>? branchIds) => Ok(await _lookupService.GetJobTitlesLookupAsync(branchIds));
+        public async Task<IActionResult> GetJobTitles([FromQuery] List<int>? branchIds, [FromQuery] int? branchId)
+        {
+            var targetIds = new List<int>();
+            if (branchId.HasValue) targetIds.Add(branchId.Value);
+            if (branchIds != null) targetIds.AddRange(branchIds);
+            return Ok(await _lookupService.GetJobTitlesLookupAsync(targetIds.Any() ? targetIds : null));
+        }
     }
 }

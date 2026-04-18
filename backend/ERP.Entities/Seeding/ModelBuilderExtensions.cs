@@ -330,6 +330,28 @@ namespace ERP.Entities.Seeding
                     max_approval_days = null, is_mandatory = false, approver_scope = "SAME_BRANCH", 
                     is_active = true, created_at = seedDate }
             );
+
+            // 23. Countries
+            modelBuilder.Entity<Countries>().HasData(
+                new Countries { Id = 1, code = "VN", name = "Việt Nam", CreatedAt = seedDate, UpdatedAt = seedDate },
+                new Countries { Id = 2, code = "US", name = "United States", CreatedAt = seedDate, UpdatedAt = seedDate },
+                new Countries { Id = 3, code = "JP", name = "Japan", CreatedAt = seedDate, UpdatedAt = seedDate }
+            );
+
+            // 24. Provinces (Mock major cities for VN)
+            modelBuilder.Entity<Provinces>().HasData(
+                new Provinces { Id = 1, code = "HN", name = "Hà Nội", country_code = "VN", CreatedAt = seedDate, UpdatedAt = seedDate },
+                new Provinces { Id = 2, code = "HCM", name = "TP. Hồ Chí Minh", country_code = "VN", CreatedAt = seedDate, UpdatedAt = seedDate },
+                new Provinces { Id = 3, code = "DN", name = "Đà Nẵng", country_code = "VN", CreatedAt = seedDate, UpdatedAt = seedDate }
+            );
+
+            // 25. Districts (Mock districts for major cities)
+            modelBuilder.Entity<Districts>().HasData(
+                new Districts { Id = 1, code = "HN_BD", name = "Ba Đình", province_code = "HN", CreatedAt = seedDate, UpdatedAt = seedDate },
+                new Districts { Id = 2, code = "HN_CG", name = "Cầu Giấy", province_code = "HN", CreatedAt = seedDate, UpdatedAt = seedDate },
+                new Districts { Id = 3, code = "HCM_Q1", name = "Quận 1", province_code = "HCM", CreatedAt = seedDate, UpdatedAt = seedDate },
+                new Districts { Id = 4, code = "HCM_Q3", name = "Quận 3", province_code = "HCM", CreatedAt = seedDate, UpdatedAt = seedDate }
+            );
         }
     }
 }

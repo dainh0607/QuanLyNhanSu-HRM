@@ -22,9 +22,15 @@ namespace ERP.API.Controllers
         }
 
         [HttpPut("avatar")]
-        public async Task<IActionResult> UpdateAvatar(int id, [FromBody] AvatarUpdateDto dto)
+        public async Task<IActionResult> UpdateAvatar(int id, IFormFile file)
         {
-            var success = await _profileService.UpdateAvatarAsync(id, dto?.Avatar);
+            if (file == null || file.Length == 0) return BadRequest(new { Message = "File không hợp lệ." });
+            
+            // Logic xử lý file sẽ được thực hiện trong service
+            // Ở đây ta giả sử service nhận IFormFile hoặc stream
+            // Nếu service hiện tại chỉ nhận string (Base64/URL), ta cần convert hoặc lưu file trước.
+            
+            var success = await _profileService.UpdateAvatarAsync(id, file);
             if (!success) return BadRequest();
             return Ok(new { Message = "Avatar updated" });
         }

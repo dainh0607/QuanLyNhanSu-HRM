@@ -10,7 +10,7 @@ namespace ERP.Services.Attendance
         Task<bool> CheckInAsync(int userId, AttendanceCheckInDto dto);
         Task<bool> CheckOutAsync(int userId, AttendanceCheckInDto dto);
         Task<IEnumerable<AttendanceRecordDto>> GetTodayAttendanceAsync(int employeeId);
-        Task<PaginatedListDto<AttendanceRecordDto>> GetAttendanceHistoryAsync(int employeeId, int skip, int take);
+        Task<PaginatedListDto<AttendanceRecordDto>> GetAttendanceHistoryAsync(int employeeId, System.DateTime? fromDate, System.DateTime? toDate, int skip, int take);
         Task<AttendanceSummaryDto> GetAttendanceSummaryAsync(int employeeId, int month, int year);
         Task<IEnumerable<AttendanceRecordDto>> GetMonthlyAttendanceAsync(int employeeId, int month, int year);
         Task<bool> ManualAdjustmentAsync(int modifierId, AttendanceAdjustmentDto dto);

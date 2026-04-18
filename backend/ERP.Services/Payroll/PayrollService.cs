@@ -1,0 +1,113 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using ERP.DTOs;
+using ERP.Entities.Models;
+using ERP.Repositories.Interfaces;
+using Microsoft.EntityFrameworkCore;
+
+namespace ERP.Services.Payroll
+{
+    public class PayrollService : IPayrollService
+    {
+        private readonly IUnitOfWork _unitOfWork;
+
+        public PayrollService(IUnitOfWork unitOfWork)
+        {
+            _unitOfWork = unitOfWork;
+        }
+
+        public async Task<PaginatedListDto<object>> GetPayrollsAsync(int month, int year, int skip, int take)
+        {
+            var query = _unitOfWork.Repository<Payrolls>().AsQueryable()
+                .Include(p => p.Employee)
+                .Include(p => p.Period)
+                .Where(p => p.Period.start_date.Month == month && p.Period.start_date.Year == year);
+
+            var total = await query.CountAsync();
+            var items = await query.OrderBy(p => p.Employee.full_name)
+                .Skip(skip)
+                .Take(take)
+                .Select(p => new
+                {
+                    p.Id,
+                    EmployeeId = p.employee_id,
+                    EmployeeName = p.Employee.full_name,
+                    p.base_salary,
+                    p.total_allowances,
+                    p.total_deductions,
+                    p.net_salary,
+                    p.status
+                })
+                .ToListAsync();
+
+            var pageNumber = (skip / take) + 1;
+            return new PaginatedListDto<object>(items.Cast<object>().ToList(), total, pageNumber, take);
+        }
+
+        public async Task<object?> GetPayrollDetailAsync(int payrollId)
+        {
+            var payroll = await _unitOfWork.Repository<Payrolls>().AsQueryable()
+                .Include(p => p.Employee)
+                    .ThenInclude(e => e.JobTitle)
+                .Include(p => p.Employee)
+                    .ThenInclude(e => e.Department)
+                .Include(p => p.Period)
+                .FirstOrDefaultAsync(p => p.Id == payrollId);
+
+            if (payroll == null) return null;
+
+            var details = await _unitOfWork.Repository<PayrollDetails>().AsQueryable()
+                .Where(d => d.payroll_id == payrollId)
+                .ToListAsync();
+
+            return new
+            {
+                payroll.Id,
+                Employee = new
+                {
+                    payroll.Employee.Id,
+                    payroll.Employee.full_name,
+                    payroll.Employee.employee_code,
+                    Department = payroll.Employee.Department?.name,
+                    JobTitle = payroll.Employee.JobTitle?.name
+                },
+                Period = $"{payroll.Period.start_date.Month}/{payroll.Period.start_date.Year}",
+                payroll.base_salary,
+                payroll.total_allowances,
+                payroll.total_deductions,
+                payroll.net_salary,
+                payroll.status,
+                Components = details.Select(d => new
+                {
+                    d.component_name,
+                    d.amount,
+                    d.component_type // Earning / Deduction
+                })
+            };
+        }
+
+        public async Task<bool> GeneratePayrollsAsync(int month, int year)
+        {
+            // Logic to calculate payroll for all active employees
+            // This is a complex logic that will be implemented in detail later
+            await Task.Delay(100); 
+            return true;
+        }
+
+        public async Task<bool> ApprovePayrollAsync(int payrollId, int approvedBy)
+        {
+            var payroll = await _unitOfWork.Repository<Payrolls>().GetByIdAsync(payrollId);
+            if (payroll == null) return false;
+
+            payroll.status = "Approved";
+            payroll.approved_by = approvedBy;
+            payroll.approved_at = DateTime.UtcNow;
+
+            _unitOfWork.Repository<Payrolls>().Update(payroll);
+            await _unitOfWork.SaveChangesAsync();
+            return true;
+        }
+    }
+}

@@ -17,6 +17,7 @@ using ERP.Services.Contracts;
 using ERP.Services.Attendance;
 using ERP.Services.Common;
 using ERP.Services.Authorization;
+using ERP.Services.Payroll;
 using ERP.Services;
 using ERP.API.Middleware;
 using ERP.API.Extensions;
@@ -179,6 +180,8 @@ builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationP
 
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IEmployeeProfileService, EmployeeProfileService>();
+builder.Services.AddScoped<IPayrollService, PayrollService>();
+builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 builder.Services.AddScoped<ILookupService, LookupService>();
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));

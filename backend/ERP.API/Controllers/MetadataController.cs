@@ -36,27 +36,41 @@ namespace ERP.API.Controllers
         }
 
         [HttpGet("departments")]
-        public async Task<IActionResult> GetDepartments([FromQuery] List<int>? branch_ids)
+        public async Task<IActionResult> GetDepartments([FromQuery] List<int>? branch_ids, [FromQuery] int? branchId)
         {
             var query = _unitOfWork.Repository<Departments>().AsQueryable();
-            if (branch_ids != null && branch_ids.Any())
+            
+            // Handle both branchId (singular from frontend) and branch_ids (list)
+            var targetBranchIds = new List<int>();
+            if (branchId.HasValue) targetBranchIds.Add(branchId.Value);
+            if (branch_ids != null) targetBranchIds.AddRange(branch_ids);
+
+            if (targetBranchIds.Any())
             {
-                query = query.Where(d => !d.branch_id.HasValue || branch_ids.Contains(d.branch_id.Value));
+                query = query.Where(d => d.branch_id.HasValue && targetBranchIds.Contains(d.branch_id.Value));
             }
+            
             var data = await query.ToListAsync();
-            return Ok(data.Select(d => new { d.Id, d.name, d.code, d.parent_id }));
+            return Ok(data.Select(d => new { d.Id, d.name, d.code, branchId = d.branch_id, parentId = d.parent_id }));
         }
 
         [HttpGet("job-titles")]
-        public async Task<IActionResult> GetJobTitles([FromQuery] List<int>? branch_ids)
+        public async Task<IActionResult> GetJobTitles([FromQuery] List<int>? branch_ids, [FromQuery] int? branchId)
         {
             var query = _unitOfWork.Repository<JobTitles>().AsQueryable();
-            if (branch_ids != null && branch_ids.Any())
+
+            // Handle both branchId (singular) and branch_ids (list)
+            var targetBranchIds = new List<int>();
+            if (branchId.HasValue) targetBranchIds.Add(branchId.Value);
+            if (branch_ids != null) targetBranchIds.AddRange(branch_ids);
+
+            if (targetBranchIds.Any())
             {
-                query = query.Where(j => !j.branch_id.HasValue || branch_ids.Contains(j.branch_id.Value));
+                query = query.Where(j => j.branch_id.HasValue && targetBranchIds.Contains(j.branch_id.Value));
             }
+
             var data = await query.ToListAsync();
-            return Ok(data.Select(j => new { j.Id, j.name, j.code }));
+            return Ok(data.Select(j => new { j.Id, j.name, j.code, branchId = j.branch_id }));
         }
 
         [HttpGet("access-groups")]
