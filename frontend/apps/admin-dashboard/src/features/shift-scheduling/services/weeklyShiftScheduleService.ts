@@ -271,7 +271,7 @@ const transformApiResponse = (
 
 const getWeeklySchedule = async (filters: ShiftScheduleFilters): Promise<WeeklyScheduleGridData> => {
   const response = await shiftSchedulingApi.getWeeklySchedule(filters);
-  const openShifts = await shiftSchedulingApi.getOpenShifts({ weekStartDate: filters.weekStartDate, branchId: filters.branchId });
+  const openShifts = await shiftSchedulingApi.getOpenShifts({ weekStartDate: filters.weekStartDate, endDate: toIsoDate(addDays(parseIsoDate(filters.weekStartDate), 6)), branchId: filters.branchId });
   const counters = await shiftSchedulingApi.getShiftCounters({ startDate: filters.weekStartDate, endDate: toIsoDate(addDays(parseIsoDate(filters.weekStartDate), 6)), branchId: filters.branchId });
 
   return transformApiResponse({
