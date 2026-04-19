@@ -157,6 +157,16 @@ namespace ERP.Services.Attendance
 
         public async Task<int> CreateAssignmentAsync(ShiftAssignmentCreateDto dto)
         {
+            // 1. Check for Approved Leaves
+            var hasLeave = await _unitOfWork.Repository<LeaveRequests>().AsQueryable()
+                .AnyAsync(l => l.status == "Approved" && 
+                            l.start_date.Date <= dto.assignment_date.Date && 
+                            l.end_date.Date >= dto.assignment_date.Date && 
+                            l.employee_id == dto.employee_id);
+
+            if (hasLeave)
+                throw new Exception("Không thể gán ca cho nhân viên đang nghỉ phép.");
+
             var assignment = new ShiftAssignments
             {
                 employee_id = dto.employee_id,
@@ -179,6 +189,9 @@ namespace ERP.Services.Attendance
             var assignment = await _unitOfWork.Repository<ShiftAssignments>().GetByIdAsync(id);
             if (assignment == null) return false;
 
+            if (assignment.is_published)
+                throw new Exception("Không thể xóa ca làm việc đã công bố.");
+
             _unitOfWork.Repository<ShiftAssignments>().Remove(assignment);
             return await _unitOfWork.SaveChangesAsync() > 0;
         }
@@ -187,6 +200,9 @@ namespace ERP.Services.Attendance
         {
             var assignment = await _unitOfWork.Repository<ShiftAssignments>().GetByIdAsync(assignmentId);
             if (assignment == null) return false;
+
+            if (assignment.is_published)
+                throw new Exception("Không thể cập nhật ca làm việc đã công bố.");
 
             assignment.UpdatedAt = DateTime.UtcNow;
             _unitOfWork.Repository<ShiftAssignments>().Update(assignment);
@@ -232,11 +248,13 @@ namespace ERP.Services.Attendance
                 query = query.Where(a => assignmentIds.Contains(a.Id));
 
             var assignments = await query.ToListAsync();
+            var now = DateTime.UtcNow;
             foreach (var a in assignments)
             {
                 a.status = "published";
                 a.is_published = true;
-                a.UpdatedAt = DateTime.UtcNow;
+                a.published_at = now;
+                a.UpdatedAt = now;
                 _unitOfWork.Repository<ShiftAssignments>().Update(a);
             }
 
@@ -252,67 +270,16 @@ namespace ERP.Services.Attendance
             };
         }
 
+        [Obsolete("Approve step is no longer used. Shifts are finalized upon Publishing.")]
         public async Task<ShiftBulkActionResultDto> ApproveAssignmentsAsync(string weekStartDate, List<int>? assignmentIds)
         {
-            var (startDate, endDate) = ParseWeekRange(weekStartDate);
-
-            var query = _unitOfWork.Repository<ShiftAssignments>()
-                .AsQueryable()
-                .Where(a => a.assignment_date >= startDate && a.assignment_date < endDate && a.status == "published");
-
-            if (assignmentIds != null && assignmentIds.Count > 0)
-                query = query.Where(a => assignmentIds.Contains(a.Id));
-
-            var assignments = await query.ToListAsync();
-            foreach (var a in assignments)
-            {
-                a.status = "approved";
-                a.UpdatedAt = DateTime.UtcNow;
-                _unitOfWork.Repository<ShiftAssignments>().Update(a);
-            }
-
-            await _unitOfWork.SaveChangesAsync();
-
-            // Gửi thông báo
-            await _notificationService.NotifyShiftApprovedAsync(assignments.Select(a => a.Id).ToList());
-
-            return new ShiftBulkActionResultDto
-            {
-                AffectedCount = assignments.Count,
-                Message = $"Đã chấp thuận {assignments.Count} ca làm việc."
-            };
+            return new ShiftBulkActionResultDto { Message = "Bước phê duyệt đã được loại bỏ." };
         }
 
+        [Obsolete("Approve step is no longer used.")]
         public async Task<ShiftBulkActionResultDto> PublishAndApproveAssignmentsAsync(string weekStartDate, List<int>? assignmentIds)
         {
-            var (startDate, endDate) = ParseWeekRange(weekStartDate);
-
-            var query = _unitOfWork.Repository<ShiftAssignments>()
-                .AsQueryable()
-                .Where(a => a.assignment_date >= startDate && a.assignment_date < endDate && (a.status == "draft" || a.status == "published"));
-
-            if (assignmentIds != null && assignmentIds.Count > 0)
-                query = query.Where(a => assignmentIds.Contains(a.Id));
-
-            var assignments = await query.ToListAsync();
-            foreach (var a in assignments)
-            {
-                a.status = "approved";
-                a.is_published = true;
-                a.UpdatedAt = DateTime.UtcNow;
-                _unitOfWork.Repository<ShiftAssignments>().Update(a);
-            }
-
-            await _unitOfWork.SaveChangesAsync();
-
-            // Gửi thông báo
-            await _notificationService.NotifyShiftApprovedAsync(assignments.Select(a => a.Id).ToList());
-
-            return new ShiftBulkActionResultDto
-            {
-                AffectedCount = assignments.Count,
-                Message = $"Đã công bố & chấp thuận {assignments.Count} ca làm việc."
-            };
+            return await PublishAssignmentsAsync(weekStartDate, assignmentIds);
         }
 
         public async Task<ShiftBulkActionResultDto> DeleteUnconfirmedAssignmentsAsync(string weekStartDate)
@@ -626,18 +593,20 @@ namespace ERP.Services.Attendance
                 // Nếu không truyền ID, mặc định là các ca có trạng thái hợp lệ để chuyển đổi
                 if (dto.TargetStatus == "published")
                     query = query.Where(a => a.status == "draft");
-                else if (dto.TargetStatus == "approved")
-                    query = query.Where(a => a.status == "published" || a.status == "draft");
             }
 
             var assignments = await query.ToListAsync();
+            var now = DateTime.UtcNow;
             foreach (var a in assignments)
             {
                 a.status = dto.TargetStatus;
-                if (dto.TargetStatus == "published") a.is_published = true;
-                if (dto.TargetStatus == "approved") a.is_published = true;
+                if (dto.TargetStatus == "published")
+                {
+                    a.is_published = true;
+                    a.published_at = now;
+                }
                 
-                a.UpdatedAt = DateTime.UtcNow;
+                a.UpdatedAt = now;
                 _unitOfWork.Repository<ShiftAssignments>().Update(a);
             }
 
@@ -646,8 +615,6 @@ namespace ERP.Services.Attendance
             var ids = assignments.Select(a => a.Id).ToList();
             if (dto.TargetStatus == "published")
                 await _notificationService.NotifyShiftPublishedAsync(ids);
-            else if (dto.TargetStatus == "approved")
-                await _notificationService.NotifyShiftApprovedAsync(ids);
 
             return new ShiftBulkActionResultDto
             {
@@ -741,31 +708,54 @@ namespace ERP.Services.Attendance
         {
             if (dto.employee_ids == null || !dto.employee_ids.Any()) return false;
 
+            // 1. Check for Approved Leaves
+            var leaves = await _unitOfWork.Repository<LeaveRequests>().AsQueryable()
+                .Include(l => l.Employee)
+                .Where(l => l.status == "Approved" && 
+                            l.start_date.Date <= dto.assignment_date.Date && 
+                            l.end_date.Date >= dto.assignment_date.Date && 
+                            dto.employee_ids.Contains(l.employee_id))
+                .ToListAsync();
+
+            if (leaves.Any())
+            {
+                var leaveNames = string.Join(", ", leaves.Select(l => l.Employee?.full_name ?? l.employee_id.ToString()));
+                throw new Exception($"Không thể gán ca cho các nhân viên đang nghỉ phép: {leaveNames}");
+            }
+
             await _unitOfWork.BeginTransactionAsync();
             try
             {
                 var assignmentsToInsert = new List<ShiftAssignments>();
                 
-                var existingAssignedIds = await _unitOfWork.Repository<ShiftAssignments>().AsQueryable()
-                    .Where(a => a.shift_id == dto.shift_id && a.assignment_date.Date == dto.assignment_date.Date && dto.employee_ids.Contains(a.employee_id))
-                    .Select(a => a.employee_id)
+                // 2. Check for existing assignments on the same day to determine overtime
+                var existingAssignedOnDay = await _unitOfWork.Repository<ShiftAssignments>().AsQueryable()
+                    .Where(a => a.assignment_date.Date == dto.assignment_date.Date && dto.employee_ids.Contains(a.employee_id))
+                    .Select(a => new { a.employee_id, a.shift_id })
                     .ToListAsync();
+
+                var employeesWithShiftsOnDay = existingAssignedOnDay.Select(e => e.employee_id).Distinct().ToList();
 
                 foreach (var empId in dto.employee_ids)
                 {
-                    if (!existingAssignedIds.Contains(empId))
+                    // Skip if already assigned TO THIS SPECIFIC SHIFT
+                    if (existingAssignedOnDay.Any(ea => ea.employee_id == empId && ea.shift_id == dto.shift_id))
+                        continue;
+
+                    var isOvertime = employeesWithShiftsOnDay.Contains(empId);
+
+                    assignmentsToInsert.Add(new ShiftAssignments
                     {
-                        assignmentsToInsert.Add(new ShiftAssignments
-                        {
-                            employee_id = empId,
-                            shift_id = dto.shift_id,
-                            assignment_date = dto.assignment_date.Date,
-                            is_published = false,
-                            note = dto.note,
-                            CreatedAt = DateTime.UtcNow,
-                            UpdatedAt = DateTime.UtcNow
-                        });
-                    }
+                        employee_id = empId,
+                        shift_id = dto.shift_id,
+                        assignment_date = dto.assignment_date.Date,
+                        is_published = false,
+                        is_overtime = isOvertime,
+                        status = "draft",
+                        note = dto.note,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    });
                 }
 
                 if (assignmentsToInsert.Any())
@@ -780,6 +770,7 @@ namespace ERP.Services.Attendance
             catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
+                if (ex.Message.Contains("nghỉ phép")) throw;
                 throw new Exception("Lỗi khi gán ca hàng loạt: " + ex.Message);
             }
         }

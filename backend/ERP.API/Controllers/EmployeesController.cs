@@ -147,6 +147,35 @@ namespace ERP.API.Controllers
             return Ok(new { Message = "Xóa thành công (Soft delete)" });
         }
 
+        [HttpGet("{id}/work-status")]
+        [HasPermission("employee", "read")]
+        public async Task<IActionResult> GetWorkStatus(int id)
+        {
+            var result = await _employeeService.GetWorkStatusAsync(id);
+            if (result == null) return NotFound();
+            return Ok(result);
+        }
+
+        [HttpPut("{id}/work-status")]
+        [HasPermission("employee", "update")]
+        public async Task<IActionResult> UpdateWorkStatus(int id, [FromBody] EmployeeWorkStatusDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                var success = await _employeeService.UpdateWorkStatusAsync(id, dto);
+                if (!success) return NotFound();
+
+                return Ok(new { Message = "Cập nhật trạng thái công việc thành công" });
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+
         [HttpPut("{id}/resignation")]
         [HasPermission("employee", "update")]
         public async Task<IActionResult> Resign(int id, [FromBody] ResignationRequestDto dto)

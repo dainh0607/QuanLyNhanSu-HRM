@@ -28,6 +28,7 @@ export const EMPLOYEE_PROFILE_ENDPOINTS = {
   bankAccounts: `${API_URL}/employees/:employeeId/details/bank-accounts`,
   healthRecord: `${API_URL}/employees/:employeeId/details/health-record`,
   dependents: `${API_URL}/employees/:employeeId/details/dependents`,
+  workStatus: `${API_URL}/employees/:employeeId/work-status`,
 } as const;
 
 export const EMPLOYEE_FULL_PROFILE_ENDPOINT = `${API_URL}/employees/:employeeId/full-profile`;
@@ -81,8 +82,8 @@ export const EMPLOYEE_EDIT_ENDPOINTS = {
     put: EMPLOYEE_PROFILE_ENDPOINTS.otherInfo,
   },
   jobStatus: {
-    get: "",
-    put: EMPLOYEE_PROFILE_ENDPOINTS.basicInfo,
+    get: EMPLOYEE_PROFILE_ENDPOINTS.workStatus,
+    put: EMPLOYEE_PROFILE_ENDPOINTS.workStatus,
   },
   jobInfo: {
     get: "",

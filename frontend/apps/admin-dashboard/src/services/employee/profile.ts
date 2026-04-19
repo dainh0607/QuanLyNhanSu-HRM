@@ -79,6 +79,11 @@ interface EmployeeBasicInfoUpdateRequest {
   lateEarlyNote?: string | null;
   isResigned?: boolean;
   resignationReason?: string | null;
+  resignationDate?: string | null;
+  isTotalLateEarlyEnabled?: boolean;
+  lateRules?: any[] | null;
+  earlyRules?: any[] | null;
+  totalLateEarlyRules?: any[] | null;
 }
 
 interface EmployeeContactInfoUpdateRequest {
@@ -602,6 +607,7 @@ const mapDependentsForEdit = (profile: EmployeeFullProfile): EmployeeEditDepende
 
 const mapJobStatusForEdit = (profile: EmployeeFullProfile): EmployeeEditJobStatusPayload => {
   const basicInfo = profile.basicInfo;
+  const raw = basicInfo as any;
 
   return {
     probationStartDate: toDateInputValue(basicInfo.probationStartDate),
@@ -609,13 +615,21 @@ const mapJobStatusForEdit = (profile: EmployeeFullProfile): EmployeeEditJobStatu
     contractExpiryDate: toDateInputValue(basicInfo.contractExpiryDate),
     workType: toEditableString(basicInfo.workType),
     seniorityMonths: toEditableString(basicInfo.seniorityMonths),
-    lateEarlyAllowed: toEditableString(basicInfo.lateEarlyAllowed),
-    lateAllowedMinutes: toEditableString(basicInfo.lateAllowedMinutes),
-    earlyAllowedMinutes: toEditableString(basicInfo.earlyAllowedMinutes),
-    lateEarlyDetailedRules: basicInfo.lateEarlyDetailedRules ? JSON.parse(basicInfo.lateEarlyDetailedRules) : [],
+    
+    isTotalLateEarlyEnabled: Boolean(raw.is_total_late_early_enabled),
+    lateEarlyAllowed: toEditableString(raw.late_early_allowed),
+    totalLateEarlyRules: raw.total_late_early_rules ? JSON.parse(raw.total_late_early_rules) : [],
+
+    isSeparateLateEarlyEnabled: Boolean(raw.is_separate_late_early_enabled),
+    lateAllowedMinutes: toEditableString(raw.allowed_late_minutes),
+    lateRules: raw.late_rules ? JSON.parse(raw.late_rules) : [],
+    earlyAllowedMinutes: toEditableString(raw.allowed_early_minutes),
+    earlyRules: raw.early_rules ? JSON.parse(raw.early_rules) : [],
+
     lateEarlyNote: toEditableString(basicInfo.lateEarlyNote),
     isResigned: Boolean(basicInfo.isResigned),
     resignationReason: toEditableString(basicInfo.resignationReason),
+    resignationDate: toDateInputValue(raw.resignation_date),
   };
 };
 
@@ -1188,46 +1202,28 @@ const updateEmployeeEditJobStatus = async (
     throw createMissingEndpointError("PUT", "Tinh trang cong viec");
   }
 
-  const profile = await fetchEmployeeFullProfileFallback(id);
-  const basicInfo = profile.basicInfo;
-
-  const normalizedPayload: EmployeeBasicInfoUpdateRequest = {
-    // Preserve basic info
-    employeeCode: basicInfo.employeeCode || "",
-    fullName: basicInfo.fullName || "",
-    birthDate: toNullableDateInputValue(basicInfo.birthDate),
-    genderCode: basicInfo.genderCode || null,
-    displayOrder: basicInfo.displayOrder ?? null,
-    maritalStatusCode: basicInfo.maritalStatusCode || null,
-    departmentId: basicInfo.departmentId || null,
-    jobTitleId: basicInfo.jobTitleId || null,
-    branchId: basicInfo.branchId || null,
-    managerId: basicInfo.managerId || null,
-    startDate: toNullableDateInputValue(basicInfo.startDate),
-    avatar: basicInfo.avatar || null,
-
-    // Preserve existing Job Info
-    regionId: basicInfo.regionId || null,
-    secondaryBranchId: basicInfo.secondaryBranchId || null,
-    secondaryDepartmentId: basicInfo.secondaryDepartmentId || null,
-    secondaryJobTitleId: basicInfo.secondaryJobTitleId || null,
-    accessGroupId: basicInfo.accessGroupId || null,
-    isActive: basicInfo.isActive,
-    isDepartmentHead: basicInfo.isDepartmentHead,
-
-    // Update Job Status
-    probationStartDate: toNullableDateInputValue(payload.probationStartDate),
+  const normalizedPayload = {
+    employeeId: id,
+    startDate: toNullableDateInputValue(payload.probationStartDate),
     contractSignDate: toNullableDateInputValue(payload.contractSignDate),
     contractExpiryDate: toNullableDateInputValue(payload.contractExpiryDate),
     workType: toNullableEditableString(payload.workType),
-    seniorityMonths: payload.seniorityMonths ? Number(payload.seniorityMonths) : null,
-    lateEarlyAllowed: payload.lateEarlyAllowed ? Number(payload.lateEarlyAllowed) : null,
-    lateAllowedMinutes: payload.lateAllowedMinutes ? Number(payload.lateAllowedMinutes) : null,
-    earlyAllowedMinutes: payload.earlyAllowedMinutes ? Number(payload.earlyAllowedMinutes) : null,
-    lateEarlyDetailedRules: payload.lateEarlyDetailedRules.length > 0 ? JSON.stringify(payload.lateEarlyDetailedRules) : null,
-    lateEarlyNote: toNullableEditableString(payload.lateEarlyNote),
+    seniorityMonths: payload.seniorityMonths.trim() ? Number(payload.seniorityMonths.trim()) : 0,
+    
+    isTotalLateEarlyEnabled: payload.isTotalLateEarlyEnabled,
+    totalLateEarlyMinutes: payload.lateEarlyAllowed.trim() ? Number(payload.lateEarlyAllowed.trim()) : null,
+    totalLateEarlyRules: payload.totalLateEarlyRules,
+
+    isSeparateLateEarlyEnabled: payload.isSeparateLateEarlyEnabled,
+    allowedLateMinutes: payload.lateAllowedMinutes.trim() ? Number(payload.lateAllowedMinutes.trim()) : null,
+    lateRules: payload.lateRules,
+    allowedEarlyMinutes: payload.earlyAllowedMinutes.trim() ? Number(payload.earlyAllowedMinutes.trim()) : null,
+    earlyRules: payload.earlyRules,
+
+    note: toNullableEditableString(payload.lateEarlyNote),
     isResigned: payload.isResigned,
     resignationReason: toNullableEditableString(payload.resignationReason),
+    resignationDate: toNullableDateInputValue(payload.resignationDate),
   };
 
   return requestJson<unknown>(

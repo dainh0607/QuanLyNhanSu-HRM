@@ -5,8 +5,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ERP.Entities.Models
 {
     [Table("RequestReimbursementDetails")]
-    public class RequestReimbursementDetails : BaseEntity
+    public class RequestReimbursementDetails : BaseEntity, ERP.Entities.Interfaces.ITenantEntity
     {
+        [Column("tenant_id")]
+        public int? tenant_id { get; set; }
+
         [Column("reimbursement_id")]
         public int reimbursement_id { get; set; }
 

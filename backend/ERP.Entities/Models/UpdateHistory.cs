@@ -5,8 +5,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ERP.Entities.Models
 {
     [Table("UpdateHistory")]
-    public class UpdateHistory : BaseEntity
+    public class UpdateHistory : BaseEntity, ERP.Entities.Interfaces.ITenantEntity
     {
+        [Column("tenant_id")]
+        public int? tenant_id { get; set; }
+
         [Column("table_name")]
         [StringLength(100)]
         public string table_name { get; set; }

@@ -5,8 +5,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ERP.Entities.Models
 {
     [Table("AdvanceTypes")]
-    public class AdvanceTypes : AuditableEntity
+    public class AdvanceTypes : AuditableEntity, ERP.Entities.Interfaces.ITenantEntity
     {
+        [Column("tenant_id")]
+        public int? tenant_id { get; set; }
+
         [Column("code")]
         [StringLength(50)]
         public string code { get; set; }

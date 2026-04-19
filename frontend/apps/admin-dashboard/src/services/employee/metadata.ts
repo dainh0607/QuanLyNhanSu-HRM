@@ -121,6 +121,16 @@ export const getAddressDistrictOptions = async (country: string, city: string): 
   return [];
 };
 
+export const getResignationReasonsMetadata = async (): Promise<any[]> =>
+  authFetch(`${API_URL}/resignation-reasons`, { method: "GET" }).then((res) => (res.ok ? res.json() : []));
+
+export const createResignationReason = async (name: string): Promise<any> =>
+  authFetch(`${API_URL}/resignation-reasons`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reason_name: name }),
+  }).then((res) => (res.ok ? res.json() : null));
+
 export const employeeMetadataService = {
   getMetadata,
   getAccessGroupsMetadata,
@@ -132,4 +142,6 @@ export const employeeMetadataService = {
   getAddressCountryOptions,
   getAddressCityOptions,
   getAddressDistrictOptions,
+  getResignationReasonsMetadata,
+  createResignationReason,
 };

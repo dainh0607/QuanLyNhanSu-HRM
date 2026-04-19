@@ -5,8 +5,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ERP.Entities.Models
 {
     [Table("DigitalSignatures")]
-    public class DigitalSignatures : AuditableEntity
+    public class DigitalSignatures : AuditableEntity, ERP.Entities.Interfaces.ITenantEntity
     {
+        [Column("tenant_id")]
+        public int? tenant_id { get; set; }
+
         [Column("employee_id")]
         public int employee_id { get; set; }
 

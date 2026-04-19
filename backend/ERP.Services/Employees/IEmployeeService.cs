@@ -21,5 +21,7 @@ namespace ERP.Services.Employees
         Task<string> GetCodeForReturningEmployeeAsync(int employeeId, string prefix = "NV");
         Task<IEnumerable<EmployeeDto>> GetActiveByBranchAsync(int branchId);
         Task<byte[]> ExportEmployeesToCsvAsync(EmployeeFilterDto filter, IEnumerable<string>? columns = null);
+        Task<EmployeeWorkStatusDto?> GetWorkStatusAsync(int employeeId);
+        Task<bool> UpdateWorkStatusAsync(int employeeId, EmployeeWorkStatusDto dto);
     }
 }

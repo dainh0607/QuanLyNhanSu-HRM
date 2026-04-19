@@ -4,6 +4,7 @@ using ERP.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ERP.Entities.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260418060405_AddTenantIdToAllEntities")]
+    partial class AddTenantIdToAllEntities
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2417,10 +2420,7 @@ namespace ERP.Entities.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasAlternateKey("code")
-                        .HasName("AK_Countries_code");
-
-                    b.ToTable("Countries", (string)null);
+                    b.ToTable("Countries");
 
                     b.HasData(
                         new
@@ -3071,12 +3071,9 @@ namespace ERP.Entities.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasAlternateKey("code")
-                        .HasName("AK_Districts_code");
-
                     b.HasIndex("province_code");
 
-                    b.ToTable("Districts", (string)null);
+                    b.ToTable("Districts");
 
                     b.HasData(
                         new
@@ -3516,14 +3513,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("updated_at");
 
-                    b.Property<int?>("allowed_early_minutes")
-                        .HasColumnType("int")
-                        .HasColumnName("allowed_early_minutes");
-
-                    b.Property<int?>("allowed_late_minutes")
-                        .HasColumnType("int")
-                        .HasColumnName("allowed_late_minutes");
-
                     b.Property<string>("avatar")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("avatar");
@@ -3551,10 +3540,6 @@ namespace ERP.Entities.Migrations
                     b.Property<int?>("display_order")
                         .HasColumnType("int")
                         .HasColumnName("display_order");
-
-                    b.Property<string>("early_rules")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("early_rules");
 
                     b.Property<string>("email")
                         .HasMaxLength(100)
@@ -3623,14 +3608,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("is_resigned");
 
-                    b.Property<bool>("is_separate_late_early_enabled")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_separate_late_early_enabled");
-
-                    b.Property<bool>("is_total_late_early_enabled")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_total_late_early_enabled");
-
                     b.Property<int?>("job_title_id")
                         .HasColumnType("int")
                         .HasColumnName("job_title_id");
@@ -3643,10 +3620,6 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("late_early_note");
-
-                    b.Property<string>("late_rules")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("late_rules");
 
                     b.Property<int?>("manager_id")
                         .HasColumnType("int")
@@ -3707,10 +3680,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("religion");
 
-                    b.Property<DateTime?>("resignation_date")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("resignation_date");
-
                     b.Property<string>("resignation_reason")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)")
@@ -3745,10 +3714,6 @@ namespace ERP.Entities.Migrations
                     b.Property<int?>("tenant_id")
                         .HasColumnType("int")
                         .HasColumnName("tenant_id");
-
-                    b.Property<string>("total_late_early_rules")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("total_late_early_rules");
 
                     b.Property<string>("union_group")
                         .HasMaxLength(100)
@@ -5320,12 +5285,9 @@ namespace ERP.Entities.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasAlternateKey("code")
-                        .HasName("AK_Provinces_code");
-
                     b.HasIndex("country_code");
 
-                    b.ToTable("Provinces", (string)null);
+                    b.ToTable("Provinces");
 
                     b.HasData(
                         new
@@ -6788,42 +6750,6 @@ namespace ERP.Entities.Migrations
                     b.ToTable("Requests", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Entities.Models.ResignationReasons", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("updated_at");
-
-                    b.Property<bool>("is_default")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_default");
-
-                    b.Property<string>("reason_name")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
-                        .HasColumnName("reason_name");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ResignationReasons");
-                });
-
             modelBuilder.Entity("ERP.Entities.Models.ResourcePermissions", b =>
                 {
                     b.Property<int>("Id")
@@ -7499,10 +7425,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("int")
                         .HasColumnName("employee_id");
 
-                    b.Property<bool>("is_overtime")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_overtime");
-
                     b.Property<bool>("is_published")
                         .HasColumnType("bit")
                         .HasColumnName("is_published");
@@ -7515,10 +7437,6 @@ namespace ERP.Entities.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("note");
-
-                    b.Property<DateTime?>("published_at")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("published_at");
 
                     b.Property<int>("shift_id")
                         .HasColumnType("int")

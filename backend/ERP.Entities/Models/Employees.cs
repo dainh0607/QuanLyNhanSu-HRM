@@ -206,5 +206,29 @@ namespace ERP.Entities.Models
 
         [Column("official_start_date")]
         public DateTime? official_start_date { get; set; }
+
+        [Column("resignation_date")]
+        public DateTime? resignation_date { get; set; }
+
+        [Column("is_total_late_early_enabled")]
+        public bool is_total_late_early_enabled { get; set; }
+
+        [Column("is_separate_late_early_enabled")]
+        public bool is_separate_late_early_enabled { get; set; }
+
+        [Column("total_late_early_rules")]
+        public string? total_late_early_rules { get; set; }
+
+        [Column("late_rules")]
+        public string? late_rules { get; set; }
+
+        [Column("early_rules")]
+        public string? early_rules { get; set; }
+
+        [Column("allowed_late_minutes")]
+        public int? allowed_late_minutes { get; set; }
+
+        [Column("allowed_early_minutes")]
+        public int? allowed_early_minutes { get; set; }
     }
 }

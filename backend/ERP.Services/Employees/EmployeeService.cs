@@ -666,6 +666,113 @@ namespace ERP.Services.Employees
             return await _unitOfWork.SaveChangesAsync() > 0;
         }
 
+        public async Task<EmployeeWorkStatusDto?> GetWorkStatusAsync(int employeeId)
+        {
+            var emp = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(employeeId);
+            if (emp == null) return null;
+
+            return new EmployeeWorkStatusDto
+            {
+                EmployeeId = emp.Id,
+                StartDate = emp.start_date,
+                ContractSignDate = emp.contract_sign_date,
+                ContractExpiryDate = emp.contract_expiry_date,
+                WorkType = emp.work_type,
+                SeniorityMonths = emp.seniority_months ?? 0,
+                Note = emp.note,
+
+                IsTotalLateEarlyEnabled = emp.is_total_late_early_enabled,
+                TotalLateEarlyMinutes = emp.late_early_allowed,
+                TotalLateEarlyRules = !string.IsNullOrEmpty(emp.total_late_early_rules) 
+                    ? System.Text.Json.JsonSerializer.Deserialize<List<LateEarlyRuleDto>>(emp.total_late_early_rules) 
+                    : new List<LateEarlyRuleDto>(),
+
+                IsSeparateLateEarlyEnabled = emp.is_separate_late_early_enabled,
+                AllowedLateMinutes = emp.allowed_late_minutes,
+                LateRules = !string.IsNullOrEmpty(emp.late_rules) 
+                    ? System.Text.Json.JsonSerializer.Deserialize<List<LateEarlyRuleDto>>(emp.late_rules) 
+                    : new List<LateEarlyRuleDto>(),
+                AllowedEarlyMinutes = emp.allowed_early_minutes,
+                EarlyRules = !string.IsNullOrEmpty(emp.early_rules) 
+                    ? System.Text.Json.JsonSerializer.Deserialize<List<LateEarlyRuleDto>>(emp.early_rules) 
+                    : new List<LateEarlyRuleDto>(),
+
+                IsResigned = emp.is_resigned,
+                ResignationReason = emp.resignation_reason,
+                ResignationDate = emp.resignation_date
+            };
+        }
+
+        public async Task<bool> UpdateWorkStatusAsync(int employeeId, EmployeeWorkStatusDto dto)
+        {
+            var emp = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(employeeId);
+            if (emp == null) return false;
+
+            // Validation Rules
+            ValidateRules(dto.TotalLateEarlyRules, "Tổng thời gian");
+            ValidateRules(dto.LateRules, "Đi muộn");
+            ValidateRules(dto.EarlyRules, "Về sớm");
+
+            emp.start_date = dto.StartDate;
+            emp.contract_sign_date = dto.ContractSignDate;
+            emp.contract_expiry_date = dto.ContractExpiryDate;
+            emp.work_type = dto.WorkType;
+            emp.seniority_months = dto.SeniorityMonths;
+            emp.note = dto.Note;
+
+            emp.is_total_late_early_enabled = dto.IsTotalLateEarlyEnabled;
+            emp.late_early_allowed = dto.TotalLateEarlyMinutes;
+            emp.total_late_early_rules = dto.TotalLateEarlyRules != null 
+                ? System.Text.Json.JsonSerializer.Serialize(dto.TotalLateEarlyRules) 
+                : null;
+
+            emp.is_separate_late_early_enabled = dto.IsSeparateLateEarlyEnabled;
+            emp.allowed_late_minutes = dto.AllowedLateMinutes;
+            emp.late_rules = dto.LateRules != null 
+                ? System.Text.Json.JsonSerializer.Serialize(dto.LateRules) 
+                : null;
+            emp.allowed_early_minutes = dto.AllowedEarlyMinutes;
+            emp.early_rules = dto.EarlyRules != null 
+                ? System.Text.Json.JsonSerializer.Serialize(dto.EarlyRules) 
+                : null;
+
+            emp.is_resigned = dto.IsResigned;
+            emp.resignation_reason = dto.ResignationReason;
+            emp.resignation_date = dto.ResignationDate;
+            emp.is_active = !dto.IsResigned;
+
+            emp.UpdatedAt = DateTime.UtcNow;
+
+            _unitOfWork.Repository<EmployeeEntity>().Update(emp);
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+
+        private void ValidateRules(List<LateEarlyRuleDto>? rules, string policyName)
+        {
+            if (rules == null || rules.Count == 0) return;
+
+            foreach (var rule in rules)
+            {
+                if (rule.StartDate > rule.EndDate)
+                    throw new Exception($"Chính sách {policyName}: Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.");
+                
+                if (rule.Minutes < 0)
+                    throw new Exception($"Chính sách {policyName}: Số phút phải là số nguyên dương.");
+            }
+
+            for (int i = 0; i < rules.Count; i++)
+            {
+                for (int j = i + 1; j < rules.Count; j++)
+                {
+                    if (rules[i].StartDate <= rules[j].EndDate && rules[j].StartDate <= rules[i].EndDate)
+                    {
+                        throw new Exception($"Chính sách {policyName}: Các khoảng thời gian không được trùng lặp ({rules[i].StartDate:dd/MM/yyyy} - {rules[i].EndDate:dd/MM/yyyy} và {rules[j].StartDate:dd/MM/yyyy} - {rules[j].EndDate:dd/MM/yyyy}).");
+                    }
+                }
+            }
+        }
+
+
         public async Task<bool> DeleteAsync(int id)
         {
             var employee = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(id);
