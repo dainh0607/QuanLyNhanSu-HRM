@@ -68,6 +68,7 @@ export const SECTION_PLACEHOLDER_COPY = {
   capability: 'Shell chỉnh sửa cho Năng lực đã được dựng sẵn để nối form ở bước tiếp theo.',
   timekeeping: 'Shell chỉnh sửa cho Chấm công đã được dựng sẵn để nối form ở bước tiếp theo.',
   signature: 'Shell chỉnh sửa cho Chữ ký số đã được dựng sẵn để nối form ở bước tiếp theo.',
+  audit: 'Shell chỉnh sửa cho Lịch sử cập nhật đã được dựng sẵn để nối form ở bước tiếp theo.',
   permission: 'Shell chỉnh sửa cho Phân quyền đã được dựng sẵn để nối form ở bước tiếp theo.',
 } as const;
 

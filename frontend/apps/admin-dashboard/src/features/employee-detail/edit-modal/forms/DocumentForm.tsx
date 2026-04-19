@@ -32,7 +32,27 @@ const DocumentForm: React.FC<DocumentFormProps> = ({
   }, [activeMenuId]);
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* ACTIONS ROW */}
+      <div className="flex justify-end gap-3">
+        <button
+          type="button"
+          onClick={onOpenAddFolder}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl font-bold hover:bg-blue-100 transition-colors text-[14px]"
+        >
+          <span className="material-symbols-outlined text-[18px]">create_new_folder</span>
+          Thêm thư mục
+        </button>
+        <button
+          type="button"
+          onClick={onOpenAddFile}
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl font-bold hover:bg-emerald-100 transition-colors text-[14px]"
+        >
+          <span className="material-symbols-outlined text-[18px]">upload_file</span>
+          Tải tệp lên
+        </button>
+      </div>
+
       {/* FOLDER GRID */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {folders.map((folder) => (
