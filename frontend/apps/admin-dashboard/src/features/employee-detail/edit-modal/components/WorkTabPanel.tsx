@@ -89,6 +89,7 @@ const WorkTabPanel: React.FC<WorkTabPanelProps> = ({
     case 'contract':
       return (
         <ContractForm
+          employeeId={employeeId}
           data={data as WorkFormMap['contract']}
           errors={errors}
           onRefresh={() => onRefreshTab('contract')}

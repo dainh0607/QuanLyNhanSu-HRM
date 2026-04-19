@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
+import { useState, useImperativeHandle, forwardRef } from 'react';
 import type { AssetFormMap } from '../types';
 import AssetIssueModal from '../components/AssetIssueModal';
 import { type EmployeeEditAssetItemPayload } from '../../../../services/employeeService';
+
+export interface AssetFormRef {
+  openIssueModal: () => void;
+}
 
 interface AssetFormProps {
   data: AssetFormMap['assets'];
@@ -9,9 +13,13 @@ interface AssetFormProps {
   onUpdateAssets?: (newAssets: AssetFormMap['assets']) => Promise<void>;
 }
 
-const AssetForm: React.FC<AssetFormProps> = ({ data, employeeName = 'Nhân viên', onUpdateAssets }) => {
+const AssetForm = forwardRef<AssetFormRef, AssetFormProps>(({ data, employeeName = 'Nhân viên', onUpdateAssets }, ref) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const hasAssets = data && data.length > 0;
+
+  useImperativeHandle(ref, () => ({
+    openIssueModal: () => setIsModalOpen(true)
+  }));
 
   const handleIssueAsset = async (newAsset: EmployeeEditAssetItemPayload) => {
     if (onUpdateAssets) {
@@ -20,20 +28,7 @@ const AssetForm: React.FC<AssetFormProps> = ({ data, employeeName = 'Nhân viên
   };
 
   return (
-    <div className="mt-4 flex flex-col gap-6 pb-6">
-      {/* Header Bar */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-[18px] font-bold text-[#1c3563]">Tài sản</h3>
-        <button
-          type="button"
-          onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(16,185,129,0.2)] transition-all hover:bg-emerald-600 hover:shadow-[0_12px_30px_rgba(16,185,129,0.3)] active:scale-95"
-        >
-          <span className="material-symbols-outlined text-[20px]">add_circle</span>
-          Cấp tài sản
-        </button>
-      </div>
-
+    <div className="flex flex-col gap-6 pb-6">
       {/* Assets Table Section */}
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white/80 backdrop-blur-sm shadow-sm">
         <div className="overflow-x-auto">
@@ -101,6 +96,6 @@ const AssetForm: React.FC<AssetFormProps> = ({ data, employeeName = 'Nhân viên
       />
     </div>
   );
-};
+});
 
 export default AssetForm;

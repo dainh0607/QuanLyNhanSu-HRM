@@ -9,6 +9,7 @@ export const MODAL_SECTIONS = [
   { key: 'capability', label: 'Năng lực', icon: 'workspace_premium' },
   { key: 'timekeeping', label: 'Chấm công', icon: 'schedule' },
   { key: 'signature', label: 'Chữ ký số', icon: 'draw' },
+  { key: 'audit', label: 'Lịch sử cập nhật', icon: 'history' },
   { key: 'permission', label: 'Phân quyền', icon: 'admin_panel_settings' },
 ] as const;
 

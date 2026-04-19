@@ -1,11 +1,9 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import type {
   EmployeeEditSalaryAllowancePayload,
 } from '../../../../services/employeeService';
-import { FormHeading, FormRow } from '../components/FormPrimitives';
-import { getFieldClassName } from '../formStyles';
-import SearchableSelect from '../../../employees-contracts/components/Shared/SearchableSelect';
-import type { SelectOption } from '../../../employees-contracts/types';
+import { DatePickerInput, FormHeading } from '../components/FormPrimitives';
+import CreateSalaryLevelPopup from './components/CreateSalaryLevelPopup';
 
 interface SalaryAllowanceFormProps {
   data: EmployeeEditSalaryAllowancePayload;
@@ -15,382 +13,341 @@ interface SalaryAllowanceFormProps {
   ) => void;
 }
 
+const PAYMENT_METHODS = [
+  'Chi trả một lần',
+  'Chi trả theo giờ',
+  'Chi trả theo tháng',
+  'Chi trả theo ngày công'
+];
+
 const SalaryAllowanceForm: React.FC<SalaryAllowanceFormProps> = ({ data, onFieldChange }) => {
-  
-  const salaryLevelOptions: SelectOption[] = [
-    { label: 'Nhân viên', value: 'nhân viên' },
-    { label: 'Chuyên viên', value: 'chuyên viên' },
-    { label: 'Trưởng nhóm', value: 'trưởng nhóm' },
-  ];
+  const [salaryLevelOptions, setSalaryLevelOptions] = useState([
+    { label: 'Nhân viên', value: 'nhân viên', amount: '10000000' },
+    { label: 'Chuyên viên', value: 'chuyên viên', amount: '15000000' },
+    { label: 'Trưởng nhóm', value: 'trưởng nhóm', amount: '25000000' },
+  ]);
 
-  const allowanceOptions: SelectOption[] = [
-    { label: 'Phụ cấp ăn trưa', value: 'Phụ cấp ăn trưa' },
-    { label: 'Phụ cấp xăng xe', value: 'Phụ cấp xăng xe' },
-    { label: 'Phụ cấp điện thoại', value: 'Phụ cấp điện thoại' },
-  ];
+  const [showCreatePopup, setShowCreatePopup] = useState(false);
 
-  const otherIncomeOptions: SelectOption[] = [
-    { label: 'Thưởng quý', value: 'Thưởng quý' },
-    { label: 'Thưởng lễ tết', value: 'Thưởng lễ tết' },
-    { label: 'Thưởng hiệu quả', value: 'Thưởng hiệu quả' },
-  ];
-
-  const handleCreateNew = (type: string) => {
-    // Placeholder cho hành động tạo mới thực tế
-    alert(`Mở form tạo mới ${type}`);
+  const formatCurrency = (val: string | number) => {
+    const num = typeof val === 'string' ? Number(val.replace(/\D/g, '')) : val;
+    return num.toLocaleString('vi-VN');
   };
 
-  // Tự động thêm một mục trống mặc định nếu danh sách đang rỗng
-  React.useEffect(() => {
-    if (data.allowances.length === 0) {
-      onFieldChange('allowances', [{ id: Math.random().toString(36).substr(2, 9), name: '', amount: '0' }]);
+  const handleSalaryLevelChange = (value: string, isBase: boolean = true, index?: number) => {
+    if (value === '__create_new__') {
+      setShowCreatePopup(true);
+      return;
     }
-  }, [data.allowances.length, onFieldChange]);
 
-  React.useEffect(() => {
-    if (data.otherIncomes.length === 0) {
-      onFieldChange('otherIncomes', [{ id: Math.random().toString(36).substr(2, 9), name: '', amount: '0' }]);
+    const selected = salaryLevelOptions.find(opt => opt.value === value);
+    if (isBase) {
+      onFieldChange('salaryLevelName', value);
+      if (selected) onFieldChange('salaryAmount', selected.amount);
+    } else if (index !== undefined) {
+      const next = [...data.salaryChanges];
+      next[index] = { ...next[index], salaryLevelName: value };
+      if (selected) next[index].amount = selected.amount;
+      onFieldChange('salaryChanges', next);
     }
-  }, [data.otherIncomes.length, onFieldChange]);
+  };
 
   const handleAddSalaryChange = () => {
     onFieldChange('salaryChanges', [
       ...data.salaryChanges,
-      { id: Math.random().toString(36).substr(2, 9), paymentMethod: '', amount: '0', salaryLevelName: '', duration: '' }
+      { id: Math.random().toString(36).substr(2, 9), paymentMethod: '', salaryLevelName: '', amount: '0', startDate: '', endDate: '' }
     ]);
   };
 
-  const handleAddAllowance = () => {
-    onFieldChange('allowances', [
-      ...data.allowances,
-      { id: Math.random().toString(36).substr(2, 9), name: '', amount: '0' }
-    ]);
+  const handleRemoveItem = (field: 'salaryChanges' | 'allowances' | 'otherIncomes', index: number) => {
+    onFieldChange(field, (data[field] as any[]).filter((_, i) => i !== index));
   };
 
-  const handleAddOtherIncome = () => {
-    onFieldChange('otherIncomes', [
-      ...data.otherIncomes,
-      { id: Math.random().toString(36).substr(2, 9), name: '', amount: '0' }
-    ]);
-  };
-
-  const handleRemoveItem = (field: 'salaryChanges' | 'allowances' | 'otherIncomes', id: string) => {
-    onFieldChange(field, (data[field] as any[]).filter(item => item.id !== id));
-  };
+  // Validation: Overlap check for AC 2.4
+  const hasOverlap = useMemo(() => {
+    const sorted = [...data.salaryChanges]
+      .filter(s => s.startDate && s.endDate)
+      .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+    
+    for (let i = 0; i < sorted.length - 1; i++) {
+      if (new Date(sorted[i].endDate) > new Date(sorted[i+1].startDate)) return true;
+    }
+    return false;
+  }, [data.salaryChanges]);
 
   return (
-    <>
-      <FormHeading
-        title="Tiền lương & Trợ cấp"
-        description="Quản lý chi tiết về lương, các khoản phụ cấp và lịch sử thay đổi thu nhập của nhân viên."
-      />
-
-      <div className="space-y-12">
-        {/* Main Salary Section */}
-        <section className="rounded-[32px] border border-slate-200 bg-white p-8 shadow-[0_8px_30px_rgb(0,0,0,0.02)]">
-          <div className="mb-10 flex items-center gap-4">
-            <div className="h-8 w-1.5 rounded-full bg-emerald-500"></div>
-            <h3 className="text-xl font-black text-slate-900">Tiền lương</h3>
+    <div className="space-y-10">
+      {/* AC 1.x: Khối Tiền lương cơ bản */}
+      <section className="rounded-[40px] border border-slate-100 bg-white p-10 shadow-sm transition-all hover:shadow-md">
+        <FormHeading title="Tiền lương cơ bản" />
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="space-y-2">
+            <label className="text-[13px] font-black uppercase tracking-wider text-slate-400 ml-1">Hình thức chi trả</label>
+            <select
+              value={data.paymentMethod}
+              onChange={(e) => onFieldChange('paymentMethod', e.target.value)}
+              className="h-14 w-full rounded-[20px] border-2 border-slate-50 bg-slate-50/50 px-6 text-[15px] font-bold text-slate-700 outline-none transition-all focus:border-emerald-500 focus:bg-white"
+            >
+              <option value="">Chọn hình thức</option>
+              {PAYMENT_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
           </div>
 
-          <div className="divide-y divide-slate-100">
-            <FormRow 
-              label="Hình thức chi trả" 
-              description="Bạn chi trả nhân viên theo hình thức nào theo giờ, theo tháng, theo sản phẩm, theo doanh thu..."
+          <div className="space-y-2">
+            <label className="text-[13px] font-black uppercase tracking-wider text-slate-400 ml-1">Tên bậc lương</label>
+            <select
+              value={data.salaryLevelName}
+              onChange={(e) => handleSalaryLevelChange(e.target.value)}
+              className="h-14 w-full rounded-[20px] border-2 border-slate-50 bg-slate-50/50 px-6 text-[15px] font-bold text-slate-700 outline-none transition-all focus:border-emerald-500 focus:bg-white"
             >
-              <select
-                value={data.paymentMethod}
-                onChange={(e) => onFieldChange('paymentMethod', e.target.value)}
-                className={getFieldClassName(false)}
-              >
-                <option value="">Chọn hình thức</option>
-                <option value="Chi trả theo giờ">Chi trả theo giờ</option>
-                <option value="Chi trả theo tháng">Chi trả theo tháng</option>
-                <option value="Chi trả theo sản phẩm">Chi trả theo sản phẩm</option>
-                <option value="Chi trả theo doanh thu">Chi trả theo doanh thu</option>
-              </select>
-            </FormRow>
+              <option value="">Chọn bậc lương</option>
+              {salaryLevelOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              <option value="__create_new__" className="font-bold text-blue-500">+ Tạo mới bậc lương</option>
+            </select>
+          </div>
 
-            <FormRow 
-              label="Tên bậc lương" 
-              description="Tên bậc lương mà bạn chi trả trong công ty"
-            >
-              <SearchableSelect
-                value={data.salaryLevelName}
-                options={salaryLevelOptions}
-                placeholder="Theo cấp bậc"
-                onChange={(val) => onFieldChange('salaryLevelName', val)}
-                footerAction={{
-                  label: 'Tạo mới',
-                  onClick: () => handleCreateNew('Bậc lương')
-                }}
+          <div className="md:col-span-2 space-y-2">
+            <label className="text-[13px] font-black uppercase tracking-wider text-slate-400 ml-1">Mức lương (VND)</label>
+            <div className="relative group">
+              <input
+                type="text"
+                value={formatCurrency(data.salaryAmount)}
+                onChange={(e) => onFieldChange('salaryAmount', e.target.value.replace(/\D/g, ''))}
+                className="h-20 w-full rounded-[24px] border-none bg-emerald-50/30 px-8 text-3xl font-black text-emerald-600 outline-none transition-all focus:bg-emerald-50"
+                placeholder="0"
               />
-            </FormRow>
-
-            <FormRow label="Mức lương">
-              <div className="relative group max-w-md">
-                <input
-                  type="text"
-                  value={Number(data.salaryAmount || 0).toLocaleString('vi-VN')}
-                  onChange={(e) => onFieldChange('salaryAmount', e.target.value.replace(/\D/g, ''))}
-                  className="h-14 w-full rounded-2xl border-none bg-[#EDF2F9] px-6 text-lg font-black text-slate-700 outline-none transition-all focus:ring-4 focus:ring-blue-100"
-                  placeholder="0"
-                />
-              </div>
-            </FormRow>
+              <span className="absolute right-8 top-1/2 -translate-y-1/2 text-sm font-black text-emerald-400 uppercase tracking-widest">VNĐ</span>
+            </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Salary Changes */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between px-2">
+      {/* AC 2.x: Khối Tiền lương thay đổi */}
+      <section className="rounded-[40px] border border-slate-100 bg-slate-50/30 p-10">
+        <div className="mb-10 flex items-center justify-between">
+          <FormHeading title="Tiền lương thay đổi" />
+          <button
+            type="button"
+            onClick={handleAddSalaryChange}
+            className="text-sm font-black text-emerald-600 underline-offset-4 hover:underline"
+          >
+            + Tạo mới khối lương
+          </button>
+        </div>
+
+        {hasOverlap && (
+          <div className="mb-6 rounded-2xl bg-rose-50 p-4 text-[13px] font-bold text-rose-500 flex items-center gap-3">
+            <span className="material-symbols-outlined">warning</span>
+            Có sự trùng lặp hoặc giao nhau về khoảng thời gian giữa các khối lương.
+          </div>
+        )}
+
+        <div className="space-y-6">
+          {data.salaryChanges.map((item, index) => (
+            <div key={item.id} className="relative rounded-[32px] border border-slate-100 bg-white p-8 shadow-sm group">
+              <button 
+                onClick={() => handleRemoveItem('salaryChanges', index)}
+                className="absolute right-6 top-6 flex h-9 w-9 items-center justify-center rounded-full bg-slate-50 text-slate-300 transition-all hover:bg-rose-50 hover:text-rose-500 opacity-0 group-hover:opacity-100"
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                 <div className="space-y-1">
+                    <label className="text-[11px] font-black uppercase text-slate-400 ml-1">Hình thức chi trả <span className="text-rose-500">*</span></label>
+                    <select
+                      value={item.paymentMethod}
+                      onChange={(e) => {
+                        const next = [...data.salaryChanges];
+                        next[index].paymentMethod = e.target.value;
+                        onFieldChange('salaryChanges', next);
+                      }}
+                      className="h-12 w-full rounded-[16px] border border-slate-100 bg-slate-50 px-4 text-[13px] font-bold"
+                    >
+                      <option value="">Chọn hình thức</option>
+                      {PAYMENT_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                 </div>
+                 <div className="space-y-1">
+                    <label className="text-[11px] font-black uppercase text-slate-400 ml-1">Bậc lương <span className="text-rose-500">*</span></label>
+                    <select
+                      value={item.salaryLevelName}
+                      onChange={(e) => handleSalaryLevelChange(e.target.value, false, index)}
+                      className="h-12 w-full rounded-[16px] border border-slate-100 bg-slate-50 px-4 text-[13px] font-bold"
+                    >
+                      <option value="">Chọn bậc lương</option>
+                      {salaryLevelOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                    </select>
+                 </div>
+                 <div className="space-y-1">
+                    <label className="text-[11px] font-black uppercase text-slate-400 ml-1">Số tiền</label>
+                    <input
+                      type="text"
+                      readOnly
+                      value={formatCurrency(item.amount)}
+                      className="h-12 w-full rounded-[16px] border-none bg-slate-50 px-4 text-[13px] font-black text-emerald-600 outline-none"
+                    />
+                 </div>
+                 <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-black uppercase text-slate-400 ml-1">Khoảng thời gian <span className="text-rose-500">*</span></label>
+                      <div className="flex items-center gap-2">
+                        <DatePickerInput
+                          value={item.startDate}
+                          onChange={(val) => {
+                            const next = [...data.salaryChanges];
+                            next[index].startDate = val;
+                            onFieldChange('salaryChanges', next);
+                          }}
+                          className="!h-12 !rounded-[16px]"
+                        />
+                        <span className="text-slate-200">~</span>
+                        <DatePickerInput
+                          value={item.endDate}
+                          onChange={(val) => {
+                            const next = [...data.salaryChanges];
+                            next[index].endDate = val;
+                            onFieldChange('salaryChanges', next);
+                          }}
+                          className="!h-12 !rounded-[16px]"
+                        />
+                      </div>
+                    </div>
+                 </div>
+              </div>
+            </div>
+          ))}
+          {data.salaryChanges.length === 0 && (
+            <div className="py-10 text-center text-sm font-bold text-slate-300 italic">Chưa có thiết lập lương thay đổi</div>
+          )}
+        </div>
+      </section>
+
+      {/* AC 3.x: Khối Phụ cấp & Thu nhập khác */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        {/* Phụ cấp */}
+        <section className="rounded-[40px] border border-slate-100 bg-white p-10 shadow-sm overflow-hidden">
+          <div className="mb-8 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-6 w-1 rounded-full bg-emerald-500"></div>
-              <h4 className="text-[17px] font-bold text-slate-800 uppercase tracking-tight">Tiền lương thay đổi</h4>
+              <div className="h-6 w-[4px] rounded-full bg-blue-500"></div>
+              <h4 className="text-lg font-black text-slate-800">Phụ cấp</h4>
             </div>
             <button
-              onClick={handleAddSalaryChange}
-              className="text-emerald-500 text-sm font-bold hover:text-emerald-600 transition-colors"
+              onClick={() => onFieldChange('allowances', [...data.allowances, { id: Math.random().toString(36).substr(2, 9), name: '', amount: '0' }])}
+              className="text-sm font-black text-blue-600 hover:underline"
             >
-              Tạo mới
+              + Tạo mới
             </button>
           </div>
           
-          <div className="grid grid-cols-1 gap-6">
-            {data.salaryChanges.map((item) => (
-              <div key={item.id} className="relative rounded-[32px] border border-slate-100 bg-[#F8FAFC] p-8 pt-12 shadow-sm transition-all hover:shadow-md">
-                <button 
-                  onClick={() => handleRemoveItem('salaryChanges', item.id!)}
-                  className="absolute right-6 top-6 flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-300 shadow-sm transition-all hover:bg-rose-50 hover:text-rose-500"
-                >
-                  <span className="material-symbols-outlined text-[20px]">close</span>
-                </button>
-
-                <div className="divide-y divide-slate-100/50">
-                  {/* Hình thức chi trả */}
-                  <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6 py-6 first:pt-0">
-                    <div className="space-y-1">
-                      <label className="text-[14px] font-bold text-slate-900">Hình thức chi trả</label>
-                      <p className="text-[12px] leading-relaxed text-slate-400">
-                        Bạn chi trả nhân viên theo hình thức nào theo giờ, theo tháng, theo sản phẩm, theo doanh thu...
-                      </p>
-                    </div>
-                    <select 
-                      value={item.paymentMethod} 
-                      className="h-11 w-full rounded-xl border-none bg-white px-4 text-sm text-slate-700 outline-none shadow-sm focus:ring-2 focus:ring-emerald-500/20"
+          <div className="space-y-4">
+            {data.allowances.length === 0 ? (
+               <div className="py-10 text-center text-[13px] text-slate-300 italic border-2 border-dashed border-slate-50 rounded-3xl">Trống</div>
+            ) : data.allowances.map((item, index) => (
+              <div key={item.id} className="relative group p-6 bg-slate-50/50 rounded-[28px] border border-slate-50">
+                 <button onClick={() => handleRemoveItem('allowances', index)} className="absolute -right-2 -top-2 h-8 w-8 rounded-full bg-white shadow-md text-slate-300 opacity-0 group-hover:opacity-100 hover:text-rose-500 transition-all flex items-center justify-center">
+                    <span className="material-symbols-outlined text-[16px]">close</span>
+                 </button>
+                 <div className="space-y-4">
+                    <select
+                      value={item.name}
                       onChange={(e) => {
-                        onFieldChange('salaryChanges', data.salaryChanges.map(s => s.id === item.id ? { ...s, paymentMethod: e.target.value } : s));
-                      }} 
+                        const next = [...data.allowances];
+                        next[index].name = e.target.value;
+                        onFieldChange('allowances', next);
+                      }}
+                      className="h-12 w-full rounded-[16px] border-none bg-white px-4 text-[13px] font-bold shadow-sm outline-none"
                     >
-                      <option value="">Chọn hình thức</option>
-                      <option value="Chi trả theo giờ">Chi trả theo giờ</option>
-                      <option value="Chi trả theo tháng">Chi trả theo tháng</option>
+                      <option value="">Chọn loại phụ cấp</option>
+                      <option value="Phụ cấp ăn trưa">Phụ cấp ăn trưa</option>
+                      <option value="Phụ cấp xăng xe">Phụ cấp xăng xe</option>
+                      <option value="Phụ cấp điện thoại">Phụ cấp điện thoại</option>
                     </select>
-                  </div>
-
-                  {/* Khoảng thời gian */}
-                  <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6 py-6">
-                    <div className="space-y-1">
-                      <label className="text-[14px] font-bold text-slate-900">
-                        Khoảng thời gian <span className="text-rose-500">*</span>
-                      </label>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <input 
-                        type="date" 
-                        className="h-11 flex-1 rounded-xl border-none bg-white px-4 text-sm text-slate-700 outline-none shadow-sm"
-                        onChange={(e) => {
-                          const start = e.target.value;
-                          const currentRange = item.duration.split(' ~ ');
-                          onFieldChange('salaryChanges', data.salaryChanges.map(s => s.id === item.id ? { ...s, duration: `${start} ~ ${currentRange[1] || ''}` } : s));
-                        }}
-                      />
-                      <span className="text-slate-400">~</span>
-                      <input 
-                        type="date" 
-                        className="h-11 flex-1 rounded-xl border-none bg-white px-4 text-sm text-slate-700 outline-none shadow-sm"
-                        onChange={(e) => {
-                          const end = e.target.value;
-                          const currentRange = item.duration.split(' ~ ');
-                          onFieldChange('salaryChanges', data.salaryChanges.map(s => s.id === item.id ? { ...s, duration: `${currentRange[0] || ''} ~ ${end}` } : s));
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Tên bậc lương */}
-                  <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6 py-6">
-                    <div className="space-y-1">
-                      <label className="text-[14px] font-bold text-slate-900">
-                        Tên bậc lương <span className="text-rose-500">*</span>
-                      </label>
-                      <p className="text-[12px] leading-relaxed text-slate-400">
-                        Tên bậc lương mà bạn chi trả trong công ty
-                      </p>
-                    </div>
-                    <SearchableSelect
-                      value={item.salaryLevelName}
-                      options={salaryLevelOptions}
-                      placeholder="Theo cấp bậc"
-                      onChange={(val) => {
-                        onFieldChange('salaryChanges', data.salaryChanges.map(s => s.id === item.id ? { ...s, salaryLevelName: val } : s));
-                      }}
-                      footerAction={{
-                        label: 'Tạo mới',
-                        onClick: () => handleCreateNew('Bậc lương')
-                      }}
-                    />
-                  </div>
-
-                  {/* Mức lương */}
-                  <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6 py-6 last:pb-0">
-                    <div className="space-y-1">
-                      <label className="text-[14px] font-bold text-slate-900">Mức lương</label>
-                    </div>
-                    <input 
-                      type="text" 
-                      value={Number(item.amount || 0).toLocaleString('vi-VN')} 
-                      className="h-12 w-full max-w-[240px] rounded-2xl border-none bg-[#EDF2F9] px-4 text-[15px] font-black text-slate-700 outline-none" 
+                    <input
+                      type="text"
+                      value={formatCurrency(item.amount)}
                       onChange={(e) => {
-                        onFieldChange('salaryChanges', data.salaryChanges.map(s => s.id === item.id ? { ...s, amount: e.target.value.replace(/\D/g, '') } : s));
-                      }} 
+                        const next = [...data.allowances];
+                        next[index].amount = e.target.value.replace(/\D/g, '');
+                        onFieldChange('allowances', next);
+                      }}
+                      className="h-12 w-full rounded-[16px] border-none bg-white px-4 text-right font-black text-blue-600 shadow-sm outline-none"
+                      placeholder="Số tiền"
                     />
-                  </div>
-                </div>
+                 </div>
               </div>
             ))}
           </div>
         </section>
 
-        {/* Allowances & Other Incomes */}
-        {/* Allowances & Other Incomes */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          {/* Phụ cấp */}
-          <section className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-6 w-1 rounded-full bg-emerald-500"></div>
-                <h4 className="text-[17px] font-bold text-slate-800">Phụ cấp</h4>
+        {/* Thu nhập khác */}
+        <section className="rounded-[40px] border border-slate-100 bg-white p-10 shadow-sm overflow-hidden">
+          <div className="mb-8 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-6 w-[4px] rounded-full bg-purple-500"></div>
+              <h4 className="text-lg font-black text-slate-800">Thu nhập khác</h4>
+            </div>
+            <button
+              onClick={() => onFieldChange('otherIncomes', [...data.otherIncomes, { id: Math.random().toString(36).substr(2, 9), name: '', amount: '0' }])}
+              className="text-sm font-black text-purple-600 hover:underline"
+            >
+              + Tạo mới
+            </button>
+          </div>
+          
+          <div className="space-y-4">
+            {data.otherIncomes.length === 0 ? (
+               <div className="py-10 text-center text-[13px] text-slate-300 italic border-2 border-dashed border-slate-50 rounded-3xl">Trống</div>
+            ) : data.otherIncomes.map((item, index) => (
+              <div key={item.id} className="relative group p-6 bg-slate-50/50 rounded-[28px] border border-slate-50">
+                 <button onClick={() => handleRemoveItem('otherIncomes', index)} className="absolute -right-2 -top-2 h-8 w-8 rounded-full bg-white shadow-md text-slate-300 opacity-0 group-hover:opacity-100 hover:text-rose-500 transition-all flex items-center justify-center">
+                    <span className="material-symbols-outlined text-[16px]">close</span>
+                 </button>
+                 <div className="space-y-4">
+                    <select
+                      value={item.name}
+                      onChange={(e) => {
+                        const next = [...data.otherIncomes];
+                        next[index].name = e.target.value;
+                        onFieldChange('otherIncomes', next);
+                      }}
+                      className="h-12 w-full rounded-[16px] border-none bg-white px-4 text-[13px] font-bold shadow-sm outline-none"
+                    >
+                      <option value="">Chọn loại thu nhập</option>
+                      <option value="Thưởng tháng 13">Thưởng tháng 13</option>
+                      <option value="Thưởng KPI">Thưởng KPI</option>
+                      <option value="Phúc lợi lễ tết">Phúc lợi lễ tết</option>
+                    </select>
+                    <input
+                      type="text"
+                      value={formatCurrency(item.amount)}
+                      onChange={(e) => {
+                        const next = [...data.otherIncomes];
+                        next[index].amount = e.target.value.replace(/\D/g, '');
+                        onFieldChange('otherIncomes', next);
+                      }}
+                      className="h-12 w-full rounded-[16px] border-none bg-white px-4 text-right font-black text-purple-600 shadow-sm outline-none"
+                      placeholder="Số tiền"
+                    />
+                 </div>
               </div>
-              <button
-                onClick={handleAddAllowance}
-                className="text-emerald-500 text-sm font-bold hover:text-emerald-600 transition-colors"
-              >
-                Tạo mới
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              {data.allowances.map((item) => (
-                <div key={item.id} className="relative rounded-[24px] border border-slate-100 bg-[#F8FAFC] p-6 pt-10">
-                  <button 
-                    onClick={() => handleRemoveItem('allowances', item.id!)}
-                    className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm transition-all hover:bg-rose-50 hover:text-rose-500"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">close</span>
-                  </button>
-
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-[1fr_2fr] items-center gap-4">
-                      <label className="text-sm font-bold text-slate-600">Tên phụ cấp</label>
-                      <SearchableSelect
-                        value={item.name}
-                        options={allowanceOptions}
-                        placeholder="Tên phụ cấp"
-                        onChange={(val) => {
-                          onFieldChange('allowances', data.allowances.map(a => a.id === item.id ? { ...a, name: val } : a));
-                        }}
-                        footerAction={{
-                          label: 'Tạo mới',
-                          onClick: () => handleCreateNew('Phụ cấp')
-                        }}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-[1fr_2fr] items-center gap-4">
-                      <div className="space-y-0.5">
-                        <label className="text-sm font-bold text-slate-600 font-bold">Số tiền</label>
-                        <p className="text-[10px] text-slate-400 font-bold">(VND)</p>
-                      </div>
-                      <input 
-                        type="text" 
-                        value={Number(item.amount || 0).toLocaleString('vi-VN')} 
-                        className="h-11 w-full rounded-xl border-none bg-[#EDF2F9] px-4 text-right text-sm font-black text-slate-700 outline-none" 
-                        onChange={(e) => {
-                          onFieldChange('allowances', data.allowances.map(a => a.id === item.id ? { ...a, amount: e.target.value.replace(/\D/g, '') } : a));
-                        }} 
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Thu nhập khác */}
-          <section className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-6 w-1 rounded-full bg-emerald-500"></div>
-                <h4 className="text-[17px] font-bold text-slate-800">Thu nhập khác</h4>
-              </div>
-              <button
-                onClick={handleAddOtherIncome}
-                className="text-emerald-500 text-sm font-bold hover:text-emerald-600 transition-colors"
-              >
-                Tạo mới
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              {data.otherIncomes.map((item) => (
-                <div key={item.id} className="relative rounded-[24px] border border-slate-100 bg-[#F8FAFC] p-6 pt-10">
-                  <button 
-                    onClick={() => handleRemoveItem('otherIncomes', item.id!)}
-                    className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm transition-all hover:bg-rose-50 hover:text-rose-500"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">close</span>
-                  </button>
-
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-[1fr_2fr] items-center gap-4">
-                      <label className="text-sm font-bold text-slate-600">Tên thu nhập</label>
-                      <SearchableSelect
-                        value={item.name}
-                        options={otherIncomeOptions}
-                        placeholder="Tên thu nhập"
-                        onChange={(val) => {
-                          onFieldChange('otherIncomes', data.otherIncomes.map(o => o.id === item.id ? { ...o, name: val } : o));
-                        }}
-                        footerAction={{
-                          label: 'Tạo mới',
-                          onClick: () => handleCreateNew('Thu nhập')
-                        }}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-[1fr_2fr] items-center gap-4">
-                      <div className="space-y-0.5">
-                        <label className="text-sm font-bold text-slate-600 font-bold">Số tiền</label>
-                        <p className="text-[10px] text-slate-400 font-bold">(VND)</p>
-                      </div>
-                      <input 
-                        type="text" 
-                        value={Number(item.amount || 0).toLocaleString('vi-VN')} 
-                        className="h-11 w-full rounded-xl border-none bg-[#EDF2F9] px-4 text-right text-sm font-black text-slate-700 outline-none" 
-                        onChange={(e) => {
-                          onFieldChange('otherIncomes', data.otherIncomes.map(o => o.id === item.id ? { ...o, amount: e.target.value.replace(/\D/g, '') } : o));
-                        }} 
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
+            ))}
+          </div>
+        </section>
       </div>
-    </>
+
+      {showCreatePopup && (
+        <CreateSalaryLevelPopup 
+          onClose={() => setShowCreatePopup(false)}
+          onCreated={(newLevel) => {
+            setSalaryLevelOptions([...salaryLevelOptions, newLevel]);
+            onFieldChange('salaryLevelName', newLevel.value);
+            onFieldChange('salaryAmount', newLevel.amount);
+          }}
+        />
+      )}
+    </div>
   );
 };
 

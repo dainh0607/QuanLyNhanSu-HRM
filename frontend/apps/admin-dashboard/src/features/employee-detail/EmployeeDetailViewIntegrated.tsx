@@ -22,6 +22,7 @@ import AssetsTabContent from './components/AssetsTabContent';
 import LeaveTabContent from './components/LeaveTabContent';
 import DocumentsTabContent from './components/DocumentsTabContent';
 import AttendanceTabContent from './components/AttendanceTabContent';
+import PermissionTabContent from './components/PermissionTabContent';
 import SignatureTabContent from '../signature-management/components/SignatureTabContent';
 import HistoryTabContent from './components/HistoryTabContent';
 import AssetIssueModal from './edit-modal/components/AssetIssueModal';
@@ -660,13 +661,20 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
             ) : activeTab === (window as any).EMPLOYEE_DETAIL_TABS?.[5] || activeTab === 'Chấm công' ? (
               <AttendanceTabContent
                 settings={profile?.attendanceSettings}
+                mappings={profile?.timekeepingMachineMappings || []}
                 isLoading={isLoading}
                 loadError={loadError}
               />
-            ) : activeTab.includes('Chữ ký số') ? (
+            ) : activeTab === 'Chữ ký số' ? (
               <SignatureTabContent 
                 employeeId={employee.id} 
-                employeeName={displayEmployee.fullName || ''} 
+              />
+            ) : activeTab === EMPLOYEE_DETAIL_TABS[7] ? (
+              <PermissionTabContent 
+                 mobilePermissions={profile?.mobilePermissions}
+                 webPermissions={profile?.webPermissions}
+                 isLoading={isLoading}
+                 loadError={loadError}
               />
             ) : activeTab === EMPLOYEE_DETAIL_TABS[8] ? (
               <HistoryTabContent employeeId={employee.id} />
