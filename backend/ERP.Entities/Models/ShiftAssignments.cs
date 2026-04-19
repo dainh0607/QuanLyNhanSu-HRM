@@ -28,6 +28,12 @@ namespace ERP.Entities.Models
         [Column("is_published")]
         public bool is_published { get; set; }
 
+        [Column("published_at")]
+        public DateTime? published_at { get; set; }
+
+        [Column("is_overtime")]
+        public bool is_overtime { get; set; }
+
         [Column("status")]
         [MaxLength(20)]
         public string status { get; set; } = "draft";

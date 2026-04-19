@@ -1,4 +1,4 @@
-import { isNotFoundError, requestJson } from "./core";
+import { API_URL, isNotFoundError, requestJson } from "./core";
 import {
   createEmptyEditableAddress,
   createMissingEndpointError,
@@ -84,6 +84,11 @@ interface EmployeeBasicInfoUpdateRequest {
   lateEarlyNote?: string | null;
   isResigned?: boolean;
   resignationReason?: string | null;
+  resignationDate?: string | null;
+  isTotalLateEarlyEnabled?: boolean;
+  lateRules?: any[] | null;
+  earlyRules?: any[] | null;
+  totalLateEarlyRules?: any[] | null;
 }
 
 interface EmployeeContactInfoUpdateRequest {
@@ -803,6 +808,12 @@ const mapAdditionalInfoForEdit = (
   };
 };
 
+export const searchEmployees = async (term: string, excludeId?: number): Promise<any[]> => {
+  if (!term.trim() || term.length < 2) return [];
+  const endpoint = `${API_URL}/employees/search?term=${encodeURIComponent(term)}${excludeId ? `&excludeId=${excludeId}` : ''}`;
+  return requestJson<any[]>(endpoint, { method: "GET" }, "Error searching employees");
+};
+
 const mapDependentsForEdit = (profile: EmployeeFullProfile): EmployeeEditDependentsPayload =>
   (profile.dependents ?? []).map((dependent) => ({
     id: dependent.id,
@@ -819,6 +830,7 @@ const mapDependentsForEdit = (profile: EmployeeFullProfile): EmployeeEditDepende
 
 const mapJobStatusForEdit = (profile: EmployeeFullProfile): EmployeeEditJobStatusPayload => {
   const basicInfo = profile.basicInfo;
+  const raw = basicInfo as any;
 
   return {
     probationStartDate: toDateInputValue(basicInfo.probationStartDate),
@@ -826,13 +838,21 @@ const mapJobStatusForEdit = (profile: EmployeeFullProfile): EmployeeEditJobStatu
     contractExpiryDate: toDateInputValue(basicInfo.contractExpiryDate),
     workType: toEditableString(basicInfo.workType),
     seniorityMonths: toEditableString(basicInfo.seniorityMonths),
-    lateEarlyAllowed: toEditableString(basicInfo.lateEarlyAllowed),
-    lateAllowedMinutes: toEditableString(basicInfo.lateAllowedMinutes),
-    earlyAllowedMinutes: toEditableString(basicInfo.earlyAllowedMinutes),
-    lateEarlyDetailedRules: basicInfo.lateEarlyDetailedRules ? JSON.parse(basicInfo.lateEarlyDetailedRules) : [],
+    
+    isTotalLateEarlyEnabled: Boolean(raw.is_total_late_early_enabled),
+    lateEarlyAllowed: toEditableString(raw.late_early_allowed),
+    totalLateEarlyRules: raw.total_late_early_rules ? JSON.parse(raw.total_late_early_rules) : [],
+
+    isSeparateLateEarlyEnabled: Boolean(raw.is_separate_late_early_enabled),
+    lateAllowedMinutes: toEditableString(raw.allowed_late_minutes),
+    lateRules: raw.late_rules ? JSON.parse(raw.late_rules) : [],
+    earlyAllowedMinutes: toEditableString(raw.allowed_early_minutes),
+    earlyRules: raw.early_rules ? JSON.parse(raw.early_rules) : [],
+
     lateEarlyNote: toEditableString(basicInfo.lateEarlyNote),
     isResigned: Boolean(basicInfo.isResigned),
     resignationReason: toEditableString(basicInfo.resignationReason),
+    resignationDate: toDateInputValue(raw.resignation_date),
   };
 };
 
@@ -853,6 +873,54 @@ const mapJobInfoForEdit = (profile: EmployeeFullProfile): EmployeeEditJobInfoPay
     isActive: Boolean(basicInfo.isActive),
     isDepartmentHead: Boolean(basicInfo.isDepartmentHead),
   };
+};
+
+const getEmployeeEditJobInfo = async (id: number): Promise<EmployeeEditJobInfoPayload> => {
+  const endpoint = resolveEmployeeEditEndpoint(EMPLOYEE_EDIT_ENDPOINTS.jobInfo.get, id);
+  if (endpoint) {
+    return requestJson<EmployeeEditJobInfoPayload>(
+      endpoint,
+      { method: "GET" },
+      "Error fetching employee job info for edit",
+    );
+  }
+
+  const profile = await fetchEmployeeFullProfileFallback(id);
+  return mapJobInfoForEdit(profile);
+};
+
+const updateEmployeeEditJobInfo = async (
+  id: number,
+  payload: EmployeeEditJobInfoPayload,
+): Promise<unknown> => {
+  const endpoint = resolveEmployeeEditEndpoint(EMPLOYEE_EDIT_ENDPOINTS.jobInfo.put, id);
+  if (!endpoint) {
+    throw createMissingEndpointError("PUT", "Thong tin cong viec");
+  }
+
+  const normalizedPayload: any = {
+    id,
+    regionId: payload.regionId ? Number(payload.regionId) : null,
+    branchId: payload.branchId ? Number(payload.branchId) : null,
+    secondaryBranchId: payload.secondaryBranchId ? Number(payload.secondaryBranchId) : null,
+    departmentId: payload.departmentId ? Number(payload.departmentId) : null,
+    secondaryDepartmentId: payload.secondaryDepartmentId ? Number(payload.secondaryDepartmentId) : null,
+    jobTitleId: payload.jobTitleId ? Number(payload.jobTitleId) : null,
+    secondaryJobTitleId: payload.secondaryJobTitleId ? Number(payload.secondaryJobTitleId) : null,
+    accessGroupId: payload.accessGroupId ? Number(payload.accessGroupId) : null,
+    managerId: payload.managerId ? Number(payload.managerId) : null,
+    isActive: payload.isActive,
+    isDepartmentHead: payload.isDepartmentHead,
+  };
+
+  return requestJson<unknown>(
+    endpoint,
+    {
+      method: "PUT",
+      body: JSON.stringify(normalizedPayload),
+    },
+    "Error updating employee job info",
+  );
 };
 
 const getEmployeeEditBasicInfo = async (id: number): Promise<EmployeeEditBasicInfoPayload> => {
@@ -1405,46 +1473,28 @@ const updateEmployeeEditJobStatus = async (
     throw createMissingEndpointError("PUT", "Tinh trang cong viec");
   }
 
-  const profile = await fetchEmployeeFullProfileFallback(id);
-  const basicInfo = profile.basicInfo;
-
-  const normalizedPayload: EmployeeBasicInfoUpdateRequest = {
-    // Preserve basic info
-    employeeCode: basicInfo.employeeCode || "",
-    fullName: basicInfo.fullName || "",
-    birthDate: toNullableDateInputValue(basicInfo.birthDate),
-    genderCode: basicInfo.genderCode || null,
-    displayOrder: basicInfo.displayOrder ?? null,
-    maritalStatusCode: basicInfo.maritalStatusCode || null,
-    departmentId: basicInfo.departmentId || null,
-    jobTitleId: basicInfo.jobTitleId || null,
-    branchId: basicInfo.branchId || null,
-    managerId: basicInfo.managerId || null,
-    startDate: toNullableDateInputValue(basicInfo.startDate),
-    avatar: basicInfo.avatar || null,
-
-    // Preserve existing Job Info
-    regionId: basicInfo.regionId || null,
-    secondaryBranchId: basicInfo.secondaryBranchId || null,
-    secondaryDepartmentId: basicInfo.secondaryDepartmentId || null,
-    secondaryJobTitleId: basicInfo.secondaryJobTitleId || null,
-    accessGroupId: basicInfo.accessGroupId || null,
-    isActive: basicInfo.isActive,
-    isDepartmentHead: basicInfo.isDepartmentHead,
-
-    // Update Job Status
-    probationStartDate: toNullableDateInputValue(payload.probationStartDate),
+  const normalizedPayload = {
+    employeeId: id,
+    startDate: toNullableDateInputValue(payload.probationStartDate),
     contractSignDate: toNullableDateInputValue(payload.contractSignDate),
     contractExpiryDate: toNullableDateInputValue(payload.contractExpiryDate),
     workType: toNullableEditableString(payload.workType),
-    seniorityMonths: payload.seniorityMonths ? Number(payload.seniorityMonths) : null,
-    lateEarlyAllowed: payload.lateEarlyAllowed ? Number(payload.lateEarlyAllowed) : null,
-    lateAllowedMinutes: payload.lateAllowedMinutes ? Number(payload.lateAllowedMinutes) : null,
-    earlyAllowedMinutes: payload.earlyAllowedMinutes ? Number(payload.earlyAllowedMinutes) : null,
-    lateEarlyDetailedRules: payload.lateEarlyDetailedRules.length > 0 ? JSON.stringify(payload.lateEarlyDetailedRules) : null,
-    lateEarlyNote: toNullableEditableString(payload.lateEarlyNote),
+    seniorityMonths: payload.seniorityMonths.trim() ? Number(payload.seniorityMonths.trim()) : 0,
+    
+    isTotalLateEarlyEnabled: payload.isTotalLateEarlyEnabled,
+    totalLateEarlyMinutes: payload.lateEarlyAllowed.trim() ? Number(payload.lateEarlyAllowed.trim()) : null,
+    totalLateEarlyRules: payload.totalLateEarlyRules,
+
+    isSeparateLateEarlyEnabled: payload.isSeparateLateEarlyEnabled,
+    allowedLateMinutes: payload.lateAllowedMinutes.trim() ? Number(payload.lateAllowedMinutes.trim()) : null,
+    lateRules: payload.lateRules,
+    allowedEarlyMinutes: payload.earlyAllowedMinutes.trim() ? Number(payload.earlyAllowedMinutes.trim()) : null,
+    earlyRules: payload.earlyRules,
+
+    note: toNullableEditableString(payload.lateEarlyNote),
     isResigned: payload.isResigned,
     resignationReason: toNullableEditableString(payload.resignationReason),
+    resignationDate: toNullableDateInputValue(payload.resignationDate),
   };
 
   return requestJson<unknown>(
@@ -1454,78 +1504,6 @@ const updateEmployeeEditJobStatus = async (
       body: JSON.stringify(normalizedPayload),
     },
     "Error updating employee job status",
-  );
-};
-
-const getEmployeeEditJobInfo = async (id: number): Promise<EmployeeEditJobInfoPayload> => {
-  const endpoint = resolveEmployeeEditEndpoint(EMPLOYEE_EDIT_ENDPOINTS.jobInfo.get, id);
-  if (endpoint) {
-    return requestJson<EmployeeEditJobInfoPayload>(
-      endpoint,
-      { method: "GET" },
-      "Error fetching employee job info for edit",
-    );
-  }
-
-  const profile = await fetchEmployeeFullProfileFallback(id);
-  return mapJobInfoForEdit(profile);
-};
-
-const updateEmployeeEditJobInfo = async (
-  id: number,
-  payload: EmployeeEditJobInfoPayload,
-): Promise<unknown> => {
-  const endpoint = resolveEmployeeEditEndpoint(EMPLOYEE_EDIT_ENDPOINTS.jobInfo.put, id);
-  if (!endpoint) {
-    throw createMissingEndpointError("PUT", "Thong tin cong viec");
-  }
-
-  const profile = await fetchEmployeeFullProfileFallback(id);
-  const basicInfo = profile.basicInfo;
-
-  const normalizedPayload: EmployeeBasicInfoUpdateRequest = {
-    // Preserve basic info
-    employeeCode: basicInfo.employeeCode || "",
-    fullName: basicInfo.fullName || "",
-    birthDate: toNullableDateInputValue(basicInfo.birthDate),
-    genderCode: basicInfo.genderCode || null,
-    displayOrder: basicInfo.displayOrder ?? null,
-    maritalStatusCode: basicInfo.maritalStatusCode || null,
-    startDate: toNullableDateInputValue(basicInfo.startDate),
-    avatar: basicInfo.avatar || null,
-
-    // Preserve existing Job Status
-    probationStartDate: toNullableDateInputValue(basicInfo.probationStartDate),
-    contractSignDate: toNullableDateInputValue(basicInfo.contractSignDate),
-    contractExpiryDate: toNullableDateInputValue(basicInfo.contractExpiryDate),
-    workType: basicInfo.workType || null,
-    seniorityMonths: basicInfo.seniorityMonths || null,
-    lateEarlyAllowed: basicInfo.lateEarlyAllowed || null,
-    lateEarlyNote: basicInfo.lateEarlyNote || null,
-    isResigned: basicInfo.isResigned,
-    resignationReason: basicInfo.resignationReason || null,
-
-    // Update Job Info
-    regionId: payload.regionId ? Number(payload.regionId) : (basicInfo.regionId || null),
-    branchId: payload.branchId ? Number(payload.branchId) : (basicInfo.branchId || null),
-    secondaryBranchId: payload.secondaryBranchId ? Number(payload.secondaryBranchId) : (basicInfo.secondaryBranchId || null),
-    departmentId: payload.departmentId ? Number(payload.departmentId) : (basicInfo.departmentId || null),
-    secondaryDepartmentId: payload.secondaryDepartmentId ? Number(payload.secondaryDepartmentId) : (basicInfo.secondaryDepartmentId || null),
-    jobTitleId: payload.jobTitleId ? Number(payload.jobTitleId) : (basicInfo.jobTitleId || null),
-    secondaryJobTitleId: payload.secondaryJobTitleId ? Number(payload.secondaryJobTitleId) : (basicInfo.secondaryJobTitleId || null),
-    accessGroupId: payload.accessGroupId ? Number(payload.accessGroupId) : (basicInfo.accessGroupId || null),
-    managerId: payload.managerId ? Number(payload.managerId) : (basicInfo.managerId || null),
-    isActive: payload.isActive,
-    isDepartmentHead: payload.isDepartmentHead,
-  };
-
-  return requestJson<unknown>(
-    endpoint,
-    {
-      method: "PUT",
-      body: JSON.stringify(normalizedPayload),
-    },
-    "Error updating employee job info",
   );
 };
 

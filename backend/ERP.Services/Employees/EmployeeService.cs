@@ -666,6 +666,113 @@ namespace ERP.Services.Employees
             return await _unitOfWork.SaveChangesAsync() > 0;
         }
 
+        public async Task<EmployeeWorkStatusDto?> GetWorkStatusAsync(int employeeId)
+        {
+            var emp = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(employeeId);
+            if (emp == null) return null;
+
+            return new EmployeeWorkStatusDto
+            {
+                EmployeeId = emp.Id,
+                StartDate = emp.start_date,
+                ContractSignDate = emp.contract_sign_date,
+                ContractExpiryDate = emp.contract_expiry_date,
+                WorkType = emp.work_type,
+                SeniorityMonths = emp.seniority_months ?? 0,
+                Note = emp.note,
+
+                IsTotalLateEarlyEnabled = emp.is_total_late_early_enabled,
+                TotalLateEarlyMinutes = emp.late_early_allowed,
+                TotalLateEarlyRules = !string.IsNullOrEmpty(emp.total_late_early_rules) 
+                    ? System.Text.Json.JsonSerializer.Deserialize<List<LateEarlyRuleDto>>(emp.total_late_early_rules) 
+                    : new List<LateEarlyRuleDto>(),
+
+                IsSeparateLateEarlyEnabled = emp.is_separate_late_early_enabled,
+                AllowedLateMinutes = emp.allowed_late_minutes,
+                LateRules = !string.IsNullOrEmpty(emp.late_rules) 
+                    ? System.Text.Json.JsonSerializer.Deserialize<List<LateEarlyRuleDto>>(emp.late_rules) 
+                    : new List<LateEarlyRuleDto>(),
+                AllowedEarlyMinutes = emp.allowed_early_minutes,
+                EarlyRules = !string.IsNullOrEmpty(emp.early_rules) 
+                    ? System.Text.Json.JsonSerializer.Deserialize<List<LateEarlyRuleDto>>(emp.early_rules) 
+                    : new List<LateEarlyRuleDto>(),
+
+                IsResigned = emp.is_resigned,
+                ResignationReason = emp.resignation_reason,
+                ResignationDate = emp.resignation_date
+            };
+        }
+
+        public async Task<bool> UpdateWorkStatusAsync(int employeeId, EmployeeWorkStatusDto dto)
+        {
+            var emp = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(employeeId);
+            if (emp == null) return false;
+
+            // Validation Rules
+            ValidateRules(dto.TotalLateEarlyRules, "Tổng thời gian");
+            ValidateRules(dto.LateRules, "Đi muộn");
+            ValidateRules(dto.EarlyRules, "Về sớm");
+
+            emp.start_date = dto.StartDate;
+            emp.contract_sign_date = dto.ContractSignDate;
+            emp.contract_expiry_date = dto.ContractExpiryDate;
+            emp.work_type = dto.WorkType;
+            emp.seniority_months = dto.SeniorityMonths;
+            emp.note = dto.Note;
+
+            emp.is_total_late_early_enabled = dto.IsTotalLateEarlyEnabled;
+            emp.late_early_allowed = dto.TotalLateEarlyMinutes;
+            emp.total_late_early_rules = dto.TotalLateEarlyRules != null 
+                ? System.Text.Json.JsonSerializer.Serialize(dto.TotalLateEarlyRules) 
+                : null;
+
+            emp.is_separate_late_early_enabled = dto.IsSeparateLateEarlyEnabled;
+            emp.allowed_late_minutes = dto.AllowedLateMinutes;
+            emp.late_rules = dto.LateRules != null 
+                ? System.Text.Json.JsonSerializer.Serialize(dto.LateRules) 
+                : null;
+            emp.allowed_early_minutes = dto.AllowedEarlyMinutes;
+            emp.early_rules = dto.EarlyRules != null 
+                ? System.Text.Json.JsonSerializer.Serialize(dto.EarlyRules) 
+                : null;
+
+            emp.is_resigned = dto.IsResigned;
+            emp.resignation_reason = dto.ResignationReason;
+            emp.resignation_date = dto.ResignationDate;
+            emp.is_active = !dto.IsResigned;
+
+            emp.UpdatedAt = DateTime.UtcNow;
+
+            _unitOfWork.Repository<EmployeeEntity>().Update(emp);
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+
+        private void ValidateRules(List<LateEarlyRuleDto>? rules, string policyName)
+        {
+            if (rules == null || rules.Count == 0) return;
+
+            foreach (var rule in rules)
+            {
+                if (rule.StartDate > rule.EndDate)
+                    throw new Exception($"Chính sách {policyName}: Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.");
+                
+                if (rule.Minutes < 0)
+                    throw new Exception($"Chính sách {policyName}: Số phút phải là số nguyên dương.");
+            }
+
+            for (int i = 0; i < rules.Count; i++)
+            {
+                for (int j = i + 1; j < rules.Count; j++)
+                {
+                    if (rules[i].StartDate <= rules[j].EndDate && rules[j].StartDate <= rules[i].EndDate)
+                    {
+                        throw new Exception($"Chính sách {policyName}: Các khoảng thời gian không được trùng lặp ({rules[i].StartDate:dd/MM/yyyy} - {rules[i].EndDate:dd/MM/yyyy} và {rules[j].StartDate:dd/MM/yyyy} - {rules[j].EndDate:dd/MM/yyyy}).");
+                    }
+                }
+            }
+        }
+
+
         public async Task<bool> DeleteAsync(int id)
         {
             var employee = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(id);
@@ -1411,6 +1518,142 @@ namespace ERP.Services.Employees
                 .ToDictionary(
                     group => group.Key,
                     group => string.Join(", ", group.Select(entry => entry.Name).Where(name => !string.IsNullOrWhiteSpace(name)).Distinct()));
+        }
+
+
+        public async Task<IEnumerable<EmployeeSearchDto>> SearchEmployeesAsync(string term, int? excludeId = null)
+        {
+            if (string.IsNullOrWhiteSpace(term)) return Enumerable.Empty<EmployeeSearchDto>();
+
+            var normalizedTerm = term.Trim().ToLower();
+            var query = _unitOfWork.Repository<EmployeeEntity>().AsQueryable()
+                .Include(e => e.Department)
+                .Include(e => e.JobTitle)
+                .AsNoTracking()
+                .Where(e => e.is_active);
+
+            if (excludeId.HasValue)
+            {
+                query = query.Where(e => e.Id != excludeId.Value);
+            }
+
+            query = query.Where(e => 
+                (e.full_name != null && e.full_name.ToLower().Contains(normalizedTerm)) ||
+                (e.employee_code != null && e.employee_code.ToLower().Contains(normalizedTerm))
+            );
+
+            var employees = await query.Take(20).ToListAsync();
+
+            return employees.Select(e => new EmployeeSearchDto
+            {
+                Id = e.Id,
+                FullName = e.full_name ?? string.Empty,
+                EmployeeCode = e.employee_code,
+                Avatar = e.avatar,
+                DepartmentName = e.Department?.name,
+                JobTitleName = e.JobTitle?.name
+            });
+        }
+
+        public async Task<EmployeeJobInfoDto?> GetJobInfoAsync(int employeeId)
+        {
+            var employee = await _unitOfWork.Repository<EmployeeEntity>().AsQueryable()
+                .Include(e => e.Manager)
+                .FirstOrDefaultAsync(e => e.Id == employeeId);
+
+            if (employee == null) return null;
+
+            // Get Access Group (Role) from UserRoles via User
+            int? accessGroupId = null;
+            var user = await _unitOfWork.Repository<Users>().AsQueryable()
+                .FirstOrDefaultAsync(u => u.employee_id == employeeId);
+            
+            if (user != null)
+            {
+                var userRole = await _unitOfWork.Repository<UserRoles>().AsQueryable()
+                    .Where(ur => ur.user_id == user.Id && ur.is_active)
+                    .OrderBy(ur => ur.id)
+                    .FirstOrDefaultAsync();
+                
+                accessGroupId = userRole?.role_id;
+            }
+
+            return new EmployeeJobInfoDto
+            {
+                Id = employee.Id,
+                RegionId = employee.region_id,
+                BranchId = employee.branch_id,
+                SecondaryBranchId = employee.secondary_branch_id,
+                DepartmentId = employee.department_id,
+                SecondaryDepartmentId = employee.secondary_department_id,
+                JobTitleId = employee.job_title_id,
+                SecondaryJobTitleId = employee.secondary_job_title_id,
+                AccessGroupId = accessGroupId,
+                ManagerId = employee.manager_id,
+                ManagerName = employee.Manager?.full_name,
+                IsActive = employee.is_active,
+                IsDepartmentHead = employee.is_department_head
+            };
+        }
+
+        public async Task<bool> UpdateJobInfoAsync(int employeeId, EmployeeJobInfoDto dto)
+        {
+            var employee = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(employeeId);
+            if (employee == null) return false;
+
+            employee.region_id = dto.RegionId;
+            employee.branch_id = dto.BranchId;
+            employee.secondary_branch_id = dto.SecondaryBranchId;
+            employee.department_id = dto.DepartmentId;
+            employee.secondary_department_id = dto.SecondaryDepartmentId;
+            employee.job_title_id = dto.JobTitleId;
+            employee.secondary_job_title_id = dto.SecondaryJobTitleId;
+            employee.is_active = dto.IsActive;
+            employee.is_department_head = dto.IsDepartmentHead;
+            employee.manager_id = dto.ManagerId;
+
+            _unitOfWork.Repository<EmployeeEntity>().Update(employee);
+
+            // Update Access Group (Role)
+            var user = await _unitOfWork.Repository<Users>().AsQueryable()
+                .FirstOrDefaultAsync(u => u.employee_id == employeeId);
+
+            if (user != null && dto.AccessGroupId.HasValue)
+            {
+                var userRoleRepo = _unitOfWork.Repository<UserRoles>();
+                var existingRoles = await userRoleRepo.AsQueryable()
+                    .Where(ur => ur.user_id == user.Id)
+                    .ToListAsync();
+
+                foreach (var role in existingRoles)
+                {
+                    role.is_active = false; // Deactivate old roles
+                    userRoleRepo.Update(role);
+                }
+
+                // Add or reactivate the new role
+                var targetRole = existingRoles.FirstOrDefault(ur => ur.role_id == dto.AccessGroupId.Value);
+                if (targetRole != null)
+                {
+                    targetRole.is_active = true;
+                    targetRole.UpdatedAt = DateTime.UtcNow;
+                    userRoleRepo.Update(targetRole);
+                }
+                else
+                {
+                    await userRoleRepo.AddAsync(new UserRoles
+                    {
+                        user_id = user.Id,
+                        role_id = dto.AccessGroupId.Value,
+                        is_active = true,
+                        tenant_id = user.tenant_id,
+                        CreatedAt = DateTime.UtcNow,
+                        valid_from = DateTime.UtcNow
+                    });
+                }
+            }
+
+            return await _unitOfWork.SaveChangesAsync() > 0;
         }
 
         private async Task<Dictionary<int, string>> BuildEmergencyContactLookupAsync(IEnumerable<int> employeeIds)

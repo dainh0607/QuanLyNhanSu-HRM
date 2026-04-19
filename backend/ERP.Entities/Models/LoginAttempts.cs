@@ -9,8 +9,11 @@ namespace ERP.Entities.Models
     /// FIX #12: Prevent brute force attacks with account lockout
     /// </summary>
     [Table("LoginAttempts")]
-    public class LoginAttempts
+    public class LoginAttempts : ERP.Entities.Interfaces.ITenantEntity
     {
+        [Column("tenant_id")]
+        public int? tenant_id { get; set; }
+
         [Column("id")]
         [Key]
         public int id { get; set; }

@@ -232,36 +232,6 @@ namespace ERP.API.Controllers
             }
         }
 
-        [HttpPost("bulk-approve")]
-        [HasPermission("attendance", "approve")]
-        public async Task<IActionResult> BulkApprove([FromBody] ERP.DTOs.Attendance.ShiftBulkActionDto dto)
-        {
-            try
-            {
-                var result = await _assignmentService.ApproveAssignmentsAsync(dto.WeekStartDate, dto.AssignmentIds);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { Message = ex.Message });
-            }
-        }
-
-        [HttpPost("bulk-publish-approve")]
-        [HasPermission("attendance", "approve")]
-        public async Task<IActionResult> BulkPublishAndApprove([FromBody] ERP.DTOs.Attendance.ShiftBulkActionDto dto)
-        {
-            try
-            {
-                var result = await _assignmentService.PublishAndApproveAssignmentsAsync(dto.WeekStartDate, dto.AssignmentIds);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { Message = ex.Message });
-            }
-        }
-
         [HttpPost("bulk-delete-unconfirmed")]
         [HasPermission("attendance", "update")]
         public async Task<IActionResult> BulkDeleteUnconfirmed([FromBody] ERP.DTOs.Attendance.ShiftBulkActionDto dto)

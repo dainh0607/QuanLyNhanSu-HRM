@@ -147,6 +147,35 @@ namespace ERP.API.Controllers
             return Ok(new { Message = "Xóa thành công (Soft delete)" });
         }
 
+        [HttpGet("{id}/work-status")]
+        [HasPermission("employee", "read")]
+        public async Task<IActionResult> GetWorkStatus(int id)
+        {
+            var result = await _employeeService.GetWorkStatusAsync(id);
+            if (result == null) return NotFound();
+            return Ok(result);
+        }
+
+        [HttpPut("{id}/work-status")]
+        [HasPermission("employee", "update")]
+        public async Task<IActionResult> UpdateWorkStatus(int id, [FromBody] EmployeeWorkStatusDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                var success = await _employeeService.UpdateWorkStatusAsync(id, dto);
+                if (!success) return NotFound();
+
+                return Ok(new { Message = "Cập nhật trạng thái công việc thành công" });
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+
         [HttpPut("{id}/resignation")]
         [HasPermission("employee", "update")]
         public async Task<IActionResult> Resign(int id, [FromBody] ResignationRequestDto dto)
@@ -169,6 +198,34 @@ namespace ERP.API.Controllers
             if (!success) return BadRequest(new { Message = "Không thể xử lý thăng tiến" });
 
             return Ok(new { Message = "Xử lý thăng tiến thành công" });
+        }
+
+        [HttpGet("search")]
+        public async Task<IActionResult> Search([FromQuery] string term, [FromQuery] int? excludeId)
+        {
+            var result = await _employeeService.SearchEmployeesAsync(term, excludeId);
+            return Ok(result);
+        }
+
+        [HttpGet("{id}/job-info")]
+        [HasPermission("employee", "read")]
+        public async Task<IActionResult> GetJobInfo(int id)
+        {
+            var result = await _employeeService.GetJobInfoAsync(id);
+            if (result == null) return NotFound();
+            return Ok(result);
+        }
+
+        [HttpPut("{id}/job-info")]
+        [HasPermission("employee", "update")]
+        public async Task<IActionResult> UpdateJobInfo(int id, [FromBody] EmployeeJobInfoDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var success = await _employeeService.UpdateJobInfoAsync(id, dto);
+            if (!success) return NotFound();
+
+            return Ok(new { Message = "Cập nhật thông tin công việc thành công" });
         }
     }
 }

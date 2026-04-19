@@ -5,8 +5,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ERP.Entities.Models
 {
     [Table("ContractSigners")]
-    public class ContractSigners : AuditableEntity
+    public class ContractSigners : AuditableEntity, ERP.Entities.Interfaces.ITenantEntity
     {
+        [Column("tenant_id")]
+        public int? tenant_id { get; set; }
+
         [Column("contract_id")]
         public int contract_id { get; set; }
 

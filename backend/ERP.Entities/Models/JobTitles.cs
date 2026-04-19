@@ -5,8 +5,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ERP.Entities.Models
 {
     [Table("JobTitles")]
-    public class JobTitles : BaseEntity
+    public class JobTitles : BaseEntity, ERP.Entities.Interfaces.ITenantEntity
     {
+        [Column("tenant_id")]
+        public int? tenant_id { get; set; }
+
         [Column("name")]
         [StringLength(200)]
         public string name { get; set; }

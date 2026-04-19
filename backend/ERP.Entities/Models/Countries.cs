@@ -6,8 +6,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ERP.Entities.Models
 {
     [Table("Countries")]
-    public class Countries : AuditableEntity
+    public class Countries : AuditableEntity, ERP.Entities.Interfaces.ITenantEntity
     {
+        [Column("tenant_id")]
+        public int? tenant_id { get; set; }
+
         [Required]
         [StringLength(10)]
         [Column("code")]

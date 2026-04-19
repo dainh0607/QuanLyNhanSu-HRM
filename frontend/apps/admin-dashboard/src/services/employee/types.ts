@@ -510,13 +510,24 @@ export interface EmployeeEditJobStatusPayload {
   contractExpiryDate: string;
   workType: string;
   seniorityMonths: string;
-  lateEarlyAllowed: string;
+  
+  // Dynamic Late/Early
+  isTotalLateEarlyEnabled: boolean;
+  lateEarlyAllowed: string; // Total minutes
+  totalLateEarlyRules: LateEarlyRule[];
+
+  isSeparateLateEarlyEnabled: boolean;
   lateAllowedMinutes: string;
+  lateRules: LateEarlyRule[];
   earlyAllowedMinutes: string;
-  lateEarlyDetailedRules: LateEarlyRule[];
+  earlyRules: LateEarlyRule[];
+
   lateEarlyNote: string;
+  
+  // Resignation
   isResigned: boolean;
   resignationReason: string;
+  resignationDate: string;
 }
 
 export interface EmployeeEditJobInfoPayload {
@@ -532,6 +543,15 @@ export interface EmployeeEditJobInfoPayload {
   managerName: string;
   isActive: boolean;
   isDepartmentHead: boolean;
+}
+
+export interface EmployeeSearchSuggestion {
+  id: number;
+  fullName: string;
+  employeeCode: string;
+  avatar?: string;
+  departmentName?: string;
+  jobTitleName?: string;
 }
 
 export interface EmployeeEditPromotionHistoryItemPayload {

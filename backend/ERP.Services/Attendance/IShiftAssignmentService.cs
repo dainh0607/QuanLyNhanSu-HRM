@@ -20,8 +20,13 @@ namespace ERP.Services.Attendance
         Task<bool> DeleteAssignmentByIdAsync(int id);
         Task<bool> RefreshAttendanceAsync(int assignmentId);
         Task<ShiftBulkActionResultDto> PublishAssignmentsAsync(string weekStartDate, List<int>? assignmentIds);
+        
+        [System.Obsolete("Approve step is no longer used.")]
         Task<ShiftBulkActionResultDto> ApproveAssignmentsAsync(string weekStartDate, List<int>? assignmentIds);
+        
+        [System.Obsolete("Approve step is no longer used.")]
         Task<ShiftBulkActionResultDto> PublishAndApproveAssignmentsAsync(string weekStartDate, List<int>? assignmentIds);
+        
         Task<ShiftBulkActionResultDto> DeleteUnconfirmedAssignmentsAsync(string weekStartDate);
         Task<ShiftCountersDto> GetShiftCountersAsync(string startDateStr, string endDateStr, int? branchId = null);
         Task<ShiftAssignmentCopyResultDto> CopyAssignmentsAsync(ShiftAssignmentCopyDto dto, int currentUserId);

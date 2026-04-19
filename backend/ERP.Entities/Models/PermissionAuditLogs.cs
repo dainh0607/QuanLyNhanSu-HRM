@@ -10,8 +10,11 @@ namespace ERP.Entities.Models
     /// CRITICAL: This table should NEVER allow DELETE
     /// </summary>
     [Table("PermissionAuditLogs")]
-    public class PermissionAuditLogs
+    public class PermissionAuditLogs : ERP.Entities.Interfaces.ITenantEntity
     {
+        [Column("tenant_id")]
+        public int? tenant_id { get; set; }
+
         [Column("id")]
         [Key]
         public int id { get; set; }
