@@ -13,6 +13,7 @@ import {
   type BranchMetadata,
   type DepartmentMetadata,
   type JobTitleMetadata,
+  type EmployeeEditJobInfoPayload,
   type AccessGroupMetadata,
   type AttendanceSettings,
 } from '../../../services/employeeService';
@@ -924,6 +925,24 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
     return nextErrors;
   };
 
+  const validateJobInfo = (data: EmployeeEditJobInfoPayload): Record<string, string> => {
+    const nextErrors: Record<string, string> = {};
+
+    if (!data.regionId) {
+      nextErrors.regionId = 'Vùng là bắt buộc.';
+    }
+
+    if (!data.branchId) {
+      nextErrors.branchId = 'Chi nhánh là bắt buộc.';
+    }
+
+    if (!data.departmentId) {
+      nextErrors.departmentId = 'Phòng ban là bắt buộc.';
+    }
+
+    return nextErrors;
+  };
+
   const validateCurrentTab = async (): Promise<Record<string, string>> => {
     if (activeSection === 'personal') {
       switch (activePersonalTab) {
@@ -944,9 +963,13 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
       }
     }
 
-    if (activeSection === 'leave') {
-      // Logic validate cho Leave tab nếu cần
-      return {};
+    if (activeSection === 'work') {
+      switch (activeWorkTab) {
+        case 'jobInfo':
+          return validateJobInfo(workForms.jobInfo.data);
+        default:
+          return {};
+      }
     }
 
     return {};

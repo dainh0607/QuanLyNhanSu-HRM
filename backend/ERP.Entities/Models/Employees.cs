@@ -157,6 +157,12 @@ namespace ERP.Entities.Models
         [ForeignKey("job_title_id")]
         public virtual JobTitles? JobTitle { get; set; }
 
+        [Column("secondary_job_title_id")]
+        public int? secondary_job_title_id { get; set; }
+
+        [ForeignKey("secondary_job_title_id")]
+        public virtual JobTitles? SecondaryJobTitle { get; set; }
+
         [Column("manager_id")]
         public int? manager_id { get; set; }
 

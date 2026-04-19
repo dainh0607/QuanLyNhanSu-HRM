@@ -23,5 +23,8 @@ namespace ERP.Services.Employees
         Task<byte[]> ExportEmployeesToCsvAsync(EmployeeFilterDto filter, IEnumerable<string>? columns = null);
         Task<EmployeeWorkStatusDto?> GetWorkStatusAsync(int employeeId);
         Task<bool> UpdateWorkStatusAsync(int employeeId, EmployeeWorkStatusDto dto);
+        Task<IEnumerable<EmployeeSearchDto>> SearchEmployeesAsync(string term, int? excludeId = null);
+        Task<EmployeeJobInfoDto?> GetJobInfoAsync(int employeeId);
+        Task<bool> UpdateJobInfoAsync(int employeeId, EmployeeJobInfoDto dto);
     }
 }

@@ -14,6 +14,12 @@ namespace ERP.Entities.Models
         [StringLength(200)]
         public string name { get; set; }
 
+        [Column("region_id")]
+        public int? region_id { get; set; }
+
+        [ForeignKey("region_id")]
+        public virtual Regions? Region { get; set; }
+
         [Column("code")]
         [StringLength(50)]
         public string code { get; set; }

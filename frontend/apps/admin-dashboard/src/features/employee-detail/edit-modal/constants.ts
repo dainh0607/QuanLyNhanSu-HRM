@@ -101,9 +101,7 @@ export const IDENTITY_OPTIONS: Array<{ value: EmployeeIdentityType; label: strin
 ];
 
 export const WORK_TYPE_OPTIONS = [
-  { value: 'OFFICIAL', label: 'Chính thức' },
   { value: 'PROBATION', label: 'Thử việc' },
-  { value: 'PART_TIME', label: 'Bán thời gian' },
-  { value: 'CONTRACTOR', label: 'Hợp đồng' },
+  { value: 'OFFICIAL', label: 'Toàn thời gian' },
   { value: 'INTERN', label: 'Thực tập' },
 ] as const;

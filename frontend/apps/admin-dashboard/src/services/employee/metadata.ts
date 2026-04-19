@@ -41,16 +41,25 @@ export const getAccessGroupsMetadata = async (): Promise<AccessGroupMetadata[]> 
   );
 
 export const getRegionsMetadata = async (): Promise<RegionMetadata[]> =>
-  requestOptionList<RegionMetadata>(`${API_URL}/regions`, "Error fetching regions metadata");
+  requestOptionList<RegionMetadata>(`${API_URL}/metadata/regions`, "Error fetching regions metadata");
 
-export const getBranchesMetadata = async (): Promise<BranchMetadata[]> =>
-  requestOptionList<BranchMetadata>(`${API_URL}/branches`, "Error fetching branches metadata");
+export const getBranchesMetadata = async (regionId?: string): Promise<BranchMetadata[]> =>
+  requestOptionList<BranchMetadata>(
+    `${API_URL}/metadata/branches${regionId ? `?regionId=${regionId}` : ""}`,
+    "Error fetching branches metadata",
+  );
 
-export const getDepartmentsMetadata = async (): Promise<DepartmentMetadata[]> =>
-  requestOptionList<DepartmentMetadata>(`${API_URL}/departments`, "Error fetching departments metadata");
+export const getDepartmentsMetadata = async (branchId?: string): Promise<DepartmentMetadata[]> =>
+  requestOptionList<DepartmentMetadata>(
+    `${API_URL}/metadata/departments${branchId ? `?branchId=${branchId}` : ""}`,
+    "Error fetching departments metadata",
+  );
 
-export const getJobTitlesMetadata = async (): Promise<JobTitleMetadata[]> =>
-  requestOptionList<JobTitleMetadata>(`${API_URL}/jobtitles`, "Error fetching job titles metadata");
+export const getJobTitlesMetadata = async (branchId?: string): Promise<JobTitleMetadata[]> =>
+  requestOptionList<JobTitleMetadata>(
+    `${API_URL}/metadata/job-titles${branchId ? `?branchId=${branchId}` : ""}`,
+    "Error fetching job titles metadata",
+  );
 
 export const getAddressTypesMetadata = async (): Promise<AddressTypeMetadata[]> =>
   getMetadata<AddressTypeMetadata>(EMPLOYEE_METADATA_ENDPOINTS.addressTypes);

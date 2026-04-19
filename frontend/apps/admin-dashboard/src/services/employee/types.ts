@@ -521,6 +521,15 @@ export interface EmployeeEditJobInfoPayload {
   isDepartmentHead: boolean;
 }
 
+export interface EmployeeSearchSuggestion {
+  id: number;
+  fullName: string;
+  employeeCode: string;
+  avatar?: string;
+  departmentName?: string;
+  jobTitleName?: string;
+}
+
 export interface EmployeeEditPromotionHistoryItemPayload {
   id?: string;
   effectiveDate: string;

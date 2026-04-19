@@ -29,10 +29,15 @@ namespace ERP.API.Controllers
         }
 
         [HttpGet("branches")]
-        public async Task<IActionResult> GetBranches()
+        public async Task<IActionResult> GetBranches([FromQuery] int? regionId)
         {
-            var data = await _unitOfWork.Repository<Branches>().GetAllAsync();
-            return Ok(data.Select(b => new { b.Id, b.name, b.code }));
+            var query = _unitOfWork.Repository<Branches>().AsQueryable();
+            if (regionId.HasValue)
+            {
+                query = query.Where(b => b.region_id == regionId.Value);
+            }
+            var data = await query.ToListAsync();
+            return Ok(data.Select(b => new { b.Id, b.name, b.code, regionId = b.region_id }));
         }
 
         [HttpGet("departments")]

@@ -1520,6 +1520,142 @@ namespace ERP.Services.Employees
                     group => string.Join(", ", group.Select(entry => entry.Name).Where(name => !string.IsNullOrWhiteSpace(name)).Distinct()));
         }
 
+
+        public async Task<IEnumerable<EmployeeSearchDto>> SearchEmployeesAsync(string term, int? excludeId = null)
+        {
+            if (string.IsNullOrWhiteSpace(term)) return Enumerable.Empty<EmployeeSearchDto>();
+
+            var normalizedTerm = term.Trim().ToLower();
+            var query = _unitOfWork.Repository<EmployeeEntity>().AsQueryable()
+                .Include(e => e.Department)
+                .Include(e => e.JobTitle)
+                .AsNoTracking()
+                .Where(e => e.is_active);
+
+            if (excludeId.HasValue)
+            {
+                query = query.Where(e => e.Id != excludeId.Value);
+            }
+
+            query = query.Where(e => 
+                (e.full_name != null && e.full_name.ToLower().Contains(normalizedTerm)) ||
+                (e.employee_code != null && e.employee_code.ToLower().Contains(normalizedTerm))
+            );
+
+            var employees = await query.Take(20).ToListAsync();
+
+            return employees.Select(e => new EmployeeSearchDto
+            {
+                Id = e.Id,
+                FullName = e.full_name ?? string.Empty,
+                EmployeeCode = e.employee_code,
+                Avatar = e.avatar,
+                DepartmentName = e.Department?.name,
+                JobTitleName = e.JobTitle?.name
+            });
+        }
+
+        public async Task<EmployeeJobInfoDto?> GetJobInfoAsync(int employeeId)
+        {
+            var employee = await _unitOfWork.Repository<EmployeeEntity>().AsQueryable()
+                .Include(e => e.Manager)
+                .FirstOrDefaultAsync(e => e.Id == employeeId);
+
+            if (employee == null) return null;
+
+            // Get Access Group (Role) from UserRoles via User
+            int? accessGroupId = null;
+            var user = await _unitOfWork.Repository<Users>().AsQueryable()
+                .FirstOrDefaultAsync(u => u.employee_id == employeeId);
+            
+            if (user != null)
+            {
+                var userRole = await _unitOfWork.Repository<UserRoles>().AsQueryable()
+                    .Where(ur => ur.user_id == user.Id && ur.is_active)
+                    .OrderBy(ur => ur.id)
+                    .FirstOrDefaultAsync();
+                
+                accessGroupId = userRole?.role_id;
+            }
+
+            return new EmployeeJobInfoDto
+            {
+                Id = employee.Id,
+                RegionId = employee.region_id,
+                BranchId = employee.branch_id,
+                SecondaryBranchId = employee.secondary_branch_id,
+                DepartmentId = employee.department_id,
+                SecondaryDepartmentId = employee.secondary_department_id,
+                JobTitleId = employee.job_title_id,
+                SecondaryJobTitleId = employee.secondary_job_title_id,
+                AccessGroupId = accessGroupId,
+                ManagerId = employee.manager_id,
+                ManagerName = employee.Manager?.full_name,
+                IsActive = employee.is_active,
+                IsDepartmentHead = employee.is_department_head
+            };
+        }
+
+        public async Task<bool> UpdateJobInfoAsync(int employeeId, EmployeeJobInfoDto dto)
+        {
+            var employee = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(employeeId);
+            if (employee == null) return false;
+
+            employee.region_id = dto.RegionId;
+            employee.branch_id = dto.BranchId;
+            employee.secondary_branch_id = dto.SecondaryBranchId;
+            employee.department_id = dto.DepartmentId;
+            employee.secondary_department_id = dto.SecondaryDepartmentId;
+            employee.job_title_id = dto.JobTitleId;
+            employee.secondary_job_title_id = dto.SecondaryJobTitleId;
+            employee.is_active = dto.IsActive;
+            employee.is_department_head = dto.IsDepartmentHead;
+            employee.manager_id = dto.ManagerId;
+
+            _unitOfWork.Repository<EmployeeEntity>().Update(employee);
+
+            // Update Access Group (Role)
+            var user = await _unitOfWork.Repository<Users>().AsQueryable()
+                .FirstOrDefaultAsync(u => u.employee_id == employeeId);
+
+            if (user != null && dto.AccessGroupId.HasValue)
+            {
+                var userRoleRepo = _unitOfWork.Repository<UserRoles>();
+                var existingRoles = await userRoleRepo.AsQueryable()
+                    .Where(ur => ur.user_id == user.Id)
+                    .ToListAsync();
+
+                foreach (var role in existingRoles)
+                {
+                    role.is_active = false; // Deactivate old roles
+                    userRoleRepo.Update(role);
+                }
+
+                // Add or reactivate the new role
+                var targetRole = existingRoles.FirstOrDefault(ur => ur.role_id == dto.AccessGroupId.Value);
+                if (targetRole != null)
+                {
+                    targetRole.is_active = true;
+                    targetRole.UpdatedAt = DateTime.UtcNow;
+                    userRoleRepo.Update(targetRole);
+                }
+                else
+                {
+                    await userRoleRepo.AddAsync(new UserRoles
+                    {
+                        user_id = user.Id,
+                        role_id = dto.AccessGroupId.Value,
+                        is_active = true,
+                        tenant_id = user.tenant_id,
+                        CreatedAt = DateTime.UtcNow,
+                        valid_from = DateTime.UtcNow
+                    });
+                }
+            }
+
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+
         private async Task<Dictionary<int, string>> BuildEmergencyContactLookupAsync(IEnumerable<int> employeeIds)
         {
             var employeeIdList = employeeIds.Distinct().ToArray();

@@ -199,5 +199,33 @@ namespace ERP.API.Controllers
 
             return Ok(new { Message = "Xử lý thăng tiến thành công" });
         }
+
+        [HttpGet("search")]
+        public async Task<IActionResult> Search([FromQuery] string term, [FromQuery] int? excludeId)
+        {
+            var result = await _employeeService.SearchEmployeesAsync(term, excludeId);
+            return Ok(result);
+        }
+
+        [HttpGet("{id}/job-info")]
+        [HasPermission("employee", "read")]
+        public async Task<IActionResult> GetJobInfo(int id)
+        {
+            var result = await _employeeService.GetJobInfoAsync(id);
+            if (result == null) return NotFound();
+            return Ok(result);
+        }
+
+        [HttpPut("{id}/job-info")]
+        [HasPermission("employee", "update")]
+        public async Task<IActionResult> UpdateJobInfo(int id, [FromBody] EmployeeJobInfoDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var success = await _employeeService.UpdateJobInfoAsync(id, dto);
+            if (!success) return NotFound();
+
+            return Ok(new { Message = "Cập nhật thông tin công việc thành công" });
+        }
     }
 }
