@@ -165,8 +165,8 @@ const ACTIVATION_BASE_URL =
 const SUPPORT_SSO_BASE_URL =
   "https://tenant-app.nexahr.local/support-session";
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const WORKSPACE_CODE_PATTERN = /^[A-Z0-9-]+$/;
-const PLAN_CODE_PATTERN = /^[A-Z0-9-]+$/;
+const WORKSPACE_CODE_PATTERN = /^[A-Z0-9\-]+$/;
+const PLAN_CODE_PATTERN = /^[A-Z0-9\-]+$/;
 const DEFAULT_BILLING_PAGE_SIZE = 4;
 
 class PortalApiError extends Error {

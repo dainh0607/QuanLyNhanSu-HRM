@@ -8,7 +8,7 @@ namespace ERP.API.Controllers
 {
     [ApiController]
     [Route("api/super-admin/control-plane")]
-    [Authorize(Roles = "System_Admin")]
+    [Authorize(Policy = ERP.DTOs.Auth.AuthSecurityConstants.SuperAdminPolicyName)]
     public class ControlPlaneController : ControllerBase
     {
         private readonly ISuperAdminPortalService _portalService;

@@ -168,6 +168,19 @@ namespace ERP.Entities
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
+            // Map Principal Keys for String-based Foreign Keys
+            modelBuilder.Entity<Provinces>()
+                .HasOne(p => p.Country)
+                .WithMany(c => c.Provinces)
+                .HasForeignKey(p => p.country_code)
+                .HasPrincipalKey(c => c.code);
+
+            modelBuilder.Entity<Districts>()
+                .HasOne(d => d.Province)
+                .WithMany(p => p.Districts)
+                .HasForeignKey(d => d.province_code)
+                .HasPrincipalKey(p => p.code);
+
             // Seed Master Data via Extension Method
             modelBuilder.SeedMasterData();
 

@@ -124,8 +124,8 @@ const INITIAL_SUPPORT_TICKET_FORM: SupportTicketFormState = {
 const SECURITY_BOUNDARY_MESSAGE =
   "SuperAdmin chỉ quản lý metadata mức Control Plane. Dữ liệu nghiệp vụ của Tenant luôn được khóa trừ khi có phiên hỗ trợ đã được khách hàng phê duyệt.";
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const WORKSPACE_CODE_PATTERN = /^[A-Z0-9-]+$/;
-const PLAN_CODE_PATTERN = /^[A-Z0-9-]+$/;
+const WORKSPACE_CODE_PATTERN = /^[A-Z0-9\-]+$/;
+const PLAN_CODE_PATTERN = /^[A-Z0-9\-]+$/;
 const BILLING_CYCLE_LABELS: Record<TenantSubscription["billingCycle"], string> = {
   monthly: "hàng tháng",
   quarterly: "hàng quý",

@@ -109,7 +109,7 @@ export function WorkspaceOwnersPanel({
                   onChange("workspaceCode", event.target.value.replace(/\s+/g, "").toUpperCase())
                 }
                 placeholder="Ví dụ: ABCCO"
-                pattern="[A-Z0-9-]+"
+                pattern="[A-Z0-9\-]+"
                 maxLength={32}
                 required
               />
