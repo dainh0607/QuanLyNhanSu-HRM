@@ -132,6 +132,7 @@ namespace ERP.Entities
         public DbSet<Countries> Countries { get; set; }
         public DbSet<Provinces> Provinces { get; set; }
         public DbSet<Districts> Districts { get; set; }
+        public DbSet<ResignationReasons> ResignationReasons { get; set; }
 
         // NEW: RBAC Authorization Tables (FIX)
         public DbSet<RoleScopes> RoleScopes { get; set; }

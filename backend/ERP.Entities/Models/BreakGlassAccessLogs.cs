@@ -9,8 +9,11 @@ namespace ERP.Entities.Models
     /// FIX #11: Time-limited access with forced password change
     /// </summary>
     [Table("BreakGlassAccessLogs")]
-    public class BreakGlassAccessLogs
+    public class BreakGlassAccessLogs : ERP.Entities.Interfaces.ITenantEntity
     {
+        [Column("tenant_id")]
+        public int? tenant_id { get; set; }
+
         [Column("id")]
         [Key]
         public int id { get; set; }

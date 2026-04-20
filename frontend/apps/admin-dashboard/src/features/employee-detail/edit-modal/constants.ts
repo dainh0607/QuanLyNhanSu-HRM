@@ -9,6 +9,7 @@ export const MODAL_SECTIONS = [
   { key: 'capability', label: 'Năng lực', icon: 'workspace_premium' },
   { key: 'timekeeping', label: 'Chấm công', icon: 'schedule' },
   { key: 'signature', label: 'Chữ ký số', icon: 'draw' },
+  { key: 'audit', label: 'Lịch sử cập nhật', icon: 'history' },
   { key: 'permission', label: 'Phân quyền', icon: 'admin_panel_settings' },
 ] as const;
 
@@ -67,6 +68,7 @@ export const SECTION_PLACEHOLDER_COPY = {
   capability: 'Shell chỉnh sửa cho Năng lực đã được dựng sẵn để nối form ở bước tiếp theo.',
   timekeeping: 'Shell chỉnh sửa cho Chấm công đã được dựng sẵn để nối form ở bước tiếp theo.',
   signature: 'Shell chỉnh sửa cho Chữ ký số đã được dựng sẵn để nối form ở bước tiếp theo.',
+  audit: 'Shell chỉnh sửa cho Lịch sử cập nhật đã được dựng sẵn để nối form ở bước tiếp theo.',
   permission: 'Shell chỉnh sửa cho Phân quyền đã được dựng sẵn để nối form ở bước tiếp theo.',
 } as const;
 
@@ -101,9 +103,7 @@ export const IDENTITY_OPTIONS: Array<{ value: EmployeeIdentityType; label: strin
 ];
 
 export const WORK_TYPE_OPTIONS = [
-  { value: 'OFFICIAL', label: 'Chính thức' },
   { value: 'PROBATION', label: 'Thử việc' },
-  { value: 'PART_TIME', label: 'Bán thời gian' },
-  { value: 'CONTRACTOR', label: 'Hợp đồng' },
+  { value: 'OFFICIAL', label: 'Toàn thời gian' },
   { value: 'INTERN', label: 'Thực tập' },
 ] as const;

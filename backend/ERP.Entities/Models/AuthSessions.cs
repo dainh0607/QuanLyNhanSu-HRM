@@ -4,8 +4,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ERP.Entities.Models
 {
     [Table("AuthSessions")]
-    public class AuthSessions : AuditableEntity
+    public class AuthSessions : AuditableEntity, ERP.Entities.Interfaces.ITenantEntity
     {
+        [Column("tenant_id")]
+        public int? tenant_id { get; set; }
+
         [Column("user_id")]
         public int user_id { get; set; }
 

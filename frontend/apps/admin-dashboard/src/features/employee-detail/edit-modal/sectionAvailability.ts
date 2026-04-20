@@ -9,6 +9,7 @@ const AVAILABLE_MODAL_SECTION_KEYS: ModalSectionKey[] = [
   'capability',
   'timekeeping',
   'signature',
+  'audit',
   'permission',
 ];
 

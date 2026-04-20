@@ -9,25 +9,9 @@ import {
 import type { WorkTabKey } from '../edit-modal/types';
 import DetailBlock from './DetailBlock';
 import DetailField from './DetailField';
+import PromotionHistoryTable from './PromotionHistoryTable';
 
-const PROMOTION_COLUMNS = [
-  { id: 'effectiveDate', label: 'Ngày có hiệu lực' },
-  { id: 'decisionType', label: 'Loại quyết định' },
-  { id: 'contractType', label: 'Loại HĐ/PLHĐ' },
-  { id: 'documentNumber', label: 'Số QĐ/HĐ' },
-  { id: 'jobStatus', label: 'Tình trạng công việc' },
-  { id: 'city', label: 'Tỉnh/Thành phố' },
-  { id: 'district', label: 'Quận/Huyện' },
-  { id: 'branch', label: 'Chi nhánh' },
-  { id: 'department', label: 'Phòng ban' },
-  { id: 'jobTitle', label: 'Chức danh' },
-  { id: 'paymentMethod', label: 'Hình thức chi trả' },
-  { id: 'salaryLevelName', label: 'Tên bậc lương' },
-  { id: 'salaryAmount', label: 'Mức lương' },
-  { id: 'allowance', label: 'Phụ cấp' },
-  { id: 'otherIncome', label: 'Thu nhập khác' },
-  { id: 'note', label: 'Ghi chú' },
-];
+
 
 interface WorkTabContentProps {
   employee: Employee;
@@ -38,13 +22,16 @@ interface WorkTabContentProps {
 }
 
 const WorkTabContent: React.FC<WorkTabContentProps> = ({
+  employee,
   isLoading,
   loadError,
   profile,
   onOpenEditTab,
 }) => {
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
-  const [visibleColumns, setVisibleColumns] = React.useState<string[]>(PROMOTION_COLUMNS.map(c => c.id));
+  const [visibleColumns, setVisibleColumns] = React.useState<string[]>([
+    'effectiveDate', 'decisionType', 'documentNumber', 'jobTitle', 'salaryAmount', 'branch', 'department'
+  ]);
   const [paginationEnabled, setPaginationEnabled] = React.useState(false);
 
   if (isLoading) {
@@ -67,7 +54,6 @@ const WorkTabContent: React.FC<WorkTabContentProps> = ({
   }
 
   const basicInfo = profile?.basicInfo;
-  const promotionHistory = profile?.promotionHistory ?? [];
   const workHistory = profile?.workHistory ?? [];
   const salaryInfo = profile?.salaryInfo;
   const contracts = profile?.contracts ?? [];
@@ -117,7 +103,24 @@ const WorkTabContent: React.FC<WorkTabContentProps> = ({
                 </div>
 
                 <div className="space-y-2">
-                  {PROMOTION_COLUMNS.map((col) => (
+                  {[
+                    { id: 'effectiveDate', label: 'Ngày có hiệu lực' },
+                    { id: 'decisionType', label: 'Loại quyết định' },
+                    { id: 'contractType', label: 'Loại HĐ/PLHĐ' },
+                    { id: 'documentNumber', label: 'Số QĐ/HĐ' },
+                    { id: 'jobStatus', label: 'Tình trạng công việc' },
+                    { id: 'city', label: 'Tỉnh/Thành phố' },
+                    { id: 'district', label: 'Quận/Huyện' },
+                    { id: 'branch', label: 'Chi nhánh' },
+                    { id: 'department', label: 'Phòng ban' },
+                    { id: 'jobTitle', label: 'Chức danh' },
+                    { id: 'paymentMethod', label: 'Hình thức chi trả' },
+                    { id: 'salaryLevelName', label: 'Tên bậc lương' },
+                    { id: 'salaryAmount', label: 'Mức lương' },
+                    { id: 'allowance', label: 'Phụ cấp' },
+                    { id: 'otherIncome', label: 'Thu nhập khác' },
+                    { id: 'note', label: 'Ghi chú' },
+                  ].map((col) => (
                     <div 
                       key={col.id}
                       className="flex items-center justify-between rounded-xl bg-slate-50/50 p-4 transition-colors hover:bg-slate-50"
@@ -176,133 +179,16 @@ const WorkTabContent: React.FC<WorkTabContentProps> = ({
         </div>
       </DetailBlock>
 
-      {/* LỊCH SỬ THĂNG TIẾN */}
       <DetailBlock 
         title="Lịch sử thăng tiến" 
-        headerAction="Sửa"
-        onActionClick={() => onOpenEditTab('promotionHistory')}
+        headerAction="Tùy chỉnh cột"
+        onActionClick={() => setIsSettingsOpen(true)}
       >
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-             <span className="text-xs font-bold text-slate-400">Đang hiển thị {promotionHistory.length}/7</span>
-             <div className="relative">
-                <select className="h-8 rounded-lg bg-slate-50 px-3 text-[11px] font-bold text-slate-500 outline-none hover:bg-slate-100 border-none cursor-pointer">
-                  <option>Lọc trường thay đổi</option>
-                </select>
-             </div>
-          </div>
-          <div className="flex items-center gap-3">
-             <button 
-                onClick={() => setIsSettingsOpen(true)}
-                className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-50 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-             >
-                <span className="material-symbols-outlined text-[20px]">menu</span>
-             </button>
-          </div>
-        </div>
-
-        <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-slate-50/80">
-                  <th className="px-4 py-4 first:pl-8">
-                     <div className="h-4 w-4 border-2 border-slate-200 rounded-md"></div>
-                  </th>
-                  {PROMOTION_COLUMNS.filter(c => visibleColumns.includes(c.id)).map((col) => (
-                    <th key={col.id} className="whitespace-nowrap px-4 py-4 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500 last:pr-8">
-                      {col.label}
-                    </th>
-                  ))}
-                  <th className="px-4 py-4 last:pr-8"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {promotionHistory.length === 0 ? (
-                  <tr>
-                    <td colSpan={visibleColumns.length + 2} className="py-20 text-center">
-                      <div className="flex flex-col items-center gap-3">
-                        <div className="rounded-full bg-slate-50 p-4">
-                          <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                          </svg>
-                        </div>
-                        <span className="text-sm font-medium text-slate-400">Trống</span>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  promotionHistory.map((p, idx) => (
-                    <tr key={idx} className="group transition-colors hover:bg-slate-50/50">
-                      <td className="px-4 py-4 first:pl-8">
-                         <div className="h-4 w-4 border-2 border-slate-200 rounded-md"></div>
-                      </td>
-                      {visibleColumns.includes('effectiveDate') && (
-                        <td className="whitespace-nowrap px-4 py-4 text-sm font-medium text-slate-600">{formatDate(p.effectiveDate)}</td>
-                      )}
-                      {visibleColumns.includes('decisionType') && (
-                        <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{displayValue(p.decisionType)}</td>
-                      )}
-                      {visibleColumns.includes('contractType') && (
-                        <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{displayValue(p.contractType)}</td>
-                      )}
-                      {visibleColumns.includes('documentNumber') && (
-                        <td className="whitespace-nowrap px-4 py-4 text-sm font-mono font-medium text-slate-900">{displayValue(p.decisionNumber)}</td>
-                      )}
-                      {visibleColumns.includes('jobStatus') && (
-                        <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{displayValue(p.workStatus)}</td>
-                      )}
-                      {visibleColumns.includes('city') && (
-                        <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-400">-</td>
-                      )}
-                      {visibleColumns.includes('district') && (
-                        <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-400">-</td>
-                      )}
-                      {visibleColumns.includes('branch') && (
-                        <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{displayValue(p.branchName)}</td>
-                      )}
-                      {visibleColumns.includes('department') && (
-                        <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{displayValue(p.departmentName)}</td>
-                      )}
-                      {visibleColumns.includes('jobTitle') && (
-                        <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-900">{displayValue(p.jobTitleName)}</td>
-                      )}
-                      {visibleColumns.includes('paymentMethod') && (
-                        <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{displayValue(p.paymentMethod)}</td>
-                      )}
-                      {visibleColumns.includes('salaryLevelName') && (
-                        <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{displayValue(p.salaryGrade)}</td>
-                      )}
-                      {visibleColumns.includes('salaryAmount') && (
-                        <td className="whitespace-nowrap px-4 py-4 text-sm font-bold text-emerald-600">{formatCurrency(p.salaryAmount)}</td>
-                      )}
-                      {visibleColumns.includes('allowance') && (
-                        <td className="whitespace-nowrap px-4 py-4 text-sm text-emerald-600">
-                          {p.allowance ? (
-                            <button className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-[11px] font-bold text-emerald-600 hover:bg-emerald-100 transition-colors">Xem chi tiết</button>
-                          ) : '-'}
-                        </td>
-                      )}
-                      {visibleColumns.includes('otherIncome') && (
-                        <td className="whitespace-nowrap px-4 py-4 text-sm text-emerald-600">
-                           <button className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-[11px] font-bold text-emerald-600 hover:bg-emerald-100 transition-colors">Xem chi tiết</button>
-                        </td>
-                      )}
-                      {visibleColumns.includes('note') && (
-                        <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-500">{displayValue(p.note)}</td>
-                      )}
-                      <td className="whitespace-nowrap px-4 py-4 text-right last:pr-8">
-                         <button className="text-slate-300 hover:text-emerald-500">
-                            <span className="material-symbols-outlined">more_horiz</span>
-                         </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <PromotionHistoryTable 
+          employeeId={employee.id}
+          visibleColumns={visibleColumns}
+          paginationEnabled={paginationEnabled}
+        />
       </DetailBlock>
 
       {/* LỊCH SỬ CÔNG TÁC */}

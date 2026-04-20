@@ -97,7 +97,28 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({
       ctx.fillStyle = activeColor;
       ctx.fillText(watermarkText, 20, canvas.height - 20);
     }
-  }, [objects, isDrawing, currentScribble, activeColor, watermarkText, watermarkConfig, canvasRef]);
+
+    // Draw Selection Box (AC 3.3 Feedback)
+    if (activeTool === 'move' && dragInfo) {
+      const selected = objects.find(o => o.id === dragInfo.id);
+      if (selected) {
+        let bx, by, bw, bh;
+        if (selected.type === 'scribble' && selected.points) {
+          const bounds = getScribbleBounds(selected.points);
+          bx = bounds.x; by = bounds.y; bw = bounds.width; bh = bounds.height;
+        } else if (selected.type === 'image') {
+          bx = selected.x; by = selected.y; bw = selected.width || 100; bh = selected.height || 100;
+        } else {
+          bx = selected.x; by = selected.y - 35; bw = 200; bh = 45;
+        }
+        ctx.setLineDash([5, 5]);
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(bx - 2, by - 2, bw + 4, bh + 4);
+        ctx.setLineDash([]);
+      }
+    }
+  }, [objects, isDrawing, currentScribble, activeColor, watermarkText, watermarkConfig, canvasRef, activeTool, dragInfo]);
 
   useEffect(() => {
     redraw();
@@ -123,6 +144,22 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({
     };
   };
 
+  const getScribbleBounds = (points: { x: number, y: number }[]) => {
+    if (points.length === 0) return { x: 0, y: 0, width: 0, height: 0 };
+    const xs = points.map(p => p.x);
+    const ys = points.map(p => p.y);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+    return {
+      x: minX - 5,
+      y: minY - 5,
+      width: (maxX - minX) + 10,
+      height: (maxY - minY) + 10
+    };
+  };
+
   const handleMouseDown = (e: React.MouseEvent) => {
     const pos = getMousePos(e);
 
@@ -140,7 +177,12 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({
         if (obj.type === 'image') {
           return pos.x >= obj.x && pos.x <= obj.x + (obj.width || 100) && pos.y >= obj.y && pos.y <= obj.y + (obj.height || 100);
         }
-        return false; // Scribble move is harder, let's skip for now or use bounding box
+        if (obj.type === 'scribble' && obj.points) {
+          const bounds = getScribbleBounds(obj.points);
+          return pos.x >= bounds.x && pos.x <= bounds.x + bounds.width && 
+                 pos.y >= bounds.y && pos.y <= bounds.y + bounds.height;
+        }
+        return false;
       });
 
       if (found) {
@@ -182,11 +224,24 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({
     if (activeTool === 'scribble' && isDrawing) {
       setCurrentScribble(prev => [...prev, pos]);
     } else if (activeTool === 'move' && dragInfo) {
-      setObjects(prev => prev.map(obj => 
-        obj.id === dragInfo.id 
-          ? { ...obj, x: pos.x - dragInfo.offsetX, y: pos.y - dragInfo.offsetY } 
-          : obj
-      ));
+      setObjects(prev => prev.map(obj => {
+        if (obj.id !== dragInfo.id) return obj;
+
+        if (obj.type === 'scribble' && obj.points) {
+          const dx = (pos.x - dragInfo.offsetX) - obj.x;
+          const dy = (pos.y - dragInfo.offsetY) - obj.y;
+          return {
+            ...obj,
+            x: pos.x - dragInfo.offsetX,
+            y: pos.y - dragInfo.offsetY,
+            points: obj.points.map(p => ({ x: p.x + dx, y: p.y + dy }))
+          };
+        }
+
+        return { ...obj, x: pos.x - dragInfo.offsetX, y: pos.y - dragInfo.offsetY };
+      }));
+      // Update dragInfo offsets to relative to new position
+      setDragInfo(prev => prev ? { ...prev, offsetX: pos.x - (pos.x - prev.offsetX), offsetY: pos.y - (pos.y - prev.offsetY) } : null);
     }
   };
 

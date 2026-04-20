@@ -32,27 +32,25 @@ const DocumentForm: React.FC<DocumentFormProps> = ({
   }, [activeMenuId]);
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* HEADER */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-[#1c3563] tracking-tight">Tài liệu</h2>
-        <div className="flex items-center gap-3">
-          <button 
-            type="button"
-            onClick={onOpenAddFile}
-            className="h-9 px-5 rounded-xl bg-[#10b981] text-white text-[12px] font-bold flex items-center gap-2 hover:bg-[#059669] transition-all shadow-md shadow-emerald-100"
-          >
-            <span className="material-symbols-outlined text-[18px]">upload</span>
-            Tải lên
-          </button>
-          <button 
-            type="button"
-            onClick={onOpenAddFolder}
-            className="h-9 px-5 rounded-xl bg-[#52d891] text-white text-[12px] font-bold hover:bg-[#40c47f] transition-all shadow-md shadow-emerald-50"
-          >
-            Tạo mới
-          </button>
-        </div>
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* ACTIONS ROW */}
+      <div className="flex justify-end gap-3">
+        <button
+          type="button"
+          onClick={onOpenAddFolder}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl font-bold hover:bg-blue-100 transition-colors text-[14px]"
+        >
+          <span className="material-symbols-outlined text-[18px]">create_new_folder</span>
+          Thêm thư mục
+        </button>
+        <button
+          type="button"
+          onClick={onOpenAddFile}
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl font-bold hover:bg-emerald-100 transition-colors text-[14px]"
+        >
+          <span className="material-symbols-outlined text-[18px]">upload_file</span>
+          Tải tệp lên
+        </button>
       </div>
 
       {/* FOLDER GRID */}

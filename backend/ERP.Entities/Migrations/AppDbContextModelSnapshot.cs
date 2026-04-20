@@ -743,6 +743,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("name");
 
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
                     b.HasKey("Id");
 
                     b.ToTable("AddressTypes", (string)null);
@@ -804,6 +808,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("postal_code");
 
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
                     b.Property<string>("ward")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -857,6 +865,10 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("name");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -1144,6 +1156,10 @@ namespace ERP.Entities.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("reason");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -1441,6 +1457,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(64)")
                         .HasColumnName("session_id");
 
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
                     b.Property<string>("user_agent")
                         .HasMaxLength(512)
                         .HasColumnType("nvarchar(512)")
@@ -1538,11 +1558,17 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(200)")
                         .HasColumnName("name");
 
+                    b.Property<int?>("region_id")
+                        .HasColumnType("int")
+                        .HasColumnName("region_id");
+
                     b.Property<int?>("tenant_id")
                         .HasColumnType("int")
                         .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("region_id");
 
                     b.ToTable("Branches", (string)null);
 
@@ -1552,7 +1578,8 @@ namespace ERP.Entities.Migrations
                             Id = 1,
                             address = "Hà Nội",
                             code = "HO",
-                            name = "Trụ sở chính"
+                            name = "Trụ sở chính",
+                            region_id = 1
                         });
                 });
 
@@ -1615,6 +1642,10 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)")
                         .HasColumnName("reason_for_access");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
 
                     b.Property<string>("user_agent")
                         .HasMaxLength(500)
@@ -1696,6 +1727,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("int")
                         .HasColumnName("signer_id");
 
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
                     b.Property<string>("type")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -1776,6 +1811,10 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
                     b.HasKey("Id");
 
                     b.HasIndex("contract_id");
@@ -1840,6 +1879,10 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("name");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -2346,6 +2389,73 @@ namespace ERP.Entities.Migrations
                     b.ToTable("Sys_WorkspaceOwnerInvitations");
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.Countries", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("code")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasColumnName("code");
+
+                    b.Property<string>("name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("name");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("code")
+                        .HasName("AK_Countries_code");
+
+                    b.ToTable("Countries", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            code = "VN",
+                            name = "Việt Nam"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            code = "US",
+                            name = "United States"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            code = "JP",
+                            name = "Japan"
+                        });
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.Courses", b =>
                 {
                     b.Property<int>("Id")
@@ -2371,6 +2481,10 @@ namespace ERP.Entities.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("description");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -2478,6 +2592,10 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("name");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -2746,6 +2864,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("os");
 
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
                     b.Property<string>("version")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -2800,6 +2922,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("signature_name");
 
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
                     b.HasKey("Id");
 
                     b.HasIndex("employee_id");
@@ -2849,6 +2975,10 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("name");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -2904,6 +3034,93 @@ namespace ERP.Entities.Migrations
                             description = "Chấm dứt hợp đồng lao động",
                             is_active = true,
                             name = "Sa thải"
+                        });
+                });
+
+            modelBuilder.Entity("ERP.Entities.Models.Districts", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("code");
+
+                    b.Property<string>("name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("province_code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("province_code");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("code")
+                        .HasName("AK_Districts_code");
+
+                    b.HasIndex("province_code");
+
+                    b.ToTable("Districts", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            code = "HN_BD",
+                            name = "Ba Đình",
+                            province_code = "HN"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            code = "HN_CG",
+                            name = "Cầu Giấy",
+                            province_code = "HN"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            code = "HCM_Q1",
+                            name = "Quận 1",
+                            province_code = "HCM"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            code = "HCM_Q3",
+                            name = "Quận 3",
+                            province_code = "HCM"
                         });
                 });
 
@@ -3001,6 +3218,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("relationship");
 
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
                     b.HasKey("Id");
 
                     b.HasIndex("employee_id");
@@ -3097,6 +3318,10 @@ namespace ERP.Entities.Migrations
                     b.Property<DateTime?>("completion_date")
                         .HasColumnType("datetime2")
                         .HasColumnName("completion_date");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
 
                     b.HasKey("employee_id", "course_id");
 
@@ -3198,6 +3423,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("result");
 
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
                     b.HasKey("employee_id", "evaluation_id");
 
                     b.HasIndex("evaluation_id");
@@ -3226,6 +3455,10 @@ namespace ERP.Entities.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("remaining_days");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
 
                     b.Property<decimal>("total_days")
                         .HasColumnType("decimal(18,2)")
@@ -3290,6 +3523,14 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("updated_at");
 
+                    b.Property<int?>("allowed_early_minutes")
+                        .HasColumnType("int")
+                        .HasColumnName("allowed_early_minutes");
+
+                    b.Property<int?>("allowed_late_minutes")
+                        .HasColumnType("int")
+                        .HasColumnName("allowed_late_minutes");
+
                     b.Property<string>("avatar")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("avatar");
@@ -3317,6 +3558,10 @@ namespace ERP.Entities.Migrations
                     b.Property<int?>("display_order")
                         .HasColumnType("int")
                         .HasColumnName("display_order");
+
+                    b.Property<string>("early_rules")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("early_rules");
 
                     b.Property<string>("email")
                         .HasMaxLength(100)
@@ -3385,6 +3630,14 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("is_resigned");
 
+                    b.Property<bool>("is_separate_late_early_enabled")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_separate_late_early_enabled");
+
+                    b.Property<bool>("is_total_late_early_enabled")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_total_late_early_enabled");
+
                     b.Property<int?>("job_title_id")
                         .HasColumnType("int")
                         .HasColumnName("job_title_id");
@@ -3397,6 +3650,10 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("late_early_note");
+
+                    b.Property<string>("late_rules")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("late_rules");
 
                     b.Property<int?>("manager_id")
                         .HasColumnType("int")
@@ -3457,6 +3714,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("religion");
 
+                    b.Property<DateTime?>("resignation_date")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("resignation_date");
+
                     b.Property<string>("resignation_reason")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)")
@@ -3491,6 +3752,10 @@ namespace ERP.Entities.Migrations
                     b.Property<int?>("tenant_id")
                         .HasColumnType("int")
                         .HasColumnName("tenant_id");
+
+                    b.Property<string>("total_late_early_rules")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("total_late_early_rules");
 
                     b.Property<string>("union_group")
                         .HasMaxLength(100)
@@ -3560,6 +3825,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(200)")
                         .HasColumnName("evaluation_name");
 
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
                     b.HasKey("Id");
 
                     b.ToTable("Evaluations", (string)null);
@@ -3585,6 +3854,10 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("name");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -3835,6 +4108,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("used_at");
 
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedBy");
@@ -3868,6 +4145,10 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)")
                         .HasColumnName("name");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -3926,6 +4207,10 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("name");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -4078,6 +4363,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("name");
 
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
                     b.HasKey("Id");
 
                     b.ToTable("LeaveTypes", (string)null);
@@ -4142,6 +4431,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("source");
 
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
                     b.Property<DateTime>("timestamp")
                         .HasColumnType("datetime2")
                         .HasColumnName("timestamp");
@@ -4192,6 +4485,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("reason_for_failure");
 
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
                     b.Property<bool>("triggered_account_lockout")
                         .HasColumnType("bit")
                         .HasColumnName("triggered_account_lockout");
@@ -4237,6 +4534,10 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("name");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -4314,6 +4615,10 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("name");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -4541,6 +4846,10 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("name");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -4808,6 +5117,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("int")
                         .HasColumnName("target_user_id");
 
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
                     b.Property<string>("user_agent")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)")
@@ -4850,6 +5163,10 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("resource");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -4942,6 +5259,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("salary_grade");
 
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
                     b.Property<string>("work_status")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -4963,6 +5284,84 @@ namespace ERP.Entities.Migrations
                     b.HasIndex("job_title_id");
 
                     b.ToTable("PromotionHistory", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Entities.Models.Provinces", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("code");
+
+                    b.Property<string>("country_code")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasColumnName("country_code");
+
+                    b.Property<string>("name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("name");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("code")
+                        .HasName("AK_Provinces_code");
+
+                    b.HasIndex("country_code");
+
+                    b.ToTable("Provinces", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            code = "HN",
+                            country_code = "VN",
+                            name = "Hà Nội"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            code = "HCM",
+                            country_code = "VN",
+                            name = "TP. Hồ Chí Minh"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            code = "DN",
+                            country_code = "VN",
+                            name = "Đà Nẵng"
+                        });
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.PublicHolidays", b =>
@@ -5000,6 +5399,10 @@ namespace ERP.Entities.Migrations
                     b.Property<bool>("is_paid")
                         .HasColumnType("bit")
                         .HasColumnName("is_paid");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -5678,6 +6081,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("int")
                         .HasColumnName("reimbursement_id");
 
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
                     b.Property<decimal?>("total_amount")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("decimal(18,2)")
@@ -6159,6 +6566,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("name");
 
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
                     b.Property<int?>("workflow_id")
                         .HasColumnType("int")
                         .HasColumnName("workflow_id");
@@ -6382,6 +6793,42 @@ namespace ERP.Entities.Migrations
                     b.HasIndex("request_type_id");
 
                     b.ToTable("Requests", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Entities.Models.ResignationReasons", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<bool>("is_default")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_default");
+
+                    b.Property<string>("reason_name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("reason_name");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ResignationReasons");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.ResourcePermissions", b =>
@@ -6642,6 +7089,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("name");
 
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
                     b.HasKey("Id");
 
                     b.ToTable("RewardTypes", (string)null);
@@ -6688,6 +7139,10 @@ namespace ERP.Entities.Migrations
                     b.Property<int>("permission_id")
                         .HasColumnType("int")
                         .HasColumnName("permission_id");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
 
                     b.HasKey("role_id", "permission_id");
 
@@ -7051,6 +7506,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("int")
                         .HasColumnName("employee_id");
 
+                    b.Property<bool>("is_overtime")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_overtime");
+
                     b.Property<bool>("is_published")
                         .HasColumnType("bit")
                         .HasColumnName("is_published");
@@ -7063,6 +7522,10 @@ namespace ERP.Entities.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("note");
+
+                    b.Property<DateTime?>("published_at")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("published_at");
 
                     b.Property<int>("shift_id")
                         .HasColumnType("int")
@@ -7128,6 +7591,10 @@ namespace ERP.Entities.Migrations
                     b.Property<int>("template_id")
                         .HasColumnType("int")
                         .HasColumnName("template_id");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -7319,6 +7786,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("name");
 
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
                     b.HasKey("Id");
 
                     b.ToTable("ShiftTypes", (string)null);
@@ -7463,6 +7934,10 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("skill_name");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -7701,6 +8176,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("machine_name");
 
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
                     b.HasKey("Id");
 
                     b.ToTable("TimeMachines", (string)null);
@@ -7744,6 +8223,10 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("table_name");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
 
                     b.Property<int?>("user_id")
                         .HasColumnType("int")
@@ -7962,6 +8445,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("name");
 
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
                     b.HasKey("Id");
 
                     b.ToTable("VehicleTypes", (string)null);
@@ -8003,6 +8490,10 @@ namespace ERP.Entities.Migrations
                     b.Property<DateTime?>("start_date")
                         .HasColumnType("datetime2")
                         .HasColumnName("start_date");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
 
                     b.Property<string>("work_duration")
                         .IsRequired()
@@ -8161,6 +8652,16 @@ namespace ERP.Entities.Migrations
                         .IsRequired();
 
                     b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("ERP.Entities.Models.Branches", b =>
+                {
+                    b.HasOne("ERP.Entities.Models.Regions", "Region")
+                        .WithMany()
+                        .HasForeignKey("region_id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Region");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.BreakGlassAccessLogs", b =>
@@ -8335,6 +8836,18 @@ namespace ERP.Entities.Migrations
                         .IsRequired();
 
                     b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("ERP.Entities.Models.Districts", b =>
+                {
+                    b.HasOne("ERP.Entities.Models.Provinces", "Province")
+                        .WithMany("Districts")
+                        .HasForeignKey("province_code")
+                        .HasPrincipalKey("code")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Province");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.Education", b =>
@@ -8842,6 +9355,18 @@ namespace ERP.Entities.Migrations
                     b.Navigation("Employee");
 
                     b.Navigation("JobTitle");
+                });
+
+            modelBuilder.Entity("ERP.Entities.Models.Provinces", b =>
+                {
+                    b.HasOne("ERP.Entities.Models.Countries", "Country")
+                        .WithMany("Provinces")
+                        .HasForeignKey("country_code")
+                        .HasPrincipalKey("code")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Country");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.RequestApprovals", b =>
@@ -9487,6 +10012,11 @@ namespace ERP.Entities.Migrations
                     b.Navigation("TenantSubscriptions");
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.Countries", b =>
+                {
+                    b.Navigation("Provinces");
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.Departments", b =>
                 {
                     b.Navigation("Employees");
@@ -9507,6 +10037,11 @@ namespace ERP.Entities.Migrations
             modelBuilder.Entity("ERP.Entities.Models.PayrollPeriods", b =>
                 {
                     b.Navigation("Payrolls");
+                });
+
+            modelBuilder.Entity("ERP.Entities.Models.Provinces", b =>
+                {
+                    b.Navigation("Districts");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.Regions", b =>

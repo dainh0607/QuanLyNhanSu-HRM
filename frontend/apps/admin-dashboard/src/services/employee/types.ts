@@ -134,6 +134,13 @@ export interface EmployeePromotionHistoryProfile {
   note?: string;
 }
 
+export interface EmployeePromotionHistoryFilters {
+  searchTerm?: string;
+  decisionType?: string;
+  pageNumber?: number;
+  pageSize?: number;
+}
+
 export interface EmployeeWorkHistoryProfile {
   companyName: string;
   jobTitle: string;
@@ -141,6 +148,7 @@ export interface EmployeeWorkHistoryProfile {
   startDate?: string;
   endDate?: string;
   isCurrent: boolean;
+  note?: string;
 }
 
 export interface EmployeeSalaryAllowanceProfile {
@@ -193,6 +201,22 @@ export interface EmployeeFullProfile {
     files: DocumentFile[];
   };
   attendanceSettings: AttendanceSettings;
+  timekeepingMachineMappings?: TimekeepingMachineMapping[];
+  mobilePermissions?: PermissionItem[];
+  webPermissions?: PermissionItem[];
+}
+
+export interface PermissionItem {
+  id: string;
+  label: string;
+  isEnabled: boolean;
+  children?: PermissionItem[];
+}
+
+export interface TimekeepingMachineMapping {
+  machineId: number;
+  machineName: string;
+  timekeepingCode: string;
 }
 
 export interface AttendanceSettings {
@@ -486,13 +510,24 @@ export interface EmployeeEditJobStatusPayload {
   contractExpiryDate: string;
   workType: string;
   seniorityMonths: string;
-  lateEarlyAllowed: string;
+  
+  // Dynamic Late/Early
+  isTotalLateEarlyEnabled: boolean;
+  lateEarlyAllowed: string; // Total minutes
+  totalLateEarlyRules: LateEarlyRule[];
+
+  isSeparateLateEarlyEnabled: boolean;
   lateAllowedMinutes: string;
+  lateRules: LateEarlyRule[];
   earlyAllowedMinutes: string;
-  lateEarlyDetailedRules: LateEarlyRule[];
+  earlyRules: LateEarlyRule[];
+
   lateEarlyNote: string;
+  
+  // Resignation
   isResigned: boolean;
   resignationReason: string;
+  resignationDate: string;
 }
 
 export interface EmployeeEditJobInfoPayload {
@@ -508,6 +543,15 @@ export interface EmployeeEditJobInfoPayload {
   managerName: string;
   isActive: boolean;
   isDepartmentHead: boolean;
+}
+
+export interface EmployeeSearchSuggestion {
+  id: number;
+  fullName: string;
+  employeeCode: string;
+  avatar?: string;
+  departmentName?: string;
+  jobTitleName?: string;
 }
 
 export interface EmployeeEditPromotionHistoryItemPayload {
@@ -555,7 +599,8 @@ export interface EmployeeEditSalaryAllowancePayload {
     paymentMethod: string;
     amount: string;
     salaryLevelName: string;
-    duration: string;
+    startDate: string;
+    endDate: string;
   }>;
   allowances: Array<{
     id?: string;

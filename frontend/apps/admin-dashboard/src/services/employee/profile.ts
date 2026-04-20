@@ -1,4 +1,4 @@
-import { isNotFoundError, requestJson } from "./core";
+import { API_URL, isNotFoundError, requestJson } from "./core";
 import {
   createEmptyEditableAddress,
   createMissingEndpointError,
@@ -41,6 +41,11 @@ import type {
   AttendanceSettings,
   DocumentFolder,
   DocumentFile,
+  PaginatedResponse,
+  EmployeePromotionHistoryProfile,
+  EmployeePromotionHistoryFilters,
+  TimekeepingMachineMapping,
+  PermissionItem,
 } from "./types";
 
 interface EmployeeBasicInfoUpdateRequest {
@@ -79,6 +84,11 @@ interface EmployeeBasicInfoUpdateRequest {
   lateEarlyNote?: string | null;
   isResigned?: boolean;
   resignationReason?: string | null;
+  resignationDate?: string | null;
+  isTotalLateEarlyEnabled?: boolean;
+  lateRules?: any[] | null;
+  earlyRules?: any[] | null;
+  totalLateEarlyRules?: any[] | null;
 }
 
 interface EmployeeContactInfoUpdateRequest {
@@ -195,6 +205,83 @@ function getMockAttendanceSettings(id: number): AttendanceSettings {
   return mockAttendanceStore[id];
 }
 
+const mockMachineMappingsStore: Record<number, TimekeepingMachineMapping[]> = {};
+function getMockTimekeepingMachineMappings(id: number): TimekeepingMachineMapping[] {
+  if (mockMachineMappingsStore[id]) return mockMachineMappingsStore[id];
+  mockMachineMappingsStore[id] = [
+    { machineId: 1, machineName: 'Máy 01 - Cổng chính (Vân tay)', timekeepingCode: '1001' },
+    { machineId: 2, machineName: 'Máy 02 - Hầm gửi xe (Thẻ từ)', timekeepingCode: '' },
+    { machineId: 3, machineName: 'Máy 03 - Tầng 5 (FaceID)', timekeepingCode: 'FACE_A1' },
+    { machineId: 4, machineName: 'Máy 04 - Tầng 8 (Vân tay)', timekeepingCode: '1001' },
+  ];
+  return mockMachineMappingsStore[id];
+}
+
+const mockMobilePermissionsStore: Record<number, PermissionItem[]> = {};
+function getMockMobilePermissions(id: number): PermissionItem[] {
+  if (mockMobilePermissionsStore[id]) return mockMobilePermissionsStore[id];
+  mockMobilePermissionsStore[id] = [
+    { 
+      id: 'notify', label: 'Thông báo', isEnabled: true, 
+      children: [
+        { id: 'notify_manage', label: 'Quản lý thông báo', isEnabled: true }
+      ] 
+    },
+    { 
+      id: 'task', label: 'Giao việc', isEnabled: true, 
+      children: [
+        { id: 'task_mine', label: 'Công việc của tôi', isEnabled: true },
+        { id: 'task_review', label: 'Đánh giá', isEnabled: false }
+      ] 
+    },
+    { 
+      id: 'work', label: 'Làm việc', isEnabled: true, 
+      children: [
+        { id: 'work_attendance', label: 'Chấm công', isEnabled: true },
+        { id: 'work_report', label: 'Báo cáo công việc', isEnabled: true }
+      ] 
+    },
+    { 
+      id: 'employee', label: 'Nhân viên', isEnabled: false, 
+      children: [
+        { id: 'employee_search', label: 'Tìm kiếm đồng nghiệp', isEnabled: false }
+      ] 
+    },
+    { 
+      id: 'calendar', label: 'Lịch', isEnabled: true, 
+      children: [
+        { id: 'calendar_work', label: 'Lịch làm việc', isEnabled: true }
+      ] 
+    },
+    { 
+      id: 'more', label: 'Thêm', isEnabled: true, 
+      children: [
+        { id: 'more_request', label: 'Đơn từ', isEnabled: true },
+        { id: 'more_document', label: 'Tài liệu', isEnabled: true }
+      ] 
+    },
+    { 
+      id: 'elearning', label: 'Đào tạo trực tuyến', isEnabled: false, 
+      children: [
+        { id: 'elearning_course', label: 'Khóa học của tôi', isEnabled: false }
+      ] 
+    }
+  ];
+  return mockMobilePermissionsStore[id];
+}
+
+const mockWebPermissionsStore: Record<number, PermissionItem[]> = {};
+function getMockWebPermissions(id: number): PermissionItem[] {
+  if (mockWebPermissionsStore[id]) return mockWebPermissionsStore[id];
+  mockWebPermissionsStore[id] = [
+    { id: 'dashboard', label: 'Bảng điều khiển', isEnabled: true },
+    { id: 'hr', label: 'Nhân sự', isEnabled: true },
+    { id: 'payroll', label: 'Tiền lương', isEnabled: true },
+    { id: 'admin', label: 'Quản trị hệ thống', isEnabled: false },
+  ];
+  return mockWebPermissionsStore[id];
+}
+
 function getMockDocuments(id: number) {
   if (mockDocumentsStore[id]) {
     return mockDocumentsStore[id];
@@ -309,6 +396,110 @@ export async function updateAttendanceSettingsMock(id: number, settings: Attenda
   mockAttendanceStore[id] = settings;
 }
 
+export async function updateTimekeepingMachineMappingsMock(id: number, mappings: TimekeepingMachineMapping[]): Promise<void> {
+  await new Promise(resolve => setTimeout(resolve, 800));
+  mockMachineMappingsStore[id] = mappings;
+}
+
+export async function updateMobilePermissionsMock(id: number, permissions: PermissionItem[]): Promise<void> {
+  await new Promise(resolve => setTimeout(resolve, 800));
+  mockMobilePermissionsStore[id] = permissions;
+}
+
+export async function updateWebPermissionsMock(id: number, permissions: PermissionItem[]): Promise<void> {
+  await new Promise(resolve => setTimeout(resolve, 800));
+  mockWebPermissionsStore[id] = permissions;
+}
+
+// PERSISTENT MOCK PROMOTION HISTORY STORE
+const mockPromotionHistoryStore: Record<number, EmployeePromotionHistoryProfile[]> = {};
+
+const getMockPromotionHistory = (id: number): EmployeePromotionHistoryProfile[] => {
+  if (mockPromotionHistoryStore[id]) return mockPromotionHistoryStore[id];
+  
+  const defaultHistory: EmployeePromotionHistoryProfile[] = [
+    { id: 1, effectiveDate: '2024-01-01', decisionType: 'Bổ nhiệm', contractType: 'HĐ lao động 12 tháng', decisionNumber: 'QĐ/2024/001', workStatus: 'Chính thức', branchName: 'Hà Nội', departmentName: 'CNTT', jobTitleName: 'Kỹ sư chuyên nghiệp', salaryAmount: 25000000 },
+    { id: 2, effectiveDate: '2024-03-15', decisionType: 'Tăng lương', contractType: 'PLHĐ/2024/001', decisionNumber: 'QĐ/2024/042', workStatus: 'Chính thức', branchName: 'Hà Nội', departmentName: 'CNTT', jobTitleName: 'Kỹ sư chuyên nghiệp', salaryAmount: 28000000 },
+    { id: 3, effectiveDate: '2024-06-01', decisionType: 'Bổ nhiệm', contractType: 'HĐ lao động 36 tháng', decisionNumber: 'QĐ/2024/105', workStatus: 'Chính thức', branchName: 'Hà Nội', departmentName: 'CNTT', jobTitleName: 'Trưởng nhóm', salaryAmount: 35000000 },
+    { id: 4, effectiveDate: '2024-08-20', decisionType: 'Tăng lương', contractType: 'PLHĐ/2024/015', decisionNumber: 'QĐ/2024/210', workStatus: 'Chính thức', branchName: 'Hà Nội', departmentName: 'CNTT', jobTitleName: 'Trưởng nhóm', salaryAmount: 38000000 },
+    { id: 5, effectiveDate: '2024-10-10', decisionType: 'Thưởng hiệu quả', contractType: 'Khen thưởng', decisionNumber: 'QĐ/2024/305', workStatus: 'Chính thức', branchName: 'Hà Nội', departmentName: 'CNTT', jobTitleName: 'Trưởng nhóm', salaryAmount: 38000000, note: 'Thưởng dự án ERP thành công' },
+    { id: 6, effectiveDate: '2024-12-01', decisionType: 'Thăng chức', contractType: 'HĐ không xác định thời hạn', decisionNumber: 'QĐ/2024/450', workStatus: 'Chính thức', branchName: 'Hà Nội', departmentName: 'CNTT', jobTitleName: 'Quản lý dự án (PM)', salaryAmount: 55000000 },
+    { id: 7, effectiveDate: '2025-01-15', decisionType: 'Tăng lương hàng năm', contractType: 'PLHĐ/2025/002', decisionNumber: 'QĐ/2025/012', workStatus: 'Chính thức', branchName: 'Hà Nội', departmentName: 'CNTT', jobTitleName: 'Quản lý dự án (PM)', salaryAmount: 60000000 },
+    { id: 8, effectiveDate: '2025-02-20', decisionType: 'Khen thưởng chuyên gia', contractType: 'Khen thưởng', decisionNumber: 'QĐ/2025/124', workStatus: 'Chính thức', branchName: 'Hà Nội', departmentName: 'CNTT', jobTitleName: 'Quản lý dự án (PM)', salaryAmount: 60000000 },
+    { id: 9, effectiveDate: '2025-03-01', decisionType: 'Điều chuyển công tác', contractType: 'QĐ điều động', decisionNumber: 'QĐ/2025/205', workStatus: 'Chính thức', branchName: 'TP. Hồ Chí Minh', departmentName: 'CNTT', jobTitleName: 'Quản lý dự án (PM)', salaryAmount: 65000000, note: 'Điều chuyển phụ trách chi nhánh HCM' },
+    { id: 10, effectiveDate: '2025-04-12', decisionType: 'Phụ cấp trách nhiệm', contractType: 'PLHĐ/2025/050', decisionNumber: 'QĐ/2025/312', workStatus: 'Chính thức', branchName: 'TP. Hồ Chí Minh', departmentName: 'CNTT', jobTitleName: 'Giám đốc kĩ thuật (CTO)', salaryAmount: 85000000 },
+    { id: 11, effectiveDate: '2025-05-01', decisionType: 'Bổ nhiệm chính thức', contractType: 'HĐ lao động chuyên gia', decisionNumber: 'QĐ/2025/401', workStatus: 'Chính thức', branchName: 'TP. Hồ Chí Minh', departmentName: 'Ban giám đốc', jobTitleName: 'Giám đốc kĩ thuật (CTO)', salaryAmount: 95000000 },
+    { id: 12, effectiveDate: '2025-06-15', decisionType: 'Tăng lương đột xuất', contractType: 'PLHĐ/2025/088', decisionNumber: 'QĐ/2025/555', workStatus: 'Chính thức', branchName: 'TP. Hồ Chí Minh', departmentName: 'Ban giám đốc', jobTitleName: 'Giám đốc kĩ thuật (CTO)', salaryAmount: 110000000 },
+  ];
+  
+  mockPromotionHistoryStore[id] = defaultHistory;
+  return defaultHistory;
+};
+
+const getPromotionHistoryList = async (
+  employeeId: number,
+  filters: EmployeePromotionHistoryFilters = {}
+): Promise<PaginatedResponse<EmployeePromotionHistoryProfile>> => {
+  const endpoint = resolveEmployeeEditEndpoint(EMPLOYEE_PROFILE_ENDPOINTS.promotionHistory, employeeId);
+  try {
+    if (endpoint) {
+      const url = new URL(endpoint);
+      if (filters.pageNumber) url.searchParams.append('pageNumber', filters.pageNumber.toString());
+      if (filters.pageSize) url.searchParams.append('pageSize', filters.pageSize.toString());
+      if (filters.searchTerm) url.searchParams.append('searchTerm', filters.searchTerm);
+      if (filters.decisionType) url.searchParams.append('decisionType', filters.decisionType);
+
+      return await requestJson<PaginatedResponse<EmployeePromotionHistoryProfile>>(
+        url.toString(),
+        { method: "GET" },
+        "Error fetching promotion history"
+      );
+    }
+    throw new Error("Endpoint not defined");
+  } catch (error) {
+    console.warn("Using mock data for promotion history list");
+    await new Promise(resolve => setTimeout(resolve, 600));
+    
+    let allItems = getMockPromotionHistory(employeeId);
+    
+    // Apply filters
+    if (filters.searchTerm) {
+      const term = filters.searchTerm.toLowerCase();
+      allItems = allItems.filter(i => 
+        i.decisionNumber?.toLowerCase().includes(term) || 
+        i.jobTitleName?.toLowerCase().includes(term)
+      );
+    }
+
+    const page = filters.pageNumber || 1;
+    const pageSize = filters.pageSize || 10;
+    const totalCount = allItems.length;
+    const totalPages = Math.ceil(totalCount / pageSize);
+    const paginatedItems = allItems.slice((page - 1) * pageSize, page * pageSize);
+
+    return {
+      items: paginatedItems,
+      totalCount,
+      pageNumber: page,
+      totalPages,
+      hasPreviousPage: page > 1,
+      hasNextPage: page < totalPages
+    };
+  }
+};
+
+const deletePromotionHistory = async (employeeId: number, id: number): Promise<void> => {
+  await new Promise(resolve => setTimeout(resolve, 500));
+  const history = getMockPromotionHistory(employeeId);
+  mockPromotionHistoryStore[employeeId] = history.filter(h => h.id !== id);
+};
+
+const bulkDeletePromotionHistory = async (employeeId: number, ids: number[]): Promise<void> => {
+  await new Promise(resolve => setTimeout(resolve, 800));
+  const history = getMockPromotionHistory(employeeId);
+  mockPromotionHistoryStore[employeeId] = history.filter(h => !ids.includes(h.id));
+};
+
 const getMockFullProfile = (id: number, fallbackBasicInfo: any): EmployeeFullProfile => ({
   basicInfo: {
     id,
@@ -344,27 +535,58 @@ const getMockFullProfile = (id: number, fallbackBasicInfo: any): EmployeeFullPro
   healthRecord: null,
   dependents: [],
   promotionHistory: [],
-  workHistory: [],
-  salaryInfo: null,
-  contracts: [],
-  insurances: [],
+  workHistory: [
+    { companyName: 'Công ty Công nghệ X', jobTitle: 'Lập trình viên Java', workDuration: '2 năm', startDate: '2020-01-01', endDate: '2021-12-31', isCurrent: false },
+    { companyName: 'Tập đoàn ABC', jobTitle: 'Kỹ sư phần mềm', workDuration: '1 năm', startDate: '2022-01-01', endDate: '2022-12-31', isCurrent: false },
+  ],
+  salaryInfo: {
+    paymentMethod: 'Chuyển khoản (Techcombank)',
+    salaryGrade: 'Bậc 4 - Chuyên gia',
+    baseSalary: 45000000,
+    allowances: [
+      { id: 1, name: 'Phụ cấp ăn trưa', amount: 1500000 },
+      { id: 2, name: 'Phụ cấp xăng xe', amount: 500000 },
+    ],
+    otherIncomes: [
+      { id: 1, name: 'Thưởng KPI tháng', amount: 5000000 },
+    ]
+  },
+  contracts: [
+    { id: 1, contractNumber: '001/2023/HĐLĐ', contractType: 'Hợp đồng lao động 1 năm', signDate: '2023-01-01', effectiveDate: '2023-01-01', expiryDate: '2023-12-31', signedBy: 'Giám đốc Nhân sự', status: 'Hết hạn', isElectronic: true },
+    { id: 2, contractNumber: '088/2024/HĐLĐ', contractType: 'Hợp đồng lao động 3 năm', signDate: '2024-01-01', effectiveDate: '2024-01-01', expiryDate: '2026-12-31', signedBy: 'Tổng Giám đốc', status: 'Còn hiệu lực', isElectronic: true },
+  ],
+  insurances: [
+    { id: 1, socialInsuranceNumber: '0123456789', healthInsuranceNumber: 'GD123456789', issueDate: '2023-01-15', issuePlace: 'BHXH TP Hà Nội', note: 'Tham gia đầy đủ các chế độ' },
+  ],
   leaveBalance: getMockLeaveBalance(id),
   assets: getMockAssets(id),
   documents: getMockDocuments(id),
   attendanceSettings: getMockAttendanceSettings(id),
+  timekeepingMachineMappings: getMockTimekeepingMachineMappings(id),
+  mobilePermissions: getMockMobilePermissions(id),
+  webPermissions: getMockWebPermissions(id),
 });
 
 const getEmployeeFullProfile = async (id: number): Promise<EmployeeFullProfile> => {
   try {
     const profile = await fetchEmployeeFullProfileFallback(id);
     
-    // Trộn dữ liệu Mock cho các phần chưa có API
+    // Trộn dữ liệu Mock cho các phần chưa có API hoặc API trả về mảng rỗng
     return {
       ...profile,
       leaveBalance: profile.leaveBalance || getMockLeaveBalance(id),
       assets: profile.assets || getMockAssets(id),
       documents: profile.documents || getMockDocuments(id),
       attendanceSettings: profile.attendanceSettings || getMockAttendanceSettings(id),
+      timekeepingMachineMappings: (profile.timekeepingMachineMappings && profile.timekeepingMachineMappings.length > 0) 
+        ? profile.timekeepingMachineMappings 
+        : getMockTimekeepingMachineMappings(id),
+      mobilePermissions: (profile.mobilePermissions && profile.mobilePermissions.length > 0) 
+        ? profile.mobilePermissions 
+        : getMockMobilePermissions(id),
+      webPermissions: (profile.webPermissions && profile.webPermissions.length > 0) 
+        ? profile.webPermissions 
+        : getMockWebPermissions(id),
     };
   } catch (error) {
     console.warn('Backend chưa sẵn sàng hoặc lỗi kết nối, đang sử dụng Full Mock Data:', error);
@@ -586,6 +808,12 @@ const mapAdditionalInfoForEdit = (
   };
 };
 
+export const searchEmployees = async (term: string, excludeId?: number): Promise<any[]> => {
+  if (!term.trim() || term.length < 2) return [];
+  const endpoint = `${API_URL}/employees/search?term=${encodeURIComponent(term)}${excludeId ? `&excludeId=${excludeId}` : ''}`;
+  return requestJson<any[]>(endpoint, { method: "GET" }, "Error searching employees");
+};
+
 const mapDependentsForEdit = (profile: EmployeeFullProfile): EmployeeEditDependentsPayload =>
   (profile.dependents ?? []).map((dependent) => ({
     id: dependent.id,
@@ -602,6 +830,7 @@ const mapDependentsForEdit = (profile: EmployeeFullProfile): EmployeeEditDepende
 
 const mapJobStatusForEdit = (profile: EmployeeFullProfile): EmployeeEditJobStatusPayload => {
   const basicInfo = profile.basicInfo;
+  const raw = basicInfo as any;
 
   return {
     probationStartDate: toDateInputValue(basicInfo.probationStartDate),
@@ -609,13 +838,21 @@ const mapJobStatusForEdit = (profile: EmployeeFullProfile): EmployeeEditJobStatu
     contractExpiryDate: toDateInputValue(basicInfo.contractExpiryDate),
     workType: toEditableString(basicInfo.workType),
     seniorityMonths: toEditableString(basicInfo.seniorityMonths),
-    lateEarlyAllowed: toEditableString(basicInfo.lateEarlyAllowed),
-    lateAllowedMinutes: toEditableString(basicInfo.lateAllowedMinutes),
-    earlyAllowedMinutes: toEditableString(basicInfo.earlyAllowedMinutes),
-    lateEarlyDetailedRules: basicInfo.lateEarlyDetailedRules ? JSON.parse(basicInfo.lateEarlyDetailedRules) : [],
+    
+    isTotalLateEarlyEnabled: Boolean(raw.is_total_late_early_enabled),
+    lateEarlyAllowed: toEditableString(raw.late_early_allowed),
+    totalLateEarlyRules: raw.total_late_early_rules ? JSON.parse(raw.total_late_early_rules) : [],
+
+    isSeparateLateEarlyEnabled: Boolean(raw.is_separate_late_early_enabled),
+    lateAllowedMinutes: toEditableString(raw.allowed_late_minutes),
+    lateRules: raw.late_rules ? JSON.parse(raw.late_rules) : [],
+    earlyAllowedMinutes: toEditableString(raw.allowed_early_minutes),
+    earlyRules: raw.early_rules ? JSON.parse(raw.early_rules) : [],
+
     lateEarlyNote: toEditableString(basicInfo.lateEarlyNote),
     isResigned: Boolean(basicInfo.isResigned),
     resignationReason: toEditableString(basicInfo.resignationReason),
+    resignationDate: toDateInputValue(raw.resignation_date),
   };
 };
 
@@ -636,6 +873,54 @@ const mapJobInfoForEdit = (profile: EmployeeFullProfile): EmployeeEditJobInfoPay
     isActive: Boolean(basicInfo.isActive),
     isDepartmentHead: Boolean(basicInfo.isDepartmentHead),
   };
+};
+
+const getEmployeeEditJobInfo = async (id: number): Promise<EmployeeEditJobInfoPayload> => {
+  const endpoint = resolveEmployeeEditEndpoint(EMPLOYEE_EDIT_ENDPOINTS.jobInfo.get, id);
+  if (endpoint) {
+    return requestJson<EmployeeEditJobInfoPayload>(
+      endpoint,
+      { method: "GET" },
+      "Error fetching employee job info for edit",
+    );
+  }
+
+  const profile = await fetchEmployeeFullProfileFallback(id);
+  return mapJobInfoForEdit(profile);
+};
+
+const updateEmployeeEditJobInfo = async (
+  id: number,
+  payload: EmployeeEditJobInfoPayload,
+): Promise<unknown> => {
+  const endpoint = resolveEmployeeEditEndpoint(EMPLOYEE_EDIT_ENDPOINTS.jobInfo.put, id);
+  if (!endpoint) {
+    throw createMissingEndpointError("PUT", "Thong tin cong viec");
+  }
+
+  const normalizedPayload: any = {
+    id,
+    regionId: payload.regionId ? Number(payload.regionId) : null,
+    branchId: payload.branchId ? Number(payload.branchId) : null,
+    secondaryBranchId: payload.secondaryBranchId ? Number(payload.secondaryBranchId) : null,
+    departmentId: payload.departmentId ? Number(payload.departmentId) : null,
+    secondaryDepartmentId: payload.secondaryDepartmentId ? Number(payload.secondaryDepartmentId) : null,
+    jobTitleId: payload.jobTitleId ? Number(payload.jobTitleId) : null,
+    secondaryJobTitleId: payload.secondaryJobTitleId ? Number(payload.secondaryJobTitleId) : null,
+    accessGroupId: payload.accessGroupId ? Number(payload.accessGroupId) : null,
+    managerId: payload.managerId ? Number(payload.managerId) : null,
+    isActive: payload.isActive,
+    isDepartmentHead: payload.isDepartmentHead,
+  };
+
+  return requestJson<unknown>(
+    endpoint,
+    {
+      method: "PUT",
+      body: JSON.stringify(normalizedPayload),
+    },
+    "Error updating employee job info",
+  );
 };
 
 const getEmployeeEditBasicInfo = async (id: number): Promise<EmployeeEditBasicInfoPayload> => {
@@ -1188,46 +1473,28 @@ const updateEmployeeEditJobStatus = async (
     throw createMissingEndpointError("PUT", "Tinh trang cong viec");
   }
 
-  const profile = await fetchEmployeeFullProfileFallback(id);
-  const basicInfo = profile.basicInfo;
-
-  const normalizedPayload: EmployeeBasicInfoUpdateRequest = {
-    // Preserve basic info
-    employeeCode: basicInfo.employeeCode || "",
-    fullName: basicInfo.fullName || "",
-    birthDate: toNullableDateInputValue(basicInfo.birthDate),
-    genderCode: basicInfo.genderCode || null,
-    displayOrder: basicInfo.displayOrder ?? null,
-    maritalStatusCode: basicInfo.maritalStatusCode || null,
-    departmentId: basicInfo.departmentId || null,
-    jobTitleId: basicInfo.jobTitleId || null,
-    branchId: basicInfo.branchId || null,
-    managerId: basicInfo.managerId || null,
-    startDate: toNullableDateInputValue(basicInfo.startDate),
-    avatar: basicInfo.avatar || null,
-
-    // Preserve existing Job Info
-    regionId: basicInfo.regionId || null,
-    secondaryBranchId: basicInfo.secondaryBranchId || null,
-    secondaryDepartmentId: basicInfo.secondaryDepartmentId || null,
-    secondaryJobTitleId: basicInfo.secondaryJobTitleId || null,
-    accessGroupId: basicInfo.accessGroupId || null,
-    isActive: basicInfo.isActive,
-    isDepartmentHead: basicInfo.isDepartmentHead,
-
-    // Update Job Status
-    probationStartDate: toNullableDateInputValue(payload.probationStartDate),
+  const normalizedPayload = {
+    employeeId: id,
+    startDate: toNullableDateInputValue(payload.probationStartDate),
     contractSignDate: toNullableDateInputValue(payload.contractSignDate),
     contractExpiryDate: toNullableDateInputValue(payload.contractExpiryDate),
     workType: toNullableEditableString(payload.workType),
-    seniorityMonths: payload.seniorityMonths ? Number(payload.seniorityMonths) : null,
-    lateEarlyAllowed: payload.lateEarlyAllowed ? Number(payload.lateEarlyAllowed) : null,
-    lateAllowedMinutes: payload.lateAllowedMinutes ? Number(payload.lateAllowedMinutes) : null,
-    earlyAllowedMinutes: payload.earlyAllowedMinutes ? Number(payload.earlyAllowedMinutes) : null,
-    lateEarlyDetailedRules: payload.lateEarlyDetailedRules.length > 0 ? JSON.stringify(payload.lateEarlyDetailedRules) : null,
-    lateEarlyNote: toNullableEditableString(payload.lateEarlyNote),
+    seniorityMonths: payload.seniorityMonths.trim() ? Number(payload.seniorityMonths.trim()) : 0,
+    
+    isTotalLateEarlyEnabled: payload.isTotalLateEarlyEnabled,
+    totalLateEarlyMinutes: payload.lateEarlyAllowed.trim() ? Number(payload.lateEarlyAllowed.trim()) : null,
+    totalLateEarlyRules: payload.totalLateEarlyRules,
+
+    isSeparateLateEarlyEnabled: payload.isSeparateLateEarlyEnabled,
+    allowedLateMinutes: payload.lateAllowedMinutes.trim() ? Number(payload.lateAllowedMinutes.trim()) : null,
+    lateRules: payload.lateRules,
+    allowedEarlyMinutes: payload.earlyAllowedMinutes.trim() ? Number(payload.earlyAllowedMinutes.trim()) : null,
+    earlyRules: payload.earlyRules,
+
+    note: toNullableEditableString(payload.lateEarlyNote),
     isResigned: payload.isResigned,
     resignationReason: toNullableEditableString(payload.resignationReason),
+    resignationDate: toNullableDateInputValue(payload.resignationDate),
   };
 
   return requestJson<unknown>(
@@ -1237,78 +1504,6 @@ const updateEmployeeEditJobStatus = async (
       body: JSON.stringify(normalizedPayload),
     },
     "Error updating employee job status",
-  );
-};
-
-const getEmployeeEditJobInfo = async (id: number): Promise<EmployeeEditJobInfoPayload> => {
-  const endpoint = resolveEmployeeEditEndpoint(EMPLOYEE_EDIT_ENDPOINTS.jobInfo.get, id);
-  if (endpoint) {
-    return requestJson<EmployeeEditJobInfoPayload>(
-      endpoint,
-      { method: "GET" },
-      "Error fetching employee job info for edit",
-    );
-  }
-
-  const profile = await fetchEmployeeFullProfileFallback(id);
-  return mapJobInfoForEdit(profile);
-};
-
-const updateEmployeeEditJobInfo = async (
-  id: number,
-  payload: EmployeeEditJobInfoPayload,
-): Promise<unknown> => {
-  const endpoint = resolveEmployeeEditEndpoint(EMPLOYEE_EDIT_ENDPOINTS.jobInfo.put, id);
-  if (!endpoint) {
-    throw createMissingEndpointError("PUT", "Thong tin cong viec");
-  }
-
-  const profile = await fetchEmployeeFullProfileFallback(id);
-  const basicInfo = profile.basicInfo;
-
-  const normalizedPayload: EmployeeBasicInfoUpdateRequest = {
-    // Preserve basic info
-    employeeCode: basicInfo.employeeCode || "",
-    fullName: basicInfo.fullName || "",
-    birthDate: toNullableDateInputValue(basicInfo.birthDate),
-    genderCode: basicInfo.genderCode || null,
-    displayOrder: basicInfo.displayOrder ?? null,
-    maritalStatusCode: basicInfo.maritalStatusCode || null,
-    startDate: toNullableDateInputValue(basicInfo.startDate),
-    avatar: basicInfo.avatar || null,
-
-    // Preserve existing Job Status
-    probationStartDate: toNullableDateInputValue(basicInfo.probationStartDate),
-    contractSignDate: toNullableDateInputValue(basicInfo.contractSignDate),
-    contractExpiryDate: toNullableDateInputValue(basicInfo.contractExpiryDate),
-    workType: basicInfo.workType || null,
-    seniorityMonths: basicInfo.seniorityMonths || null,
-    lateEarlyAllowed: basicInfo.lateEarlyAllowed || null,
-    lateEarlyNote: basicInfo.lateEarlyNote || null,
-    isResigned: basicInfo.isResigned,
-    resignationReason: basicInfo.resignationReason || null,
-
-    // Update Job Info
-    regionId: payload.regionId ? Number(payload.regionId) : (basicInfo.regionId || null),
-    branchId: payload.branchId ? Number(payload.branchId) : (basicInfo.branchId || null),
-    secondaryBranchId: payload.secondaryBranchId ? Number(payload.secondaryBranchId) : (basicInfo.secondaryBranchId || null),
-    departmentId: payload.departmentId ? Number(payload.departmentId) : (basicInfo.departmentId || null),
-    secondaryDepartmentId: payload.secondaryDepartmentId ? Number(payload.secondaryDepartmentId) : (basicInfo.secondaryDepartmentId || null),
-    jobTitleId: payload.jobTitleId ? Number(payload.jobTitleId) : (basicInfo.jobTitleId || null),
-    secondaryJobTitleId: payload.secondaryJobTitleId ? Number(payload.secondaryJobTitleId) : (basicInfo.secondaryJobTitleId || null),
-    accessGroupId: payload.accessGroupId ? Number(payload.accessGroupId) : (basicInfo.accessGroupId || null),
-    managerId: payload.managerId ? Number(payload.managerId) : (basicInfo.managerId || null),
-    isActive: payload.isActive,
-    isDepartmentHead: payload.isDepartmentHead,
-  };
-
-  return requestJson<unknown>(
-    endpoint,
-    {
-      method: "PUT",
-      body: JSON.stringify(normalizedPayload),
-    },
-    "Error updating employee job info",
   );
 };
 
@@ -1452,6 +1647,9 @@ export {
   updateEmployeeEditAsset,
   getAssetsMetadata,
   getAssetLocationsMetadata,
+  getPromotionHistoryList,
+  deletePromotionHistory,
+  bulkDeletePromotionHistory,
 };
 
 export const employeeProfileService = {
@@ -1498,4 +1696,7 @@ export const employeeProfileService = {
   renameDocumentFileMock,
   renameDocumentFolderMock,
   updateAttendanceSettingsMock,
+  getPromotionHistoryList,
+  deletePromotionHistory,
+  bulkDeletePromotionHistory,
 };

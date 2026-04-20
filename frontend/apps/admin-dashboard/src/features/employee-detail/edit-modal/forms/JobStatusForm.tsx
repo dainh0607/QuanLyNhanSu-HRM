@@ -3,6 +3,7 @@ import type { EmployeeEditJobStatusPayload, LateEarlyRule } from '../../../../se
 import { DatePickerInput, FormHeading, FormRow } from '../components/FormPrimitives';
 import { getFieldClassName } from '../formStyles';
 import { WORK_TYPE_OPTIONS } from '../constants';
+import { employeeMetadataService } from '../../../../services/employeeService';
 
 interface JobStatusFormProps {
   data: EmployeeEditJobStatusPayload;
@@ -14,51 +15,74 @@ interface JobStatusFormProps {
 }
 
 const JobStatusForm: React.FC<JobStatusFormProps> = ({ data, errors, onFieldChange }) => {
-  // Mode selection: true = Total time, false = Detailed late/early
-  const [isTotalMode, setIsTotalMode] = useState(!data.lateAllowedMinutes && !data.earlyAllowedMinutes);
+  const [resignationReasons, setResignationReasons] = useState<any[]>([]);
+  const [isCreatingReason, setIsCreatingReason] = useState(false);
+  const [newReasonName, setNewReasonName] = useState('');
 
   useEffect(() => {
-    // If we have detailed values, we should be in detailed mode
-    if (data.lateAllowedMinutes || data.earlyAllowedMinutes) {
-      setIsTotalMode(false);
-    }
+    fetchResignationReasons();
   }, []);
 
-  const handleModeChange = (total: boolean) => {
-    setIsTotalMode(total);
-    if (total) {
-      onFieldChange('lateAllowedMinutes', '');
-      onFieldChange('earlyAllowedMinutes', '');
-    } else {
-      onFieldChange('lateEarlyAllowed', '');
+  const fetchResignationReasons = async () => {
+    const reasons = await employeeMetadataService.getResignationReasonsMetadata();
+    setResignationReasons(reasons);
+  };
+
+  const handleCreateReason = async () => {
+    if (!newReasonName.trim()) return;
+    const result = await employeeMetadataService.createResignationReason(newReasonName.trim());
+    if (result) {
+      setNewReasonName('');
+      setIsCreatingReason(false);
+      await fetchResignationReasons();
+      onFieldChange('resignationReason', result.reason_name);
     }
   };
 
-  const handleAddRule = (type: 'LATE' | 'EARLY' | 'TOTAL' = 'TOTAL') => {
-    const newRule: LateEarlyRule & { type?: string } = {
+  const handleAddRule = (type: 'TOTAL' | 'LATE' | 'EARLY') => {
+    const newRule: LateEarlyRule = {
       id: Math.random().toString(36).substr(2, 9),
-      type: type,
       startDate: '',
       endDate: '',
       minutes: '0'
     };
-    onFieldChange('lateEarlyDetailedRules', [...data.lateEarlyDetailedRules, newRule as any]);
+    
+    if (type === 'TOTAL') {
+      onFieldChange('totalLateEarlyRules', [...data.totalLateEarlyRules, newRule]);
+    } else if (type === 'LATE') {
+      onFieldChange('lateRules', [...data.lateRules, newRule]);
+    } else {
+      onFieldChange('earlyRules', [...data.earlyRules, newRule]);
+    }
   };
 
-  const handleRemoveRule = (id: string) => {
-    onFieldChange('lateEarlyDetailedRules', data.lateEarlyDetailedRules.filter(r => r.id !== id));
+  const handleRemoveRule = (id: string, type: 'TOTAL' | 'LATE' | 'EARLY') => {
+    if (type === 'TOTAL') {
+      onFieldChange('totalLateEarlyRules', data.totalLateEarlyRules.filter(r => r.id !== id));
+    } else if (type === 'LATE') {
+      onFieldChange('lateRules', data.lateRules.filter(r => r.id !== id));
+    } else {
+      onFieldChange('earlyRules', data.earlyRules.filter(r => r.id !== id));
+    }
   };
 
-  const handleRuleChange = (id: string, field: keyof Omit<LateEarlyRule, 'id'>, value: string) => {
-    onFieldChange('lateEarlyDetailedRules', data.lateEarlyDetailedRules.map(r => 
-      r.id === id ? { ...r, [field]: value } : r
-    ));
+  const handleRuleChange = (id: string, type: 'TOTAL' | 'LATE' | 'EARLY', field: keyof Omit<LateEarlyRule, 'id'>, value: string) => {
+    const rules = type === 'TOTAL' ? data.totalLateEarlyRules : type === 'LATE' ? data.lateRules : data.earlyRules;
+    const updatedRules = rules.map(r => r.id === id ? { ...r, [field]: value } : r);
+    
+    if (type === 'TOTAL') {
+      onFieldChange('totalLateEarlyRules', updatedRules);
+    } else if (type === 'LATE') {
+      onFieldChange('lateRules', updatedRules);
+    } else {
+      onFieldChange('earlyRules', updatedRules);
+    }
   };
 
-  const renderRuleBox = (rule: LateEarlyRule & { type?: string }) => (
+  const renderRuleBox = (rule: LateEarlyRule, type: 'TOTAL' | 'LATE' | 'EARLY') => (
     <div key={rule.id} className="relative mt-4 rounded-[24px] border border-slate-100 bg-white p-6 pt-10 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
       <button 
-        onClick={() => handleRemoveRule(rule.id)}
+        onClick={() => handleRemoveRule(rule.id, type)}
         className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-300 shadow-sm transition-all hover:bg-rose-50 hover:text-rose-500"
       >
         <span className="material-symbols-outlined text-[18px]">close</span>
@@ -72,14 +96,14 @@ const JobStatusForm: React.FC<JobStatusFormProps> = ({ data, errors, onFieldChan
           <div className="flex items-center gap-3">
             <DatePickerInput
               value={rule.startDate}
-              onChange={(v) => handleRuleChange(rule.id, 'startDate', v)}
+              onChange={(v) => handleRuleChange(rule.id, type, 'startDate', v)}
               className="h-11 flex-1 !rounded-xl !border-none !bg-[#F8FAFC] !px-4 !text-sm !outline-none"
               placeholder="Ngày bắt đầu"
             />
             <span className="text-slate-400">~</span>
             <DatePickerInput
               value={rule.endDate}
-              onChange={(v) => handleRuleChange(rule.id, 'endDate', v)}
+              onChange={(v) => handleRuleChange(rule.id, type, 'endDate', v)}
               className="h-11 flex-1 !rounded-xl !border-none !bg-[#F8FAFC] !px-4 !text-sm !outline-none"
               placeholder="Ngày kết thúc"
             />
@@ -91,7 +115,7 @@ const JobStatusForm: React.FC<JobStatusFormProps> = ({ data, errors, onFieldChan
           <input
             type="text"
             value={rule.minutes}
-            onChange={(e) => handleRuleChange(rule.id, 'minutes', e.target.value.replace(/\D/g, ''))}
+            onChange={(e) => handleRuleChange(rule.id, type, 'minutes', e.target.value.replace(/\D/g, ''))}
             className="h-11 w-full rounded-xl border-none bg-[#F8FAFC] px-4 text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500/10"
             placeholder="1"
           />
@@ -197,16 +221,19 @@ const JobStatusForm: React.FC<JobStatusFormProps> = ({ data, errors, onFieldChan
               {/* Chế độ 1: Tổng thời gian */}
               <div className="flex items-start gap-5">
                 <div 
-                  onClick={() => handleModeChange(true)}
+                  onClick={() => {
+                    onFieldChange('isTotalLateEarlyEnabled', !data.isTotalLateEarlyEnabled);
+                    if (!data.isTotalLateEarlyEnabled) onFieldChange('isSeparateLateEarlyEnabled', false);
+                  }}
                   className={`mt-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg transition-all ${
-                    isTotalMode ? 'bg-emerald-500 shadow-lg shadow-emerald-500/20' : 'bg-white ring-1 ring-slate-200 hover:ring-emerald-300'
+                    data.isTotalLateEarlyEnabled ? 'bg-emerald-500 shadow-lg shadow-emerald-500/20' : 'bg-white ring-1 ring-slate-200 hover:ring-emerald-300'
                   }`}
                 >
-                  {isTotalMode && <span className="material-symbols-outlined text-[16px] text-white font-bold">check</span>}
+                  {data.isTotalLateEarlyEnabled && <span className="material-symbols-outlined text-[16px] text-white font-bold">check</span>}
                 </div>
                 <div className="flex-1">
                   <span className="text-[15px] font-bold text-slate-800">Tổng thời gian đi muộn và về sớm</span>
-                  {isTotalMode && (
+                  {data.isTotalLateEarlyEnabled && (
                     <div className="mt-6 space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
                       <div className="space-y-4">
                         <div className="space-y-1">
@@ -233,11 +260,8 @@ const JobStatusForm: React.FC<JobStatusFormProps> = ({ data, errors, onFieldChan
                         </div>
                       </div>
                       
-                      {/* Rules under total mode */}
                       <div className="space-y-4">
-                        {data.lateEarlyDetailedRules
-                          .filter(r => (r as any).type === 'TOTAL' || !(r as any).type)
-                          .map(renderRuleBox)}
+                        {data.totalLateEarlyRules.map(r => renderRuleBox(r, 'TOTAL'))}
                       </div>
                     </div>
                   )}
@@ -247,23 +271,26 @@ const JobStatusForm: React.FC<JobStatusFormProps> = ({ data, errors, onFieldChan
               {/* Chế độ 2: Chi tiết từng loại */}
               <div className="flex items-start gap-5">
                 <div 
-                  onClick={() => handleModeChange(false)}
+                  onClick={() => {
+                    onFieldChange('isSeparateLateEarlyEnabled', !data.isSeparateLateEarlyEnabled);
+                    if (!data.isSeparateLateEarlyEnabled) onFieldChange('isTotalLateEarlyEnabled', false);
+                  }}
                   className={`mt-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg transition-all ${
-                    !isTotalMode ? 'bg-emerald-500 shadow-lg shadow-emerald-500/20' : 'bg-white ring-1 ring-slate-200 hover:ring-emerald-300'
+                    data.isSeparateLateEarlyEnabled ? 'bg-emerald-500 shadow-lg shadow-emerald-500/20' : 'bg-white ring-1 ring-slate-200 hover:ring-emerald-300'
                   }`}
                 >
-                  {!isTotalMode && <span className="material-symbols-outlined text-[16px] text-white font-bold">check</span>}
+                  {data.isSeparateLateEarlyEnabled && <span className="material-symbols-outlined text-[16px] text-white font-bold">check</span>}
                 </div>
                 <div className="flex-1">
                   <span className="text-[15px] font-bold text-slate-800">Thời gian đi muộn, về sớm</span>
-                  {!isTotalMode && (
+                  {data.isSeparateLateEarlyEnabled && (
                     <div className="mt-8 space-y-10 animate-in fade-in slide-in-from-top-2 duration-300">
                       {/* Đi trễ */}
                       <div className="space-y-4">
                         <div className="space-y-1">
                           <label className="text-[14px] font-bold text-slate-900">Cho phép đi trễ sau (phút)</label>
                           <p className="text-[12px] leading-relaxed text-slate-400">
-                            Thời gian cho phép nhân viên đi muộn và về sớm.
+                            Thời gian cho phép nhân viên đi muộn.
                           </p>
                         </div>
                         <div className="relative group max-w-[500px]">
@@ -283,11 +310,8 @@ const JobStatusForm: React.FC<JobStatusFormProps> = ({ data, errors, onFieldChan
                           </button>
                         </div>
                         
-                        {/* Rules for Late */}
                         <div className="space-y-4">
-                          {data.lateEarlyDetailedRules
-                            .filter(r => (r as any).type === 'LATE')
-                            .map(renderRuleBox)}
+                          {data.lateRules.map(r => renderRuleBox(r, 'LATE'))}
                         </div>
                       </div>
 
@@ -296,7 +320,7 @@ const JobStatusForm: React.FC<JobStatusFormProps> = ({ data, errors, onFieldChan
                         <div className="space-y-1">
                           <label className="text-[14px] font-bold text-slate-900">Cho phép về sớm trước (phút)</label>
                           <p className="text-[12px] leading-relaxed text-slate-400">
-                            Thời gian cho phép nhân viên đi muộn và về sớm.
+                            Thời gian cho phép nhân viên về sớm.
                           </p>
                         </div>
                         <div className="relative group max-w-[500px]">
@@ -316,11 +340,8 @@ const JobStatusForm: React.FC<JobStatusFormProps> = ({ data, errors, onFieldChan
                           </button>
                         </div>
 
-                        {/* Rules for Early */}
                         <div className="space-y-4">
-                          {data.lateEarlyDetailedRules
-                            .filter(r => (r as any).type === 'EARLY')
-                            .map(renderRuleBox)}
+                          {data.earlyRules.map(r => renderRuleBox(r, 'EARLY'))}
                         </div>
                       </div>
                     </div>
@@ -346,29 +367,82 @@ const JobStatusForm: React.FC<JobStatusFormProps> = ({ data, errors, onFieldChan
           label="Nghỉ việc"
           description="Chọn nút này để check nhân viên nghỉ việc, nhân viên sẽ không bị xóa khỏi hệ thống mà vẫn có thể lưu trữ hồ sơ. Bạn cần điền thêm lý do nghỉ việc."
         >
-          <div className="flex items-start justify-between max-w-[500px]">
+          <div className="flex items-start gap-10 max-w-[800px]">
             <div 
               onClick={() => onFieldChange('isResigned', !data.isResigned)}
-              className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-[10px] transition-all ${
+              className={`flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-[10px] transition-all ${
                 data.isResigned ? 'bg-emerald-500 shadow-lg shadow-emerald-500/20' : 'bg-[#f1f5f9] ring-1 ring-slate-200 hover:ring-emerald-300'
               }`}
             >
               {data.isResigned && <span className="material-symbols-outlined text-[20px] text-white">check</span>}
             </div>
+
+            {data.isResigned && (
+              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="space-y-2">
+                  <label className="text-[13px] font-bold text-slate-700">Lý do nghỉ việc</label>
+                  <div className="relative group">
+                    {isCreatingReason ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={newReasonName}
+                          onChange={(e) => setNewReasonName(e.target.value)}
+                          className="h-11 flex-1 rounded-xl border border-emerald-200 bg-white px-4 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20"
+                          placeholder="Tên lý do mới..."
+                          autoFocus
+                        />
+                        <button 
+                          onClick={handleCreateReason}
+                          className="h-11 px-4 rounded-xl bg-emerald-500 text-white text-sm font-bold shadow-sm hover:bg-emerald-600 transition-all"
+                        >
+                          Lưu
+                        </button>
+                        <button 
+                          onClick={() => setIsCreatingReason(false)}
+                          className="h-11 px-3 rounded-xl bg-slate-100 text-slate-500 text-sm font-bold hover:bg-slate-200 transition-all"
+                        >
+                          Hủy
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <select
+                          value={data.resignationReason}
+                          onChange={(e) => {
+                            if (e.target.value === 'CREATE_NEW') {
+                              setIsCreatingReason(true);
+                            } else {
+                              onFieldChange('resignationReason', e.target.value);
+                            }
+                          }}
+                          className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition-all hover:border-emerald-300 focus:ring-2 focus:ring-emerald-500/10 cursor-pointer"
+                        >
+                          <option value="">Chọn lý do</option>
+                          {resignationReasons.map((r) => (
+                            <option key={r.id} value={r.reason_name}>{r.reason_name}</option>
+                          ))}
+                          <option value="CREATE_NEW" className="text-emerald-500 font-bold">+ Tạo mới lý do</option>
+                        </select>
+                        <span className="material-symbols-outlined pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-hover:text-slate-500">
+                          expand_more
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[13px] font-bold text-slate-700">Ngày làm việc cuối cùng</label>
+                  <DatePickerInput
+                    value={data.resignationDate}
+                    onChange={(v) => onFieldChange('resignationDate', v)}
+                    className="h-11"
+                  />
+                </div>
+              </div>
+            )}
           </div>
-          
-          {data.isResigned && (
-            <div className="mt-6 animate-in fade-in slide-in-from-top-2 duration-300">
-              <label className="text-[13px] font-bold text-slate-900 block mb-2">Lý do nghỉ việc</label>
-              <textarea
-                value={data.resignationReason}
-                onChange={(e) => onFieldChange('resignationReason', e.target.value)}
-                className={`${getFieldClassName(Boolean(errors.resignationReason))} min-h-[100px] resize-none py-3 border-emerald-200 bg-emerald-50/10`}
-                placeholder="Nhập lý do nghỉ việc..."
-                autoFocus
-              />
-            </div>
-          )}
         </FormRow>
       </div>
     </div>

@@ -68,7 +68,7 @@ namespace ERP.Entities.Seeding
 
             // 8. Branches (Chi nhánh)
             modelBuilder.Entity<Branches>().HasData(
-                new Branches { Id = 1, name = "Trụ sở chính", code = "HO", address = "Hà Nội" }
+                new Branches { Id = 1, name = "Trụ sở chính", code = "HO", address = "Hà Nội", region_id = 1 }
             );
 
             // 9. Departments (Phòng ban)
