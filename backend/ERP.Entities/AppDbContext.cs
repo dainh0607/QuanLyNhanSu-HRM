@@ -107,6 +107,10 @@ namespace ERP.Entities
         public DbSet<RolePermissions> RolePermissions { get; set; }
         public DbSet<Roles> Roles { get; set; }
         public DbSet<Salaries> Salaries { get; set; }
+        public DbSet<SalaryGrade> SalaryGrades { get; set; }
+        public DbSet<AllowanceType> AllowanceTypes { get; set; }
+        public DbSet<IncomeType> IncomeTypes { get; set; }
+        public DbSet<VariableSalary> VariableSalaries { get; set; }
         public DbSet<SalaryGradeConfig> SalaryGradeConfig { get; set; }
         public DbSet<ShiftAssignments> ShiftAssignments { get; set; }
         public DbSet<ShiftTypes> ShiftTypes { get; set; }
@@ -133,6 +137,9 @@ namespace ERP.Entities
         public DbSet<Provinces> Provinces { get; set; }
         public DbSet<Districts> Districts { get; set; }
         public DbSet<ResignationReasons> ResignationReasons { get; set; }
+        public DbSet<EmploymentHistoryLog> EmploymentHistoryLogs { get; set; }
+        public DbSet<MobilePermissionManifest> MobilePermissionManifest { get; set; }
+        public DbSet<EmployeeMobilePermissions> EmployeeMobilePermissions { get; set; }
 
         // NEW: RBAC Authorization Tables (FIX)
         public DbSet<RoleScopes> RoleScopes { get; set; }

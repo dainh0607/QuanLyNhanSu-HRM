@@ -89,7 +89,7 @@ namespace ERP.Tests.Services.Auth
             try
             {
                 // Setup local user and employee
-                var employee = new Employees 
+                var employee = new ERP.Entities.Models.Employees 
                 { 
                     Id = roleId, 
                     email = email, 

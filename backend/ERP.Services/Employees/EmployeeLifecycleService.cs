@@ -13,11 +13,13 @@ namespace ERP.Services.Employees
     {
         private readonly AppDbContext _context;
         private readonly ILogger<EmployeeLifecycleService> _logger;
+        private readonly IEmploymentHistoryService _historyService;
 
-        public EmployeeLifecycleService(AppDbContext context, ILogger<EmployeeLifecycleService> logger)
+        public EmployeeLifecycleService(AppDbContext context, ILogger<EmployeeLifecycleService> logger, IEmploymentHistoryService historyService)
         {
             _context = context;
             _logger = logger;
+            _historyService = historyService;
         }
 
         public async Task<bool> ProcessResignationAsync(int employeeId, ResignationRequestDto dto)
@@ -79,6 +81,17 @@ namespace ERP.Services.Employees
                 }
 
                 await _context.SaveChangesAsync();
+
+                // 6. Log Employment History
+                await _historyService.CreateLogAsync(new EmploymentHistoryLogDto
+                {
+                    EmployeeId = employeeId,
+                    EffectiveDate = dto.ResignationDate,
+                    WorkStatus = "Resigned",
+                    ChangeType = "Trạng thái",
+                    Note = $"Nghỉ việc: {dto.Reason}. {dto.Note}"
+                });
+
                 await transaction.CommitAsync();
                 return true;
             }
@@ -131,6 +144,18 @@ namespace ERP.Services.Employees
                 employee.UpdatedAt = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync();
+
+                // 3. Log Employment History
+                await _historyService.CreateLogAsync(new EmploymentHistoryLogDto
+                {
+                    EmployeeId = employeeId,
+                    EffectiveDate = dto.EffectiveDate,
+                    DecisionNumber = dto.DecisionNumber,
+                    WorkStatus = "Active",
+                    ChangeType = "Thăng chức",
+                    Note = dto.Note
+                });
+
                 await transaction.CommitAsync();
                 return true;
             }

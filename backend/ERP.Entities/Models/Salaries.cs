@@ -21,14 +21,17 @@ namespace ERP.Entities.Models
         [StringLength(50)]
         public string payment_method { get; set; }
 
-        [Column("salary_grade")]
-        [StringLength(50)]
-        public string salary_grade { get; set; }
+        [Column("salary_grade_id")]
+        public int? salary_grade_id { get; set; }
+
+        [ForeignKey("salary_grade_id")]
+        public virtual SalaryGrade SalaryGrade { get; set; }
 
         [Column("base_salary")]
         public decimal? base_salary { get; set; }
 
         public virtual ICollection<Allowances> Allowances { get; set; } = new HashSet<Allowances>();
         public virtual ICollection<OtherIncomes> OtherIncomes { get; set; } = new HashSet<OtherIncomes>();
+        public virtual ICollection<VariableSalary> VariableSalaries { get; set; } = new HashSet<VariableSalary>();
     }
 }

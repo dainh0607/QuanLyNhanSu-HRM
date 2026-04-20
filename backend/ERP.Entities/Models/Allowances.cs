@@ -16,9 +16,11 @@ namespace ERP.Entities.Models
         [ForeignKey("salary_id")]
         public virtual Salaries Salary { get; set; }
 
-        [Column("allowance_name")]
-        [StringLength(100)]
-        public string allowance_name { get; set; }
+        [Column("allowance_type_id")]
+        public int allowance_type_id { get; set; }
+
+        [ForeignKey("allowance_type_id")]
+        public virtual AllowanceType AllowanceType { get; set; }
 
         [Column("amount")]
         public decimal amount { get; set; }

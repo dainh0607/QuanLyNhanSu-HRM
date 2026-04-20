@@ -14,5 +14,9 @@ namespace ERP.Services.Attendance
         Task<AttendanceSummaryDto> GetAttendanceSummaryAsync(int employeeId, int month, int year);
         Task<IEnumerable<AttendanceRecordDto>> GetMonthlyAttendanceAsync(int employeeId, int month, int year);
         Task<bool> ManualAdjustmentAsync(int modifierId, AttendanceAdjustmentDto dto);
+        
+        // Machine Mappings
+        Task<IEnumerable<EmployeeMachineMappingDto>> GetEmployeeMachineMappingsAsync(int employeeId);
+        Task<bool> UpdateEmployeeMachineMappingsAsync(int employeeId, List<EmployeeMachineMappingDto> mappings);
     }
 }

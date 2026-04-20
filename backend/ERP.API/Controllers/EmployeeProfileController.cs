@@ -117,5 +117,28 @@ namespace ERP.API.Controllers
 
             return Ok(new { Message = "Cập nhật thông tin khác thành công." });
         }
+
+        [HttpGet("work-history")]
+        public async Task<IActionResult> GetWorkHistory(int id)
+        {
+            var result = await _profileService.GetWorkHistoryAsync(id);
+            return Ok(result);
+        }
+
+        [HttpPut("work-history")]
+        [HasPermission("employee", "update")]
+        public async Task<IActionResult> UpdateWorkHistory(int id, [FromBody] List<WorkHistoryDto> dtos)
+        {
+            try
+            {
+                var success = await _profileService.UpdateWorkHistoryAsync(id, dtos);
+                if (!success && (dtos != null && dtos.Count > 0)) return BadRequest();
+                return Ok(new { Message = "Work history updated" });
+            }
+            catch (System.ArgumentException ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
     }
 }

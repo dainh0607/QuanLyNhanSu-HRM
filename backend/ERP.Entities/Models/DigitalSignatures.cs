@@ -27,6 +27,10 @@ namespace ERP.Entities.Models
         public bool is_default { get; set; }
 
         [Column("certification_info")]
-        public string certification_info { get; set; }
+        public string? certification_info { get; set; }
+
+        [Column("display_type")]
+        [StringLength(20)]
+        public string? display_type { get; set; }
     }
 }

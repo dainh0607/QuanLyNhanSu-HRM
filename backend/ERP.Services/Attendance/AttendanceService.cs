@@ -244,5 +244,68 @@ namespace ERP.Services.Attendance
 
             return await _unitOfWork.SaveChangesAsync() > 0;
         }
+
+        public async Task<IEnumerable<EmployeeMachineMappingDto>> GetEmployeeMachineMappingsAsync(int employeeId)
+        {
+            var allMachines = await _unitOfWork.Repository<TimeMachines>().AsQueryable().ToListAsync();
+            var existingMappings = await _unitOfWork.Repository<EmployeeTimekeepingMachines>()
+                .AsQueryable()
+                .Where(m => m.employee_id == employeeId)
+                .ToListAsync();
+
+            return allMachines.Select(m => new EmployeeMachineMappingDto
+            {
+                MachineId = m.Id,
+                MachineName = m.machine_name,
+                TimekeepingCode = existingMappings.FirstOrDefault(em => em.machine_id == m.Id)?.timekeeping_code
+            });
+        }
+
+        public async Task<bool> UpdateEmployeeMachineMappingsAsync(int employeeId, List<EmployeeMachineMappingDto> mappings)
+        {
+            var existingMappings = await _unitOfWork.Repository<EmployeeTimekeepingMachines>()
+                .AsQueryable()
+                .Where(m => m.employee_id == employeeId)
+                .ToListAsync();
+
+            foreach (var mapping in mappings)
+            {
+                var existing = existingMappings.FirstOrDefault(m => m.machine_id == mapping.MachineId);
+                
+                if (string.IsNullOrWhiteSpace(mapping.TimekeepingCode))
+                {
+                    // If code is empty, delete existing mapping
+                    if (existing != null)
+                    {
+                        _unitOfWork.Repository<EmployeeTimekeepingMachines>().Remove(existing);
+                    }
+                }
+                else
+                {
+                    // If code exists, Upsert
+                    if (existing != null)
+                    {
+                        existing.timekeeping_code = mapping.TimekeepingCode;
+                        existing.UpdatedAt = DateTime.UtcNow;
+                        _unitOfWork.Repository<EmployeeTimekeepingMachines>().Update(existing);
+                    }
+                    else
+                    {
+                        var newMapping = new EmployeeTimekeepingMachines
+                        {
+                            employee_id = employeeId,
+                            machine_id = mapping.MachineId,
+                            timekeeping_code = mapping.TimekeepingCode,
+                            tenant_id = _userContext.TenantId,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        };
+                        await _unitOfWork.Repository<EmployeeTimekeepingMachines>().AddAsync(newMapping);
+                    }
+                }
+            }
+
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
     }
 }

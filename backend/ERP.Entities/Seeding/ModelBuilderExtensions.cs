@@ -352,6 +352,20 @@ namespace ERP.Entities.Seeding
                 new Districts { Id = 3, code = "HCM_Q1", name = "Quận 1", province_code = "HCM", CreatedAt = seedDate, UpdatedAt = seedDate },
                 new Districts { Id = 4, code = "HCM_Q3", name = "Quận 3", province_code = "HCM", CreatedAt = seedDate, UpdatedAt = seedDate }
             );
+
+            // 26. Allowance Types
+            modelBuilder.Entity<AllowanceType>().HasData(
+                new AllowanceType { Id = 1, name = "Phụ cấp ăn trưa", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new AllowanceType { Id = 2, name = "Phụ cấp xăng xe", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new AllowanceType { Id = 3, name = "Phụ cấp điện thoại", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate }
+            );
+
+            // 27. Income Types
+            modelBuilder.Entity<IncomeType>().HasData(
+                new IncomeType { Id = 1, name = "Thưởng KPI", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new IncomeType { Id = 2, name = "Thưởng lễ tết", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new IncomeType { Id = 3, name = "Thu nhập khác", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate }
+            );
         }
     }
 }

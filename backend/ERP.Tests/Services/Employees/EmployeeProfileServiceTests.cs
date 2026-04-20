@@ -22,6 +22,7 @@ namespace ERP.Tests.Services.EmployeeProfiles
         private readonly Mock<IGenericRepository<ERP.Entities.Models.Employees>> _mockEmpRepo;
         private readonly Mock<IGenericRepository<BankAccounts>> _mockBankRepo;
         private readonly Mock<IGenericRepository<EmergencyContacts>> _mockEmergencyRepo;
+        private readonly Mock<IGenericRepository<WorkHistory>> _mockWorkHistoryRepo;
         private readonly Mock<IAuthorizationService> _mockAuthService;
         private readonly Mock<ICurrentUserContext> _mockUserContext;
         private readonly Mock<IStorageService> _mockStorageService;
@@ -38,6 +39,9 @@ namespace ERP.Tests.Services.EmployeeProfiles
             _mockUow.Setup(u => u.Repository<ERP.Entities.Models.Employees>()).Returns(_mockEmpRepo.Object);
             _mockUow.Setup(u => u.Repository<BankAccounts>()).Returns(_mockBankRepo.Object);
             _mockUow.Setup(u => u.Repository<EmergencyContacts>()).Returns(_mockEmergencyRepo.Object);
+            
+            _mockWorkHistoryRepo = new Mock<IGenericRepository<WorkHistory>>();
+            _mockUow.Setup(u => u.Repository<WorkHistory>()).Returns(_mockWorkHistoryRepo.Object);
 
             _mockAuthService = new Mock<IAuthorizationService>();
             _mockUserContext = new Mock<ICurrentUserContext>();
@@ -159,6 +163,62 @@ namespace ERP.Tests.Services.EmployeeProfiles
             // Assert
             Assert.True(result);
             _mockEmpRepo.Verify(r => r.Update(It.Is<ERP.Entities.Models.Employees>(e => e.union_group == "IT Union" && e.union_member == true && e.tax_code == "12345" && e.marital_status_code == "MARRIED")), Times.Once);
+        }
+
+        [Fact]
+        public async Task UpdateWorkHistoryAsync_Fail_EndDateBeforeStartDate()
+        {
+            // Arrange
+            var dtos = new List<WorkHistoryDto>
+            {
+                new WorkHistoryDto 
+                { 
+                    CompanyName = "Test Co", 
+                    StartDate = new DateTime(2023, 1, 1), 
+                    EndDate = new DateTime(2022, 1, 1), 
+                    IsCurrent = false 
+                }
+            };
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<ArgumentException>(() => _service.UpdateWorkHistoryAsync(1, dtos));
+            Assert.Contains("Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu", ex.Message);
+        }
+
+        [Fact]
+        public async Task UpdateWorkHistoryAsync_Success_IsCurrentLogic()
+        {
+            // Arrange
+            var existingWork = new List<WorkHistory>
+            {
+                new WorkHistory { Id = 1, employee_id = 1 }
+            };
+            _mockWorkHistoryRepo.Setup(r => r.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<WorkHistory, bool>>>()))
+                .ReturnsAsync(existingWork);
+
+            _mockUow.Setup(u => u.SaveChangesAsync()).ReturnsAsync(1);
+
+            var dtos = new List<WorkHistoryDto>
+            {
+                new WorkHistoryDto 
+                { 
+                    CompanyName = "Current Co", 
+                    StartDate = new DateTime(2023, 1, 1), 
+                    EndDate = new DateTime(2024, 1, 1), // This should be nullified
+                    IsCurrent = true 
+                }
+            };
+
+            // Act
+            var result = await _service.UpdateWorkHistoryAsync(1, dtos);
+
+            // Assert
+            Assert.True(result);
+            _mockWorkHistoryRepo.Verify(r => r.RemoveRange(existingWork), Times.Once);
+            _mockWorkHistoryRepo.Verify(r => r.AddRangeAsync(It.Is<IEnumerable<WorkHistory>>(l => 
+                l.First().company_name == "Current Co" && 
+                l.First().end_date == null && 
+                l.First().is_current == true)), Times.Once);
         }
     }
 }

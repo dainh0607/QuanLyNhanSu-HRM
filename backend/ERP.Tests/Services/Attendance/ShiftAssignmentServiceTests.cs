@@ -17,16 +17,19 @@ namespace ERP.Tests.Services.Attendance
     {
         private readonly Mock<IUnitOfWork> _mockUow;
         private readonly Mock<IGenericRepository<ShiftAssignments>> _mockAssignRepo;
+        private readonly Mock<IGenericRepository<LeaveRequests>> _mockLeaveRepo;
         private readonly ShiftAssignmentService _service;
 
         public ShiftAssignmentServiceTests()
         {
             _mockUow = new Mock<IUnitOfWork>();
             _mockAssignRepo = new Mock<IGenericRepository<ShiftAssignments>>();
+            _mockLeaveRepo = new Mock<IGenericRepository<LeaveRequests>>();
 
             var mockNotifService = new Mock<IShiftNotificationService>();
 
             _mockUow.Setup(u => u.Repository<ShiftAssignments>()).Returns(_mockAssignRepo.Object);
+            _mockUow.Setup(u => u.Repository<LeaveRequests>()).Returns(_mockLeaveRepo.Object);
 
             _service = new ShiftAssignmentService(_mockUow.Object, mockNotifService.Object);
         }
@@ -42,6 +45,7 @@ namespace ERP.Tests.Services.Attendance
 
             var mockQueryable = existingAssignments.BuildMock();
             _mockAssignRepo.Setup(r => r.AsQueryable()).Returns(mockQueryable);
+            _mockLeaveRepo.Setup(r => r.AsQueryable()).Returns(new List<LeaveRequests>().BuildMock());
 
             _mockUow.Setup(u => u.BeginTransactionAsync()).Returns(Task.CompletedTask);
             _mockUow.Setup(u => u.CommitTransactionAsync()).Returns(Task.CompletedTask);
@@ -62,19 +66,43 @@ namespace ERP.Tests.Services.Attendance
         }
 
         [Fact]
+        public async Task BulkCreateAssignmentsAsync_Fail_EmployeeOnLeave()
+        {
+            // Arrange
+            _mockAssignRepo.Setup(r => r.AsQueryable()).Returns(new List<ShiftAssignments>().BuildMock());
+            
+            var leaves = new List<LeaveRequests>
+            {
+                new LeaveRequests { employee_id = 1, status = "Approved", start_date = new DateTime(2026, 4, 1), end_date = new DateTime(2026, 4, 30) }
+            };
+            _mockLeaveRepo.Setup(r => r.AsQueryable()).Returns(leaves.BuildMock());
+
+            var dto = new BulkShiftAssignmentCreateDto
+            {
+                shift_id = 10,
+                assignment_date = new DateTime(2026, 4, 18),
+                employee_ids = new List<int> { 1 }
+            };
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<Exception>(() => _service.BulkCreateAssignmentsAsync(dto));
+            Assert.Contains("nghỉ phép", ex.Message);
+        }
+
+        [Fact]
         public async Task GetAvailableUsersAsync_ShouldExcludeAssignedUsers()
         {
             // Arrange
-            var allEmployees = new List<Employees>
+            var allEmployees = new List<ERP.Entities.Models.Employees>
             {
-                new Employees { Id = 1, employee_code = "E01", branch_id = 5, is_active = true, is_resigned = false },
-                new Employees { Id = 2, employee_code = "E02", branch_id = 5, is_active = true, is_resigned = false },
-                new Employees { Id = 3, employee_code = "E03", branch_id = 5, is_active = true, is_resigned = false }
+                new ERP.Entities.Models.Employees { Id = 1, employee_code = "E01", branch_id = 5, is_active = true, is_resigned = false },
+                new ERP.Entities.Models.Employees { Id = 2, employee_code = "E02", branch_id = 5, is_active = true, is_resigned = false },
+                new ERP.Entities.Models.Employees { Id = 3, employee_code = "E03", branch_id = 5, is_active = true, is_resigned = false }
             };
 
-            var mockEmpRepo = new Mock<IGenericRepository<Employees>>();
+            var mockEmpRepo = new Mock<IGenericRepository<ERP.Entities.Models.Employees>>();
             mockEmpRepo.Setup(r => r.AsQueryable()).Returns(allEmployees.BuildMock());
-            _mockUow.Setup(u => u.Repository<Employees>()).Returns(mockEmpRepo.Object);
+            _mockUow.Setup(u => u.Repository<ERP.Entities.Models.Employees>()).Returns(mockEmpRepo.Object);
 
             var existingAssignments = new List<ShiftAssignments>
             {

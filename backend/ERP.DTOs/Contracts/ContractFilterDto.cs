@@ -11,6 +11,7 @@ namespace ERP.DTOs.Contracts
         public int? ContractTypeId { get; set; }
         public int? BranchId { get; set; }
         public int? DepartmentId { get; set; }
+        public int? EmployeeId { get; set; }
         public DateTime? FromDate { get; set; }
         public DateTime? ToDate { get; set; }
     }

@@ -292,5 +292,74 @@ namespace ERP.Services.Attendance
                 RemainingDays = b.remaining_days ?? (b.total_days - b.used_days)
             });
         }
+
+        public async Task<EmployeeLeaveStatsDto> GetLeaveStatisticsAsync(int employeeId, int year)
+        {
+            // 1. Get all leave types to ensure we have names and is_paid info
+            var leaveTypes = await _unitOfWork.Repository<LeaveTypes>().AsQueryable().ToListAsync();
+            
+            // 2. Get entitlements for the year
+            var entitlements = await _unitOfWork.Repository<EmployeeLeaves>()
+                .AsQueryable()
+                .Where(e => e.employee_id == employeeId && e.year == year)
+                .ToListAsync();
+
+            // 3. Get all approved requests for the year
+            var approvedRequests = await _unitOfWork.Repository<LeaveRequests>()
+                .AsQueryable()
+                .Where(r => r.employee_id == employeeId && r.status == "APPROVED" && r.start_date.Year == year)
+                .ToListAsync();
+
+            // 4. Aggregate used days per type
+            // Calculation logic: number_of_hours / 8 or (end_date - start_date).TotalDays + 1
+            var usedDaysByType = approvedRequests
+                .GroupBy(r => r.leave_type_id)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Sum(r => r.number_of_hours.HasValue 
+                        ? r.number_of_hours.Value / 8m 
+                        : (decimal)((r.end_date.Date - r.start_date.Date).TotalDays + 1))
+                );
+
+            var stats = new EmployeeLeaveStatsDto();
+            decimal totalPaidUsed = 0;
+            decimal totalUnpaidUsed = 0;
+
+            foreach (var type in leaveTypes)
+            {
+                var entitlement = entitlements.FirstOrDefault(e => e.leave_type_id == type.Id);
+                var used = usedDaysByType.ContainsKey(type.Id) ? usedDaysByType[type.Id] : 0;
+                
+                var total = entitlement?.total_days ?? 0;
+                
+                // If there is no entitlement AND no used days, we skip it for the "Details" table 
+                // UNLESS it's a primary leave type. For simplicity, we add all types that have either total or used > 0.
+                if (total > 0 || used > 0)
+                {
+                    stats.Details.Add(new LeaveTypeStatDto
+                    {
+                        LeaveTypeId = type.Id,
+                        LeaveTypeName = type.name,
+                        TotalDays = total,
+                        UsedDays = used,
+                        RemainingDays = Math.Max(0, total - used)
+                    });
+                }
+
+                // Add to summary
+                if (type.is_paid)
+                    totalPaidUsed += used;
+                else
+                    totalUnpaidUsed += used;
+            }
+
+            stats.Summary = new LeaveSummaryDto
+            {
+                PaidUsedDays = totalPaidUsed,
+                UnpaidUsedDays = totalUnpaidUsed
+            };
+
+            return stats;
+        }
     }
 }

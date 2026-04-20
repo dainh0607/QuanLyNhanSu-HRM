@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ERP.Entities.Models
 {
-    [Table("WorkHistory")]
+    [Table("WorkHistories")]
     public class WorkHistory : BaseEntity, ERP.Entities.Interfaces.ITenantEntity
     {
         [Column("tenant_id")]
