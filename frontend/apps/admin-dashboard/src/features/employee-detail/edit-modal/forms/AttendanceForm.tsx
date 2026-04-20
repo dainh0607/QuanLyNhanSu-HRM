@@ -1,10 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import type { AttendanceSettings } from '../../../../services/employee/types';
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import type { AttendanceSettings, TimekeepingMachineMapping } from '../../../../services/employee/types';
+
+export interface AttendanceFormRef {
+  save: () => Promise<void>;
+}
 
 interface AttendanceFormProps {
   settings: AttendanceSettings;
+  mappings: TimekeepingMachineMapping[];
   onSave: (settings: AttendanceSettings) => Promise<void>;
-  employeeName: string;
+  onSaveMappings: (mappings: TimekeepingMachineMapping[]) => Promise<void>;
+  onIsDirtyChange?: (isDirty: boolean) => void;
+  onIsSubmittingChange?: (isSubmitting: boolean) => void;
 }
 
 const ATTENDANCE_TABS = [
@@ -13,21 +20,43 @@ const ATTENDANCE_TABS = [
   { id: 'machines', label: 'Máy chấm công', icon: 'id_card' },
 ];
 
-const AttendanceForm: React.FC<AttendanceFormProps> = ({
+const AttendanceForm = forwardRef<AttendanceFormRef, AttendanceFormProps>(({
   settings,
+  mappings,
   onSave,
-  employeeName
-}) => {
+  onSaveMappings,
+  onIsDirtyChange,
+  onIsSubmittingChange
+}, ref) => {
   const [activeTab, setActiveTab] = useState('options');
   const [formData, setFormData] = useState<AttendanceSettings>(settings);
+  const [localMappings, setLocalMappings] = useState<TimekeepingMachineMapping[]>(mappings);
   const [isDirty, setIsDirty] = useState(false);
+  const [isMappingsDirty, setIsMappingsDirty] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useImperativeHandle(ref, () => ({
+    save: handleSave
+  }));
+
+  useEffect(() => {
+    onIsDirtyChange?.(activeTab === 'options' ? isDirty : isMappingsDirty);
+  }, [isDirty, isMappingsDirty, activeTab, onIsDirtyChange]);
+
+  useEffect(() => {
+    onIsSubmittingChange?.(isSubmitting);
+  }, [isSubmitting, onIsSubmittingChange]);
 
   // Sync with props
   useEffect(() => {
     setFormData(settings);
     setIsDirty(false);
   }, [settings]);
+
+  useEffect(() => {
+    setLocalMappings(mappings);
+    setIsMappingsDirty(false);
+  }, [mappings]);
 
   const handleToggle = (key: keyof Omit<AttendanceSettings, 'unconstrainedAttendance'>) => {
     const newData = { ...formData, [key]: !formData[key] };
@@ -62,12 +91,28 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({
     setIsDirty(true);
   };
 
+  const handleMappingChange = (machineId: number, code: string) => {
+    const alphanumericCode = code.replace(/[^a-zA-Z0-9]/g, '').slice(0, 20);
+    const newMappings = localMappings.map(m => 
+      m.machineId === machineId ? { ...m, timekeepingCode: alphanumericCode } : m
+    );
+    setLocalMappings(newMappings);
+    setIsMappingsDirty(JSON.stringify(newMappings) !== JSON.stringify(mappings));
+  };
+
   const handleSave = async () => {
-    if (!isDirty || isSubmitting) return;
+    const isCurrentlyDirty = activeTab === 'options' ? isDirty : isMappingsDirty;
+    if (!isCurrentlyDirty || isSubmitting) return;
+
     setIsSubmitting(true);
     try {
-      await onSave(formData);
-      setIsDirty(false);
+      if (activeTab === 'options') {
+        await onSave(formData);
+        setIsDirty(false);
+      } else if (activeTab === 'machines') {
+        await onSaveMappings(localMappings);
+        setIsMappingsDirty(false);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -147,32 +192,6 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({
 
   return (
     <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* HEADER SECTION (To handle the Lưu button correctly) */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h2 className="text-[22px] font-black text-slate-900 tracking-tight">Chấm công</h2>
-          <p className="text-[14px] text-slate-400 font-medium mt-1">Cài đặt quy trình và thiết bị chấm công cho <span className="text-slate-600 uppercase font-black tracking-wider text-[12px] ml-1">{employeeName}</span></p>
-        </div>
-        
-        {/* AC 4.1: Save button visibility */}
-        <button
-          onClick={handleSave}
-          disabled={!isDirty || isSubmitting}
-          className={`h-10 px-8 rounded-xl font-bold text-[14px] transition-all flex items-center gap-2 ${
-            isDirty 
-            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 active:scale-95' 
-            : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-          }`}
-        >
-          {isSubmitting ? (
-             <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-          ) : (
-            <span className="material-symbols-outlined text-[20px]">save</span>
-          )}
-          {isSubmitting ? 'Đang lưu...' : 'Lưu cài đặt'}
-        </button>
-      </div>
-
       {/* AC 1.1: Horizontal Sub-tabs */}
       <div className="flex items-center gap-1 p-1 bg-slate-100/50 rounded-2xl self-start mb-10">
         {ATTENDANCE_TABS.map(tab => (
@@ -272,6 +291,62 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({
               () => handleToggle('proxyAttendanceImageRequired')
             )}
           </div>
+        ) : activeTab === 'machines' ? (
+          <div className="bg-white rounded-[32px] border border-slate-100 overflow-hidden shadow-sm animate-in fade-in zoom-in-95 duration-500">
+            <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
+               <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-emerald-600">id_card</span>
+                  </div>
+                  <div>
+                    <h3 className="text-[16px] font-bold text-slate-800">Chi tiết ánh xạ</h3>
+                    <p className="text-[12px] text-slate-400 font-medium">Danh sách ID chấm công trên từng thiết bị</p>
+                  </div>
+               </div>
+            </div>
+            
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50/50">
+                  <th className="px-8 py-4 text-[13px] font-black text-slate-500 uppercase tracking-wider w-20">STT</th>
+                  <th className="px-8 py-4 text-[13px] font-black text-slate-500 uppercase tracking-wider">Tên máy chấm công</th>
+                  <th className="px-8 py-4 text-[13px] font-black text-slate-500 uppercase tracking-wider w-[300px]">Mã chấm công</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {localMappings.map((mapping, index) => (
+                  <tr key={mapping.machineId} className="hover:bg-slate-50/30 transition-colors group">
+                    <td className="px-8 py-5 text-[14px] font-bold text-slate-400">{index + 1}</td>
+                    <td className="px-8 py-5">
+                      <div className="flex flex-col">
+                        <span className="text-[14px] font-bold text-slate-700">{mapping.machineName}</span>
+                        <span className="text-[11px] text-slate-400 font-medium mt-0.5">ID: {mapping.machineId}</span>
+                      </div>
+                    </td>
+                    <td className="px-8 py-5">
+                      <div className="relative group/input">
+                        <input 
+                          type="text" 
+                          value={mapping.timekeepingCode}
+                          onChange={(e) => handleMappingChange(mapping.machineId, e.target.value)}
+                          placeholder="Nhập mã ID..."
+                          className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white text-[14px] font-bold text-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/10 transition-all outline-none group-hover/input:border-slate-300"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-200 text-[18px] group-hover/input:text-slate-300 transition-colors">edit</span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            
+            {localMappings.length === 0 && (
+              <div className="py-20 flex flex-col items-center justify-center text-slate-300">
+                <span className="material-symbols-outlined text-[48px] mb-2 text-slate-200">devices_off</span>
+                <p className="font-bold text-sm">Không tìm thấy thiết bị nào</p>
+              </div>
+            )}
+          </div>
         ) : (
           <div className="h-[400px] flex flex-col items-center justify-center bg-slate-50/50 rounded-[40px] border-2 border-dashed border-slate-100 text-slate-300">
              <span className="material-symbols-outlined text-[64px] mb-4">construction</span>
@@ -282,6 +357,6 @@ const AttendanceForm: React.FC<AttendanceFormProps> = ({
       </div>
     </div>
   );
-};
+});
 
 export default AttendanceForm;

@@ -30,6 +30,7 @@ export const EMPLOYEE_PROFILE_ENDPOINTS = {
   dependents: `${API_URL}/employees/:employeeId/details/dependents`,
   workStatus: `${API_URL}/employees/:employeeId/work-status`,
   jobInfo: `${API_URL}/employees/:employeeId/job-info`,
+  promotionHistory: `${API_URL}/employees/:employeeId/details/promotion-history`,
 } as const;
 
 export const EMPLOYEE_FULL_PROFILE_ENDPOINT = `${API_URL}/employees/:employeeId/full-profile`;

@@ -59,14 +59,6 @@ const HistoryTabContent: React.FC<HistoryTabContentProps> = ({ employeeId }) => 
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
-      {/* Header Info */}
-      <div className="flex flex-col gap-1">
-        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Lịch sử cập nhật hồ sơ</h2>
-        <p className="text-slate-500 font-medium text-sm">
-          Toàn bộ hành động thay đổi dữ liệu của nhân sự này được Backend tự động ghi nhận
-        </p>
-      </div>
-
       {/* Filters Section */}
       <HistoryFilters 
         search={search}

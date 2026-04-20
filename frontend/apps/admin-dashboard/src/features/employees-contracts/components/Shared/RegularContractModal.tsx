@@ -22,6 +22,8 @@ interface RegularContractModalProps {
     type?: 'success' | 'error' | 'info',
     options?: { action?: ToastActionPayload; duration?: number },
   ) => void;
+  preselectedEmployeeId?: string;
+  isEmployeeSelectionDisabled?: boolean;
 }
 
 interface RegularContractFormValues {
@@ -90,6 +92,8 @@ const RegularContractModal: React.FC<RegularContractModalProps> = ({
   onCreated,
   onNavigateToEmployeeProfile,
   showToast,
+  preselectedEmployeeId,
+  isEmployeeSelectionDisabled = false,
 }) => {
   const [formValues, setFormValues] = useState<RegularContractFormValues>(DEFAULT_FORM_VALUES);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -102,10 +106,13 @@ const RegularContractModal: React.FC<RegularContractModalProps> = ({
       return;
     }
 
-    setFormValues(DEFAULT_FORM_VALUES);
+    setFormValues({
+      ...DEFAULT_FORM_VALUES,
+      employeeId: preselectedEmployeeId || '',
+    });
     setErrors({});
-    previousEmployeeIdRef.current = '';
-  }, [isOpen]);
+    previousEmployeeIdRef.current = preselectedEmployeeId || '';
+  }, [isOpen, preselectedEmployeeId]);
 
   useEffect(() => {
     if (!previousEmployeeIdRef.current) {
@@ -303,6 +310,7 @@ const RegularContractModal: React.FC<RegularContractModalProps> = ({
             searchPlaceholder="Tìm theo tên hoặc mã nhân viên"
             onChange={(value) => handleFieldChange('employeeId', value)}
             error={errors.employeeId}
+            disabled={isEmployeeSelectionDisabled}
           />
         </FieldShell>
 

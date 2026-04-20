@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useToast } from '../../../hooks/useToast';
 import {
   employeeService,
@@ -16,6 +16,13 @@ import {
   type EmployeeEditJobInfoPayload,
   type AccessGroupMetadata,
   type AttendanceSettings,
+  type EmployeeEditPromotionHistoryPayload,
+  type EmployeeEditWorkHistoryPayload,
+  type EmployeeEditSalaryAllowancePayload,
+  type EmployeeEditContractPayload,
+  type EmployeeEditInsurancePayload,
+  type TimekeepingMachineMapping,
+  type PermissionItem,
 } from '../../../services/employeeService';
 import {
   MODAL_SECTIONS,
@@ -30,16 +37,18 @@ import WorkTabNavigation from './components/WorkTabNavigation';
 import WorkTabPanel from './components/WorkTabPanel';
 import LeaveTabNavigation from './components/LeaveTabNavigation';
 import LeaveTabPanel from './components/LeaveTabPanel';
-import AssetForm from './forms/AssetForm';
+import AssetForm, { type AssetFormRef } from './forms/AssetForm';
 import DocumentForm from './forms/DocumentForm';
-import AttendanceForm from './forms/AttendanceForm';
+import AttendanceForm, { type AttendanceFormRef } from './forms/AttendanceForm';
+import PermissionForm, { type PermissionFormRef } from './forms/PermissionForm';
 import AddFolderModal from './components/AddFolderModal';
 import AddFileModal from './components/AddFileModal';
 import FolderDetailModal from './components/FolderDetailModal';
 import RenameFileModal from './components/RenameFileModal';
 import DeleteFolderModal from './components/DeleteFolderModal';
 import SectionPlaceholder from './components/SectionPlaceholder';
-import SignatureTabContent from '../../signature-management/components/SignatureTabContent';
+import SignatureTabContent, { type SignatureTabContentRef } from '../../signature-management/components/SignatureTabContent';
+import HistoryTabContent from '../components/HistoryTabContent';
 import { isModalSectionAvailable } from './sectionAvailability';
 import UnsavedChangesDialog from './components/UnsavedChangesDialog';
 import useUnsavedChangesGuard from '../../../hooks/useUnsavedChangesGuard';
@@ -120,18 +129,85 @@ const WORK_TAB_LOADERS: Partial<{
 }> = {
   jobStatus: employeeService.getEmployeeEditJobStatus,
   jobInfo: employeeService.getEmployeeEditJobInfo,
-  promotionHistory: async () => [],
-  workHistory: async () => [],
-  salaryAllowance: async () => ({
-    paymentMethod: '',
-    salaryLevelName: '',
-    salaryAmount: '',
-    salaryChanges: [],
-    allowances: [],
-    otherIncomes: [],
-  }),
-  contract: async () => [],
-  insurance: async () => [],
+  promotionHistory: async (employeeId: number): Promise<EmployeeEditPromotionHistoryPayload> => {
+    const response = await employeeService.getPromotionHistoryList(employeeId);
+    return response.items.map(item => ({
+      id: String(item.id),
+      effectiveDate: item.effectiveDate,
+      decisionType: item.decisionType || '',
+      contractType: item.contractType || '',
+      documentNumber: (item as any).decisionNumber || '',
+      jobStatus: (item as any).workStatus || '',
+      city: '',
+      district: '',
+      branch: (item as any).branchName || '',
+      department: (item as any).departmentName || '',
+      jobTitle: (item as any).jobTitleName || '',
+      paymentMethod: '',
+      salaryLevelName: '',
+      salaryAmount: String(item.salaryAmount || ''),
+      allowance: String((item as any).allowance || '0'),
+      otherIncome: String((item as any).otherIncome || '0'),
+      note: item.note || '',
+    }));
+  },
+  workHistory: async (employeeId: number): Promise<EmployeeEditWorkHistoryPayload> => {
+    const profile = await employeeService.getEmployeeFullProfile(employeeId);
+    return (profile.workHistory || []).map(item => ({
+      id: undefined,
+      startDate: item.startDate || '',
+      endDate: item.endDate || '',
+      company: item.companyName || '',
+      position: item.jobTitle || '',
+      workDuration: item.workDuration || '',
+      isCurrent: item.isCurrent || false,
+      note: item.note || '',
+    }));
+  },
+  salaryAllowance: async (employeeId: number): Promise<EmployeeEditSalaryAllowancePayload> => {
+    const profile = await employeeService.getEmployeeFullProfile(employeeId);
+    const info = profile.salaryInfo;
+    return {
+      paymentMethod: info?.paymentMethod || '',
+      salaryLevelName: info?.salaryGrade || '',
+      salaryAmount: String(info?.baseSalary || ''),
+      salaryChanges: [],
+      allowances: (info?.allowances || []).map(a => ({
+        id: String(a.id),
+        name: a.name,
+        amount: String(a.amount),
+      })),
+      otherIncomes: (info?.otherIncomes || []).map(o => ({
+        id: String(o.id),
+        name: o.name,
+        amount: String(o.amount),
+      })),
+    };
+  },
+  contract: async (employeeId: number): Promise<EmployeeEditContractPayload> => {
+    const profile = await employeeService.getEmployeeFullProfile(employeeId);
+    return (profile.contracts || []).map(item => ({
+      id: String(item.id),
+      employeeName: profile.basicInfo?.fullName || '',
+      documentNumber: (item as any).contractNumber || '',
+      contractType: item.contractType || '',
+      signDate: item.signDate || '',
+      expiryDate: item.expiryDate || '',
+      status: item.status || '',
+    }));
+  },
+  insurance: async (employeeId: number): Promise<EmployeeEditInsurancePayload> => {
+    const profile = await employeeService.getEmployeeFullProfile(employeeId);
+    return (profile.insurances || []).map(item => ({
+      id: String(item.id),
+      employeeName: profile.basicInfo?.fullName || '',
+      socialInsuranceNumber: item.socialInsuranceNumber || '',
+      healthInsuranceNumber: item.healthInsuranceNumber || '',
+      issueDate: item.issueDate || '',
+      issuePlace: item.issuePlace || '',
+      note: item.note || '',
+    }));
+  },
 };
 
 const LEAVE_TAB_LOADERS: {
@@ -210,6 +286,15 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
   const [selectedFolder, setSelectedFolder] = useState<DocumentFolder | null>(null);
   const [selectedFolderForAction, setSelectedFolderForAction] = useState<DocumentFolder | null>(null);
 
+  const permissionRef = useRef<PermissionFormRef>(null);
+  const assetRef = useRef<AssetFormRef>(null);
+  const signatureRef = useRef<SignatureTabContentRef>(null);
+  const attendanceRef = useRef<AttendanceFormRef>(null);
+  const [isPermissionDirty, setIsPermissionDirty] = useState(false);
+  const [isPermissionSubmitting, setIsPermissionSubmitting] = useState(false);
+  const [isAttendanceDirty, setIsAttendanceDirty] = useState(false);
+  const [isAttendanceSubmitting, setIsAttendanceSubmitting] = useState(false);
+
   const [metadata, setMetadata] = useState<{
     regions: RegionMetadata[];
     branches: BranchMetadata[];
@@ -235,7 +320,9 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
   const isCurrentTabDirty =
     ((activeSection === 'personal' && activePersonalState.isDirty) ||
       (activeSection === 'work' && activeWorkState.isDirty) ||
-      (activeSection === 'asset' && activeAssetState.isDirty)) as boolean;
+      (activeSection === 'asset' && activeAssetState.isDirty) ||
+      (activeSection === 'permission' && isPermissionDirty) ||
+      (activeSection === 'timekeeping' && isAttendanceDirty)) as boolean;
 
   const shouldGuardLeaving = isCurrentTabDirty;
   const isSaveEnabled =
@@ -253,7 +340,9 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
         activeAssetState.isLoaded &&
         !activeAssetState.isLoading &&
         !activeAssetState.isSubmitting &&
-        activeAssetState.isDirty)) &&
+        activeAssetState.isDirty) ||
+      (activeSection === 'permission' && isPermissionDirty && !isPermissionSubmitting) ||
+      (activeSection === 'timekeeping' && isAttendanceDirty && !isAttendanceSubmitting)) &&
     !metadata.isLoading;
 
   const resolveAvailableSection = useCallback(
@@ -566,6 +655,50 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
     } catch (error) {
       showToast('Có lỗi xảy ra khi cập nhật cấu hình chấm công.', 'error');
       throw error;
+    }
+  };
+
+  const handleSaveTimekeepingMappings = async (mappings: TimekeepingMachineMapping[]) => {
+    try {
+      await (employeeService as any).updateTimekeepingMachineMappingsMock(employee.id, mappings);
+      showToast('Cập nhật ánh xạ máy chấm công thành công.', 'success');
+      onSaved?.();
+    } catch (error) {
+      showToast('Có lỗi xảy ra khi cập nhật ánh xạ máy chấm công.', 'error');
+      throw error;
+    }
+  };
+
+  const handleSaveMobilePermissions = async (permissions: PermissionItem[]) => {
+    try {
+      await (employeeService as any).updateMobilePermissionsMock(employee.id, permissions);
+      showToast('Cập nhật phân quyền di động thành công.', 'success');
+      onSaved?.();
+    } catch (error) {
+      showToast('Có lỗi xảy ra khi cập nhật phân quyền di động.', 'error');
+      throw error;
+    }
+  };
+
+  const handleSaveWebPermissions = async (permissions: PermissionItem[]) => {
+    try {
+      await (employeeService as any).updateWebPermissionsMock(employee.id, permissions);
+      showToast('Cập nhật phân quyền trang web thành công.', 'success');
+      onSaved?.();
+    } catch (error) {
+      showToast('Có lỗi xảy ra khi cập nhật phân quyền trang web.', 'error');
+      throw error;
+    }
+  };
+
+  const handleResetMobilePermissions = async () => {
+    try {
+      // Giả lập lấy cấu hình mặc định (ở đây ta dùng lại mock fetch của service)
+      const fullProfile = await (employeeService as any).getEmployeeFullProfile(employee.id);
+      return fullProfile.mobilePermissions || [];
+    } catch (error) {
+      showToast('Không thể tải cấu hình mặc định.', 'error');
+      return [];
     }
   };
 
@@ -1130,7 +1263,19 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
         }));
         showToast(error instanceof Error ? error.message : 'Không thể lưu dữ liệu.', 'error');
       }
+    } else if (activeSection === 'permission') {
+      await permissionRef.current?.save();
+      return;
     }
+
+    if (activeSection === 'timekeeping') {
+      await attendanceRef.current?.save();
+      return;
+    }
+  };
+
+  const handleResetPermission = async () => {
+    await permissionRef.current?.reset();
   };
 
   const handleCreateDependent = async (dependent: EmployeeEditDependentsPayload[number]) => {
@@ -1237,8 +1382,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
             <EditModalSidebar activeSection={activeSection} onChange={handleSectionChange} />
 
             <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-              {activeSection !== 'timekeeping' && (
-                <div className="min-w-0 border-b border-slate-200 px-[1.1rem] pt-4 pb-[0.6rem] lg:px-[1.1rem]">
+              <div className="min-w-0 border-b border-slate-200 px-[1.1rem] pt-4 pb-[0.6rem] lg:px-[1.1rem]">
                   <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                     <div>
                       <h3 className="mt-1 text-[26px] font-bold tracking-tight text-[#253a69]">
@@ -1247,24 +1391,80 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
                       <p className="text-sm font-semibold text-slate-500">{employee.fullName}</p>
                     </div>
 
-                    {activeSection !== 'leave' && activeSection !== 'asset' && (
-                      <button
-                        type="button"
-                        onClick={handleSave}
-                        disabled={!isSaveEnabled}
-                        className={`inline-flex min-h-11 items-center justify-center rounded-2xl px-6 text-sm font-bold transition-all ${
-                          isSaveEnabled
-                            ? 'bg-emerald-500 text-white shadow-[0_16px_30px_rgba(16,185,129,0.25)] hover:bg-emerald-600'
-                            : 'cursor-not-allowed bg-slate-200 text-slate-500'
-                        }`}
-                      >
-                        {(activeSection === 'personal' && activePersonalState.isSubmitting) ||
-                        (activeSection === 'work' && activeWorkState.isSubmitting) ? (
-                          <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
-                        ) : null}
-                        Lưu
-                      </button>
-                    )}
+                    <div className="flex items-center gap-3">
+                      {activeSection !== 'leave' && activeSection !== 'asset' && activeSection !== 'audit' && (
+                        <button
+                          type="button"
+                          onClick={handleSave}
+                          disabled={!isSaveEnabled}
+                          className={`inline-flex min-h-11 items-center justify-center rounded-2xl px-6 text-sm font-bold transition-all ${
+                            isSaveEnabled
+                              ? 'bg-emerald-500 text-white shadow-[0_16px_30px_rgba(16,185,129,0.25)] hover:bg-emerald-600'
+                              : 'cursor-not-allowed bg-slate-200 text-slate-500'
+                          }`}
+                        >
+                          {(activeSection === 'personal' && activePersonalState.isSubmitting) ||
+                          (activeSection === 'work' && activeWorkState.isSubmitting) ||
+                          (activeSection === 'permission' && isPermissionSubmitting) ||
+                          (activeSection === 'timekeeping' && isAttendanceSubmitting) ? (
+                            <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+                          ) : null}
+                          Lưu
+                        </button>
+                      )}
+                      
+                      {activeSection === 'permission' && (
+                        <button
+                          type="button"
+                          onClick={handleResetPermission}
+                          className="h-11 px-6 rounded-2xl font-bold text-[14px] text-slate-600 border border-slate-200 hover:bg-slate-50 transition-all active:scale-95"
+                        >
+                          Đặt lại mặc định
+                        </button>
+                      )}
+
+                      {activeSection === 'document' && (
+                        <div className="flex items-center gap-2">
+                          <button 
+                            type="button"
+                            onClick={() => setIsAddFileModalOpen(true)}
+                            className="h-11 px-6 rounded-2xl bg-emerald-500 text-white font-bold text-sm flex items-center gap-2 hover:bg-emerald-600 active:scale-95 transition-all shadow-lg shadow-emerald-500/20"
+                          >
+                            <span className="material-symbols-outlined text-[20px]">upload</span>
+                            Tải lên
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={() => setIsAddFolderModalOpen(true)}
+                            className="h-11 px-6 rounded-2xl bg-[#52d891] text-white font-bold text-sm flex items-center gap-2 hover:bg-[#40c47f] active:scale-95 transition-all shadow-lg shadow-emerald-500/20"
+                          >
+                            Tạo mới
+                          </button>
+                        </div>
+                      )}
+
+                      {activeSection === 'asset' && (
+                        <button
+                          type="button"
+                          onClick={() => assetRef.current?.openIssueModal()}
+                          className="h-11 px-6 rounded-2xl bg-emerald-500 text-white font-bold text-sm flex items-center gap-2 hover:bg-emerald-600 active:scale-95 transition-all shadow-lg shadow-emerald-500/20"
+                        >
+                          <span className="material-symbols-outlined text-[20px]">add_circle</span>
+                          Cấp tài sản
+                        </button>
+                      )}
+
+                      {activeSectionConfig.key === 'signature' && (
+                        <button
+                          type="button"
+                          onClick={() => signatureRef.current?.openCreateModal()}
+                          className="h-11 px-6 rounded-2xl bg-emerald-500 text-white font-bold text-sm flex items-center gap-2 hover:bg-emerald-600 active:scale-95 transition-all shadow-lg shadow-emerald-500/20"
+                        >
+                          <span className="material-symbols-outlined text-[20px]">add</span>
+                          Tạo mới
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {activeSection === 'personal' ? (
@@ -1287,7 +1487,6 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
                     />
                   ) : null}
                 </div>
-              )}
 
               <div className="min-h-0 min-w-0 flex-1 overflow-y-auto px-6 py-8 lg:px-9">
                 {currentLoadError ? (
@@ -1346,6 +1545,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
                   />
                 ) : activeSection === 'asset' ? (
                   <AssetForm 
+                    ref={assetRef}
                     data={assetForms[activeAssetTab].data} 
                     employeeName={employee.fullName}
                     onUpdateAssets={async (newAssets) => {
@@ -1376,26 +1576,16 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
                   />
                 ) : activeSectionConfig.key === 'signature' ? (
                   <SignatureTabContent 
+                    ref={signatureRef}
                     employeeId={employee.id} 
-                    employeeName={employee.fullName} 
                   />
-                ) : activeSection === 'document' ? (
-                  <DocumentForm
-                    documents={profile?.documents}
-                    onOpenAddFile={() => setIsAddFileModalOpen(true)}
-                    onOpenAddFolder={() => setIsAddFolderModalOpen(true)}
-                    onOpenFolder={(folder) => setSelectedFolder(folder)}
-                    onEditFolder={(folder) => {
-                      setSelectedFolderForAction(folder);
-                      setIsRenameFolderModalOpen(true);
-                    }}
-                    onDeleteFolder={(folder) => {
-                      setSelectedFolderForAction(folder);
-                      setIsDeleteFolderModalOpen(true);
-                    }}
+                ) : activeSection === 'audit' ? (
+                  <HistoryTabContent 
+                    employeeId={employee.id} 
                   />
                 ) : activeSection === 'timekeeping' ? (
                   <AttendanceForm
+                    ref={attendanceRef}
                     settings={profile?.attendanceSettings || {
                       multiDeviceLogin: false,
                       locationTracking: true,
@@ -1413,8 +1603,37 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
                         gpsOption: 'not_required'
                       }
                     }}
+                    mappings={profile?.timekeepingMachineMappings || []}
+                    onIsDirtyChange={setIsAttendanceDirty}
+                    onIsSubmittingChange={setIsAttendanceSubmitting}
                     onSave={handleSaveAttendance}
-                    employeeName={employee.fullName}
+                    onSaveMappings={handleSaveTimekeepingMappings}
+                  />
+                ) : activeSection === 'document' ? (
+                  <DocumentForm
+                    documents={profile?.documents}
+                    onOpenAddFile={() => setIsAddFileModalOpen(true)}
+                    onOpenAddFolder={() => setIsAddFolderModalOpen(true)}
+                    onOpenFolder={(folder) => setSelectedFolder(folder)}
+                    onEditFolder={(folder) => {
+                      setSelectedFolderForAction(folder);
+                      setIsRenameFolderModalOpen(true);
+                    }}
+                    onDeleteFolder={(folder) => {
+                      setSelectedFolderForAction(folder);
+                      setIsDeleteFolderModalOpen(true);
+                    }}
+                  />
+                ) : activeSection === 'permission' ? (
+                  <PermissionForm
+                    ref={permissionRef}
+                    mobilePermissions={profile?.mobilePermissions || []}
+                    webPermissions={profile?.webPermissions || []}
+                    onSaveMobile={handleSaveMobilePermissions}
+                    onSaveWeb={handleSaveWebPermissions}
+                    onResetMobile={handleResetMobilePermissions}
+                    onIsDirtyChange={setIsPermissionDirty}
+                    onIsSubmittingChange={setIsPermissionSubmitting}
                   />
                 ) : (
                   <SectionPlaceholder

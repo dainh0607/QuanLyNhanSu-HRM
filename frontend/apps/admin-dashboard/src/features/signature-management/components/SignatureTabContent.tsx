@@ -1,22 +1,27 @@
-
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { type SampleSignature } from '../types';
 import { signatureService } from '../../../services/signatureService';
 import SignatureTable from './SignatureTable';
 import SignatureEditorModal from './SignatureEditorModal';
 
-interface SignatureTabContentProps {
-  employeeId: number;
-  employeeName: string;
+export interface SignatureTabContentRef {
+  openCreateModal: () => void;
 }
 
-const SignatureTabContent: React.FC<SignatureTabContentProps> = ({
-  employeeId,
-  employeeName
-}) => {
+interface SignatureTabContentProps {
+  employeeId: number;
+}
+
+const SignatureTabContent = forwardRef<SignatureTabContentRef, SignatureTabContentProps>(({
+  employeeId
+}, ref) => {
   const [signatures, setSignatures] = useState<SampleSignature[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  useImperativeHandle(ref, () => ({
+    openCreateModal: () => setIsModalOpen(true)
+  }));
 
   const loadSignatures = useCallback(async () => {
     setIsLoading(true);
@@ -48,24 +53,6 @@ const SignatureTabContent: React.FC<SignatureTabContentProps> = ({
 
   return (
     <div className="flex flex-col gap-8">
-      {/* Header logic within tab */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <span className="material-symbols-outlined text-emerald-500 text-[24px] font-variation-fill">draw</span>
-            <h3 className="text-xl font-bold text-slate-900 tracking-tight">Danh sách chữ ký</h3>
-          </div>
-          <p className="text-slate-400 text-sm font-medium">Quản lý các mẫu chữ ký điện tử cho {employeeName}</p>
-        </div>
-        
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="h-11 px-6 rounded-xl bg-emerald-500 text-white font-bold text-sm flex items-center gap-2 hover:bg-emerald-600 active:scale-95 transition-all shadow-lg shadow-emerald-500/20"
-        >
-          <span className="material-symbols-outlined text-[18px]">add</span>
-          Tạo mới
-        </button>
-      </div>
 
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-20">
@@ -87,6 +74,6 @@ const SignatureTabContent: React.FC<SignatureTabContentProps> = ({
       />
     </div>
   );
-};
+});
 
 export default SignatureTabContent;
