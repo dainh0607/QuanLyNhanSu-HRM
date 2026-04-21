@@ -13,6 +13,8 @@ IF EXISTS (SELECT 1 FROM sys.security_policies WHERE name = 'ScopeBasedRLS')
     DROP SECURITY POLICY dbo.ScopeBasedRLS;
 IF EXISTS (SELECT 1 FROM sys.security_policies WHERE name = 'TenantIsolationRLS')
     DROP SECURITY POLICY dbo.TenantIsolationRLS;
+IF EXISTS (SELECT 1 FROM sys.security_policies WHERE name = 'TenantIsolationPolicy')
+    DROP SECURITY POLICY dbo.TenantIsolationPolicy;
 GO
 
 -- Drop all predicate functions to break SCHEMABINDING chains

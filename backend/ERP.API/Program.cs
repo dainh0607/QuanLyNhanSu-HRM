@@ -273,9 +273,9 @@ using (var scope = app.Services.CreateScope())
             await AuthSessionSchemaInitializer.EnsureCreatedAsync(db);
             await RlsSchemaInitializer.EnsureUpdatedAsync(db, app.Environment.ContentRootPath, logger);
 
-            // Sync with Firebase
-            var userService = services.GetRequiredService<IUserService>();
-            await userService.SyncWithFirebaseAsync();
+            // Sync with Firebase (DISABLED: Manual sync only to avoid tenant leakage)
+            // var userService = services.GetRequiredService<IUserService>();
+            // await userService.SyncWithFirebaseAsync();
 
             // Seed User Elevation
             var testEmails = new[] { "kfrog1233@gmail.com", "dainh123@gmail.com" };

@@ -15,7 +15,8 @@ GO
 -- This function checks if current session's tenant matches table's tenant
 -- Called by RLS policy for every row access
 
-CREATE FUNCTION dbo.fn_TenantFilter(@tenant_id INT)
+/* -- Redundant: fn_TenantFilter is now managed by 02_SQL_RLS_Predicates.sql
+CREATE OR ALTER FUNCTION dbo.fn_TenantFilter(@tenant_id INT)
     RETURNS TABLE
     WITH SCHEMABINDING
 AS
@@ -28,6 +29,7 @@ RETURN SELECT 1 AS policyResult
         -- Or if tenant_id is NULL (cross-tenant table like Roles)
         OR (@tenant_id IS NULL)
 ;
+*/
 GO
 
 -- ========================================================================
@@ -36,6 +38,7 @@ GO
 -- Policy name: TenantIsolationPolicy
 -- Applied to key tables that contain customer data
 
+/* -- Redundant: TenantIsolationPolicy is now managed centrally via 03_SQL_RLS_Policies.sql
 CREATE SECURITY POLICY dbo.TenantIsolationPolicy
     ADD FILTER PREDICATE dbo.fn_TenantFilter(tenant_id) ON dbo.Employees,
     ADD FILTER PREDICATE dbo.fn_TenantFilter(tenant_id) ON dbo.Users,
@@ -47,7 +50,8 @@ CREATE SECURITY POLICY dbo.TenantIsolationPolicy
     ADD FILTER PREDICATE dbo.fn_TenantFilter(tenant_id) ON dbo.Contracts,
     ADD FILTER PREDICATE dbo.fn_TenantFilter(tenant_id) ON dbo.Payrolls,
     ADD FILTER PREDICATE dbo.fn_TenantFilter(tenant_id) ON dbo.AttendanceRecords
-WITH (STATE = OFF); -- Start disabled, enable after testing
+WITH (STATE = OFF); 
+*/
 GO
 
 -- ========================================================================
@@ -71,7 +75,7 @@ BEGIN
     -- Set system admin flag
     EXEC sp_set_session_context @key = N'IsSystemAdmin', @value = @IsSystemAdmin;
     
-    SELECT @@SUCCESS AS result;
+    SELECT 0 AS result;
 END
 GO
 
@@ -183,7 +187,7 @@ BEGIN
     -- Revoke Department Manager roles from old branch
     UPDATE ur
     SET ur.is_active = 0,
-        ur.UpdatedAt = GETUTCDATE()
+        ur.updated_at = GETUTCDATE()
     FROM dbo.UserRoles ur
     INNER JOIN dbo.Departments dept ON ur.department_id = dept.Id
     INNER JOIN dbo.Roles r ON ur.role_id = r.Id
@@ -228,7 +232,7 @@ GO
 SELECT 
     t.name AS TableName,
     ps.name AS PolicyName,
-    ps.enabled
+    ps.is_enabled
 FROM sys.tables t
 LEFT JOIN sys.security_policies ps ON ps.name = 'TenantIsolationPolicy'
 WHERE ps.name IS NOT NULL
