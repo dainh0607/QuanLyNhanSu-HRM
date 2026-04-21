@@ -13,6 +13,7 @@ using MockQueryable;
 using ERP.Services.Common;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using ERP.Services.Employees;
 
 namespace ERP.Tests.Services.Contracts
 {
@@ -29,6 +30,7 @@ namespace ERP.Tests.Services.Contracts
         private readonly Mock<IEmailService> _mockEmailService;
         private readonly Mock<IContractNotificationService> _mockNotificationService;
         private readonly Mock<IConfiguration> _mockConfiguration;
+        private readonly Mock<IEmploymentHistoryService> _mockHistoryService;
 
         private readonly ContractService _service;
 
@@ -49,6 +51,7 @@ namespace ERP.Tests.Services.Contracts
             _mockEmailService = new Mock<IEmailService>();
             _mockNotificationService = new Mock<IContractNotificationService>();
             _mockConfiguration = new Mock<IConfiguration>();
+            _mockHistoryService = new Mock<IEmploymentHistoryService>();
 
             _service = new ContractService(
                 _mockUow.Object,
@@ -57,7 +60,8 @@ namespace ERP.Tests.Services.Contracts
                 _mockStorageService.Object,
                 _mockEmailService.Object,
                 _mockNotificationService.Object,
-                _mockConfiguration.Object
+                _mockConfiguration.Object,
+                _mockHistoryService.Object
             );
         }
 

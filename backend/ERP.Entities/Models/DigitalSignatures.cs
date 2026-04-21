@@ -28,5 +28,9 @@ namespace ERP.Entities.Models
 
         [Column("certification_info")]
         public string? certification_info { get; set; }
+
+        [Column("display_type")]
+        [StringLength(20)]
+        public string? display_type { get; set; }
     }
 }

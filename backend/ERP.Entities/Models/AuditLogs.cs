@@ -50,6 +50,12 @@ namespace ERP.Entities.Models
         [MaxLength(50)]
         public string ip_address { get; set; } = string.Empty;
 
+        [Column("status_code")]
+        public int? status_code { get; set; }
+
+        [Column("request_url")]
+        public string? request_url { get; set; }
+
         [Column("timestamp")]
         public DateTime timestamp { get; set; } = DateTime.UtcNow;
     }

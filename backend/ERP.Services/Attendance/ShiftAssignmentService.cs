@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using ERP.DTOs.Attendance;
+using ERP.DTOs.Auth;
+using ERP.Entities;
 using ERP.Entities.Models;
 using ERP.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -13,11 +15,39 @@ namespace ERP.Services.Attendance
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IShiftNotificationService _notificationService;
+        private readonly AppDbContext _context;
 
-        public ShiftAssignmentService(IUnitOfWork unitOfWork, IShiftNotificationService notificationService)
+        // Role IDs miễn chấm công & xếp ca: Admin, Ban giám đốc, Quản lý vùng
+        private static readonly int[] ExemptRoleIds = {
+            AuthSecurityConstants.RoleAdminId,      // 1 - IT/Nhà thầu phần mềm
+            AuthSecurityConstants.RoleDirectorId,    // 2 - Quản trị theo mục tiêu
+            AuthSecurityConstants.RoleRegionManagerId // 3 - Quản lý vùng
+        };
+
+        public ShiftAssignmentService(IUnitOfWork unitOfWork, IShiftNotificationService notificationService, AppDbContext context)
         {
             _unitOfWork = unitOfWork;
             _notificationService = notificationService;
+            _context = context;
+        }
+
+        /// <summary>
+        /// Lấy danh sách employee_id thuộc các nhóm truy cập được miễn xếp ca & chấm công.
+        /// Admin, Ban giám đốc, Quản lý vùng quản trị theo mục tiêu/cấu hình, không theo thời gian hiện diện.
+        /// </summary>
+        private async Task<HashSet<int>> GetExemptEmployeeIdsAsync()
+        {
+            var exemptEmployeeIds = await _context.UserRoles
+                .IgnoreQueryFilters()
+                .Where(ur => ExemptRoleIds.Contains(ur.role_id) && ur.is_active)
+                .Join(_context.Users.IgnoreQueryFilters().Where(u => u.is_active),
+                    ur => ur.user_id,
+                    u => u.Id,
+                    (ur, u) => u.employee_id)
+                .Distinct()
+                .ToListAsync();
+
+            return new HashSet<int>(exemptEmployeeIds);
         }
 
         public async Task<WeeklyScheduleApiResponseDto> GetWeeklyScheduleAsync(
@@ -63,6 +93,13 @@ namespace ERP.Services.Attendance
 
             if (!string.IsNullOrEmpty(searchTerm))
                 employeeQuery = employeeQuery.Where(e => e.full_name.Contains(searchTerm) || e.employee_code.Contains(searchTerm));
+
+            // Loại trừ nhân viên thuộc nhóm miễn xếp ca (Admin, Ban giám đốc, Quản lý vùng)
+            var exemptIds = await GetExemptEmployeeIdsAsync();
+            if (exemptIds.Count > 0)
+            {
+                employeeQuery = employeeQuery.Where(e => !exemptIds.Contains(e.Id));
+            }
 
             var employees = await employeeQuery.ToListAsync();
             var employeeIdsList = employees.Select(e => e.Id).ToList();
@@ -680,9 +717,12 @@ namespace ERP.Services.Attendance
 
         public async Task<IEnumerable<ShiftAvailableUserDto>> GetAvailableUsersAsync(int branchId, int shiftId, DateTime date)
         {
+            // Loại trừ nhân viên thuộc nhóm miễn xếp ca (Admin, Ban giám đốc, Quản lý vùng)
+            var exemptIds = await GetExemptEmployeeIdsAsync();
+
             var employeesQuery = _unitOfWork.Repository<Entities.Models.Employees>().AsQueryable()
                 .Include(e => e.JobTitle)
-                .Where(e => e.branch_id == branchId && e.is_active && !e.is_resigned);
+                .Where(e => e.branch_id == branchId && e.is_active && !e.is_resigned && !exemptIds.Contains(e.Id));
 
             var alreadyAssignedIds = await _unitOfWork.Repository<ShiftAssignments>().AsQueryable()
                 .Where(a => a.shift_id == shiftId && a.assignment_date.Date == date.Date)

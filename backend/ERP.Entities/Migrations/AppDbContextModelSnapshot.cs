@@ -790,20 +790,31 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("city");
 
                     b.Property<string>("country")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("country");
+
+                    b.Property<int?>("country_id")
+                        .HasColumnType("int")
+                        .HasColumnName("country_id");
 
                     b.Property<string>("district")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("district");
 
+                    b.Property<int?>("district_id")
+                        .HasColumnType("int")
+                        .HasColumnName("district_id");
+
                     b.Property<string>("postal_code")
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("postal_code");
+
+                    b.Property<int?>("province_id")
+                        .HasColumnType("int")
+                        .HasColumnName("province_id");
 
                     b.Property<int?>("tenant_id")
                         .HasColumnType("int")
@@ -815,6 +826,12 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("ward");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("country_id");
+
+                    b.HasIndex("district_id");
+
+                    b.HasIndex("province_id");
 
                     b.ToTable("Addresses", (string)null);
                 });
@@ -870,6 +887,68 @@ namespace ERP.Entities.Migrations
                     b.ToTable("AdvanceTypes", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.AllowanceType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<bool>("is_active")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("name");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AllowanceTypes");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            is_active = true,
+                            name = "Phụ cấp ăn trưa"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            is_active = true,
+                            name = "Phụ cấp xăng xe"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            is_active = true,
+                            name = "Phụ cấp điện thoại"
+                        });
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.Allowances", b =>
                 {
                     b.Property<int>("Id")
@@ -879,11 +958,9 @@ namespace ERP.Entities.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("allowance_name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("allowance_name");
+                    b.Property<int>("allowance_type_id")
+                        .HasColumnType("int")
+                        .HasColumnName("allowance_type_id");
 
                     b.Property<decimal>("amount")
                         .HasColumnType("decimal(18,2)")
@@ -898,6 +975,8 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("allowance_type_id");
 
                     b.HasIndex("salary_id");
 
@@ -2867,6 +2946,11 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("certification_info");
 
+                    b.Property<string>("display_type")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("display_type");
+
                     b.Property<int>("employee_id")
                         .HasColumnType("int")
                         .HasColumnName("employee_id");
@@ -3437,6 +3521,48 @@ namespace ERP.Entities.Migrations
                     b.ToTable("EmployeeLeaves", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.EmployeeMobilePermissions", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("employee_id")
+                        .HasColumnType("int")
+                        .HasColumnName("employee_id");
+
+                    b.Property<bool>("is_allowed")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_allowed");
+
+                    b.Property<int>("mobile_permission_id")
+                        .HasColumnType("int")
+                        .HasColumnName("mobile_permission_id");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("employee_id");
+
+                    b.HasIndex("mobile_permission_id");
+
+                    b.ToTable("EmployeeMobilePermissions");
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.EmployeeSkills", b =>
                 {
                     b.Property<int>("employee_id")
@@ -3761,6 +3887,89 @@ namespace ERP.Entities.Migrations
                     b.ToTable("Employees", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.EmploymentHistoryLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("change_type")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("change_type");
+
+                    b.Property<int?>("contract_type_id")
+                        .HasColumnType("int")
+                        .HasColumnName("contract_type_id");
+
+                    b.Property<string>("decision_number")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("decision_number");
+
+                    b.Property<int?>("decision_type_id")
+                        .HasColumnType("int")
+                        .HasColumnName("decision_type_id");
+
+                    b.Property<int?>("district_id")
+                        .HasColumnType("int")
+                        .HasColumnName("district_id");
+
+                    b.Property<DateTime>("effective_date")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("effective_date");
+
+                    b.Property<int>("employee_id")
+                        .HasColumnType("int")
+                        .HasColumnName("employee_id");
+
+                    b.Property<string>("note")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("note");
+
+                    b.Property<int?>("province_id")
+                        .HasColumnType("int")
+                        .HasColumnName("province_id");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("work_status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("work_status");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("contract_type_id");
+
+                    b.HasIndex("decision_type_id");
+
+                    b.HasIndex("district_id");
+
+                    b.HasIndex("employee_id");
+
+                    b.HasIndex("province_id");
+
+                    b.ToTable("EmploymentHistoryLogs");
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.Evaluations", b =>
                 {
                     b.Property<int>("Id")
@@ -3903,6 +4112,68 @@ namespace ERP.Entities.Migrations
                     b.ToTable("HealthRecords", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.IncomeType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<bool>("is_active")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("name");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("IncomeTypes");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            is_active = true,
+                            name = "Thưởng KPI"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            is_active = true,
+                            name = "Thưởng lễ tết"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            is_active = true,
+                            name = "Thu nhập khác"
+                        });
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.Insurances", b =>
                 {
                     b.Property<int>("Id")
@@ -3912,46 +4183,58 @@ namespace ERP.Entities.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
                     b.Property<int?>("birth_place_address_id")
                         .HasColumnType("int")
                         .HasColumnName("birth_place_address_id");
 
-                    b.Property<bool?>("company_pays_health")
-                        .HasColumnType("bit")
-                        .HasColumnName("company_pays_health");
+                    b.Property<decimal?>("company_health_rate")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("company_health_rate");
 
-                    b.Property<bool?>("company_pays_social")
-                        .HasColumnType("bit")
-                        .HasColumnName("company_pays_social");
+                    b.Property<decimal?>("company_social_rate")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("company_social_rate");
 
-                    b.Property<bool?>("company_pays_unemployment")
-                        .HasColumnType("bit")
-                        .HasColumnName("company_pays_unemployment");
+                    b.Property<decimal?>("company_unemployment_rate")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("company_unemployment_rate");
 
                     b.Property<int?>("contact_address_id")
                         .HasColumnType("int")
                         .HasColumnName("contact_address_id");
 
+                    b.Property<decimal?>("employee_health_rate")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("employee_health_rate");
+
                     b.Property<int>("employee_id")
                         .HasColumnType("int")
                         .HasColumnName("employee_id");
 
-                    b.Property<bool?>("employee_pays_health")
-                        .HasColumnType("bit")
-                        .HasColumnName("employee_pays_health");
+                    b.Property<decimal?>("employee_social_rate")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("employee_social_rate");
 
-                    b.Property<bool?>("employee_pays_social")
-                        .HasColumnType("bit")
-                        .HasColumnName("employee_pays_social");
-
-                    b.Property<bool?>("employee_pays_unemployment")
-                        .HasColumnType("bit")
-                        .HasColumnName("employee_pays_unemployment");
+                    b.Property<decimal?>("employee_unemployment_rate")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("employee_unemployment_rate");
 
                     b.Property<string>("health_insurance_no")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("health_insurance_no");
+
+                    b.Property<bool>("is_book_submitted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_book_submitted");
 
                     b.Property<DateTime?>("join_date")
                         .HasColumnType("datetime2")
@@ -4003,7 +4286,13 @@ namespace ERP.Entities.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("birth_place_address_id");
+
+                    b.HasIndex("contact_address_id");
+
                     b.HasIndex("employee_id");
+
+                    b.HasIndex("residence_address_id");
 
                     b.ToTable("Insurances", (string)null);
                 });
@@ -4574,6 +4863,46 @@ namespace ERP.Entities.Migrations
                     b.ToTable("MealTypes", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.MobilePermissionManifest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("code")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("code");
+
+                    b.Property<int>("display_order")
+                        .HasColumnType("int")
+                        .HasColumnName("display_order");
+
+                    b.Property<bool>("is_module")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_module");
+
+                    b.Property<string>("name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("name");
+
+                    b.Property<int?>("parent_id")
+                        .HasColumnType("int")
+                        .HasColumnName("parent_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("parent_id");
+
+                    b.ToTable("MobilePermissionManifest");
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.MonthlyAttendanceSummary", b =>
                 {
                     b.Property<int>("Id")
@@ -4732,11 +5061,9 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("amount");
 
-                    b.Property<string>("income_name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("income_name");
+                    b.Property<int>("income_type_id")
+                        .HasColumnType("int")
+                        .HasColumnName("income_type_id");
 
                     b.Property<int>("salary_id")
                         .HasColumnType("int")
@@ -4747,6 +5074,8 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("income_type_id");
 
                     b.HasIndex("salary_id");
 
@@ -7362,11 +7691,9 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("payment_method");
 
-                    b.Property<string>("salary_grade")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("salary_grade");
+                    b.Property<int?>("salary_grade_id")
+                        .HasColumnType("int")
+                        .HasColumnName("salary_grade_id");
 
                     b.Property<int?>("tenant_id")
                         .HasColumnType("int")
@@ -7376,7 +7703,49 @@ namespace ERP.Entities.Migrations
 
                     b.HasIndex("employee_id");
 
+                    b.HasIndex("salary_grade_id");
+
                     b.ToTable("Salaries", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Entities.Models.SalaryGrade", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<decimal>("amount")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<bool>("is_active")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("name");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SalaryGrades");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.SalaryGradeConfig", b =>
@@ -8349,6 +8718,63 @@ namespace ERP.Entities.Migrations
                     b.ToTable("Users", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.VariableSalary", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<DateTime>("end_date")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("end_date");
+
+                    b.Property<string>("note")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("note");
+
+                    b.Property<string>("payment_method")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("payment_method");
+
+                    b.Property<int>("salary_grade_id")
+                        .HasColumnType("int")
+                        .HasColumnName("salary_grade_id");
+
+                    b.Property<int>("salary_id")
+                        .HasColumnType("int")
+                        .HasColumnName("salary_id");
+
+                    b.Property<DateTime>("start_date")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("start_date");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("salary_grade_id");
+
+                    b.HasIndex("salary_id");
+
+                    b.ToTable("VariableSalaries");
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.VehicleTypes", b =>
                 {
                     b.Property<int>("Id")
@@ -8466,13 +8892,45 @@ namespace ERP.Entities.Migrations
                     b.Navigation("Role");
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.Addresses", b =>
+                {
+                    b.HasOne("ERP.Entities.Models.Countries", "Country")
+                        .WithMany()
+                        .HasForeignKey("country_id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Entities.Models.Districts", "District")
+                        .WithMany()
+                        .HasForeignKey("district_id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Entities.Models.Provinces", "Province")
+                        .WithMany()
+                        .HasForeignKey("province_id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Country");
+
+                    b.Navigation("District");
+
+                    b.Navigation("Province");
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.Allowances", b =>
                 {
+                    b.HasOne("ERP.Entities.Models.AllowanceType", "AllowanceType")
+                        .WithMany()
+                        .HasForeignKey("allowance_type_id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("ERP.Entities.Models.Salaries", "Salary")
                         .WithMany("Allowances")
                         .HasForeignKey("salary_id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("AllowanceType");
 
                     b.Navigation("Salary");
                 });
@@ -8933,6 +9391,25 @@ namespace ERP.Entities.Migrations
                     b.Navigation("LeaveType");
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.EmployeeMobilePermissions", b =>
+                {
+                    b.HasOne("ERP.Entities.Models.Employees", "Employee")
+                        .WithMany()
+                        .HasForeignKey("employee_id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Entities.Models.MobilePermissionManifest", "MobilePermission")
+                        .WithMany()
+                        .HasForeignKey("mobile_permission_id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("MobilePermission");
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.EmployeeSkills", b =>
                 {
                     b.HasOne("ERP.Entities.Models.Employees", "Employee")
@@ -9027,6 +9504,45 @@ namespace ERP.Entities.Migrations
                     b.Navigation("SecondaryJobTitle");
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.EmploymentHistoryLog", b =>
+                {
+                    b.HasOne("ERP.Entities.Models.ContractTypes", "ContractType")
+                        .WithMany()
+                        .HasForeignKey("contract_type_id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Entities.Models.DecisionTypes", "DecisionType")
+                        .WithMany()
+                        .HasForeignKey("decision_type_id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Entities.Models.Districts", "District")
+                        .WithMany()
+                        .HasForeignKey("district_id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Entities.Models.Employees", "Employee")
+                        .WithMany()
+                        .HasForeignKey("employee_id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Entities.Models.Provinces", "Province")
+                        .WithMany()
+                        .HasForeignKey("province_id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ContractType");
+
+                    b.Navigation("DecisionType");
+
+                    b.Navigation("District");
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("Province");
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.HealthRecords", b =>
                 {
                     b.HasOne("ERP.Entities.Models.Employees", "Employee")
@@ -9040,13 +9556,34 @@ namespace ERP.Entities.Migrations
 
             modelBuilder.Entity("ERP.Entities.Models.Insurances", b =>
                 {
+                    b.HasOne("ERP.Entities.Models.Addresses", "BirthPlaceAddress")
+                        .WithMany()
+                        .HasForeignKey("birth_place_address_id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP.Entities.Models.Addresses", "ContactAddress")
+                        .WithMany()
+                        .HasForeignKey("contact_address_id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ERP.Entities.Models.Employees", "Employee")
                         .WithMany()
                         .HasForeignKey("employee_id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ERP.Entities.Models.Addresses", "ResidenceAddress")
+                        .WithMany()
+                        .HasForeignKey("residence_address_id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("BirthPlaceAddress");
+
+                    b.Navigation("ContactAddress");
+
                     b.Navigation("Employee");
+
+                    b.Navigation("ResidenceAddress");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.InvitationTokens", b =>
@@ -9133,6 +9670,16 @@ namespace ERP.Entities.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.MobilePermissionManifest", b =>
+                {
+                    b.HasOne("ERP.Entities.Models.MobilePermissionManifest", "Parent")
+                        .WithMany("Children")
+                        .HasForeignKey("parent_id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Parent");
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.MonthlyAttendanceSummary", b =>
                 {
                     b.HasOne("ERP.Entities.Models.Employees", "Employee")
@@ -9181,11 +9728,19 @@ namespace ERP.Entities.Migrations
 
             modelBuilder.Entity("ERP.Entities.Models.OtherIncomes", b =>
                 {
+                    b.HasOne("ERP.Entities.Models.IncomeType", "IncomeType")
+                        .WithMany()
+                        .HasForeignKey("income_type_id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("ERP.Entities.Models.Salaries", "Salary")
                         .WithMany("OtherIncomes")
                         .HasForeignKey("salary_id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("IncomeType");
 
                     b.Navigation("Salary");
                 });
@@ -9779,7 +10334,14 @@ namespace ERP.Entities.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ERP.Entities.Models.SalaryGrade", "SalaryGrade")
+                        .WithMany()
+                        .HasForeignKey("salary_grade_id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Employee");
+
+                    b.Navigation("SalaryGrade");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.SalaryGradeConfig", b =>
@@ -9928,6 +10490,25 @@ namespace ERP.Entities.Migrations
                     b.Navigation("Employee");
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.VariableSalary", b =>
+                {
+                    b.HasOne("ERP.Entities.Models.SalaryGrade", "SalaryGrade")
+                        .WithMany()
+                        .HasForeignKey("salary_grade_id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERP.Entities.Models.Salaries", "Salary")
+                        .WithMany("VariableSalaries")
+                        .HasForeignKey("salary_id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Salary");
+
+                    b.Navigation("SalaryGrade");
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.WorkHistory", b =>
                 {
                     b.HasOne("ERP.Entities.Models.Employees", "Employee")
@@ -9988,6 +10569,11 @@ namespace ERP.Entities.Migrations
                     b.Navigation("Employees");
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.MobilePermissionManifest", b =>
+                {
+                    b.Navigation("Children");
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.PayrollPeriods", b =>
                 {
                     b.Navigation("Payrolls");
@@ -10023,6 +10609,8 @@ namespace ERP.Entities.Migrations
                     b.Navigation("Allowances");
 
                     b.Navigation("OtherIncomes");
+
+                    b.Navigation("VariableSalaries");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.TimeMachines", b =>

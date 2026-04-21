@@ -18,17 +18,35 @@ namespace ERP.Entities.Models
         [StringLength(100)]
         public string? ward { get; set; }
 
-        [Column("district")]
+        [Column("country")]
         [StringLength(100)]
-        public string? district { get; set; }
+        public string? country { get; set; }
+
+        [Column("country_id")]
+        public int? country_id { get; set; }
+
+        [ForeignKey("country_id")]
+        public virtual Countries? Country { get; set; }
 
         [Column("city")]
         [StringLength(100)]
         public string? city { get; set; }
 
-        [Column("country")]
+        [Column("province_id")]
+        public int? province_id { get; set; }
+
+        [ForeignKey("province_id")]
+        public virtual Provinces? Province { get; set; }
+
+        [Column("district")]
         [StringLength(100)]
-        public string country { get; set; } = null!;
+        public string? district { get; set; }
+
+        [Column("district_id")]
+        public int? district_id { get; set; }
+
+        [ForeignKey("district_id")]
+        public virtual Districts? District { get; set; }
 
         [Column("postal_code")]
         [StringLength(20)]

@@ -29,6 +29,7 @@ namespace ERP.Services.Employees
         private readonly ICurrentUserContext _userContext;
         private readonly IAuthorizationService _authService;
         private readonly IScopedQueryHelper _scopedQueryHelper;
+        private readonly IEmploymentHistoryService _historyService;
 
         public EmployeeService(
             IUnitOfWork unitOfWork, 
@@ -37,7 +38,8 @@ namespace ERP.Services.Employees
             ILogger<EmployeeService> logger,
             ICurrentUserContext userContext,
             IAuthorizationService authService,
-            IScopedQueryHelper scopedQueryHelper)
+            IScopedQueryHelper scopedQueryHelper,
+            IEmploymentHistoryService historyService)
         {
             _unitOfWork = unitOfWork;
             _firebaseService = firebaseService;
@@ -46,6 +48,7 @@ namespace ERP.Services.Employees
             _userContext = userContext;
             _authService = authService;
             _scopedQueryHelper = scopedQueryHelper;
+            _historyService = historyService;
         }
 
         private async Task EnsureEmployeeAccess(int employeeId)
@@ -644,6 +647,13 @@ namespace ERP.Services.Employees
                     throw new Exception($"Email '{dto.Email}' đã được nhân viên khác sử dụng.");
             }
 
+            // 2. Track changes for logging
+            var changes = new List<string>();
+            if (employee.branch_id != dto.BranchId) changes.Add("Chi nhánh");
+            if (employee.department_id != dto.DepartmentId) changes.Add("Phòng ban");
+            if (employee.job_title_id != dto.JobTitleId) changes.Add("Chức danh");
+            if (employee.is_active != dto.IsActive || employee.is_resigned != dto.IsResigned) changes.Add("Trạng thái");
+
             employee.full_name = dto.FullName;
             employee.email = dto.Email;
             employee.phone = dto.Phone;
@@ -663,7 +673,24 @@ namespace ERP.Services.Employees
             employee.UpdatedAt = DateTime.UtcNow;
 
             _unitOfWork.Repository<EmployeeEntity>().Update(employee);
-            return await _unitOfWork.SaveChangesAsync() > 0;
+            var result = await _unitOfWork.SaveChangesAsync() > 0;
+
+            if (result && changes.Any())
+            {
+                foreach (var category in changes)
+                {
+                    await _historyService.CreateLogAsync(new EmploymentHistoryLogDto
+                    {
+                        EmployeeId = id,
+                        EffectiveDate = DateTime.UtcNow,
+                        WorkStatus = dto.IsResigned ? "Resigned" : (dto.IsActive ? "Active" : "Inactive"),
+                        ChangeType = category,
+                        Note = $"Cập nhật {category} qua hồ sơ nhân viên."
+                    });
+                }
+            }
+
+            return result;
         }
 
         public async Task<EmployeeWorkStatusDto?> GetWorkStatusAsync(int employeeId)
@@ -744,7 +771,21 @@ namespace ERP.Services.Employees
             emp.UpdatedAt = DateTime.UtcNow;
 
             _unitOfWork.Repository<EmployeeEntity>().Update(emp);
-            return await _unitOfWork.SaveChangesAsync() > 0;
+            var result = await _unitOfWork.SaveChangesAsync() > 0;
+
+            if (result)
+            {
+                await _historyService.CreateLogAsync(new EmploymentHistoryLogDto
+                {
+                    EmployeeId = employeeId,
+                    EffectiveDate = DateTime.UtcNow,
+                    WorkStatus = emp.is_resigned ? "Resigned" : "Active",
+                    ChangeType = "Trạng thái",
+                    Note = "Cập nhật trạng thái công việc."
+                });
+            }
+
+            return result;
         }
 
         private void ValidateRules(List<LateEarlyRuleDto>? rules, string policyName)

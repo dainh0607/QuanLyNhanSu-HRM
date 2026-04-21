@@ -386,6 +386,16 @@ namespace ERP.Services.Employees
         public async Task<bool> UpdateWorkHistoryAsync(int employeeId, List<WorkHistoryDto> dtos)
         {
             await EnsureEmployeeAccess(employeeId);
+            
+            // AC 4.1 Validation
+            foreach (var dto in dtos)
+            {
+                if (!dto.IsCurrent && dto.EndDate.HasValue && dto.StartDate.HasValue && dto.EndDate < dto.StartDate)
+                {
+                    throw new ArgumentException($"Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu tại {dto.CompanyName}.");
+                }
+            }
+
             var existing = await _unitOfWork.Repository<WorkHistory>().FindAsync(x => x.employee_id == employeeId);
             _unitOfWork.Repository<WorkHistory>().RemoveRange(existing);
     
@@ -396,7 +406,8 @@ namespace ERP.Services.Employees
                 job_title = d.JobTitle,
                 work_duration = d.WorkDuration,
                 start_date = d.StartDate,
-                end_date = d.EndDate,
+                // AC 2.1 Logic: EndDate is null if IsCurrent is true
+                end_date = d.IsCurrent ? null : d.EndDate,
                 is_current = d.IsCurrent
             });
     

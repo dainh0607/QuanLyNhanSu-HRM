@@ -8,6 +8,8 @@ using ERP.Entities.Models;
 using ERP.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using ERP.Services.Common;
+using ERP.Services.Employees;
+using ERP.DTOs.Employees;
 
 namespace ERP.Services.Contracts
 {
@@ -20,6 +22,7 @@ namespace ERP.Services.Contracts
         private readonly IEmailService _emailService;
         private readonly IContractNotificationService _notificationService;
         private readonly Microsoft.Extensions.Configuration.IConfiguration _configuration;
+        private readonly IEmploymentHistoryService _historyService;
 
         public ContractService(
             IUnitOfWork unitOfWork, 
@@ -28,7 +31,8 @@ namespace ERP.Services.Contracts
             IStorageService storageService,
             IEmailService emailService,
             IContractNotificationService notificationService,
-            Microsoft.Extensions.Configuration.IConfiguration configuration)
+            Microsoft.Extensions.Configuration.IConfiguration configuration,
+            IEmploymentHistoryService historyService)
         {
             _unitOfWork = unitOfWork;
             _pdfService = pdfService;
@@ -37,6 +41,7 @@ namespace ERP.Services.Contracts
             _emailService = emailService;
             _notificationService = notificationService;
             _configuration = configuration;
+            _historyService = historyService;
         }
 
         public async Task<PaginatedListDto<ContractListItemDto>> GetPagedListAsync(ContractFilterDto filter)
@@ -118,6 +123,11 @@ namespace ERP.Services.Contracts
             if (filter.DepartmentId.HasValue)
             {
                 query = query.Where(x => x.Employee.department_id == filter.DepartmentId);
+            }
+
+            if (filter.EmployeeId.HasValue)
+            {
+                query = query.Where(x => x.employee_id == filter.EmployeeId);
             }
 
             if (filter.FromDate.HasValue)
@@ -371,7 +381,23 @@ namespace ERP.Services.Contracts
             };
 
             await _unitOfWork.Repository<Entities.Models.Contracts>().AddAsync(contract);
-            return await _unitOfWork.SaveChangesAsync() > 0;
+            var result = await _unitOfWork.SaveChangesAsync() > 0;
+
+            if (result)
+            {
+                await _historyService.CreateLogAsync(new EmploymentHistoryLogDto
+                {
+                    EmployeeId = dto.EmployeeId,
+                    EffectiveDate = dto.EffectiveDate ?? DateTime.UtcNow,
+                    ContractTypeId = dto.ContractTypeId,
+                    DecisionNumber = dto.ContractNumber,
+                    WorkStatus = "Active",
+                    ChangeType = "Hợp đồng",
+                    Note = $"Tạo mới hợp đồng: {dto.ContractNumber}"
+                });
+            }
+
+            return result;
         }
 
         public async Task<int> CreateElectronicDraftAsync(ElectronicContractDraftDto dto)
@@ -456,7 +482,23 @@ namespace ERP.Services.Contracts
                 contract.template_id = dto.TemplateId;
 
             _unitOfWork.Repository<Entities.Models.Contracts>().Update(contract);
-            return await _unitOfWork.SaveChangesAsync() > 0;
+            var result = await _unitOfWork.SaveChangesAsync() > 0;
+
+            if (result)
+            {
+                await _historyService.CreateLogAsync(new EmploymentHistoryLogDto
+                {
+                    EmployeeId = contract.employee_id,
+                    EffectiveDate = dto.EffectiveDate ?? DateTime.UtcNow,
+                    ContractTypeId = dto.ContractTypeId,
+                    DecisionNumber = dto.ContractNumber,
+                    WorkStatus = contract.status,
+                    ChangeType = "Hợp đồng",
+                    Note = $"Cập nhật hợp đồng: {dto.ContractNumber}"
+                });
+            }
+
+            return result;
         }
 
         public async Task<bool> DeleteAsync(int id)

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using ERP.DTOs;
 using ERP.DTOs.Attendance;
+using ERP.Entities.Models;
 
 namespace ERP.Services.Attendance
 {
@@ -18,5 +19,6 @@ namespace ERP.Services.Attendance
         Task<bool> ApproveLeaveRequestAsync(int id, int managerId);
         Task<bool> RejectLeaveRequestAsync(int id, int managerId, string reason);
         Task<IEnumerable<LeaveBalanceDto>> GetLeaveBalanceAsync(int employeeId);
+        Task<EmployeeLeaveStatsDto> GetLeaveStatisticsAsync(int employeeId, int year);
     }
 }
