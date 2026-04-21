@@ -180,6 +180,10 @@ builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationP
 
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IEmployeeProfileService, EmployeeProfileService>();
+builder.Services.AddScoped<ISalaryConfigurationService, SalaryConfigurationService>();
+builder.Services.AddScoped<IInsuranceService, InsuranceService>();
+builder.Services.AddScoped<ISignatureService, SignatureService>();
+builder.Services.AddScoped<IMobilePermissionService, MobilePermissionService>();
 builder.Services.AddScoped<IPayrollService, PayrollService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
@@ -202,6 +206,7 @@ builder.Services.AddScoped<IShiftAssignmentService, ShiftAssignmentService>();
 builder.Services.AddScoped<IShiftNotificationService, ShiftNotificationService>();
 builder.Services.AddScoped<IDocxService, DocxService>();
 builder.Services.AddScoped<IRlsSessionContextService, RlsSessionContextService>();
+builder.Services.AddScoped<IEmploymentHistoryService, EmploymentHistoryService>();
 builder.Services.AddHostedService<EmployeeStatusWorker>();
 
 // FIX #1-15: Register RBAC Authorization Services
@@ -361,6 +366,7 @@ app.UseMiddleware<CsrfProtectionMiddleware>();
 app.UseMiddleware<ERP.API.Middleware.BreakGlassMiddleware>();
 app.UseMiddleware<AuthorizationMiddleware>(); // FIX #1-15: RBAC Authorization middleware
 app.UseAuthorization();
+app.UseMiddleware<AuditLoggingMiddleware>();
 
 app.MapControllers();
 

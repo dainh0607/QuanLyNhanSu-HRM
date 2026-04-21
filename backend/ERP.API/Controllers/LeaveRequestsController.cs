@@ -159,5 +159,21 @@ namespace ERP.API.Controllers
                 return BadRequest(new { Message = ex.Message });
             }
         }
+
+        [HttpGet("statistics/{employeeId}")]
+        [HasPermission("leave", "read")]
+        public async Task<IActionResult> GetLeaveStatistics(int employeeId, [FromQuery] int? year)
+        {
+            try
+            {
+                var targetYear = year ?? DateTime.Now.Year;
+                var result = await _leaveService.GetLeaveStatisticsAsync(employeeId, targetYear);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
     }
 }

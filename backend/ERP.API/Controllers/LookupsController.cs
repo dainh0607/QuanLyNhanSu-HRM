@@ -1,4 +1,7 @@
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using ERP.Services.Employees;
 using ERP.Services.Lookup;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -64,5 +67,14 @@ namespace ERP.API.Controllers
             if (branchIds != null) targetIds.AddRange(branchIds);
             return Ok(await _lookupService.GetJobTitlesLookupAsync(targetIds.Any() ? targetIds : null));
         }
+
+        [HttpGet("salary-grades")]
+        public async Task<IActionResult> GetSalaryGrades([FromServices] ISalaryConfigurationService salaryService) => Ok(await salaryService.GetSalaryGradesAsync());
+
+        [HttpGet("allowance-types")]
+        public async Task<IActionResult> GetAllowanceTypes([FromServices] ISalaryConfigurationService salaryService) => Ok(await salaryService.GetAllowanceTypesAsync());
+
+        [HttpGet("income-types")]
+        public async Task<IActionResult> GetIncomeTypes([FromServices] ISalaryConfigurationService salaryService) => Ok(await salaryService.GetIncomeTypesAsync());
     }
 }
