@@ -55,5 +55,12 @@ namespace ERP.Entities.Models
 
         [Column("proxy_attendance")]
         public bool proxy_attendance { get; set; }
+
+        [Column("proxy_attendance_with_image")]
+        public bool proxy_attendance_with_image { get; set; }
+
+        [Column("unrestricted_location_option")]
+        [MaxLength(50)]
+        public string? unrestricted_location_option { get; set; }
     }
 }

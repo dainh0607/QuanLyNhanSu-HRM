@@ -18,5 +18,7 @@ namespace ERP.Services.Attendance
         // Machine Mappings
         Task<IEnumerable<EmployeeMachineMappingDto>> GetEmployeeMachineMappingsAsync(int employeeId);
         Task<bool> UpdateEmployeeMachineMappingsAsync(int employeeId, List<EmployeeMachineMappingDto> mappings);
+        Task<EmployeeTimekeepingOptionsDto> GetEmployeeTimekeepingOptionsAsync(int employeeId);
+        Task<bool> UpdateEmployeeTimekeepingOptionsAsync(int employeeId, EmployeeTimekeepingOptionsDto dto);
     }
 }
