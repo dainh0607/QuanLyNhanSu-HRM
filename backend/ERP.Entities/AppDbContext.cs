@@ -19,6 +19,7 @@ namespace ERP.Entities
         }
 
         public DbSet<Tenants> Tenants { get; set; }
+        public DbSet<AuditLogs> AuditLogs { get; set; }
         public DbSet<AddressTypes> AddressTypes { get; set; }
         public DbSet<Addresses> Addresses { get; set; }
         public DbSet<AdvanceTypes> AdvanceTypes { get; set; }
