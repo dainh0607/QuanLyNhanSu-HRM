@@ -208,8 +208,9 @@ const toRepeatDayList = (values: string[]): number[] =>
   );
 
 const buildWeeklyScheduleUrl = (filters: ShiftScheduleFilters): string => {
-  const url = new URL(`${API_URL}/shifts/weekly-schedule`);
-  url.searchParams.set("startDate", filters.weekStartDate);
+  // The weekly grid needs the employee-inclusive assignment endpoint.
+  const url = new URL(`${API_URL}/shift-assignments/weekly`);
+  url.searchParams.set("weekStartDate", filters.weekStartDate);
   url.searchParams.set("viewMode", filters.viewMode);
   url.searchParams.set("employeeStatus", filters.employeeStatus);
   appendIfValue(url, "regionId", filters.regionId);
@@ -264,10 +265,10 @@ export const shiftSchedulingApi = {
       {
         method: "POST",
         body: JSON.stringify({
-          employeeId: payload.employeeId,
-          shiftId: payload.shiftId,
-          date: payload.assignmentDate,
-          notes: payload.note,
+          employee_id: payload.employeeId,
+          shift_id: payload.shiftId,
+          assignment_date: payload.assignmentDate,
+          note: payload.note,
         }),
       },
       "Không thể gán ca làm việc",

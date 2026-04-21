@@ -1,3 +1,4 @@
+import { getRuntimeShiftTemplateCatalog } from "../openShiftRuntimeStore";
 import { shiftSchedulingApi } from "../../services/shiftSchedulingApi";
 import { shiftTemplateService } from "../../shift-template/services/shiftTemplateService";
 import type {
@@ -91,56 +92,59 @@ const mapApiTemplate = (
   };
 };
 
-const dedupeTemplates = (
-  templates: OpenShiftTemplateOption[],
+const mapRuntimeTemplate = (
+  item: ReturnType<typeof getRuntimeShiftTemplateCatalog>[number],
+): OpenShiftTemplateOption => ({
+  id: String(item.shiftId),
+  shiftId: item.shiftId,
+  name: item.name,
+  startTime: item.startTime,
+  endTime: item.endTime,
+  branchIds: item.branchIds,
+  departmentIds: item.departmentIds,
+  jobTitleIds: item.jobTitleIds,
+  note: item.note ?? null,
+});
+
+const mergeTemplatesWithRuntime = (
+  apiTemplates: OpenShiftTemplateOption[],
 ): OpenShiftTemplateOption[] => {
-  const seen = new Set<number>();
+  const merged = new Map<number, OpenShiftTemplateOption>();
 
-  return templates.filter((template) => {
-    if (seen.has(template.shiftId)) {
-      return false;
-    }
-
-    seen.add(template.shiftId);
-    return true;
+  apiTemplates.forEach((item) => {
+    merged.set(item.shiftId, item);
   });
+
+  getRuntimeShiftTemplateCatalog().forEach((item) => {
+    merged.set(item.shiftId, mapRuntimeTemplate(item));
+  });
+
+  return sortTemplates(Array.from(merged.values()));
 };
 
 export const openShiftService = {
   async getFormData(): Promise<OpenShiftFormData> {
     const targets = await shiftTemplateService.getCatalogData();
-    /* const runtimeTemplates = getRuntimeShiftTemplateCatalog().map((item) =>
-      mapRuntimeTemplate(item),
-    ); */
 
     try {
       const response = await shiftSchedulingApi.getShiftOptions({
         isActive: true,
-      }) as ShiftTemplateApiItem[]; /*
-        `${API_URL}/shifts?isActive=true`,
-        { method: "GET" },
-        "Không thể tải danh sách mẫu ca làm",
-      ); */
+      }) as ShiftTemplateApiItem[];
 
       const apiTemplates = response
         .map((item) => mapApiTemplate(item))
-        /* .map((item) =>
-          item
-            ? mergeTemplateWithRuntime(item, getRuntimeShiftTemplateById(item.shiftId))
-            : null,
-        ) */
         .filter((item): item is OpenShiftTemplateOption => Boolean(item));
 
       return {
         targets,
-        shiftTemplates: sortTemplates(dedupeTemplates(apiTemplates)),
+        shiftTemplates: mergeTemplatesWithRuntime(apiTemplates),
       };
     } catch (error) {
       console.warn("Shift template catalog is unavailable.", error);
 
       return {
         targets,
-        shiftTemplates: [],
+        shiftTemplates: mergeTemplatesWithRuntime([]),
       };
     }
   },
@@ -148,23 +152,7 @@ export const openShiftService = {
   async createOpenShift(
     payload: OpenShiftCreatePayload,
   ): Promise<void> {
-    await shiftSchedulingApi.createOpenShift(payload); /*
-      `${API_URL}/open-shifts`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          Date: payload.openDate,
-          ShiftId: payload.shiftId,
-          BranchIds: toNumericIdList(payload.branchIds),
-          DepartmentIds: toNumericIdList(payload.departmentIds),
-          PositionIds: toNumericIdList(payload.jobTitleIds),
-          Quantity: payload.requiredQuantity,
-          IsAutoPublish: payload.autoPublish,
-          Note: null,
-        }),
-      },
-      "Không thể tạo ca mở",
-    ); */
+    await shiftSchedulingApi.createOpenShift(payload);
   },
 };
 

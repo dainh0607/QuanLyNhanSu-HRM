@@ -33,6 +33,7 @@ namespace ERP.Services.Common
             message.Body = bodyBuilder.ToMessageBody();
 
             using var client = new SmtpClient();
+            client.Timeout = 10000; // 10 seconds timeout
             
             // Helpful for debugging connection issues
             // client.ServerCertificateValidationCallback = (s, c, h, e) => true;

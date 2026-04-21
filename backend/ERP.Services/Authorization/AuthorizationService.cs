@@ -46,50 +46,55 @@ namespace ERP.Services.Authorization
         }
 
         /// <summary>
-        /// FIX #3: Check if user can access a specific region
+        /// Optimized branch access check for Tenant Admins/Managers
         /// </summary>
-        public async Task<bool> CanAccessRegion(int userId, int regionId)
+        public async Task<bool> CanAccessBranch(int userId, int branchId)
         {
             var userScope = await GetUserScopeInfo(userId);
-            if (userScope.IsWorkspaceWide) return true;
+            
+            // Workspace-wide access bypass (Tenant Admin/Manager or Super Admin)
+            if (userScope.IsWorkspaceWide) 
+                return true;
 
             var userRoles = await _context.UserRoles
                 .IgnoreQueryFilters()
                 .Where(ur => ur.user_id == userId && ur.is_active && 
                        (!ur.valid_to.HasValue || ur.valid_to > DateTime.UtcNow))
-                .Include(ur => ur.Role)
                 .ToListAsync();
 
-            if (!userRoles.Any())
-                return false;
+            var branchRestrictedRoles = userRoles.Where(ur => ur.branch_id.HasValue).ToList();
+            if (branchRestrictedRoles.Any())
+            {
+                return branchRestrictedRoles.Any(ur => ur.branch_id == branchId);
+            }
 
-            // Check if user has access to this specific region
-            return userRoles.Any(ur => ur.region_id == null || ur.region_id == regionId);
+            return true; // No explicit branch restriction
         }
 
         /// <summary>
-        /// FIX #4: Check if user can access a specific branch
+        /// Optimized region access check for Tenant Admins/Managers
         /// </summary>
-        public async Task<bool> CanAccessBranch(int userId, int branchId)
+        public async Task<bool> CanAccessRegion(int userId, int regionId)
         {
             var userScope = await GetUserScopeInfo(userId);
-            if (userScope.IsWorkspaceWide) return true;
+            
+            // Workspace-wide access bypass (Tenant Admin/Manager or Super Admin)
+            if (userScope.IsWorkspaceWide) 
+                return true;
 
             var userRoles = await _context.UserRoles
                 .IgnoreQueryFilters()
-                .Where(ur => ur.user_id == userId && ur.is_active &&
+                .Where(ur => ur.user_id == userId && ur.is_active && 
                        (!ur.valid_to.HasValue || ur.valid_to > DateTime.UtcNow))
                 .ToListAsync();
 
-            if (!userRoles.Any())
-                return false;
+            var regionRestrictedRoles = userRoles.Where(ur => ur.region_id.HasValue).ToList();
+            if (regionRestrictedRoles.Any())
+            {
+                return regionRestrictedRoles.Any(ur => ur.region_id == regionId);
+            }
 
-            // If user has branch_id set for any role, they can only access assigned branches
-            var branchRestrictedRoles = userRoles.Where(ur => ur.branch_id.HasValue);
-            if (branchRestrictedRoles.Any())
-                return branchRestrictedRoles.Any(ur => ur.branch_id == branchId);
-
-            return true; // No explicit branch restriction
+            return true; // No explicit region restriction
         }
 
         /// <summary>

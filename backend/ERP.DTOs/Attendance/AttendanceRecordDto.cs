@@ -12,6 +12,8 @@ namespace ERP.DTOs.Attendance
         public string Source { get; set; } = null!; // Mobile, Web, Biometric
         public string? Note { get; set; }
         public bool Verified { get; set; }
+        public decimal? Latitude { get; set; }
+        public decimal? Longitude { get; set; }
     }
 
     public class AttendanceCheckInDto

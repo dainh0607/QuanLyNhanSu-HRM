@@ -8,6 +8,7 @@ namespace ERP.Entities.Interfaces
         int? UserId { get; }
         int? TenantId { get; }
         bool IsAuthenticated { get; }
+        bool IsSystemAdmin { get; }
         bool IsBreakGlassSession { get; }
         IEnumerable<string> Roles { get; }
         

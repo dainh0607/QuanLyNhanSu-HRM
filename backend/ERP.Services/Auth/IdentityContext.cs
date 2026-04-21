@@ -19,11 +19,29 @@ namespace ERP.Services.Auth
 
         public int? UserId => int.TryParse(User?.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var id) ? id : null;
 
-        // FIX #9: Remove id > 0 check to properly handle tenant_id extraction
-        // Allow 0 as valid value (represents default/unset tenant)
-        public int? TenantId => int.TryParse(User?.FindFirst("tenant_id")?.Value, out var id) && id > 0 ? id : null;
+        public int? TenantId 
+        {
+            get
+            {
+                // 1. Try get from JWT Token
+                if (int.TryParse(User?.FindFirst("tenant_id")?.Value, out var id) && id > 0)
+                {
+                    return id;
+                }
+
+                // 2. Try get from HttpContext Items (set by SubdomainMiddleware)
+                if (_httpContextAccessor.HttpContext?.Items.TryGetValue("ResolvedTenantId", out var resolvedId) == true && resolvedId is int rId)
+                {
+                    return rId;
+                }
+
+                return null;
+            }
+        }
 
         public bool IsAuthenticated => User?.Identity?.IsAuthenticated ?? false;
+
+        public bool IsSystemAdmin => User?.FindFirst("is_system_admin")?.Value == "true";
 
         public bool IsBreakGlassSession => User?.HasClaim("is_break_glass", "true") ?? false;
 

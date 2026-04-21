@@ -30,6 +30,7 @@ namespace ERP.Entities
             public int? UserId => null;
             public int? TenantId => null;
             public bool IsAuthenticated => false;
+            public bool IsSystemAdmin => false;
             public bool IsBreakGlassSession => false;
             public IEnumerable<string> Roles => Enumerable.Empty<string>();
             public IEnumerable<int> AllowedRegionIds => Enumerable.Empty<int>();

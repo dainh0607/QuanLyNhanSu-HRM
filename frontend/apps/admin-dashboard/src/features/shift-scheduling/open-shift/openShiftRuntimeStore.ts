@@ -157,85 +157,19 @@ const sanitizeRuntimeShiftTemplate = (value: unknown): RuntimeShiftTemplate | nu
 };
 
 const loadStoredRuntimeShiftTemplates = (): RuntimeShiftTemplate[] => {
-  if (!canUseStorage()) {
-    return [];
-  }
-
-  try {
-    const raw = window.localStorage.getItem(RUNTIME_SHIFT_TEMPLATES_STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
-
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed
-      .map((item) => sanitizeRuntimeShiftTemplate(item))
-      .filter((item): item is RuntimeShiftTemplate => Boolean(item));
-  } catch (error) {
-    console.warn("Failed to restore runtime shift templates from local storage.", error);
-    return [];
-  }
+  return [];
 };
 
 const loadDeletedRuntimeShiftTemplateIds = (): Set<number> => {
-  if (!canUseStorage()) {
-    return new Set<number>();
-  }
-
-  try {
-    const raw = window.localStorage.getItem(RUNTIME_DELETED_SHIFT_TEMPLATES_STORAGE_KEY);
-    if (!raw) {
-      return new Set<number>();
-    }
-
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      return new Set<number>();
-    }
-
-    return new Set(
-      parsed
-        .map((item) => Number(item))
-        .filter((item) => Number.isFinite(item)),
-    );
-  } catch (error) {
-    console.warn("Failed to restore deleted shift templates from local storage.", error);
-    return new Set<number>();
-  }
+  return new Set<number>();
 };
 
 const persistRuntimeShiftTemplates = (): void => {
-  if (!canUseStorage()) {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(
-      RUNTIME_SHIFT_TEMPLATES_STORAGE_KEY,
-      JSON.stringify(runtimeShiftTemplates),
-    );
-  } catch (error) {
-    console.warn("Failed to persist runtime shift templates to local storage.", error);
-  }
+  return;
 };
 
 const persistDeletedRuntimeShiftTemplateIds = (): void => {
-  if (!canUseStorage()) {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(
-      RUNTIME_DELETED_SHIFT_TEMPLATES_STORAGE_KEY,
-      JSON.stringify(Array.from(deletedRuntimeShiftTemplateIds)),
-    );
-  } catch (error) {
-    console.warn("Failed to persist deleted shift templates to local storage.", error);
-  }
+  return;
 };
 
 let runtimeShiftTemplates: RuntimeShiftTemplate[] = loadStoredRuntimeShiftTemplates();
@@ -265,7 +199,7 @@ const normalizeToCode = (value: string): string =>
     .slice(0, 20);
 
 const getMergedShiftTemplates = (): RuntimeShiftTemplate[] => {
-  const merged = [...runtimeShiftTemplates, ...baseRuntimeShiftTemplates];
+  const merged = [...runtimeShiftTemplates];
   const seen = new Set<number>();
 
   return merged.filter((item) => {

@@ -1,5 +1,6 @@
 import { employeeListService } from "../../../../services/employee/list";
 import { API_URL, requestJson } from "../../../../services/employee/core";
+import { getRuntimeShiftTemplateCatalog } from "../../open-shift/openShiftRuntimeStore";
 import { weeklyShiftScheduleService } from "../../services/weeklyShiftScheduleService";
 import type { ShiftScheduleGridData } from "../../types";
 import {
@@ -130,6 +131,39 @@ const mapShiftCatalogItem = (item: ShiftCatalogApiItem): ShiftTabAssignTab | nul
   };
 };
 
+const mapRuntimeShiftCatalogItem = (
+  item: ReturnType<typeof getRuntimeShiftTemplateCatalog>[number],
+): ShiftTabAssignTab => ({
+  key: getTabKey(item.shiftId, item.name, item.startTime, item.endTime),
+  shiftId: item.shiftId,
+  shiftName: item.name,
+  startTime: item.startTime,
+  endTime: item.endTime,
+  branchId: getPrimaryBranchId(item.branchIds),
+  branchName: null,
+  days: [],
+});
+
+const mergeShiftCatalogWithRuntime = (
+  items: ShiftTabAssignTab[],
+  branchId: string,
+): ShiftTabAssignTab[] => {
+  const merged = new Map<string, ShiftTabAssignTab>();
+
+  items.forEach((item) => {
+    merged.set(item.key, item);
+  });
+
+  getRuntimeShiftTemplateCatalog()
+    .map((item) => mapRuntimeShiftCatalogItem(item))
+    .filter((item) => !branchId || item.branchId === null || String(item.branchId) === branchId)
+    .forEach((item) => {
+      merged.set(item.key, item);
+    });
+
+  return Array.from(merged.values());
+};
+
 const loadShiftCatalog = async (
   branchId: string,
 ): Promise<ShiftTabAssignTab[]> => {
@@ -139,25 +173,22 @@ const loadShiftCatalog = async (
     url.searchParams.set("branchId", branchId);
   }
 
-  const response = await requestJson<ShiftCatalogApiItem[]>(
-    url.toString(),
-    { method: "GET" },
-    "Không thể tải danh sách ca làm",
-  );
+  try {
+    const response = await requestJson<ShiftCatalogApiItem[]>(
+      url.toString(),
+      { method: "GET" },
+      "Failed to load shift list",
+    );
 
-  const mapped = response
-    .map((item) => mapShiftCatalogItem(item))
-    .filter((item): item is ShiftTabAssignTab => Boolean(item));
+    const mapped = response
+      .map((item) => mapShiftCatalogItem(item))
+      .filter((item): item is ShiftTabAssignTab => Boolean(item));
 
-  const seen = new Set<string>();
-  return mapped.filter((item) => {
-    if (seen.has(item.key)) {
-      return false;
-    }
-
-    seen.add(item.key);
-    return true;
-  });
+    return mergeShiftCatalogWithRuntime(mapped, branchId);
+  } catch (error) {
+    console.warn("Shift catalog API is unavailable, using runtime shift catalog.", error);
+    return mergeShiftCatalogWithRuntime([], branchId);
+  }
 };
 
 const enrichPhones = async (
@@ -341,7 +372,7 @@ export const shiftTabAssignService = {
     }
 
     if (params.shiftId === null) {
-      throw new Error("Không thể gán ca vì thiếu mã ca làm.");
+      throw new Error("Cannot assign shift because the shift id is missing.");
     }
 
     for (const employeeId of params.employeeIds) {
@@ -350,13 +381,13 @@ export const shiftTabAssignService = {
         {
           method: "POST",
           body: JSON.stringify({
-            employeeId: employeeId,
-            shiftId: params.shiftId,
-            date: params.date,
-            notes: `Gán từ tab xếp ca ${params.shiftName}`,
+            employee_id: employeeId,
+            shift_id: params.shiftId,
+            assignment_date: params.date,
+            note: `Assigned from shift tab ${params.shiftName}`,
           }),
         },
-        "Không thể gán ca hàng loạt",
+        "Failed to bulk assign shifts",
       );
     }
   },
@@ -367,7 +398,7 @@ export const shiftTabAssignService = {
     await requestJson(
       `${API_URL}/shift-assignments/${assignmentId}`,
       { method: "DELETE" },
-      "Không thể xóa nhân viên khỏi ca",
+      "Failed to remove employee from shift",
     );
   },
 };

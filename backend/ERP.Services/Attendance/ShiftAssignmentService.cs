@@ -8,6 +8,7 @@ using ERP.Entities;
 using ERP.Entities.Models;
 using ERP.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ERP.Services.Attendance
 {
@@ -71,30 +72,52 @@ namespace ERP.Services.Attendance
                 .AsQueryable()
                 .Include(e => e.Branch)
                 .Include(e => e.Department)
-                .Include(e => e.JobTitle);
+                .Include(e => e.JobTitle)
+                .Include(e => e.Region);
 
             if (employeeStatus == "active")
                 employeeQuery = employeeQuery.Where(e => e.is_active);
 
-            if (branchId.HasValue)
+            if (branchId.HasValue && branchId.Value > 0)
                 employeeQuery = employeeQuery.Where(e => e.branch_id == branchId.Value);
             
-            if (departmentId.HasValue)
+            if (departmentId.HasValue && departmentId.Value > 0)
                 employeeQuery = employeeQuery.Where(e => e.department_id == departmentId.Value);
 
-            if (regionId.HasValue)
+            if (regionId.HasValue && regionId.Value > 0)
                 employeeQuery = employeeQuery.Where(e => e.region_id == regionId.Value);
 
-            if (jobTitleId.HasValue)
+            if (jobTitleId.HasValue && jobTitleId.Value > 0)
                 employeeQuery = employeeQuery.Where(e => e.job_title_id == jobTitleId.Value);
 
             if (!string.IsNullOrEmpty(genderCode))
                 employeeQuery = employeeQuery.Where(e => e.gender_code == genderCode);
 
-            if (!string.IsNullOrEmpty(searchTerm))
-                employeeQuery = employeeQuery.Where(e => e.full_name.Contains(searchTerm) || e.employee_code.Contains(searchTerm));
+            // Filter by Access Group (Role) if specified
+            if (accessGroupId.HasValue && accessGroupId.Value > 0)
+            {
+                var userIdsWithRole = await _context.UserRoles
+                    .Where(ur => ur.role_id == accessGroupId.Value && ur.is_active)
+                    .Select(ur => ur.user_id)
+                    .ToListAsync();
 
-            // Loại trừ nhân viên thuộc nhóm miễn xếp ca (Admin, Ban giám đốc, Quản lý vùng)
+                var employeeIdsWithRole = await _context.Users
+                    .Where(u => userIdsWithRole.Contains(u.Id))
+                    .Select(u => u.employee_id)
+                    .ToListAsync();
+
+                employeeQuery = employeeQuery.Where(e => employeeIdsWithRole.Contains(e.Id));
+            }
+
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                var term = searchTerm.Trim().ToLower();
+                employeeQuery = employeeQuery.Where(e => 
+                    (e.full_name != null && e.full_name.ToLower().Contains(term)) || 
+                    (e.employee_code != null && e.employee_code.ToLower().Contains(term)));
+            }
+
+            // Loại trừ nhân viên thuộc nhóm miễn xếp ca (Admin, Quản lý vùng)
             var exemptIds = await GetExemptEmployeeIdsAsync();
             if (exemptIds.Count > 0)
             {
@@ -144,6 +167,7 @@ namespace ERP.Services.Attendance
                 IsPublished = a.is_published,
                 Status = a.status ?? (a.is_published ? "approved" : "draft"),
                 Note = a.note,
+                Color = a.Shift?.color,
                 BranchId = a.Employee?.branch_id,
                 BranchName = a.Employee?.Branch?.name,
                 JobTitleId = a.Employee?.job_title_id,
@@ -157,15 +181,18 @@ namespace ERP.Services.Attendance
                 {
                     Id = e.Id,
                     FullName = e.full_name,
-                    Avatar = e.avatar,
                     EmployeeCode = e.employee_code,
+                    Avatar = e.avatar,
+                    IsActive = e.is_active,
+                    RegionId = e.region_id,
+                    RegionName = e.Region?.name,
                     BranchId = e.branch_id,
                     BranchName = e.Branch?.name,
                     DepartmentId = e.department_id,
                     DepartmentName = e.Department?.name,
                     JobTitleId = e.job_title_id,
                     JobTitleName = e.JobTitle?.name,
-                    IsActive = e.is_active
+                    GenderCode = e.gender_code
                 }).ToList(),
                 Assignments = assignmentDtos,
                 OpenShifts = openShifts.Select(o => new WeeklyScheduleApiOpenShiftDto
@@ -177,6 +204,7 @@ namespace ERP.Services.Attendance
                     EndTime = o.Shift?.end_time.ToString(@"hh\:mm"),
                     OpenDate = o.open_date.ToString("yyyy-MM-dd"),
                     Status = o.status,
+                    Color = o.Shift?.color,
                     RequiredQuantity = o.required_quantity,
                     AssignedQuantity = 0,
                     BranchId = o.branch_id,
@@ -310,13 +338,19 @@ namespace ERP.Services.Attendance
         [Obsolete("Approve step is no longer used. Shifts are finalized upon Publishing.")]
         public async Task<ShiftBulkActionResultDto> ApproveAssignmentsAsync(string weekStartDate, List<int>? assignmentIds)
         {
-            return new ShiftBulkActionResultDto { Message = "Bước phê duyệt đã được loại bỏ." };
+            return await UpdateShiftStatusAsync(new ShiftBulkUpdateStatusDto
+            {
+                WeekStartDate = weekStartDate,
+                AssignmentIds = assignmentIds,
+                TargetStatus = "approved"
+            });
         }
 
         [Obsolete("Approve step is no longer used.")]
         public async Task<ShiftBulkActionResultDto> PublishAndApproveAssignmentsAsync(string weekStartDate, List<int>? assignmentIds)
         {
-            return await PublishAssignmentsAsync(weekStartDate, assignmentIds);
+            await PublishAssignmentsAsync(weekStartDate, assignmentIds);
+            return await ApproveAssignmentsAsync(weekStartDate, assignmentIds);
         }
 
         public async Task<ShiftBulkActionResultDto> DeleteUnconfirmedAssignmentsAsync(string weekStartDate)
@@ -618,45 +652,52 @@ namespace ERP.Services.Attendance
                 throw new Exception("Trạng thái đích không được để trống.");
 
             var (startDate, endDate) = ParseWeekRange(dto.WeekStartDate);
+            var normalizedTargetStatus = dto.TargetStatus.Trim().ToLowerInvariant();
 
             var query = _unitOfWork.Repository<ShiftAssignments>()
                 .AsQueryable()
                 .Where(a => a.assignment_date >= startDate && a.assignment_date < endDate);
 
             if (dto.AssignmentIds != null && dto.AssignmentIds.Count > 0)
-                query = query.Where(a => dto.AssignmentIds.Contains(a.Id));
-            else
             {
-                // Nếu không truyền ID, mặc định là các ca có trạng thái hợp lệ để chuyển đổi
-                if (dto.TargetStatus == "published")
-                    query = query.Where(a => a.status == "draft");
+                query = query.Where(a => dto.AssignmentIds.Contains(a.Id));
+            }
+
+            if (normalizedTargetStatus == "published")
+            {
+                query = query.Where(a => a.status == "draft");
+            }
+            else if (normalizedTargetStatus == "approved")
+            {
+                query = query.Where(a => a.status == "published");
             }
 
             var assignments = await query.ToListAsync();
             var now = DateTime.UtcNow;
             foreach (var a in assignments)
             {
-                a.status = dto.TargetStatus;
-                if (dto.TargetStatus == "published")
+                a.status = normalizedTargetStatus;
+                if (normalizedTargetStatus == "published")
                 {
                     a.is_published = true;
                     a.published_at = now;
                 }
-                
+
                 a.UpdatedAt = now;
                 _unitOfWork.Repository<ShiftAssignments>().Update(a);
             }
 
             await _unitOfWork.SaveChangesAsync();
 
-            var ids = assignments.Select(a => a.Id).ToList();
-            if (dto.TargetStatus == "published")
-                await _notificationService.NotifyShiftPublishedAsync(ids);
+            if (normalizedTargetStatus == "published" && assignments.Count > 0)
+            {
+                await _notificationService.NotifyShiftPublishedAsync(assignments.Select(a => a.Id).ToList());
+            }
 
             return new ShiftBulkActionResultDto
             {
                 AffectedCount = assignments.Count,
-                Message = $"Đã cập nhật {assignments.Count} ca làm sang trạng thái '{dto.TargetStatus}'."
+                Message = $"Đã cập nhật {assignments.Count} ca làm sang trạng thái '{normalizedTargetStatus}'."
             };
         }
 

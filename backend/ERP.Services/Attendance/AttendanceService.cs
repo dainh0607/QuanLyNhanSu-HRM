@@ -109,7 +109,9 @@ namespace ERP.Services.Attendance
                 RecordType = r.record_type,
                 Source = r.source,
                 Note = r.note,
-                Verified = r.verified
+                Verified = r.verified,
+                Latitude = r.location_lat,
+                Longitude = r.location_lng
             });
         }
 
@@ -157,7 +159,9 @@ namespace ERP.Services.Attendance
                 RecordType = r.record_type,
                 Source = r.source,
                 Note = r.note,
-                Verified = r.verified
+                Verified = r.verified,
+                Latitude = r.location_lat,
+                Longitude = r.location_lng
             });
 
             return new PaginatedListDto<AttendanceRecordDto>(items.ToList(), total, skip / take + 1, take);
@@ -212,7 +216,9 @@ namespace ERP.Services.Attendance
                 RecordType = r.record_type,
                 Source = r.source,
                 Note = r.note,
-                Verified = r.verified
+                Verified = r.verified,
+                Latitude = r.location_lat,
+                Longitude = r.location_lng
             });
         }
 

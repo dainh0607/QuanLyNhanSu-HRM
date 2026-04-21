@@ -168,7 +168,9 @@ namespace ERP.Services.Attendance
                     RecordType = r.record_type,
                     Source = r.source,
                     Note = r.note,
-                    Verified = r.verified
+                    Verified = r.verified,
+                    Latitude = r.location_lat,
+                    Longitude = r.location_lng
                 }).ToList()
             };
         }
@@ -209,6 +211,7 @@ namespace ERP.Services.Attendance
                 EndTime = o.Shift?.end_time.ToString(@"hh\:mm"),
                 OpenDate = o.open_date.ToString("yyyy-MM-dd"),
                 Status = o.status,
+                Color = o.Shift?.color,
                 RequiredQuantity = o.required_quantity,
                 AssignedQuantity = 0,
                 BranchId = o.branch_id,

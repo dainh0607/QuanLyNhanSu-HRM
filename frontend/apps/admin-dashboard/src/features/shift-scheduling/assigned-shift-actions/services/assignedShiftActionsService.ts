@@ -33,6 +33,10 @@ interface AttendanceRecordApiItem {
   Note?: string;
   verified?: boolean;
   Verified?: boolean;
+  latitude?: number | null;
+  Latitude?: number | null;
+  longitude?: number | null;
+  Longitude?: number | null;
 }
 
 interface ShiftAttendanceDetailApiItem {
@@ -90,6 +94,18 @@ interface ShiftCreateResponse {
   ShiftId?: number;
 }
 
+interface LeaveTypeApiItem {
+  id?: number;
+  Id?: number;
+  name?: string;
+  Name?: string;
+}
+
+interface LeaveDependentDataApiResponse {
+  leaveTypes?: LeaveTypeApiItem[];
+  LeaveTypes?: LeaveTypeApiItem[];
+}
+
 const normalizeShiftCode = (value: string): string =>
   value
     .normalize("NFD")
@@ -106,6 +122,22 @@ const toTimeSpanValue = (value: string): string =>
 const toPositiveNumber = (value: string): number => {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+};
+
+const LEAVE_REASON_LABEL_MAP: Record<NonNullable<LeaveRequestFormValues["leaveReasonCode"]>, string> = {
+  annualLeave: "Phép năm",
+  sickLeave: "Nghỉ ốm",
+  personalLeave: "Việc riêng",
+  maternityLeave: "Thai sản",
+  unpaidLeave: "Nghỉ không lương",
+};
+
+const LEAVE_DURATION_VALUE_MAP: Record<LeaveRequestFormValues["durationType"], string> = {
+  quarterDay: "QUARTER",
+  halfDay: "HALF",
+  threeQuarterDay: "THREE_QUARTERS",
+  inDay: "FULL",
+  hourly: "HOURLY",
 };
 
 const getPrimaryBranchId = (
@@ -147,15 +179,19 @@ const sameDate = (left: string, right: string): boolean => {
   );
 };
 
-const getContextKey = (context: AssignedShiftActionContext): string =>
-  `${context.employee.id}-${context.shift.sourceId ?? context.shift.id}-${context.shift.date}`;
-
 const getFieldValue = <T>(
   item: Record<string, unknown>,
   camelKey: string,
   pascalKey: string,
 ): T | undefined =>
   (item[camelKey] as T | undefined) ?? (item[pascalKey] as T | undefined);
+
+const normalizeText = (value: string): string =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "")
+    .toLowerCase();
 
 const toHistoryItem = (record: AttendanceRecordApiItem): ShiftAttendanceHistoryItem | null => {
   const timestamp = getFieldValue<string>(record as Record<string, unknown>, "recordTime", "RecordTime");
@@ -174,6 +210,8 @@ const toHistoryItem = (record: AttendanceRecordApiItem): ShiftAttendanceHistoryI
     imageUrl: null,
     reason: getFieldValue<string>(record as Record<string, unknown>, "note", "Note") ?? null,
     isPinned: Boolean(getFieldValue<boolean>(record as Record<string, unknown>, "verified", "Verified")),
+    latitude: getFieldValue<number | null>(record as Record<string, unknown>, "latitude", "Latitude") ?? null,
+    longitude: getFieldValue<number | null>(record as Record<string, unknown>, "longitude", "Longitude") ?? null,
   };
 };
 
@@ -193,20 +231,66 @@ const findActualTime = (
   return match ? formatTime(match.timestamp) : null;
 };
 
-const buildMockMapPoint = (
+const buildMapPointsFromHistory = (
+  history: ShiftAttendanceHistoryItem[],
+): ShiftMapPoint[] =>
+  history
+    .filter(
+      (item) =>
+        typeof item.latitude === "number" &&
+        Number.isFinite(item.latitude) &&
+        typeof item.longitude === "number" &&
+        Number.isFinite(item.longitude),
+    )
+    .map((item) => ({
+      id: `${item.id}-map`,
+      label: item.recordType.toUpperCase() === "OUT" ? "Ra ca" : "Vào ca",
+      latitude: item.latitude as number,
+      longitude: item.longitude as number,
+      timestamp: item.timestamp,
+      source: item.deviceType,
+    }));
+
+const buildFallbackLeaveNote = (
+  values: LeaveRequestFormValues,
+  reasonLabel: string,
+  resolvedRange: ReturnType<typeof getLeaveTimeRange>,
+): string => {
+  const details = [
+    values.reason.trim(),
+    `Loai nghi: ${reasonLabel}`,
+    `Thoi luong: ${LEAVE_DURATION_VALUE_MAP[values.durationType]}`,
+    values.handoverEmployeeId ? `Nguoi ban giao: ${values.handoverEmployeeId}` : "",
+    values.phoneNumber ? `SDT lien he: ${values.phoneNumber.trim()}` : "",
+    values.discussionContent ? `Trao doi: ${values.discussionContent.trim()}` : "",
+    resolvedRange ? `Khung gio: ${resolvedRange.startTime} - ${resolvedRange.endTime}` : "",
+  ].filter(Boolean);
+
+  return details.join(" | ");
+};
+
+const resolveLeaveTypeId = async (
   context: AssignedShiftActionContext,
-  index: number,
-  record: ShiftAttendanceHistoryItem,
-): ShiftMapPoint => {
-  const seed = context.employee.id * 0.0015;
-  return {
-    id: `${getContextKey(context)}-map-${index}`,
-    label: record.recordType.toUpperCase() === "OUT" ? "Ra ca" : "Vào ca",
-    latitude: 10.776 + seed + (index * 0.0012),
-    longitude: 106.700 + seed + (index * 0.0015),
-    timestamp: record.timestamp,
-    source: record.deviceType,
-  };
+  reasonLabel: string,
+): Promise<number | null> => {
+  const branchId = context.shift.branchId ?? context.employee.branchId ?? null;
+  if (!branchId) {
+    return null;
+  }
+
+  const response = await requestJson<LeaveDependentDataApiResponse>(
+    `${API_URL}/leave-requests/dependent-data?branchId=${branchId}&excludeEmployeeId=${context.employee.id}`,
+    { method: "GET" },
+    "KhĂ´ng thá»ƒ táº£i dá»¯ liá»‡u loáº¡i nghá»‰ phĂ©p",
+  );
+
+  const leaveTypes = response.leaveTypes ?? response.LeaveTypes ?? [];
+  const normalizedReason = normalizeText(reasonLabel);
+  const matchedLeaveType = leaveTypes.find((item) =>
+    normalizeText(item.name ?? item.Name ?? "").includes(normalizedReason),
+  );
+
+  return matchedLeaveType?.id ?? matchedLeaveType?.Id ?? null;
 };
 
 const mapShiftOption = (item: ShiftOptionApiItem): AvailableShiftOption | null => {
@@ -298,9 +382,7 @@ export const assignedShiftActionsService = {
       actualCheckOut: findActualTime(datedHistory, "OUT"),
       canEditTime,
       attendanceHistory: datedHistory,
-      mapPoints: datedHistory
-        .filter((item) => item.deviceType === "Mobile")
-        .map((item, index) => buildMockMapPoint(context, index, item)),
+      mapPoints: buildMapPointsFromHistory(datedHistory),
     };
 
     return detail;

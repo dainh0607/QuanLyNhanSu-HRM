@@ -1,4 +1,5 @@
 import { employeeService } from "../../../../services/employeeService";
+import { registerRuntimeShiftTemplate } from "../../open-shift/openShiftRuntimeStore";
 import { shiftSchedulingApi } from "../../services/shiftSchedulingApi";
 import type {
   ShiftTemplateCatalogData,
@@ -80,6 +81,46 @@ const buildBranchRelations = async (): Promise<ShiftTemplateCatalogData> => {
   };
 };
 
+const getCreatedTemplateId = (
+  response:
+    | {
+        templateId?: number;
+        TemplateId?: number;
+        id?: number;
+        Id?: number;
+      }
+    | null
+    | undefined,
+): number | undefined => {
+  const rawValue =
+    response?.templateId ??
+    response?.TemplateId ??
+    response?.id ??
+    response?.Id;
+
+  return typeof rawValue === "number" && Number.isFinite(rawValue)
+    ? rawValue
+    : undefined;
+};
+
+const isRecoverableCreateError = (error: unknown): boolean => {
+  if (error instanceof TypeError) {
+    return true;
+  }
+
+  if (error instanceof Error) {
+    const normalizedMessage = error.message.trim().toLowerCase();
+    return (
+      normalizedMessage.includes("failed to fetch") ||
+      normalizedMessage.includes("khong the ket noi") ||
+      normalizedMessage.includes("không thể kết nối") ||
+      normalizedMessage.includes("incomplete_chunked_encoding")
+    );
+  }
+
+  return false;
+};
+
 export const shiftTemplateService = {
   async getCatalogData(): Promise<ShiftTemplateCatalogData> {
     try {
@@ -116,28 +157,24 @@ export const shiftTemplateService = {
   async createShiftTemplate(
     payload: ShiftTemplateSubmitPayload,
   ): Promise<void> {
-    await shiftSchedulingApi.createShiftTemplate(payload); /*
-      `${API_URL}/shift-templates`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          TemplateName: payload.name,
-          StartTime: payload.startTime,
-          EndTime: payload.endTime,
-          IsCrossNight: payload.isCrossNight,
-          BranchIds: toNumericIdList(payload.branchIds),
-          DepartmentIds: toNumericIdList(payload.departmentIds),
-          PositionIds: toNumericIdList(payload.jobTitleIds),
-          RepeatDays: toRepeatDayList(payload.repeatDays),
-          Note: null,
-        }),
-      },
-      "Không thể tạo mẫu ca làm mới",
-    ); */
-    /* registerRuntimeShiftTemplate(
-      payload,
-      response.templateId ?? response.TemplateId ?? response.id ?? response.Id,
-    ); */
+    try {
+      const response = await shiftSchedulingApi.createShiftTemplate(payload);
+      const createdTemplateId = getCreatedTemplateId(response);
+
+      if (createdTemplateId !== undefined) {
+        registerRuntimeShiftTemplate(payload, createdTemplateId);
+      }
+    } catch (error) {
+      if (!isRecoverableCreateError(error)) {
+        throw error;
+      }
+
+      console.warn(
+        "Shift template API is temporarily unavailable. Falling back to runtime shift creation.",
+        error,
+      );
+      registerRuntimeShiftTemplate(payload);
+    }
   },
 };
 

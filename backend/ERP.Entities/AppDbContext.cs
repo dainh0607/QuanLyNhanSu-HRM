@@ -11,6 +11,7 @@ namespace ERP.Entities
         private readonly ERP.Entities.Interfaces.ICurrentUserContext _currentUserContext;
 
         public int? CurrentTenantId => _currentUserContext?.TenantId;
+        public bool IsSystemAdmin => _currentUserContext?.IsSystemAdmin ?? false;
 
         public AppDbContext(DbContextOptions<AppDbContext> options, ERP.Entities.Interfaces.ICurrentUserContext currentUserContext) : base(options)
         {
@@ -232,16 +233,23 @@ namespace ERP.Entities
             var tenantIdProperty = System.Linq.Expressions.Expression.Property(parameter, "tenant_id");
             
             // Fix #1: Use a member access on the context to make it dynamic
-            var contextExpression = System.Linq.Expressions.Expression.Constant(this);
             var currentTenantId = System.Linq.Expressions.Expression.Property(
                 System.Linq.Expressions.Expression.Constant(this),
                 nameof(CurrentTenantId)
             );
 
-            // e => e.tenant_id == this.CurrentTenantId || e.tenant_id == null
+            var isSystemAdmin = System.Linq.Expressions.Expression.Property(
+                System.Linq.Expressions.Expression.Constant(this),
+                nameof(IsSystemAdmin)
+            );
+
+            // e => isSystemAdmin || e.tenant_id == this.CurrentTenantId || e.tenant_id == null
             var body = System.Linq.Expressions.Expression.OrElse(
-                System.Linq.Expressions.Expression.Equal(tenantIdProperty, currentTenantId),
-                System.Linq.Expressions.Expression.Equal(tenantIdProperty, System.Linq.Expressions.Expression.Constant(null, typeof(int?)))
+                isSystemAdmin,
+                System.Linq.Expressions.Expression.OrElse(
+                    System.Linq.Expressions.Expression.Equal(tenantIdProperty, currentTenantId),
+                    System.Linq.Expressions.Expression.Equal(tenantIdProperty, System.Linq.Expressions.Expression.Constant(null, typeof(int?)))
+                )
             );
             return System.Linq.Expressions.Expression.Lambda(body, parameter);
         }
