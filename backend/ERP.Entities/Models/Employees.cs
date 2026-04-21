@@ -12,7 +12,7 @@ namespace ERP.Entities.Models
 
         [Column("employee_code")]
         [StringLength(20)]
-        public string employee_code { get; set; }
+        public string employee_code { get; set; } = null!;
 
         [Column("full_name")]
         [StringLength(100)]
@@ -186,10 +186,10 @@ namespace ERP.Entities.Models
         public string? marital_status_code { get; set; }
 
         [ForeignKey("gender_code")]
-        public virtual Genders Gender { get; set; }
+        public virtual Genders Gender { get; set; } = null!;
 
         [ForeignKey("marital_status_code")]
-        public virtual MaritalStatuses MaritalStatus { get; set; }
+        public virtual MaritalStatuses MaritalStatus { get; set; } = null!;
 
         [Column("contract_sign_date")]
         public DateTime? contract_sign_date { get; set; }

@@ -14,13 +14,13 @@ namespace ERP.Entities.Models
         public int employee_id { get; set; }
 
         [ForeignKey("employee_id")]
-        public virtual Employees Employee { get; set; }
+        public virtual Employees Employee { get; set; } = null!;
 
         [Column("skill_id")]
         public int skill_id { get; set; }
 
         [ForeignKey("skill_id")]
-        public virtual Skills Skill { get; set; }
+        public virtual Skills Skill { get; set; } = null!;
 
         [Column("level")]
         public int? level { get; set; }

@@ -13,19 +13,19 @@ namespace ERP.Entities.Models
         public int user_id { get; set; }
 
         [ForeignKey("user_id")]
-        public virtual Users User { get; set; }
+        public virtual Users User { get; set; } = null!;
 
         [Column("session_id")]
         [StringLength(64)]
-        public string session_id { get; set; }
+        public string session_id { get; set; } = null!;
 
         [Column("refresh_token_hash")]
         [StringLength(128)]
-        public string refresh_token_hash { get; set; }
+        public string refresh_token_hash { get; set; } = null!;
 
         [Column("csrf_token_hash")]
         [StringLength(128)]
-        public string csrf_token_hash { get; set; }
+        public string csrf_token_hash { get; set; } = null!;
 
         [Column("expires_at")]
         public DateTime expires_at { get; set; }

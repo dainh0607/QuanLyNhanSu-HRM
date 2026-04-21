@@ -2,6 +2,7 @@ import type {
   EmployeeEditMaritalStatusCode,
   EmployeeEditDependentsPayload,
   EmployeeFullProfile,
+  LateEarlyRule,
 } from '../../../services/employeeService';
 import type { Employee } from '../../employees/types';
 import { getRecordValue, pickAddress } from '../utils';
@@ -47,6 +48,53 @@ export const toDateInputValue = (value?: string | null): string => {
   }
 
   return parsedDate.toISOString().slice(0, 10);
+};
+
+const createLateEarlyRule = (value: unknown, index: number): LateEarlyRule => {
+  const record = typeof value === 'object' && value !== null
+    ? (value as Record<string, unknown>)
+    : {};
+
+  return {
+    id:
+      typeof record.id === 'string' && record.id.trim()
+        ? record.id
+        : `late-early-rule-${index}`,
+    startDate: toDateInputValue(
+      typeof record.startDate === 'string'
+        ? record.startDate
+        : typeof record.start_date === 'string'
+          ? record.start_date
+          : undefined,
+    ),
+    endDate: toDateInputValue(
+      typeof record.endDate === 'string'
+        ? record.endDate
+        : typeof record.end_date === 'string'
+          ? record.end_date
+          : undefined,
+    ),
+    minutes: toStringValue(record.minutes, record.allowedMinutes, record.allowed_minutes, 0),
+  };
+};
+
+const parseLateEarlyRules = (value: unknown): LateEarlyRule[] => {
+  let parsedValue = value;
+
+  if (typeof value === 'string' && value.trim()) {
+    try {
+      parsedValue = JSON.parse(value);
+    } catch (error) {
+      console.error('Error parsing late/early rules:', error);
+      return [];
+    }
+  }
+
+  if (!Array.isArray(parsedValue)) {
+    return [];
+  }
+
+  return parsedValue.map((rule, index) => createLateEarlyRule(rule, index));
 };
 
 export const normalizeText = (value?: string): string =>
@@ -302,6 +350,19 @@ export const buildWorkSeedForms = (
 ): WorkFormMap => {
   const basicInfo = profile?.basicInfo;
   const basicInfoRecord = (basicInfo ?? {}) as unknown as Record<string, unknown>;
+  const totalLateEarlyRules = parseLateEarlyRules(
+    getRecordValue(basicInfoRecord, [
+      'totalLateEarlyRules',
+      'total_late_early_rules',
+      'lateEarlyDetailedRules',
+    ]),
+  );
+  const lateRules = parseLateEarlyRules(
+    getRecordValue(basicInfoRecord, ['lateRules', 'late_rules']),
+  );
+  const earlyRules = parseLateEarlyRules(
+    getRecordValue(basicInfoRecord, ['earlyRules', 'early_rules']),
+  );
 
   return {
     jobStatus: {
@@ -310,23 +371,24 @@ export const buildWorkSeedForms = (
       contractExpiryDate: toDateInputValue(getRecordValue(basicInfoRecord, ['contractExpiryDate']) as string),
       workType: toStringValue(getRecordValue(basicInfoRecord, ['workType'])),
       seniorityMonths: toStringValue(getRecordValue(basicInfoRecord, ['seniorityMonths'])),
+      isTotalLateEarlyEnabled: Boolean(
+        getRecordValue(basicInfoRecord, ['isTotalLateEarlyEnabled', 'is_total_late_early_enabled']),
+      ),
       lateEarlyAllowed: toStringValue(getRecordValue(basicInfoRecord, ['lateEarlyAllowed'])),
+      totalLateEarlyRules,
+      isSeparateLateEarlyEnabled: Boolean(
+        getRecordValue(basicInfoRecord, ['isSeparateLateEarlyEnabled', 'is_separate_late_early_enabled']),
+      ),
       lateAllowedMinutes: toStringValue(getRecordValue(basicInfoRecord, ['lateAllowedMinutes'])),
+      lateRules,
       earlyAllowedMinutes: toStringValue(getRecordValue(basicInfoRecord, ['earlyAllowedMinutes'])),
-      lateEarlyDetailedRules: (() => {
-        const value = getRecordValue(basicInfoRecord, ['lateEarlyDetailedRules']);
-        if (typeof value === 'string' && value.trim()) {
-          try {
-            return JSON.parse(value);
-          } catch (e) {
-            console.error('Error parsing lateEarlyDetailedRules:', e);
-          }
-        }
-        return Array.isArray(value) ? value : [];
-      })(),
+      earlyRules,
       lateEarlyNote: toStringValue(getRecordValue(basicInfoRecord, ['lateEarlyNote'])),
       isResigned: Boolean(getRecordValue(basicInfoRecord, ['isResigned'])),
       resignationReason: toStringValue(getRecordValue(basicInfoRecord, ['resignationReason'])),
+      resignationDate: toDateInputValue(
+        getRecordValue(basicInfoRecord, ['resignationDate', 'resignation_date']) as string,
+      ),
     },
     jobInfo: {
       regionId: toStringValue(getRecordValue(basicInfoRecord, ['regionId'])),

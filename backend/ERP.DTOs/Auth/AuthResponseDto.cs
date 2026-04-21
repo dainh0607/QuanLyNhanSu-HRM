@@ -3,12 +3,12 @@ namespace ERP.DTOs.Auth
     public class AuthResponseDto
     {
         public bool Success { get; set; }
-        public string Message { get; set; }
-        public string IdToken { get; set; }
-        public string RefreshToken { get; set; }
-        public string CsrfToken { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public string IdToken { get; set; } = string.Empty;
+        public string RefreshToken { get; set; } = string.Empty;
+        public string CsrfToken { get; set; } = string.Empty;
         public int ExpiresIn { get; set; }
-        public UserInfoDto User { get; set; }
+        public UserInfoDto? User { get; set; }
     }
 
     public class UserInfoDto
@@ -16,14 +16,15 @@ namespace ERP.DTOs.Auth
         public int UserId { get; set; }
         public int? TenantId { get; set; }
         public int EmployeeId { get; set; }
-        public string Email { get; set; }
-        public string FullName { get; set; }
-        public string EmployeeCode { get; set; }
-        public string PhoneNumber { get; set; }
-        public string PhotoUrl { get; set; }
+        public string Email { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public string? EmployeeCode { get; set; }
+        public string? PhoneNumber { get; set; }
+        public string? PhotoUrl { get; set; }
         public bool IsActive { get; set; }
-        public List<string> Roles { get; set; }
-        public string ScopeLevel { get; set; }
+        public List<string> Roles { get; set; } = new List<string>();
+        public List<string> Permissions { get; set; } = new List<string>();
+        public string? ScopeLevel { get; set; }
         public int? RegionId { get; set; }
         public int? BranchId { get; set; }
         public int? DepartmentId { get; set; }

@@ -14,7 +14,7 @@ namespace ERP.Entities.Models
         public int employee_id { get; set; }
 
         [ForeignKey("employee_id")]
-        public virtual Employees Employee { get; set; }
+        public virtual Employees Employee { get; set; } = null!;
 
         [Column("timestamp")]
         public DateTime timestamp { get; set; }
@@ -23,10 +23,10 @@ namespace ERP.Entities.Models
         public int? machine_id { get; set; }
 
         [ForeignKey("machine_id")]
-        public virtual TimeMachines Machine { get; set; }
+        public virtual TimeMachines? Machine { get; set; }
 
         [Column("type")]
         [StringLength(10)]
-        public string type { get; set; }
+        public string type { get; set; } = null!;
     }
 }

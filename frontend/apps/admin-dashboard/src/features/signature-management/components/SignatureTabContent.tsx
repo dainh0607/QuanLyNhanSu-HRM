@@ -10,6 +10,7 @@ export interface SignatureTabContentRef {
 
 interface SignatureTabContentProps {
   employeeId: number;
+  employeeName?: string;
 }
 
 const SignatureTabContent = forwardRef<SignatureTabContentRef, SignatureTabContentProps>(({

@@ -15,13 +15,13 @@ namespace ERP.Entities.Models
         public int employee_id { get; set; }
 
         [ForeignKey("employee_id")]
-        public virtual Employees Employee { get; set; }
+        public virtual Employees Employee { get; set; } = null!;
 
         [Column("policy_id")]
         public int? policy_id { get; set; }
 
         [ForeignKey("policy_id")]
-        public virtual AttendancePolicies Policy { get; set; }
+        public virtual AttendancePolicies? Policy { get; set; }
 
         [Column("multi_device_login")]
         public bool multi_device_login { get; set; }

@@ -785,7 +785,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("address_line");
 
                     b.Property<string>("city")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("city");
@@ -797,13 +796,11 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("country");
 
                     b.Property<string>("district")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("district");
 
                     b.Property<string>("postal_code")
-                        .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("postal_code");
@@ -813,7 +810,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("tenant_id");
 
                     b.Property<string>("ward")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("ward");
@@ -847,7 +843,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("code");
 
                     b.Property<string>("description")
-                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("description");
@@ -945,19 +940,16 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("employee_id");
 
                     b.Property<string>("handover_place")
-                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)")
                         .HasColumnName("handover_place");
 
                     b.Property<string>("location")
-                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)")
                         .HasColumnName("location");
 
                     b.Property<string>("note")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("note");
 
@@ -1004,7 +996,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("asset_name");
 
                     b.Property<string>("description")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("description");
 
@@ -1047,7 +1038,7 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("is_active");
 
                     b.Property<decimal>("latitude")
-                        .HasColumnType("decimal(18,10)")
+                        .HasColumnType("decimal(18,2)")
                         .HasColumnName("latitude");
 
                     b.Property<string>("location_name")
@@ -1057,7 +1048,7 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("location_name");
 
                     b.Property<decimal>("longitude")
-                        .HasColumnType("decimal(18,10)")
+                        .HasColumnType("decimal(18,2)")
                         .HasColumnName("longitude");
 
                     b.Property<int>("radius_meters")
@@ -1198,7 +1189,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("allow_wifi_attendance");
 
                     b.Property<string>("description")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("description");
 
@@ -1207,7 +1197,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("is_active");
 
                     b.Property<string>("note")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("note");
 
@@ -1238,7 +1227,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("tenant_id");
 
                     b.Property<string>("wifi_name")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("wifi_name");
@@ -1274,7 +1262,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("employee_id");
 
                     b.Property<string>("face_image")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)")
                         .HasColumnName("face_image");
@@ -1288,7 +1275,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("location_lng");
 
                     b.Property<string>("note")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("note");
 
@@ -1511,7 +1497,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("bank_name");
 
                     b.Property<string>("branch")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("branch");
@@ -1541,7 +1526,6 @@ namespace ERP.Entities.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("address")
-                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("address");
@@ -1675,7 +1659,6 @@ namespace ERP.Entities.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("attachment")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)")
                         .HasColumnName("attachment");
@@ -1687,7 +1670,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("certificate_name");
 
                     b.Property<string>("description")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("description");
 
@@ -1784,7 +1766,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(200)");
 
                     b.Property<string>("note")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
@@ -1799,7 +1780,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("signature_token")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
@@ -1934,7 +1914,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("updated_at");
 
                     b.Property<string>("attachment")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)")
                         .HasColumnName("attachment");
@@ -1966,7 +1945,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("is_electronic");
 
                     b.Property<string>("note")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("note");
 
@@ -1975,7 +1953,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("sign_date");
 
                     b.Property<string>("signed_by")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("signed_by");
@@ -1987,7 +1964,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("status");
 
                     b.Property<string>("tax_type")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("tax_type");
@@ -2466,7 +2442,6 @@ namespace ERP.Entities.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("attachment")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)")
                         .HasColumnName("attachment");
@@ -2478,7 +2453,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("course_name");
 
                     b.Property<string>("description")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("description");
 
@@ -2541,7 +2515,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("leave_type_id");
 
                     b.Property<string>("note")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("note");
 
@@ -2701,14 +2674,14 @@ namespace ERP.Entities.Migrations
 
                     b.Property<string>("code")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
                         .HasColumnName("code");
 
                     b.Property<string>("name")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
                         .HasColumnName("name");
 
                     b.Property<int?>("parent_id")
@@ -2766,7 +2739,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("birth_date");
 
                     b.Property<string>("dependent_duration")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("dependent_duration");
@@ -2787,19 +2759,16 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("gender");
 
                     b.Property<string>("identity_number")
-                        .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("identity_number");
 
                     b.Property<string>("permanent_address")
-                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("permanent_address");
 
                     b.Property<string>("reason")
-                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("reason");
@@ -2811,7 +2780,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("relationship");
 
                     b.Property<string>("temporary_address")
-                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("temporary_address");
@@ -2843,7 +2811,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("device_name");
 
                     b.Property<string>("device_type")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("device_type");
@@ -2859,7 +2826,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("imei");
 
                     b.Property<string>("os")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("os");
@@ -2869,7 +2835,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("tenant_id");
 
                     b.Property<string>("version")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("version");
@@ -2899,7 +2864,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("updated_at");
 
                     b.Property<string>("certification_info")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("certification_info");
 
@@ -2957,7 +2921,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("code");
 
                     b.Property<string>("description")
-                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("description");
@@ -3160,7 +3123,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("major");
 
                     b.Property<string>("note")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("note");
 
@@ -3185,7 +3147,6 @@ namespace ERP.Entities.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("address")
-                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("address");
@@ -3195,13 +3156,11 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("employee_id");
 
                     b.Property<string>("home_phone")
-                        .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("home_phone");
 
                     b.Property<string>("mobile_phone")
-                        .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("mobile_phone");
@@ -3279,7 +3238,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("certificate_id");
 
                     b.Property<string>("attachment")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)")
                         .HasColumnName("attachment");
@@ -3364,7 +3322,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("expiry_date");
 
                     b.Property<string>("FileExtension")
-                        .IsRequired()
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)")
                         .HasColumnName("file_extension");
@@ -3384,7 +3341,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("is_active");
 
                     b.Property<string>("Note")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)")
                         .HasColumnName("note");
@@ -3731,6 +3687,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("int")
                         .HasColumnName("secondary_department_id");
 
+                    b.Property<int?>("secondary_job_title_id")
+                        .HasColumnType("int")
+                        .HasColumnName("secondary_job_title_id");
+
                     b.Property<int?>("seniority_months")
                         .HasColumnType("int")
                         .HasColumnName("seniority_months");
@@ -3796,6 +3756,8 @@ namespace ERP.Entities.Migrations
 
                     b.HasIndex("secondary_department_id");
 
+                    b.HasIndex("secondary_job_title_id");
+
                     b.ToTable("Employees", (string)null);
                 });
 
@@ -3809,13 +3771,11 @@ namespace ERP.Entities.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("attachment")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)")
                         .HasColumnName("attachment");
 
                     b.Property<string>("description")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("description");
 
@@ -3897,7 +3857,6 @@ namespace ERP.Entities.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("blood_type")
-                        .IsRequired()
                         .HasMaxLength(5)
                         .HasColumnType("nvarchar(5)")
                         .HasColumnName("blood_type");
@@ -3907,13 +3866,11 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("check_date");
 
                     b.Property<string>("chronic_disease")
-                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("chronic_disease");
 
                     b.Property<string>("congenital_disease")
-                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("congenital_disease");
@@ -3923,7 +3880,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("employee_id");
 
                     b.Property<string>("health_status")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("health_status");
@@ -3993,7 +3949,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("employee_pays_unemployment");
 
                     b.Property<string>("health_insurance_no")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("health_insurance_no");
@@ -4003,29 +3958,24 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("join_date");
 
                     b.Property<string>("maternity_regime")
-                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("maternity_regime");
 
                     b.Property<string>("medical_history")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("medical_history");
 
                     b.Property<string>("note")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("note");
 
                     b.Property<string>("position")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("position");
 
                     b.Property<string>("registration_place")
-                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)")
                         .HasColumnName("registration_place");
@@ -4039,7 +3989,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("salary_for_insurance");
 
                     b.Property<string>("social_insurance_no")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("social_insurance_no");
@@ -7291,7 +7240,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("updated_at");
 
                     b.Property<string>("description")
-                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("description");
@@ -8262,7 +8210,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("assigned_by_user_id");
 
                     b.Property<string>("assignment_reason")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)")
                         .HasColumnName("assignment_reason");
@@ -9054,6 +9001,11 @@ namespace ERP.Entities.Migrations
                         .HasForeignKey("secondary_department_id")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("ERP.Entities.Models.JobTitles", "SecondaryJobTitle")
+                        .WithMany()
+                        .HasForeignKey("secondary_job_title_id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Branch");
 
                     b.Navigation("Department");
@@ -9071,6 +9023,8 @@ namespace ERP.Entities.Migrations
                     b.Navigation("SecondaryBranch");
 
                     b.Navigation("SecondaryDepartment");
+
+                    b.Navigation("SecondaryJobTitle");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.HealthRecords", b =>

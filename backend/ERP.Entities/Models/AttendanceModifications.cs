@@ -14,7 +14,7 @@ namespace ERP.Entities.Models
         public int attendance_record_id { get; set; }
 
         [ForeignKey("attendance_record_id")]
-        public virtual AttendanceRecords AttendanceRecord { get; set; }
+        public virtual AttendanceRecords AttendanceRecord { get; set; } = null!;
 
         [Column("modified_by")]
         public int modified_by { get; set; }
@@ -29,6 +29,6 @@ namespace ERP.Entities.Models
         public DateTime new_time { get; set; }
 
         [Column("reason")]
-        public string reason { get; set; }
+        public string reason { get; set; } = null!;
     }
 }

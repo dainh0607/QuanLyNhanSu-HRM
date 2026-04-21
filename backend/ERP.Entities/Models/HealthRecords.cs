@@ -14,7 +14,7 @@ namespace ERP.Entities.Models
         public int employee_id { get; set; }
 
         [ForeignKey("employee_id")]
-        public virtual Employees Employee { get; set; }
+        public virtual Employees Employee { get; set; } = null!;
 
         [Column("height")]
         public decimal? height { get; set; }
@@ -24,19 +24,19 @@ namespace ERP.Entities.Models
 
         [Column("blood_type")]
         [StringLength(5)]
-        public string blood_type { get; set; }
+        public string? blood_type { get; set; }
 
         [Column("congenital_disease")]
         [StringLength(255)]
-        public string congenital_disease { get; set; }
+        public string? congenital_disease { get; set; }
 
         [Column("chronic_disease")]
         [StringLength(255)]
-        public string chronic_disease { get; set; }
+        public string? chronic_disease { get; set; }
 
         [Column("health_status")]
         [StringLength(50)]
-        public string health_status { get; set; }
+        public string? health_status { get; set; }
 
         [Column("check_date")]
         public DateTime? check_date { get; set; }

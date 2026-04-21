@@ -14,22 +14,22 @@ namespace ERP.Entities.Models
         public int employee_id { get; set; }
 
         [ForeignKey("employee_id")]
-        public virtual Employees Employee { get; set; }
+        public virtual Employees Employee { get; set; } = null!;
 
         [Column("account_holder")]
         [StringLength(100)]
-        public string account_holder { get; set; }
+        public string account_holder { get; set; } = null!;
 
         [Column("account_number")]
         [StringLength(50)]
-        public string account_number { get; set; }
+        public string account_number { get; set; } = null!;
 
         [Column("bank_name")]
         [StringLength(100)]
-        public string bank_name { get; set; }
+        public string bank_name { get; set; } = null!;
 
         [Column("branch")]
         [StringLength(100)]
-        public string branch { get; set; }
+        public string? branch { get; set; }
     }
 }

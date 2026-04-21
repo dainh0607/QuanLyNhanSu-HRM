@@ -14,7 +14,7 @@ namespace ERP.Entities.Models
         public int employee_id { get; set; }
 
         [ForeignKey("employee_id")]
-        public virtual Employees Employee { get; set; }
+        public virtual Employees Employee { get; set; } = null!;
 
         [Column("date")]
         public DateTime date { get; set; }
@@ -23,7 +23,7 @@ namespace ERP.Entities.Models
         public int? shift_id { get; set; }
 
         [ForeignKey("shift_id")]
-        public virtual Shifts Shift { get; set; }
+        public virtual Shifts? Shift { get; set; }
 
         [Column("check_in_actual")]
         public DateTime? check_in_actual { get; set; }
@@ -50,13 +50,13 @@ namespace ERP.Entities.Models
         public int? leave_type_id { get; set; }
 
         [ForeignKey("leave_type_id")]
-        public virtual LeaveTypes LeaveType { get; set; }
+        public virtual LeaveTypes? LeaveType { get; set; }
 
         [Column("status")]
         [StringLength(20)]
-        public string status { get; set; } // Valid, Late, Early, Absent, Leave
+        public string status { get; set; } = null!; // Valid, Late, Early, Absent, Leave
 
         [Column("note")]
-        public string note { get; set; }
+        public string? note { get; set; }
     }
 }

@@ -215,11 +215,11 @@ namespace ERP.Services.Auth
 
         private class FirebaseLoginResponse
         {
-            public string idToken { get; set; }
-            public string email { get; set; }
-            public string refreshToken { get; set; }
-            public string expiresIn { get; set; }
-            public string localId { get; set; }
+            public string idToken { get; set; } = null!;
+            public string? email { get; set; }
+            public string refreshToken { get; set; } = null!;
+            public string expiresIn { get; set; } = null!;
+            public string localId { get; set; } = null!;
             public bool registered { get; set; }
         }
     }

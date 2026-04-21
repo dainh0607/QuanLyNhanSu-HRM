@@ -150,6 +150,21 @@ namespace ERP.Entities
         public DbSet<SupportAccessGrant> SupportAccessGrants { get; set; }
         public DbSet<InvoiceMetadata> InvoiceMetadata { get; set; }
 
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            base.OnConfiguring(optionsBuilder);
+            // Bỏ qua cảnh báo PendingModelChangesWarning để app không bị crash khi model có thay đổi nhỏ chưa tạo migration
+            optionsBuilder.ConfigureWarnings(warnings => warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+        }
+
+        protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+        {
+            base.ConfigureConventions(configurationBuilder);
+            // Default store type cho tất cả các properies kiểu decimal và decimal?
+            configurationBuilder.Properties<decimal>().HaveColumnType("decimal(18,2)");
+            configurationBuilder.Properties<decimal?>().HaveColumnType("decimal(18,2)");
+        }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

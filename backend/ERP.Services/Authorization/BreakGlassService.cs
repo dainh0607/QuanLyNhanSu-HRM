@@ -57,9 +57,9 @@ namespace ERP.Services.Authorization
             {
                 user_id = userId,
                 login_time = DateTime.UtcNow,
-                ip_address = GetClientIpAddress(context),
-                user_agent = context?.Request.Headers["User-Agent"].ToString(),
-                reason_for_access = reason
+                ip_address = GetClientIpAddress(context) ?? "UNKNOWN",
+                user_agent = context?.Request.Headers["User-Agent"].ToString() ?? "UNKNOWN",
+                reason_for_access = reason ?? "No reason provided"
             };
 
             _context.BreakGlassAccessLogs.Add(log);

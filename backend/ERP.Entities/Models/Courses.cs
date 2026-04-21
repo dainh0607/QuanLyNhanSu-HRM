@@ -12,13 +12,13 @@ namespace ERP.Entities.Models
 
         [Column("course_name")]
         [StringLength(200)]
-        public string course_name { get; set; }
+        public string course_name { get; set; } = null!;
 
         [Column("description")]
-        public string description { get; set; }
+        public string? description { get; set; }
 
         [Column("attachment")]
         [StringLength(500)]
-        public string attachment { get; set; }
+        public string? attachment { get; set; }
     }
 }

@@ -13,10 +13,10 @@ namespace ERP.Entities.Models
         [Column("policy_name")]
         [Required]
         [StringLength(100)]
-        public string policy_name { get; set; }
+        public string policy_name { get; set; } = null!;
 
         [Column("description")]
-        public string description { get; set; }
+        public string? description { get; set; }
 
         [Column("allow_late_minutes")]
         public int allow_late_minutes { get; set; }
@@ -35,7 +35,7 @@ namespace ERP.Entities.Models
 
         [Column("wifi_name")]
         [StringLength(100)]
-        public string wifi_name { get; set; }
+        public string? wifi_name { get; set; }
 
         [Column("is_active")]
         public bool is_active { get; set; } = true;
@@ -47,6 +47,6 @@ namespace ERP.Entities.Models
         public int round_checkout_minutes { get; set; }
 
         [Column("note")]
-        public string note { get; set; }
+        public string? note { get; set; }
     }
 }

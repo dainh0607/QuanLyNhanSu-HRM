@@ -14,11 +14,11 @@ namespace ERP.Entities.Models
         public int signer_id { get; set; }
 
         [ForeignKey("signer_id")]
-        public virtual ContractSigners Signer { get; set; }
+        public virtual ContractSigners Signer { get; set; } = null!;
 
         [Required]
         [StringLength(50)]
-        public string type { get; set; } // signature, fullname, date
+        public string type { get; set; } = null!; // signature, fullname, date
 
         public int page_number { get; set; }
 

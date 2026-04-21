@@ -8,13 +8,14 @@ namespace ERP.Services.Auth
         Task<AuthResponseDto> SignUpAsync(SignUpDto dto);
         Task<AuthResponseDto> LoginAsync(LoginDto dto, AuthSessionContextDto sessionContext);
         Task<AuthResponseDto> RefreshSessionAsync(string refreshToken, AuthSessionContextDto sessionContext);
+        Task<AuthResponseDto> CreateSessionForUserAsync(int userId, AuthSessionContextDto sessionContext, string message);
         Task RevokeSessionAsync(string refreshToken);
         Task<UserInfoDto?> GetUserByUidAsync(string uid);
         Task<UserInfoDto?> GetUserByIdAsync(int userId);
         Task<string?> VerifyTokenAsync(string idToken);
         Task<AuthResponseDto> PreRegisterStaffAsync(PreRegisterStaffDto dto);
         string GenerateInternalToken(UserInfoDto user, string sessionId);
-        Task<string> CreateFirebaseUserAsync(string email, string password, string displayName, int employeeId);
+        Task<string> CreateFirebaseUserAsync(string email, string password, string displayName, int employeeId, int? tenantId = null, int? roleId = null);
         
         /// <summary>
         /// Chức năng đổi mật khẩu cho người dùng hiện tại (bên trong Thông tin cá nhân)

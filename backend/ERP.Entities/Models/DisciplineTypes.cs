@@ -12,15 +12,15 @@ namespace ERP.Entities.Models
 
         [Column("code")]
         [StringLength(50)]
-        public string code { get; set; }
+        public string code { get; set; } = null!;
 
         [Column("name")]
         [StringLength(100)]
-        public string name { get; set; }
+        public string name { get; set; } = null!;
 
         [Column("description")]
         [StringLength(255)]
-        public string description { get; set; }
+        public string? description { get; set; }
 
         [Column("is_active")]
         public bool is_active { get; set; }

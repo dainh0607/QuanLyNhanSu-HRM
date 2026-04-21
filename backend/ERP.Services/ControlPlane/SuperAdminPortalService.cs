@@ -12,13 +12,14 @@ using ERP.Entities.Interfaces;
 using ERP.Entities.Models;
 using ERP.Entities.Models.ControlPlane;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace ERP.Services.ControlPlane
 {
     public class SuperAdminPortalService : ISuperAdminPortalService
     {
-        private const string ActivationBaseUrl = "https://admin-dashboard.nexahr.local/activate-workspace-owner";
-        private const string SupportSessionBaseUrl = "https://tenant-app.nexahr.local/support-session";
+        private readonly string _activationBaseUrl;
+        private readonly string _supportSessionBaseUrl;
         private const string DefaultSupportNote =
             "Quyền truy cập hỗ trợ bị khóa theo mặc định. Ticket chỉ được kích hoạt sau khi Tenant Owner phê duyệt.";
         private const string WorkspaceIsolationMode = "ticket-only-support";
@@ -38,10 +39,14 @@ namespace ERP.Services.ControlPlane
         private readonly AppDbContext _context;
         private readonly ICurrentUserContext _userContext;
 
-        public SuperAdminPortalService(AppDbContext context, ICurrentUserContext userContext)
+        public SuperAdminPortalService(AppDbContext context, ICurrentUserContext userContext, IConfiguration configuration)
         {
             _context = context;
             _userContext = userContext;
+            _activationBaseUrl = configuration["ProvisioningSettings:ActivationBaseUrl"] 
+                ?? "http://localhost:5173/activate-workspace-owner";
+            _supportSessionBaseUrl = configuration["ProvisioningSettings:SupportSessionBaseUrl"] 
+                ?? "http://localhost:5173/support-session";
         }
 
         public async Task<int> GetTotalTenantsAsync()
@@ -1417,7 +1422,7 @@ namespace ERP.Services.ControlPlane
                 ActivationLink = ResolveWorkspaceOwnerStatus(owner) == "revoked"
                     ? string.Empty
                     : CreateActivationLink(owner.ActivationToken),
-                AdminDashboardUrl = ActivationBaseUrl,
+                AdminDashboardUrl = _activationBaseUrl,
                 SecurityBoundary = "owner-sets-password"
             };
         }
@@ -1947,11 +1952,11 @@ namespace ERP.Services.ControlPlane
             return $"owner-{NormalizeWorkspaceCode(workspaceCode).ToLowerInvariant()}-{Guid.NewGuid():N}";
         }
 
-        private static string CreateActivationLink(string activationToken)
+        private string CreateActivationLink(string activationToken)
         {
             return string.IsNullOrWhiteSpace(activationToken)
                 ? string.Empty
-                : $"{ActivationBaseUrl}?token={Uri.EscapeDataString(activationToken)}";
+                : $"{_activationBaseUrl}?token={Uri.EscapeDataString(activationToken)}";
         }
 
         private static string GenerateImpersonationToken(string ticketId, string workspaceCode)
@@ -1959,9 +1964,9 @@ namespace ERP.Services.ControlPlane
             return $"support-{NormalizeWorkspaceCode(workspaceCode).ToLowerInvariant()}-{ticketId.ToLowerInvariant()}-{Guid.NewGuid():N}";
         }
 
-        private static string CreateSupportSessionUrl(string workspaceCode, string ticketId, string token)
+        private string CreateSupportSessionUrl(string workspaceCode, string ticketId, string token)
         {
-            return $"{SupportSessionBaseUrl}?workspace={Uri.EscapeDataString(NormalizeWorkspaceCode(workspaceCode))}&ticket={Uri.EscapeDataString(ticketId)}&token={Uri.EscapeDataString(token)}";
+            return $"{_supportSessionBaseUrl}?workspace={Uri.EscapeDataString(NormalizeWorkspaceCode(workspaceCode))}&ticket={Uri.EscapeDataString(ticketId)}&token={Uri.EscapeDataString(token)}";
         }
 
         private static string GenerateSubdomain(string workspaceCode)

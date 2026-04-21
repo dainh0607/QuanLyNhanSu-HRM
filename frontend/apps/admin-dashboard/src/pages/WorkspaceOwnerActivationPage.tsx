@@ -5,14 +5,17 @@ import {
   type WorkspaceOwnerActivationSession,
   type WorkspaceOwnerActivationStatus,
 } from '../services/workspaceOwnerActivationService';
+import { type User } from '../services/authService';
 import './WorkspaceOwnerActivationPage.css';
 
 interface WorkspaceOwnerActivationPageProps {
   onNavigateToLogin?: () => void;
+  onActivationSuccess?: (user: User, token: string) => void;
 }
 
 const WorkspaceOwnerActivationPage: React.FC<WorkspaceOwnerActivationPageProps> = ({
   onNavigateToLogin,
+  onActivationSuccess,
 }) => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -102,9 +105,18 @@ const WorkspaceOwnerActivationPage: React.FC<WorkspaceOwnerActivationPageProps> 
       setStatus(result.status);
 
       if (result.success) {
-        setSuccess(result.message ?? 'Tai khoan da duoc kich hoat thanh cong.');
+        setSuccess(result.message ?? 'Tài khoản đã được kích hoạt thành công.');
+        
+        // Nếu có thông tin User và Token, kích hoạt callback tự động đăng nhập
+        if (onActivationSuccess && result.user && result.idToken) {
+          const user = result.user;
+          const token = result.idToken;
+          setTimeout(() => {
+            onActivationSuccess(user, token);
+          }, 1500);
+        }
       } else {
-        setError(result.message ?? 'Khong the kich hoat tai khoan vao luc nay.');
+        setError(result.message ?? 'Không thể kích hoạt tài khoản vào lúc này.');
       }
     } finally {
       setSubmitting(false);
@@ -112,36 +124,38 @@ const WorkspaceOwnerActivationPage: React.FC<WorkspaceOwnerActivationPageProps> 
   };
 
   const stateCopy = useMemo(() => {
-    switch (status) {
+    const normalizedStatus = status.toLowerCase();
+    switch (normalizedStatus) {
       case 'ready':
+      case 'invited': // Fallback if backend returns 'invited'
         return {
-          title: 'Kich hoat Workspace Owner',
+          title: 'Thiết lập quyền sở hữu Workspace',
           description:
-            'Ban se tu dat mat khau lan dau cho workspace owner. Luong nay thay the self-signup cong khai trong SaaS.',
+            'Chào mừng bạn đến với NexaHR. Vui lòng thiết lập mật khẩu để hoàn tất việc kích hoạt tài khoản quản trị viên cho doanh nghiệp của bạn.',
         };
       case 'activated':
         return {
-          title: 'Tai khoan da duoc kich hoat',
+          title: 'Tài khoản đã được kích hoạt',
           description:
-            'Lien ket nay da hoan tat. Ban co the quay lai man hinh dang nhap de vao admin-dashboard.',
+            'Quy trình xác thực đã hoàn tất. Bạn đang được chuyển hướng vào hệ thống quản trị...',
         };
       case 'expired':
         return {
-          title: 'Activation link da het han',
+          title: 'Liên kết kích hoạt đã hết hạn',
           description:
-            'Workspace Owner can yeu cau SuperAdmin gui lai loi moi tu control plane.',
+            'Vì lý do bảo mật, liên kết này chỉ có hiệu lực trong thời gian ngắn. Vui lòng yêu cầu SuperAdmin gửi lại lời mời mới.',
         };
       case 'revoked':
         return {
-          title: 'Activation link da bi thu hoi',
+          title: 'Liên kết đã bị thu hồi',
           description:
-            'Lien ket nay khong con hop le. Vui long lam viec voi SuperAdmin de tao yeu cau moi.',
+            'Yêu cầu kích hoạt này không còn hiệu lực. Vui lòng liên hệ với quản trị viên hệ thống để kiểm tra.',
         };
       default:
         return {
-          title: 'Khong con trang dang ky cong khai',
+          title: 'Quản lý truy cập Onboarding',
           description:
-            'Tai khoan admin-dashboard cho Workspace Owner duoc tao tu SuperAdmin, sau do kich hoat qua link mot lan.',
+            'Hệ thống NexaHR sử dụng cơ chế kích hoạt riêng biệt cho Workspace Owner để đảm bảo an toàn tối đa cho dữ liệu doanh nghiệp.',
         };
     }
   }, [status]);
@@ -163,13 +177,13 @@ const WorkspaceOwnerActivationPage: React.FC<WorkspaceOwnerActivationPageProps> 
 
           <div className="workspace-policy-list">
             <div className="workspace-policy-item">
-              Tai khoan Workspace Owner khong con duoc tu dang ky tu public register page.
+              Workspace Owner được định danh duy nhất thông qua email doanh nghiệp.
             </div>
             <div className="workspace-policy-item">
-              SuperAdmin chi cap metadata va activation link, khong biet mat khau cuoi cung.
+              Bạn toàn quyền kiểm soát mật khẩu và các thiết lập bảo mật cấp cao.
             </div>
             <div className="workspace-policy-item">
-              Sau nay BE/Firebase se validate token, tao user va cap session chinh thuc.
+              Hệ thống sẽ tự động khởi tạo môi trường làm việc sau khi bạn kích hoạt.
             </div>
           </div>
         </article>
@@ -178,8 +192,8 @@ const WorkspaceOwnerActivationPage: React.FC<WorkspaceOwnerActivationPageProps> 
           {loading ? (
             <div className="workspace-activation-state">
               <div className="workspace-spinner" />
-              <h2>Dang kiem tra activation link</h2>
-              <p>He thong dang doi chieu mock token va trang thai moi cua Workspace Owner.</p>
+              <h2>Đang kiểm tra bảo mật</h2>
+              <p>Đang đối chiếu mã kích hoạt và trạng thái Workspace Owner trên hệ thống...</p>
             </div>
           ) : (
             <>
@@ -188,17 +202,18 @@ const WorkspaceOwnerActivationPage: React.FC<WorkspaceOwnerActivationPageProps> 
                   <div className="workspace-icon-shell">
                     <span className="material-symbols-outlined">mark_email_unread</span>
                   </div>
-                  <h2>Cho activation link tu SuperAdmin</h2>
+                  <h2>Chờ liên kết kích hoạt</h2>
                   <p>
-                    Mo link duoc gui tu control plane. Trong local demo, ban co the nap token mau de xem luong onboarding.
+                    Vui lòng mở liên kết được gửi từ hệ thống SuperAdmin trong email của bạn. 
+                    Bạn cũng có thể thử nghiệm luồng này bằng mã Demo bên dưới.
                   </p>
                   <div className="workspace-action-row">
                     <button type="button" className="workspace-primary-button" onClick={handleLoadDemoToken}>
                       <span className="material-symbols-outlined">rocket_launch</span>
-                      Nap token demo
+                      Sử dụng mã Demo
                     </button>
                     <button type="button" className="workspace-secondary-button" onClick={handleBackToLogin}>
-                      Quay lai dang nhap
+                      Về trang đăng nhập
                     </button>
                   </div>
                 </div>
@@ -209,13 +224,13 @@ const WorkspaceOwnerActivationPage: React.FC<WorkspaceOwnerActivationPageProps> 
                       <span className={`workspace-status-chip is-${status}`}>
                         {status.replaceAll('_', ' ')}
                       </span>
-                      <h2>{session?.companyName ?? 'Workspace Owner activation'}</h2>
+                      <h2>{session?.companyName ?? 'Kích hoạt Workspace'}</h2>
                       <p>
-                        Workspace {session?.workspaceCode ?? '--'} • Owner {session?.ownerEmail ?? '--'}
+                        Mã {session?.workspaceCode ?? '--'} • Chủ sở hữu {session?.ownerEmail ?? '--'}
                       </p>
                     </div>
                     <button type="button" className="workspace-secondary-button" onClick={handleBackToLogin}>
-                      Ve dang nhap
+                      Đăng nhập
                     </button>
                   </div>
 
@@ -225,41 +240,42 @@ const WorkspaceOwnerActivationPage: React.FC<WorkspaceOwnerActivationPageProps> 
                   {session ? (
                     <div className="workspace-meta-grid">
                       <div className="workspace-meta-card">
-                        <span>Plan</span>
+                        <span>Gói dịch vụ</span>
                         <strong>{session.planName}</strong>
                       </div>
                       <div className="workspace-meta-card">
-                        <span>Issued at</span>
-                        <strong>{new Date(session.issuedAt).toLocaleString('vi-VN')}</strong>
+                        <span>Ngày cấp</span>
+                        <strong>{new Date(session.issuedAt).toLocaleDateString('vi-VN')}</strong>
                       </div>
                       <div className="workspace-meta-card">
-                        <span>Expires at</span>
-                        <strong>{new Date(session.expiresAt).toLocaleString('vi-VN')}</strong>
+                        <span>Ngày hết hạn</span>
+                        <strong>{new Date(session.expiresAt).toLocaleDateString('vi-VN')}</strong>
                       </div>
                       <div className="workspace-meta-card">
-                        <span>Invited by</span>
+                        <span>Người mời</span>
                         <strong>{session.invitedBy}</strong>
                       </div>
                     </div>
                   ) : null}
 
-                  {status === 'ready' ? (
+                  {status === 'ready' || status.toLowerCase() === 'invited' ? (
                     <form className="workspace-activation-form" onSubmit={handleSubmit}>
                       <label className="workspace-field">
-                        <span>Mat khau moi</span>
+                        <span>Mật khẩu mới</span>
                         <div className="workspace-password-shell">
                           <input
                             type={showPassword ? 'text' : 'password'}
                             value={password}
                             onChange={(event) => setPassword(event.target.value)}
-                            placeholder="Nhap mat khau toi thieu 8 ky tu"
+                            placeholder="Tối thiểu 8 ký tự"
                             autoComplete="new-password"
+                            required
                           />
                           <button
                             type="button"
                             className="workspace-icon-button"
                             onClick={() => setShowPassword((current) => !current)}
-                            aria-label={showPassword ? 'An mat khau' : 'Hien mat khau'}
+                            aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
                           >
                             <span className="material-symbols-outlined">
                               {showPassword ? 'visibility' : 'visibility_off'}
@@ -269,13 +285,14 @@ const WorkspaceOwnerActivationPage: React.FC<WorkspaceOwnerActivationPageProps> 
                       </label>
 
                       <label className="workspace-field">
-                        <span>Xac nhan mat khau</span>
+                        <span>Xác nhận mật khẩu</span>
                         <input
                           type={showPassword ? 'text' : 'password'}
                           value={confirmPassword}
                           onChange={(event) => setConfirmPassword(event.target.value)}
-                          placeholder="Nhap lai mat khau"
+                          placeholder="Nhập lại mật khẩu"
                           autoComplete="new-password"
+                          required
                         />
                       </label>
 
@@ -290,7 +307,7 @@ const WorkspaceOwnerActivationPage: React.FC<WorkspaceOwnerActivationPageProps> 
 
                       <button type="submit" className="workspace-primary-button" disabled={submitting}>
                         <span className="material-symbols-outlined">how_to_reg</span>
-                        {submitting ? 'Dang kich hoat...' : 'Kich hoat Workspace Owner'}
+                        {submitting ? 'Đang thực hiện...' : 'Kích hoạt ngay'}
                       </button>
                     </form>
                   ) : (
@@ -299,15 +316,15 @@ const WorkspaceOwnerActivationPage: React.FC<WorkspaceOwnerActivationPageProps> 
                         {status === 'activated' ? (
                           <button type="button" className="workspace-primary-button" onClick={handleBackToLogin}>
                             <span className="material-symbols-outlined">login</span>
-                            Dang nhap vao admin-dashboard
+                            Đi đến trang quản trị
                           </button>
                         ) : (
                           <button type="button" className="workspace-secondary-button" onClick={handleBackToLogin}>
-                            Quay lai dang nhap
+                            Quay lại đăng nhập
                           </button>
                         )}
                         <button type="button" className="workspace-secondary-button" onClick={handleLoadDemoToken}>
-                          Thu token demo khac
+                          Thử mã khác
                         </button>
                       </div>
                     </div>

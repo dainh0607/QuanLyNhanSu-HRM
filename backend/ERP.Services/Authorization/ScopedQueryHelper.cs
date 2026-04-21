@@ -254,7 +254,7 @@ namespace ERP.Services.Authorization
                 return "PERSONAL"; // Default to most restrictive
 
             // Priority: TENANT > REGION > BRANCH > DEPARTMENT > PERSONAL
-            var scopePriority = new Dictionary<string, int>
+            var scopePriority = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
             {
                 { "TENANT", 5 },
                 { "CROSS_REGION", 4 },
@@ -265,8 +265,8 @@ namespace ERP.Services.Authorization
             };
 
             var highestPriority = roleScopes
-                .Select(rs => rs.scope_level ?? "PERSONAL")
-                .Select(scope => scopePriority.ContainsKey(scope) ? scopePriority[scope] : 0)
+                .Select(rs => (rs.scope_level ?? "PERSONAL").Trim().ToUpperInvariant())
+                .Select(scope => scopePriority.TryGetValue(scope, out var priority) ? priority : 0)
                 .Max();
 
             return scopePriority.FirstOrDefault(kvp => kvp.Value == highestPriority).Key ?? "PERSONAL";

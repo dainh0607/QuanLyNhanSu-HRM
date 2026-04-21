@@ -14,26 +14,26 @@ namespace ERP.Entities.Models
         public int employee_id { get; set; }
 
         [ForeignKey("employee_id")]
-        public virtual Employees Employee { get; set; }
+        public virtual Employees Employee { get; set; } = null!;
 
         [Column("imei")]
         [StringLength(50)]
-        public string imei { get; set; }
+        public string imei { get; set; } = null!;
 
         [Column("device_name")]
         [StringLength(100)]
-        public string device_name { get; set; }
+        public string device_name { get; set; } = null!;
 
         [Column("version")]
         [StringLength(50)]
-        public string version { get; set; }
+        public string? version { get; set; }
 
         [Column("os")]
         [StringLength(50)]
-        public string os { get; set; }
+        public string? os { get; set; }
 
         [Column("device_type")]
         [StringLength(50)]
-        public string device_type { get; set; }
+        public string? device_type { get; set; }
     }
 }

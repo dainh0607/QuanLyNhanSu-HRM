@@ -13,19 +13,19 @@ namespace ERP.Entities.Models
         [Required]
         [StringLength(20)]
         [Column("code")]
-        public string code { get; set; }
+        public string code { get; set; } = null!;
 
         [Required]
         [StringLength(100)]
         [Column("name")]
-        public string name { get; set; }
+        public string name { get; set; } = null!;
 
         [Column("province_code")]
         [StringLength(20)]
-        public string province_code { get; set; }
+        public string province_code { get; set; } = null!;
 
         // FIX: Foreign key relationship to Provinces.code (not Provinces.Id)
         [ForeignKey(nameof(province_code))]
-        public virtual Provinces Province { get; set; }
+        public virtual Provinces Province { get; set; } = null!;
     }
 }

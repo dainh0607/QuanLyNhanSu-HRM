@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using ERP.DTOs.Auth;
 
 namespace ERP.DTOs.ControlPlane
 {
@@ -25,6 +26,11 @@ namespace ERP.DTOs.ControlPlane
         public string Status { get; set; } = string.Empty;
         public WorkspaceActivationSessionDto? Session { get; set; }
         public string? Message { get; set; }
+        public UserInfoDto? User { get; set; }
+        public string? IdToken { get; set; }
+        public string? RefreshToken { get; set; }
+        public string? CsrfToken { get; set; }
+        public int ExpiresIn { get; set; }
     }
 
     public class WorkspaceActivationPayloadDto

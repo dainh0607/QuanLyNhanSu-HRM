@@ -14,30 +14,30 @@ namespace ERP.Entities.Models
         public int employee_id { get; set; }
 
         [ForeignKey("employee_id")]
-        public virtual Employees Employee { get; set; }
+        public virtual Employees Employee { get; set; } = null!;
 
         [Column("social_insurance_no")]
         [StringLength(50)]
-        public string social_insurance_no { get; set; }
+        public string? social_insurance_no { get; set; }
 
         [Column("health_insurance_no")]
         [StringLength(50)]
-        public string health_insurance_no { get; set; }
+        public string? health_insurance_no { get; set; }
 
         [Column("position")]
         [StringLength(100)]
-        public string position { get; set; }
+        public string? position { get; set; }
 
         [Column("medical_history")]
-        public string medical_history { get; set; }
+        public string? medical_history { get; set; }
 
         [Column("maternity_regime")]
         [StringLength(255)]
-        public string maternity_regime { get; set; }
+        public string? maternity_regime { get; set; }
 
         [Column("registration_place")]
         [StringLength(200)]
-        public string registration_place { get; set; }
+        public string? registration_place { get; set; }
 
         [Column("join_date")]
         public DateTime? join_date { get; set; }
@@ -67,7 +67,7 @@ namespace ERP.Entities.Models
         public bool? employee_pays_unemployment { get; set; }
 
         [Column("note")]
-        public string note { get; set; }
+        public string? note { get; set; }
 
         [Column("birth_place_address_id")]
         public int? birth_place_address_id { get; set; }

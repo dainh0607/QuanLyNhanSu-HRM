@@ -69,7 +69,7 @@ export interface ChangePasswordPayload {
 const CSRF_COOKIE_NAME = "hrm_csrf_token";
 const CSRF_HEADER_NAME = "X-CSRF-Token";
 const SESSION_MARKER_KEY = "hrm_has_session";
-const AUTH_CHECK_COOLDOWN_MS = 1500;
+const AUTH_CHECK_COOLDOWN_MS = 0;
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS", "TRACE"]);
 
 let authToken: string | null = null;
@@ -91,10 +91,37 @@ const ADMIN_ACCESS_ROLES = new Set([
 ]);
 
 export const hasAdministrativeAccess = (
-  user?: { roles?: string[]; isSystemAdmin?: boolean } | null,
+  user?: {
+    roles?: string[];
+    isSystemAdmin?: boolean;
+    permissions?: string[];
+    scopeLevel?: string;
+  } | null,
 ): boolean => {
+  // 1. Explicit check for System Admin flag
   if (user?.isSystemAdmin) return true;
-  return Boolean(user?.roles?.some((role) => ADMIN_ACCESS_ROLES.has(role)));
+
+  // 2. Scope-aware check: any non-personal management scope can access the admin surface.
+  const normalizedScopeLevel = user?.scopeLevel?.trim().toUpperCase();
+  if (normalizedScopeLevel && normalizedScopeLevel !== "PERSONAL") {
+    return true;
+  }
+
+  // 3. Fallback: Check if they have core administrative permissions (e.g., managing employees)
+  // This helps when roles aren't perfectly synced but the fallback permissions are present.
+  if (
+    user?.permissions?.includes("system:manage") ||
+    user?.permissions?.includes("employee:read")
+  ) {
+    return true;
+  }
+
+  // 4. Role-based check
+  if (!user?.roles || user.roles.length === 0) return false;
+  const normalizedRoles = user.roles.map((r) => r.toLowerCase());
+  return Array.from(ADMIN_ACCESS_ROLES).some((adminRole) =>
+    normalizedRoles.includes(adminRole.toLowerCase()),
+  );
 };
 
 export const hasPermission = (
@@ -104,18 +131,77 @@ export const hasPermission = (
 ): boolean => {
   if (user?.isSystemAdmin) return true;
   if (!user?.permissions) return false;
-  const permissionString = `${resource.toLowerCase()}:${action.toLowerCase()}`;
-  return user.permissions.includes(permissionString);
+
+  const res = resource.toLowerCase();
+  const act = action.toLowerCase();
+  const permissionString = `${res}:${act}`;
+
+  if (user.permissions.includes(permissionString)) return true;
+
+  // Fallback mapping for shifts vs attendance
+  if (res === "shifts" && user.permissions.includes(`attendance:${act}`))
+    return true;
+  if (res === "attendance" && user.permissions.includes(`shifts:${act}`))
+    return true;
+
+  return false;
 };
 
-const normalizeUser = (user?: User | null): User | null => {
+const normalizeUser = (user?: any): User | null => {
   if (!user) {
     return null;
   }
 
-  return {
+  // Casing-agnostic mapping for backend DTO properties (handles PascalCase fallbacks)
+  const isSystemAdmin = user.isSystemAdmin ?? user.IsSystemAdmin ?? false;
+  const permissions = user.permissions ?? user.Permissions ?? [];
+  const roles = user.roles ?? user.Roles ?? [];
+  const userId = user.userId ?? user.UserId ?? user.id ?? user.Id ?? 0;
+  const tenantId = user.tenantId ?? user.TenantId ?? user.tenant_id ?? null;
+  const employeeId =
+    user.employeeId ?? user.EmployeeId ?? user.employee_id ?? 0;
+  const employeeCode =
+    user.employeeCode ?? user.EmployeeCode ?? user.employee_code ?? "";
+  const phoneNumber =
+    user.phoneNumber ?? user.PhoneNumber ?? user.phone_number ?? "";
+  const photoUrl = user.photoUrl ?? user.PhotoUrl ?? user.photo_url;
+  const scopeLevel = user.scopeLevel ?? user.ScopeLevel ?? "PERSONAL";
+  const regionId = user.regionId ?? user.RegionId ?? user.region_id ?? null;
+  const branchId = user.branchId ?? user.BranchId ?? user.branch_id ?? null;
+  const departmentId =
+    user.departmentId ?? user.DepartmentId ?? user.department_id ?? null;
+  const fullName =
+    user.fullName ??
+    user.FullName ??
+    user.full_name ??
+    user.username ??
+    "Người dùng";
+  const email = user.email ?? user.Email ?? "";
+  const isActive = user.isActive ?? user.IsActive ?? true;
+
+  const normalizedUser: User = {
     ...user,
-    role: hasAdministrativeAccess(user) ? "admin" : "user",
+    userId,
+    tenantId,
+    employeeId,
+    employeeCode,
+    phoneNumber,
+    photoUrl,
+    roles,
+    permissions,
+    scopeLevel,
+    regionId,
+    branchId,
+    departmentId,
+    isSystemAdmin,
+    fullName,
+    email,
+    isActive,
+  };
+
+  return {
+    ...normalizedUser,
+    role: hasAdministrativeAccess(normalizedUser) ? "admin" : "user",
   };
 };
 
@@ -455,5 +541,10 @@ export const authService = {
       clearAuthSession();
       rememberAuthCheck(null);
     }
+  },
+
+  setSession: (user: User, token: string) => {
+    setAuthSession(user, token);
+    rememberAuthCheck(user);
   },
 };

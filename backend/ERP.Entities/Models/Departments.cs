@@ -10,13 +10,15 @@ namespace ERP.Entities.Models
         [Column("tenant_id")]
         public int? tenant_id { get; set; }
 
+        [Required]
+        [StringLength(100)]
         [Column("name")]
-        [StringLength(200)]
-        public string name { get; set; }
+        public string name { get; set; } = null!;
 
+        [Required]
+        [StringLength(10)]
         [Column("code")]
-        [StringLength(50)]
-        public string code { get; set; }
+        public string code { get; set; } = null!;
 
         [Column("parent_id")]
         public int? parent_id { get; set; }

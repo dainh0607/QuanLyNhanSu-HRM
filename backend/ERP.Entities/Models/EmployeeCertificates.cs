@@ -14,19 +14,19 @@ namespace ERP.Entities.Models
         public int employee_id { get; set; }
 
         [ForeignKey("employee_id")]
-        public virtual Employees Employee { get; set; }
+        public virtual Employees Employee { get; set; } = null!;
 
         [Column("certificate_id")]
         public int certificate_id { get; set; }
 
         [ForeignKey("certificate_id")]
-        public virtual Certificates Certificate { get; set; }
+        public virtual Certificates Certificate { get; set; } = null!;
 
         [Column("issue_date")]
         public DateTime? issue_date { get; set; }
 
         [Column("attachment")]
         [StringLength(500)]
-        public string attachment { get; set; }
+        public string? attachment { get; set; }
     }
 }

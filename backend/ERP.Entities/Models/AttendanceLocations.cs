@@ -14,12 +14,12 @@ namespace ERP.Entities.Models
         public int branch_id { get; set; }
 
         [ForeignKey("branch_id")]
-        public virtual Branches Branch { get; set; }
+        public virtual Branches Branch { get; set; } = null!;
 
         [Column("location_name")]
         [Required]
         [StringLength(100)]
-        public string location_name { get; set; }
+        public string location_name { get; set; } = null!;
 
         [Column("latitude", TypeName = "decimal(18,10)")]
         public decimal latitude { get; set; }

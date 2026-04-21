@@ -22,7 +22,7 @@ namespace ERP.Entities.Models
         public int user_id { get; set; }
 
         [ForeignKey("user_id")]
-        public virtual Users User { get; set; }
+        public virtual Users User { get; set; } = null!;
 
         [Column("login_time")]
         public DateTime login_time { get; set; } = DateTime.UtcNow;
@@ -59,7 +59,7 @@ namespace ERP.Entities.Models
         public int? approved_by_user_id { get; set; }
 
         [ForeignKey("approved_by_user_id")]
-        public virtual Users ApprovedByUser { get; set; }
+        public virtual Users? ApprovedByUser { get; set; }
 
         [Column("approval_time")]
         public DateTime? approval_time { get; set; }

@@ -8,7 +8,7 @@ namespace ERP.Repositories.Interfaces
 {
     public interface IGenericRepository<T> where T : class
     {
-        Task<T> GetByIdAsync(int id);
+        Task<T?> GetByIdAsync(int id);
         Task<IEnumerable<T>> GetAllAsync();
         IQueryable<T> AsQueryable();
         Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> expression, string? includeProperties = null);

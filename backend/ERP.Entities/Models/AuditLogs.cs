@@ -14,7 +14,7 @@ namespace ERP.Entities.Models
         public int? employee_id { get; set; }
 
         [ForeignKey("employee_id")]
-        public virtual ERP.Entities.Models.Employees Employee { get; set; }
+        public virtual ERP.Entities.Models.Employees? Employee { get; set; }
 
         [Column("user_id")]
         public int? user_id { get; set; }

@@ -1,3 +1,6 @@
+import { type User } from "./authService";
+import { API_URL } from "./apiConfig";
+
 export type WorkspaceOwnerActivationStatus =
   | "ready"
   | "activated"
@@ -32,196 +35,120 @@ export interface WorkspaceOwnerActivationResult {
   status: WorkspaceOwnerActivationStatus;
   session?: WorkspaceOwnerActivationSession;
   message?: string;
+  user?: User;
+  idToken?: string;
 }
 
-const MOCK_DELAY_MS = 260;
-
-const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
-
-const nowIso = () => new Date().toISOString();
-
-const mockSessions: WorkspaceOwnerActivationSession[] = [
-  {
-    token: "owner-minhtam-activate-2026",
-    companyName: "Minh Tam Retail",
-    workspaceCode: "MINHTAM",
-    ownerFullName: "Le My Linh",
-    ownerEmail: "owner@minhtamretail.vn",
-    planName: "Starter",
-    issuedAt: "2026-04-14T02:30:00.000Z",
-    expiresAt: "2026-04-18T17:00:00.000Z",
-    status: "ready",
-    invitedBy: "admin@nexahrm.com",
-    supportContactEmail: "support@nexahrm.com",
-    activationPolicy: "owner-sets-password",
-    instructions: [
-      "SuperAdmin da tao san workspace metadata cho doanh nghiep cua ban.",
-      "Ban tu dat mat khau lan dau. SuperAdmin khong duoc biet mat khau nay.",
-      "Sau khi kich hoat thanh cong, ban dang nhap bang email cong viec vao admin-dashboard.",
-    ],
-  },
-  {
-    token: "owner-hoanggia-activate-2026",
-    companyName: "Hoang Gia Hospitality",
-    workspaceCode: "HOANGGIA",
-    ownerFullName: "Pham Thanh Ha",
-    ownerEmail: "cio@hoanggia.vn",
-    planName: "Enterprise",
-    issuedAt: "2026-04-10T03:15:00.000Z",
-    expiresAt: "2026-04-12T17:00:00.000Z",
-    status: "expired",
-    invitedBy: "admin@nexahrm.com",
-    supportContactEmail: "support@nexahrm.com",
-    activationPolicy: "owner-sets-password",
-    instructions: [
-      "Activation link chi duoc dung mot lan trong thoi gian quy dinh.",
-      "Neu link het han, Workspace Owner can yeu cau SuperAdmin gui lai loi moi.",
-    ],
-  },
-  {
-    token: "owner-anphat-activate-2026",
-    companyName: "An Phat Logistics",
-    workspaceCode: "ANPHAT",
-    ownerFullName: "Nguyen Quoc Duy",
-    ownerEmail: "admin@anphatlogistics.vn",
-    planName: "Growth",
-    issuedAt: "2026-04-09T02:00:00.000Z",
-    expiresAt: "2026-04-16T17:00:00.000Z",
-    status: "activated",
-    invitedBy: "admin@nexahrm.com",
-    supportContactEmail: "support@nexahrm.com",
-    activationPolicy: "owner-sets-password",
-    instructions: [
-      "Tai khoan nay da duoc kich hoat thanh cong.",
-      "Neu can reset password, vui long su dung luong quen mat khau tu backend/Firebase sau nay.",
-    ],
-  },
-];
-
-let mutableSessions = clone(mockSessions);
-
-const simulate = async <T,>(factory: () => T): Promise<T> =>
-  new Promise((resolve) => {
-    window.setTimeout(() => {
-      resolve(clone(factory()));
-    }, MOCK_DELAY_MS);
-  });
-
-const getSessionByToken = (token: string) =>
-  mutableSessions.find((session) => session.token === token);
-
+/**
+ * Service handling Workspace Owner Activation by connecting to the real Backend API.
+ * Route: api/activation/workspace-owner
+ */
 export const workspaceOwnerActivationService = {
+  /**
+   * For the local environment or QA, this returns a consistent token
+   * that can be used for testing after being generated in the Control Plane.
+   */
   getDemoToken(): string {
     return "owner-minhtam-activate-2026";
   },
 
+  /**
+   * Fetches the activation session details from the server using the provided token.
+   * Public endpoint - no authentication required.
+   */
   async fetchActivationSession(
     token: string,
   ): Promise<WorkspaceOwnerActivationResult> {
     const normalizedToken = token.trim();
-
-    return simulate(() => {
-      if (!normalizedToken) {
-        return {
-          success: false,
-          status: "not_found" as const,
-          message: "Activation link is missing.",
-        };
-      }
-
-      const session = getSessionByToken(normalizedToken);
-      if (!session) {
-        return {
-          success: false,
-          status: "not_found" as const,
-          message: "Activation link khong hop le hoac da bi thu hoi.",
-        };
-      }
-
-      if (
-        session.status === "ready" &&
-        new Date(session.expiresAt).getTime() < new Date(nowIso()).getTime()
-      ) {
-        session.status = "expired";
-      }
-
+    if (!normalizedToken) {
       return {
-        success: session.status !== "not_found",
-        status: session.status,
-        session,
-        message:
-          session.status === "ready"
-            ? "Activation link hop le."
-            : "Activation link hien tai khong san sang de kich hoat.",
+        success: false,
+        status: "not_found",
+        message: "Mã kích hoạt không được để trống.",
       };
-    });
+    }
+
+    try {
+      const response = await fetch(
+        `${API_URL}/activation/workspace-owner?token=${encodeURIComponent(normalizedToken)}`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            Accept: "application/json",
+          },
+        },
+      );
+
+      if (response.status === 404) {
+        return {
+          success: false,
+          status: "not_found",
+          message: "Liên kết kích hoạt không tồn tại hoặc đã bị thu hồi.",
+        };
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        return {
+          success: false,
+          status: "not_found",
+          message: errorData.message || `Lỗi hệ thống (${response.status}). Vui lòng thử lại sau.`,
+        };
+      }
+
+      return (await response.json()) as WorkspaceOwnerActivationResult;
+    } catch (error) {
+      console.error("fetchActivationSession error:", error);
+      return {
+        success: false,
+        status: "not_found",
+        message: "Không thể kết nối tới máy chủ. Vui lòng kiểm tra đường truyền mạng.",
+      };
+    }
   },
 
+  /**
+   * Submits the password and activates the workspace owner account.
+   * If successful, the Backend returns the User and IdToken to perform an automatic login.
+   * Public endpoint - no authentication required.
+   */
   async activateWorkspaceOwner(
     payload: WorkspaceOwnerActivationPayload,
   ): Promise<WorkspaceOwnerActivationResult> {
-    const normalizedToken = payload.token.trim();
+    try {
+      const response = await fetch(`${API_URL}/activation/workspace-owner`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          token: payload.token.trim(),
+          password: payload.password,
+          confirmPassword: payload.confirmPassword,
+        }),
+      });
 
-    return simulate(() => {
-      const session = getSessionByToken(normalizedToken);
-      if (!session) {
+      const data = (await response.json()) as WorkspaceOwnerActivationResult;
+
+      if (!response.ok) {
         return {
           success: false,
-          status: "not_found" as const,
-          message: "Activation link khong ton tai.",
+          status: data.status || "ready",
+          message: data.message || "Không thể kích hoạt tài khoản vào lúc này.",
         };
       }
 
-      if (
-        session.status === "ready" &&
-        new Date(session.expiresAt).getTime() < new Date(nowIso()).getTime()
-      ) {
-        session.status = "expired";
-      }
-
-      if (session.status !== "ready") {
-        return {
-          success: false,
-          status: session.status,
-          session,
-          message:
-            session.status === "activated"
-              ? "Tai khoan nay da duoc kich hoat truoc do."
-              : "Lien ket nay hien khong the su dung de kich hoat tai khoan.",
-        };
-      }
-
-      if (payload.password.length < 8) {
-        return {
-          success: false,
-          status: "ready",
-          session,
-          message: "Mat khau phai co it nhat 8 ky tu.",
-        };
-      }
-
-      if (payload.password !== payload.confirmPassword) {
-        return {
-          success: false,
-          status: "ready",
-          session,
-          message: "Mat khau xac nhan khong khop.",
-        };
-      }
-
-      session.status = "activated";
-
+      return data;
+    } catch (error) {
+      console.error("activateWorkspaceOwner error:", error);
       return {
-        success: true,
-        status: session.status,
-        session,
-        message:
-          "Mock activation thanh cong. Sau nay BE se tao user Firebase va local session tu endpoint activation.",
+        success: false,
+        status: "ready",
+        message: "Lỗi kết nối khi kích hoạt. Vui lòng thử lại trong giây lát.",
       };
-    });
-  },
-
-  resetMockState(): void {
-    mutableSessions = clone(mockSessions);
+    }
   },
 };

@@ -44,9 +44,9 @@ namespace ERP.Services.Attendance
                 {
                     Id = l.Id,
                     EmployeeId = l.employee_id,
-                    EmployeeName = l.Employee.full_name,
+                    EmployeeName = l.Employee != null ? l.Employee.full_name : null,
                     LeaveTypeId = l.leave_type_id,
-                    LeaveTypeName = l.LeaveType.name,
+                    LeaveTypeName = l.LeaveType != null ? l.LeaveType.name : null,
                     StartDate = l.start_date,
                     EndDate = l.end_date,
                     Reason = l.reason,
@@ -72,9 +72,9 @@ namespace ERP.Services.Attendance
             {
                 Id = l.Id,
                 EmployeeId = l.employee_id,
-                EmployeeName = l.Employee.full_name,
+                EmployeeName = l.Employee != null ? l.Employee.full_name : null,
                 LeaveTypeId = l.leave_type_id,
-                LeaveTypeName = l.LeaveType.name,
+                LeaveTypeName = l.LeaveType != null ? l.LeaveType.name : null,
                 StartDate = l.start_date,
                 EndDate = l.end_date,
                 Reason = l.reason,

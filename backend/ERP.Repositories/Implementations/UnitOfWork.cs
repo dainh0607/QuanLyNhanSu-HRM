@@ -9,7 +9,7 @@ namespace ERP.Repositories.Implementations
     public class UnitOfWork : IUnitOfWork
     {
         private readonly AppDbContext _context;
-        private Hashtable _repositories;
+        private Hashtable _repositories = new Hashtable();
         private bool _disposed;
 
         public UnitOfWork(AppDbContext context)
@@ -33,7 +33,7 @@ namespace ERP.Repositories.Implementations
                 _repositories.Add(type, repositoryInstance);
             }
 
-            return (IGenericRepository<TEntity>)_repositories[type];
+            return (IGenericRepository<TEntity>)_repositories[type]!;
         }
 
         public async Task<int> SaveChangesAsync()

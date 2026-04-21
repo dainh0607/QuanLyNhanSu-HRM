@@ -19,8 +19,6 @@ import { EmployeeDetail } from "./features/employee-detail/EmployeeDetailViewInt
 import type { PersonalTabKey } from "./features/employee-detail/edit-modal/types";
 import type { Employee } from "./features/employees/types";
 import { authService, hasPermission } from "./services/authService";
-import AuthLandingPage from "./pages/AuthLandingPage";
-import UnauthorizedPage from "./pages/UnauthorizedPage";
 import type { User } from "./services/authService";
 import { employeeService } from "./services/employeeService";
 import { SignatureManagementPage } from "./features/signature-management/SignatureListPage";
@@ -41,6 +39,35 @@ const getRoleLabel = (user: User) => {
   if (user.roles?.includes("Admin")) return "Quản trị viên";
   if (user.roles?.includes("Manager")) return "Quản lý";
   return "Nhân viên";
+};
+
+const getDefaultAuthorizedRoute = (user: User | null) => {
+  if (hasPermission(user, "employee", "read")) return "/personnel/employees";
+  if (hasPermission(user, "contracts", "read")) return "/personnel/contracts";
+  if (hasPermission(user, "shifts", "read")) return "/working-day/timekeeping";
+  return "/account/signatures";
+};
+
+const canAccessAuthenticatedRoute = (user: User | null, path?: string | null) => {
+  if (!path) return false;
+
+  if (path.startsWith("/personnel/employees")) {
+    return hasPermission(user, "employee", "read");
+  }
+
+  if (path.startsWith("/personnel/contracts")) {
+    return hasPermission(user, "contracts", "read");
+  }
+
+  if (path.startsWith("/working-day/timekeeping")) {
+    return hasPermission(user, "shifts", "read");
+  }
+
+  if (path.startsWith("/account/signatures")) {
+    return true;
+  }
+
+  return false;
 };
 
 const Header = ({
@@ -409,6 +436,32 @@ type EmployeeRouteState = {
   employee?: Employee;
 };
 
+const AccessDenied = () => {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-6">
+      <div className="max-w-md w-full bg-white rounded-3xl shadow-xl border border-slate-100 p-10 text-center animate-in fade-in zoom-in duration-300">
+        <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
+          <span className="material-symbols-outlined text-4xl text-red-500">
+            shield_lock
+          </span>
+        </div>
+        <h1 className="text-2xl font-bold text-slate-900 mb-3">Truy cập bị từ chối</h1>
+        <p className="text-slate-500 mb-8 leading-relaxed">
+          Tài khoản của bạn không có quyền hạn để truy cập vào phân hệ này. 
+          Vui lòng liên hệ quản trị viên nếu bạn tin rằng đây là một sự nhầm lẫn.
+        </p>
+        <button
+          onClick={() => navigate("/login")}
+          className="w-full py-3.5 bg-[#134BBA] text-white rounded-2xl font-semibold hover:bg-[#0f3f9f] transition-all shadow-lg shadow-blue-200"
+        >
+          Quay lại Đăng nhập
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const PermissionRoute = ({
   user,
   resource,
@@ -421,16 +474,16 @@ const PermissionRoute = ({
   children: React.ReactNode;
 }) => {
   if (!user || !hasPermission(user, resource, action)) {
-    return <Navigate to="/unauthorized" replace />;
+    return <AccessDenied />;
   }
   return <>{children}</>;
 };
 
 const LoadingScreen = ({ message }: { message: string }) => (
-  <div className="min-h-screen bg-[#0a0f23] flex items-center justify-center">
+  <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
     <div className="text-center">
-      <div className="w-12 h-12 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-      <p className="text-white/60 text-sm font-medium">{message}</p>
+      <div className="w-12 h-12 border-4 border-[#134BBA] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+      <p className="text-slate-500 text-sm font-medium">{message}</p>
     </div>
   </div>
 );
@@ -686,17 +739,26 @@ function RoutedApp() {
   const handleLoginSuccess = () => {
     const currentUser = authService.getCurrentUser();
     const redirectState = location.state as AuthRedirectState | null;
+    const defaultRoute = getDefaultAuthorizedRoute(currentUser);
     const redirectPath =
       redirectState?.from &&
       redirectState.from !== "/login" &&
       redirectState.from !== "/register" &&
-      redirectState.from !== "/activate-workspace-owner"
+      redirectState.from !== "/activate-workspace-owner" &&
+      canAccessAuthenticatedRoute(currentUser, redirectState.from)
         ? redirectState.from
-        : "/auth/landing";
+        : defaultRoute;
 
     setIsAuthenticated(true);
     setUser(currentUser);
     navigate(redirectPath, { replace: true });
+  };
+
+  const handleActivationSuccess = (activatedUser: User, token: string) => {
+    authService.setSession(activatedUser, token);
+    setIsAuthenticated(true);
+    setUser(activatedUser);
+    navigate(getDefaultAuthorizedRoute(activatedUser), { replace: true });
   };
 
   const handleLogout = async () => {
@@ -710,7 +772,9 @@ function RoutedApp() {
     return <LoadingScreen message="Hệ thống đang khởi động..." />;
   }
 
-  const defaultRoute = isAuthenticated ? "/auth/landing" : "/login";
+  const defaultRoute = isAuthenticated
+    ? getDefaultAuthorizedRoute(user)
+    : "/login";
   const loginRedirectPath = `${location.pathname}${location.search}${location.hash}`;
 
   return (
@@ -718,25 +782,10 @@ function RoutedApp() {
       <Routes>
         <Route path="/" element={<Navigate to={defaultRoute} replace />} />
         <Route
-          path="/auth/landing"
-          element={
-            isAuthenticated ? (
-              <AuthLandingPage />
-            ) : (
-              <Navigate
-                to="/login"
-                replace
-                state={{ from: loginRedirectPath }}
-              />
-            )
-          }
-        />
-        <Route path="/unauthorized" element={<UnauthorizedPage />} />
-        <Route
           path="/login"
           element={
             isAuthenticated ? (
-              <Navigate to="/auth/landing" replace />
+              <Navigate to="/personnel/employees" replace />
             ) : (
               <LoginPage
                 onNavigateToActivation={() =>
@@ -751,10 +800,11 @@ function RoutedApp() {
           path="/activate-workspace-owner"
           element={
             isAuthenticated ? (
-              <Navigate to="/auth/landing" replace />
+              <Navigate to="/personnel/employees" replace />
             ) : (
               <WorkspaceOwnerActivationPage
                 onNavigateToLogin={() => navigate("/login")}
+                onActivationSuccess={handleActivationSuccess}
               />
             )
           }

@@ -14,19 +14,19 @@ namespace ERP.Entities.Models
         public int employee_id { get; set; }
 
         [ForeignKey("employee_id")]
-        public virtual Employees Employee { get; set; }
+        public virtual Employees Employee { get; set; } = null!;
 
         [Column("signature_name")]
         [StringLength(100)]
-        public string signature_name { get; set; }
+        public string signature_name { get; set; } = null!;
 
         [Column("signature_data")]
-        public string signature_data { get; set; }
+        public string signature_data { get; set; } = null!;
 
         [Column("is_default")]
         public bool is_default { get; set; }
 
         [Column("certification_info")]
-        public string certification_info { get; set; }
+        public string? certification_info { get; set; }
     }
 }

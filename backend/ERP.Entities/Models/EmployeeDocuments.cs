@@ -14,29 +14,29 @@ namespace ERP.Entities.Models
         public int EmployeeId { get; set; }
 
         [ForeignKey("EmployeeId")]
-        public virtual Employees Employee { get; set; }
+        public virtual Employees Employee { get; set; } = null!;
 
         [Required]
         [StringLength(100)]
         [Column("document_name")]
-        public string DocumentName { get; set; }
+        public string DocumentName { get; set; } = null!;
 
         [Required]
         [StringLength(50)]
         [Column("document_type")]
-        public string DocumentType { get; set; } // CV, ID_Card, Certificate, Other
+        public string DocumentType { get; set; } = null!; // CV, ID_Card, Certificate, Other
 
         [Required]
         [StringLength(512)]
         [Column("file_url")]
-        public string FileUrl { get; set; }
+        public string FileUrl { get; set; } = null!;
 
         [Column("file_size")]
         public long FileSize { get; set; }
 
         [StringLength(10)]
         [Column("file_extension")]
-        public string FileExtension { get; set; }
+        public string? FileExtension { get; set; }
 
         [Column("expiry_date")]
         public DateTime? ExpiryDate { get; set; }
@@ -46,6 +46,6 @@ namespace ERP.Entities.Models
 
         [Column("note")]
         [StringLength(500)]
-        public string Note { get; set; }
+        public string? Note { get; set; }
     }
 }

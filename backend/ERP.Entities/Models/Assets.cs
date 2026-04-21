@@ -12,14 +12,14 @@ namespace ERP.Entities.Models
 
         [Column("asset_code")]
         [StringLength(50)]
-        public string asset_code { get; set; }
+        public string asset_code { get; set; } = null!;
 
         [Column("asset_name")]
         [StringLength(200)]
-        public string asset_name { get; set; }
+        public string asset_name { get; set; } = null!;
 
         [Column("description")]
-        public string description { get; set; }
+        public string? description { get; set; }
 
         [Column("total_quantity")]
         public int total_quantity { get; set; }

@@ -14,11 +14,11 @@ namespace ERP.Entities.Models
         public int employee_id { get; set; }
 
         [ForeignKey("employee_id")]
-        public virtual Employees Employee { get; set; }
+        public virtual Employees Employee { get; set; } = null!;
 
         [Column("contract_number")]
         [StringLength(50)]
-        public string contract_number { get; set; }
+        public string contract_number { get; set; } = null!;
 
         [Column("contract_type_id")]
         public int? contract_type_id { get; set; }
@@ -37,21 +37,21 @@ namespace ERP.Entities.Models
 
         [Column("signed_by")]
         [StringLength(100)]
-        public string signed_by { get; set; }
+        public string? signed_by { get; set; }
 
         [Column("tax_type")]
         [StringLength(50)]
-        public string tax_type { get; set; }
+        public string? tax_type { get; set; }
 
         [Column("attachment")]
         [StringLength(500)]
-        public string attachment { get; set; }
+        public string? attachment { get; set; }
 
         [Column("is_electronic")]
         public bool is_electronic { get; set; } = false;
 
         [Column("note")]
-        public string note { get; set; } = string.Empty;
+        public string? note { get; set; }
 
         [Column("template_id")]
         public int? template_id { get; set; }
@@ -63,6 +63,6 @@ namespace ERP.Entities.Models
 
         [Column("status")]
         [StringLength(50)]
-        public string status { get; set; }
+        public string status { get; set; } = null!;
     }
 }

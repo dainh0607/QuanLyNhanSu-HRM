@@ -14,11 +14,11 @@ namespace ERP.Entities.Models
         public int employee_id { get; set; }
 
         [ForeignKey("employee_id")]
-        public virtual Employees Employee { get; set; }
+        public virtual Employees Employee { get; set; } = null!;
 
         [Column("full_name")]
         [StringLength(100)]
-        public string full_name { get; set; }
+        public string full_name { get; set; } = null!;
 
         [Column("birth_date")]
         public DateTime? birth_date { get; set; }
@@ -29,26 +29,26 @@ namespace ERP.Entities.Models
 
         [Column("identity_number")]
         [StringLength(20)]
-        public string identity_number { get; set; }
+        public string? identity_number { get; set; }
 
         [Column("relationship")]
         [StringLength(50)]
-        public string relationship { get; set; }
+        public string relationship { get; set; } = null!;
 
         [Column("permanent_address")]
         [StringLength(255)]
-        public string permanent_address { get; set; }
+        public string? permanent_address { get; set; }
 
         [Column("temporary_address")]
         [StringLength(255)]
-        public string temporary_address { get; set; }
+        public string? temporary_address { get; set; }
 
         [Column("dependent_duration")]
         [StringLength(50)]
-        public string dependent_duration { get; set; }
+        public string? dependent_duration { get; set; }
 
         [Column("reason")]
         [StringLength(255)]
-        public string reason { get; set; }
+        public string? reason { get; set; }
     }
 }

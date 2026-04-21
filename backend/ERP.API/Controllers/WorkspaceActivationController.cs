@@ -1,8 +1,11 @@
-using System;
-using System.Threading.Tasks;
+using ERP.API.Middleware;
 using ERP.DTOs.ControlPlane;
+using ERP.DTOs.Auth;
+using ERP.Services.Auth;
 using ERP.Services.ControlPlane;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 
 namespace ERP.API.Controllers
 {
@@ -11,10 +14,14 @@ namespace ERP.API.Controllers
     public class WorkspaceActivationController : ControllerBase
     {
         private readonly IWorkspaceActivationService _activationService;
+        private readonly IConfiguration _configuration;
 
-        public WorkspaceActivationController(IWorkspaceActivationService activationService)
+        public WorkspaceActivationController(
+            IWorkspaceActivationService activationService,
+            IConfiguration configuration)
         {
             _activationService = activationService;
+            _configuration = configuration;
         }
 
         /// <summary>
@@ -57,12 +64,80 @@ namespace ERP.API.Controllers
                 {
                     return BadRequest(result);
                 }
+
+                // IMPORTANT: Write session cookies to override any existing Super Admin session on localhost
+                WriteSessionCookies(result);
+
                 return Ok(result);
             }
             catch (Exception ex)
             {
                 return BadRequest(new { Success = false, Message = ex.Message });
             }
+        }
+
+        private void WriteSessionCookies(WorkspaceActivationResultDto result)
+        {
+            if (string.IsNullOrWhiteSpace(result.IdToken) ||
+                string.IsNullOrWhiteSpace(result.RefreshToken) ||
+                string.IsNullOrWhiteSpace(result.CsrfToken))
+            {
+                return;
+            }
+
+            Response.Cookies.Append(
+                AuthSecurityConstants.AccessTokenCookieName,
+                result.IdToken,
+                CreateAuthCookieOptions(DateTimeOffset.UtcNow.AddSeconds(result.ExpiresIn > 0 ? result.ExpiresIn : 900), "/"));
+
+            Response.Cookies.Append(
+                AuthSecurityConstants.RefreshTokenCookieName,
+                result.RefreshToken,
+                CreateAuthCookieOptions(DateTimeOffset.UtcNow.AddDays(GetRefreshTokenExpiryInDays()), "/api/auth"));
+
+            Response.Cookies.Append(
+                AuthSecurityConstants.CsrfCookieName,
+                result.CsrfToken,
+                CreateCsrfCookieOptions(DateTimeOffset.UtcNow.AddDays(GetRefreshTokenExpiryInDays())));
+        }
+
+        private CookieOptions CreateAuthCookieOptions(DateTimeOffset expiresAt, string path)
+        {
+            return new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = IsSecureRequest(),
+                SameSite = SameSiteMode.Lax,
+                Path = path,
+                Expires = expiresAt,
+                IsEssential = true
+            };
+        }
+
+        private CookieOptions CreateCsrfCookieOptions(DateTimeOffset expiresAt)
+        {
+            return new CookieOptions
+            {
+                HttpOnly = false,
+                Secure = IsSecureRequest(),
+                SameSite = SameSiteMode.Lax,
+                Path = "/",
+                Expires = expiresAt,
+                IsEssential = true
+            };
+        }
+
+        private double GetRefreshTokenExpiryInDays()
+        {
+            return double.TryParse(_configuration["JwtSettings:RefreshExpiryInDays"], out var days)
+                ? days
+                : 7;
+        }
+
+        private bool IsSecureRequest()
+        {
+            if (Request.IsHttps) return true;
+            return string.Equals(Request.Headers["X-Forwarded-Proto"], "https", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

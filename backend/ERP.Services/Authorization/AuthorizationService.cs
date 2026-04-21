@@ -178,6 +178,29 @@ namespace ERP.Services.Authorization
 
             var roleIds = userRoles.Select(r => r.Id).ToList();
 
+            // [CRITICAL FIX] Admin (Role ID 1) bypass - full access to all resources
+            // Prevents 403 when ActionPermissions table hasn't been seeded for new tenants
+            if (roleIds.Contains(1))
+            {
+                return true;
+            }
+
+            // [CRITICAL FIX] Workspace Owner bypass via WorkspaceOwnerInvitations
+            var userEmail = await _context.Users
+                .IgnoreQueryFilters()
+                .Where(u => u.Id == userId)
+                .Select(u => u.Employee != null ? u.Employee.email : u.username)
+                .FirstOrDefaultAsync();
+
+            if (!string.IsNullOrWhiteSpace(userEmail))
+            {
+                var isOwner = await _context.WorkspaceOwnerInvitations
+                    .IgnoreQueryFilters()
+                    .AnyAsync(inv => inv.OwnerEmail.ToLower() == userEmail.ToLower()
+                                  && inv.Status == "activated");
+                if (isOwner) return true;
+            }
+
             var actionPermission = await _context.ActionPermissions
                 .IgnoreQueryFilters()
                 .Where(ap => roleIds.Contains(ap.role_id) &&
@@ -225,6 +248,11 @@ namespace ERP.Services.Authorization
         /// </summary>
         public async Task<UserScopeInfo> GetUserScopeInfo(int userId)
         {
+            var user = await _context.Users
+                .IgnoreQueryFilters()
+                .Include(u => u.Employee)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
             var userRoles = await _context.UserRoles
                 .IgnoreQueryFilters()
                 .Where(ur => ur.user_id == userId && ur.is_active &&
@@ -234,14 +262,14 @@ namespace ERP.Services.Authorization
             var roleIds = userRoles.Select(ur => ur.role_id).Distinct().ToList();
             var roleScopes = await _context.RoleScopes
                 .IgnoreQueryFilters()
-                .Where(rs => roleIds.Contains(rs.role_id))
+                .Where(rs => roleIds.Contains(rs.role_id) && rs.is_active)
                 .ToListAsync();
 
             // Determine Scope Level
             var scopeLevel = "PERSONAL";
             if (roleScopes.Any())
             {
-                var scopePriority = new Dictionary<string, int>
+                var scopePriority = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
                 {
                     { "TENANT", 5 },
                     { "CROSS_REGION", 4 },
@@ -252,18 +280,23 @@ namespace ERP.Services.Authorization
                 };
 
                 var highestPriority = roleScopes
-                    .Select(rs => rs.scope_level ?? "PERSONAL")
-                    .Select(scope => scopePriority.ContainsKey(scope) ? scopePriority[scope] : 0)
+                    .Select(rs => (rs.scope_level ?? "PERSONAL").Trim().ToUpperInvariant())
+                    .Select(scope => scopePriority.TryGetValue(scope, out var priority) ? priority : 0)
                     .Max();
 
                 scopeLevel = scopePriority.FirstOrDefault(kvp => kvp.Value == highestPriority).Key ?? "PERSONAL";
             }
 
+            var roleTenantIds = userRoles
+                .Where(ur => ur.tenant_id.HasValue)
+                .Select(ur => ur.tenant_id!.Value)
+                .Distinct()
+                .ToList();
             var firstAssignment = userRoles.FirstOrDefault();
             var scope = new UserScopeInfo
             {
                 UserId = userId,
-                TenantId = firstAssignment?.tenant_id,
+                TenantId = ResolveEffectiveTenantId(user, roleTenantIds),
                 RegionId = firstAssignment?.region_id,
                 BranchId = firstAssignment?.branch_id,
                 DepartmentId = firstAssignment?.department_id,
@@ -287,6 +320,24 @@ namespace ERP.Services.Authorization
                 .ToListAsync();
 
             return roles;
+        }
+
+        private static int? ResolveEffectiveTenantId(Users? user, IEnumerable<int> roleTenantIds)
+        {
+            if (user?.tenant_id.HasValue == true)
+            {
+                return user.tenant_id;
+            }
+
+            if (user?.Employee?.tenant_id.HasValue == true)
+            {
+                return user.Employee.tenant_id;
+            }
+
+            var distinctRoleTenants = roleTenantIds.Distinct().ToList();
+            return distinctRoleTenants.Count == 1
+                ? distinctRoleTenants[0]
+                : null;
         }
 
         /// <summary>

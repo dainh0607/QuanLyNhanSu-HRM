@@ -16,11 +16,11 @@ namespace ERP.Entities.Models
         public bool is_system_role { get; set; }
         [Column("name")]
         [StringLength(100)]
-        public string name { get; set; }
+        public string name { get; set; } = null!;
 
         [Column("description")]
         [StringLength(255)]
-        public string description { get; set; }
+        public string? description { get; set; }
 
         [Column("is_active")]
         public bool is_active { get; set; }

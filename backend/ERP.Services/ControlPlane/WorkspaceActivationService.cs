@@ -3,9 +3,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using ERP.DTOs.ControlPlane;
 using ERP.Entities.Models;
+using ERP.Entities.Models.ControlPlane;
+using EmployeeEntity = ERP.Entities.Models.Employees;
+using UserEntity = ERP.Entities.Models.Users;
 using ERP.Repositories.Interfaces;
 using ERP.Services.Auth;
 using Microsoft.EntityFrameworkCore;
+using ERP.DTOs.Auth;
 
 namespace ERP.Services.ControlPlane
 {
@@ -32,9 +36,9 @@ namespace ERP.Services.ControlPlane
                 };
             }
 
-            var invitation = await _unitOfWork.Repository<WorkspaceInvitations>()
+            var invitation = await _unitOfWork.Repository<WorkspaceOwnerInvitation>()
                 .AsQueryable()
-                .FirstOrDefaultAsync(i => i.activation_token == token.Trim());
+                .FirstOrDefaultAsync(i => i.ActivationToken == token.Trim());
 
             if (invitation == null)
             {
@@ -47,10 +51,10 @@ namespace ERP.Services.ControlPlane
             }
 
             // Check if expired
-            if (invitation.status == "invited" && invitation.expires_at.HasValue && invitation.expires_at.Value < DateTime.UtcNow)
+            if (invitation.Status == "invited" && invitation.ExpiresAt < DateTime.UtcNow)
             {
-                invitation.status = "expired";
-                _unitOfWork.Repository<WorkspaceInvitations>().Update(invitation);
+                invitation.Status = "expired";
+                _unitOfWork.Repository<WorkspaceOwnerInvitation>().Update(invitation);
                 await _unitOfWork.SaveChangesAsync();
             }
 
@@ -58,10 +62,10 @@ namespace ERP.Services.ControlPlane
 
             return new WorkspaceActivationResultDto
             {
-                Success = invitation.status != "not_found",
-                Status = invitation.status,
+                Success = invitation.Status != "not_found",
+                Status = string.Equals(invitation.Status, "invited", StringComparison.OrdinalIgnoreCase) ? "ready" : invitation.Status,
                 Session = session,
-                Message = invitation.status == "invited"
+                Message = string.Equals(invitation.Status, "invited", StringComparison.OrdinalIgnoreCase)
                     ? "Liên kết kích hoạt hợp lệ."
                     : "Liên kết kích hoạt hiện không sẵn sàng để sử dụng."
             };
@@ -99,9 +103,9 @@ namespace ERP.Services.ControlPlane
                 };
             }
 
-            var invitation = await _unitOfWork.Repository<WorkspaceInvitations>()
+            var invitation = await _unitOfWork.Repository<WorkspaceOwnerInvitation>()
                 .AsQueryable()
-                .FirstOrDefaultAsync(i => i.activation_token == payload.Token.Trim());
+                .FirstOrDefaultAsync(i => i.ActivationToken == payload.Token.Trim());
 
             if (invitation == null)
             {
@@ -114,66 +118,194 @@ namespace ERP.Services.ControlPlane
             }
 
             // Check expiration
-            if (invitation.status == "invited" && invitation.expires_at.HasValue && invitation.expires_at.Value < DateTime.UtcNow)
+            if (invitation.Status == "invited" && invitation.ExpiresAt < DateTime.UtcNow)
             {
-                invitation.status = "expired";
-                _unitOfWork.Repository<WorkspaceInvitations>().Update(invitation);
+                invitation.Status = "expired";
+                _unitOfWork.Repository<WorkspaceOwnerInvitation>().Update(invitation);
                 await _unitOfWork.SaveChangesAsync();
             }
 
-            if (invitation.status != "invited")
+            if (!string.Equals(invitation.Status, "invited", StringComparison.OrdinalIgnoreCase))
             {
                 return new WorkspaceActivationResultDto
                 {
                     Success = false,
-                    Status = invitation.status,
+                    Status = invitation.Status,
                     Session = MapToSession(invitation),
-                    Message = invitation.status == "activated"
+                    Message = string.Equals(invitation.Status, "activated", StringComparison.OrdinalIgnoreCase)
                         ? "Tài khoản này đã được kích hoạt trước đó."
                         : "Liên kết này hiện không thể sử dụng để kích hoạt tài khoản."
                 };
             }
 
+            // Fetch target tenant to link correctly
+            var tenant = await _unitOfWork.Repository<Tenants>()
+                .AsQueryable()
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(t => t.code == invitation.WorkspaceCode);
+
+            if (tenant == null)
+            {
+                return new WorkspaceActivationResultDto
+                {
+                    Success = false,
+                    Status = "error",
+                    Message = $"Workspace '{invitation.WorkspaceCode}' không tồn tại trong hệ thống."
+                };
+            }
+
             try
             {
-                // Create Firebase user with the owner's email and password
-                var firebaseUid = await _authService.CreateFirebaseUserAsync(
-                    invitation.owner_email,
-                    payload.Password,
-                    invitation.owner_full_name,
-                    0); // 0 = no linked employee for workspace owner
+                var normalizedOwnerEmail = invitation.OwnerEmail.Trim().ToLowerInvariant();
+                var employeeRepository = _unitOfWork.Repository<EmployeeEntity>();
+                var userRepository = _unitOfWork.Repository<UserEntity>();
+                var existingEmployee = await employeeRepository
+                    .AsQueryable()
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(e =>
+                        (!string.IsNullOrWhiteSpace(e.email) && e.email.ToLower() == normalizedOwnerEmail) ||
+                        (!string.IsNullOrWhiteSpace(e.work_email) && e.work_email.ToLower() == normalizedOwnerEmail));
 
-                // Create local user record linked to this workspace owner
-                var user = new Users
+                if (existingEmployee != null &&
+                    existingEmployee.tenant_id.HasValue &&
+                    existingEmployee.tenant_id.Value != tenant.Id)
                 {
-                    firebase_uid = firebaseUid,
-                    username = invitation.owner_email,
-                    employee_id = 0,
-                    is_active = true,
-                    tenant_id = invitation.tenant_id,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
+                    return new WorkspaceActivationResultDto
+                    {
+                        Success = false,
+                        Status = "error",
+                        Message = $"Email '{invitation.OwnerEmail}' da duoc lien ket voi workspace khac."
+                    };
+                }
 
-                await _unitOfWork.Repository<Users>().AddAsync(user);
+                var existingUser = await userRepository
+                    .AsQueryable()
+                    .IgnoreQueryFilters()
+                    .Include(u => u.Employee)
+                    .FirstOrDefaultAsync(u =>
+                        (!string.IsNullOrWhiteSpace(u.username) && u.username.ToLower() == normalizedOwnerEmail) ||
+                        (u.Employee != null &&
+                            (
+                                (!string.IsNullOrWhiteSpace(u.Employee.email) && u.Employee.email.ToLower() == normalizedOwnerEmail) ||
+                                (!string.IsNullOrWhiteSpace(u.Employee.work_email) && u.Employee.work_email.ToLower() == normalizedOwnerEmail)
+                            )));
 
-                // Mark invitation as activated
-                invitation.status = "activated";
-                invitation.activated_at = DateTime.UtcNow;
-                _unitOfWork.Repository<WorkspaceInvitations>().Update(invitation);
+                var existingUserTenantId = existingUser?.tenant_id ?? existingUser?.Employee?.tenant_id;
+                if (existingUserTenantId.HasValue && existingUserTenantId.Value != tenant.Id)
+                {
+                    return new WorkspaceActivationResultDto
+                    {
+                        Success = false,
+                        Status = "error",
+                        Message = $"Tai khoan '{invitation.OwnerEmail}' hien dang thuoc workspace khac."
+                    };
+                }
+
+                await _unitOfWork.BeginTransactionAsync();
+
+                EmployeeEntity employee;
+                if (existingEmployee == null)
+                {
+                    employee = new EmployeeEntity
+                    {
+                        tenant_id = tenant.Id,
+                        employee_code = $"OWNER_{Guid.NewGuid().ToString("N").Substring(0, 4).ToUpper()}",
+                        full_name = invitation.OwnerFullName,
+                        email = invitation.OwnerEmail,
+                        work_email = invitation.OwnerEmail,
+                        is_active = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow,
+                        start_date = DateTime.UtcNow
+                    };
+
+                    await employeeRepository.AddAsync(employee);
+                }
+                else
+                {
+                    employee = existingEmployee;
+                    employee.tenant_id = tenant.Id;
+                    employee.full_name = invitation.OwnerFullName;
+                    employee.email = invitation.OwnerEmail;
+                    employee.work_email = invitation.OwnerEmail;
+                    employee.is_active = true;
+                    employee.start_date ??= DateTime.UtcNow;
+                    employee.UpdatedAt = DateTime.UtcNow;
+                    employeeRepository.Update(employee);
+                }
 
                 await _unitOfWork.SaveChangesAsync();
+
+                var firebaseUid = await _authService.CreateFirebaseUserAsync(
+                    invitation.OwnerEmail,
+                    payload.Password,
+                    invitation.OwnerFullName,
+                    employee.Id,
+                    tenant.Id,
+                    1);
+
+                // Mark invitation as activated
+                invitation.Status = "activated";
+                invitation.ActivatedAt = DateTime.UtcNow;
+                _unitOfWork.Repository<WorkspaceOwnerInvitation>().Update(invitation);
+
+                await _unitOfWork.SaveChangesAsync();
+
+                var localUser = await userRepository
+                    .AsQueryable()
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(u => u.firebase_uid == firebaseUid);
+
+                if (localUser == null)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return new WorkspaceActivationResultDto
+                    {
+                        Success = false,
+                        Status = "error",
+                        Message = "Khong the khoi tao tai khoan local cho workspace owner."
+                    };
+                }
+
+                var authResult = await _authService.CreateSessionForUserAsync(
+                    localUser.Id,
+                    new AuthSessionContextDto
+                    {
+                        IpAddress = "127.0.0.1",
+                        UserAgent = "Nexahrm-Activation-Flow",
+                        ResolvedTenantId = tenant.Id
+                    },
+                    "Kich hoat tai khoan thanh cong");
+
+                if (!authResult.Success)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return new WorkspaceActivationResultDto
+                    {
+                        Success = false,
+                        Status = "error",
+                        Message = authResult.Message
+                    };
+                }
+
+                await _unitOfWork.CommitTransactionAsync();
 
                 return new WorkspaceActivationResultDto
                 {
                     Success = true,
                     Status = "activated",
                     Session = MapToSession(invitation),
-                    Message = "Kích hoạt tài khoản thành công. Bạn có thể đăng nhập vào hệ thống."
+                    Message = "Kích hoạt tài khoản thành công. Đang chuyển hướng...",
+                    User = authResult.User,
+                    IdToken = authResult.IdToken,
+                    RefreshToken = authResult.RefreshToken,
+                    CsrfToken = authResult.CsrfToken,
+                    ExpiresIn = authResult.ExpiresIn
                 };
             }
             catch (Exception ex)
             {
+                await _unitOfWork.RollbackTransactionAsync();
                 return new WorkspaceActivationResultDto
                 {
                     Success = false,
@@ -183,20 +315,20 @@ namespace ERP.Services.ControlPlane
             }
         }
 
-        private static WorkspaceActivationSessionDto MapToSession(WorkspaceInvitations invitation)
+        private static WorkspaceActivationSessionDto MapToSession(WorkspaceOwnerInvitation invitation)
         {
             return new WorkspaceActivationSessionDto
             {
-                Token = invitation.activation_token,
-                CompanyName = invitation.company_name ?? "",
-                WorkspaceCode = invitation.workspace_code ?? "",
-                OwnerFullName = invitation.owner_full_name ?? "",
-                OwnerEmail = invitation.owner_email ?? "",
-                PlanName = invitation.plan_name ?? "",
-                IssuedAt = invitation.invited_at?.ToString("o") ?? "",
-                ExpiresAt = invitation.expires_at?.ToString("o") ?? "",
-                Status = invitation.status,
-                InvitedBy = invitation.invited_by ?? "admin@nexahrm.com",
+                Token = invitation.ActivationToken,
+                CompanyName = invitation.CompanyName ?? "",
+                WorkspaceCode = invitation.WorkspaceCode ?? "",
+                OwnerFullName = invitation.OwnerFullName ?? "",
+                OwnerEmail = invitation.OwnerEmail ?? "",
+                PlanName = invitation.TargetPlanCode ?? "", // Using plan code as name here
+                IssuedAt = invitation.InvitedAt.ToString("o"),
+                ExpiresAt = invitation.ExpiresAt.ToString("o"),
+                Status = string.Equals(invitation.Status, "invited", StringComparison.OrdinalIgnoreCase) ? "ready" : invitation.Status,
+                InvitedBy = invitation.InvitedBy ?? "admin@nexahrm.com",
                 Instructions = new[]
                 {
                     "SuperAdmin đã tạo sẵn workspace metadata cho doanh nghiệp của bạn.",

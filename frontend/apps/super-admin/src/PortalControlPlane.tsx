@@ -40,7 +40,6 @@ import {
   type ManualPaymentInput,
   planStatusLabel,
   type PlanCatalogQuery,
-  resolveWorkspaceOwnerStatus,
   type SupportTicketCreateInput,
   type SupportTicketQuery,
   type SubscriptionPlanInput,
@@ -191,6 +190,29 @@ const getToneClass = (value: string) => {
   return "is-slate";
 };
 
+const resolveWorkspaceOwnerProvisioningStatus = (
+  owner: WorkspaceOwnerProvisioning,
+): WorkspaceOwnerProvisioningStatus => {
+  if (owner.status === "revoked" || owner.revokedAt) {
+    return "revoked";
+  }
+
+  if (owner.status === "activated" || owner.activatedAt) {
+    return "activated";
+  }
+
+  if (!owner.expiresAt) {
+    return owner.status === "expired" ? "expired" : "invited";
+  }
+
+  const expiresAt = Date.parse(owner.expiresAt);
+  if (owner.status === "expired" || Number.isNaN(expiresAt) || expiresAt <= Date.now()) {
+    return "expired";
+  }
+
+  return "invited";
+};
+
 const getUsagePercent = (tenant: TenantSubscription) =>
   tenant.storageLimitGb > 0
     ? Math.min(100, Math.round((tenant.storageUsedGb / tenant.storageLimitGb) * 100))
@@ -337,10 +359,14 @@ export default function PortalControlPlane({
     setToasts((current) => current.filter((toast) => toast.id !== toastId));
   };
 
+  const showActionError = (error: unknown, fallbackMessage: string) => {
+    pushToast(error instanceof Error ? error.message : fallbackMessage, "error");
+  };
+
   const filteredOwners = useMemo(
     () =>
       workspaceOwners.filter((owner) => {
-        const resolvedStatus = resolveWorkspaceOwnerStatus(owner);
+        const resolvedStatus = resolveWorkspaceOwnerProvisioningStatus(owner);
         const matchesSearch =
           deferredSearch.length === 0 ||
           owner.companyName.toLowerCase().includes(deferredSearch) ||
@@ -880,6 +906,13 @@ export default function PortalControlPlane({
       if (result.success) {
         resetPlanForm();
       }
+    } catch (error) {
+      showActionError(
+        error,
+        planEditorMode === "create"
+          ? "Khong the tao goi dich vu."
+          : "Khong the cap nhat goi dich vu.",
+      );
     } finally {
       setSavingPlan(false);
     }
@@ -898,6 +931,8 @@ export default function PortalControlPlane({
       if (result.success) {
         setPendingPlanDelete(null);
       }
+    } catch (error) {
+      showActionError(error, "Khong the xoa goi dich vu.");
     } finally {
       setDeletingPlanId(null);
     }
@@ -954,6 +989,11 @@ export default function PortalControlPlane({
       if (result.success) {
         closePaymentDialog();
       }
+    } catch (error) {
+      showActionError(
+        error,
+        `Khong the ghi nhan thanh toan cho ${paymentDialogInvoice.invoiceCode}.`,
+      );
     } finally {
       setMarkingInvoiceId(null);
     }
@@ -965,6 +1005,8 @@ export default function PortalControlPlane({
     try {
       const result = await superAdminPortalService.sendInvoiceReminder(invoice.id);
       updateFromMutation(result, "info");
+    } catch (error) {
+      showActionError(error, `Khong the gui nhac thanh toan cho ${invoice.invoiceCode}.`);
     } finally {
       setRemindingInvoiceId(null);
     }
@@ -1033,6 +1075,11 @@ export default function PortalControlPlane({
       if (result.success) {
         closeDraftEditor();
       }
+    } catch (error) {
+      showActionError(
+        error,
+        `Khong the cap nhat ban nhap hoa don ${draftEditorInvoice.invoiceCode}.`,
+      );
     } finally {
       setEditingDraftInvoiceId(null);
     }
@@ -1048,6 +1095,8 @@ export default function PortalControlPlane({
       if (draftEditorInvoice?.id === invoice.id && result.success) {
         closeDraftEditor();
       }
+    } catch (error) {
+      showActionError(error, `Khong the huy ban nhap hoa don ${invoice.invoiceCode}.`);
     } finally {
       setCancelingDraftInvoiceId(null);
     }
@@ -1132,6 +1181,8 @@ export default function PortalControlPlane({
       if (result.success) {
         closeSupportRequestDialog();
       }
+    } catch (error) {
+      showActionError(error, "Khong the tao yeu cau ho tro.");
     } finally {
       setCreatingSupportTicket(false);
     }
@@ -1152,6 +1203,8 @@ export default function PortalControlPlane({
           );
         }
       }
+    } catch (error) {
+      showActionError(error, "Khong the kich hoat quyen ho tro.");
     } finally {
       setActivatingSupportTicketId(null);
     }
@@ -1162,6 +1215,8 @@ export default function PortalControlPlane({
     try {
       const result = await superAdminPortalService.revokeSupportGrant(ticketId);
       updateFromMutation(result);
+    } catch (error) {
+      showActionError(error, "Khong the thu hoi quyen ho tro.");
     } finally {
       setRevokingSupportTicketId(null);
     }
@@ -1203,6 +1258,8 @@ export default function PortalControlPlane({
         setOwnerForm(INITIAL_OWNER_FORM);
         setSelectedWorkspaceCode(result.record.workspaceCode);
       }
+    } catch (error) {
+      showActionError(error, "Khong the tao loi moi workspace owner.");
     } finally {
       setSaving(false);
     }
@@ -1241,6 +1298,13 @@ export default function PortalControlPlane({
           : await superAdminPortalService.revokeWorkspaceOwnerInvite(ownerId);
 
       updateFromMutation(result);
+    } catch (error) {
+      showActionError(
+        error,
+        kind === "resend"
+          ? "Khong the gui lai loi moi workspace owner."
+          : "Khong the thu hoi loi moi workspace owner.",
+      );
     } finally {
       setPendingOwnerAction(null);
     }
@@ -1337,11 +1401,11 @@ export default function PortalControlPlane({
               person_add
             </span>
           </div>
-          <strong>
-            {formatNumber(
-              workspaceOwners.filter((owner) => resolveWorkspaceOwnerStatus(owner) === "invited").length,
-            )}
-          </strong>
+            <strong>
+              {formatNumber(
+              workspaceOwners.filter((owner) => resolveWorkspaceOwnerProvisioningStatus(owner) === "invited").length,
+              )}
+            </strong>
         </article>
         <article className="summary-card">
           <div className="summary-head">

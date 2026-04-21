@@ -14,12 +14,12 @@ namespace ERP.Entities.Models
         [Required]
         [StringLength(10)]
         [Column("code")]
-        public string code { get; set; }
+        public string code { get; set; } = null!;
 
         [Required]
         [StringLength(100)]
         [Column("name")]
-        public string name { get; set; }
+        public string name { get; set; } = null!;
 
         public virtual ICollection<Provinces> Provinces { get; set; } = new HashSet<Provinces>();
     }

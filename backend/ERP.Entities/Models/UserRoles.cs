@@ -15,13 +15,13 @@ namespace ERP.Entities.Models
         public int user_id { get; set; }
 
         [ForeignKey("user_id")]
-        public virtual Users User { get; set; }
+        public virtual Users User { get; set; } = null!;
 
         [Column("role_id")]
         public int role_id { get; set; }
 
         [ForeignKey("role_id")]
-        public virtual Roles Role { get; set; }
+        public virtual Roles Role { get; set; } = null!;
 
         /// <summary>
         /// FIX #1, #4: Scope constraints for this role assignment
@@ -37,7 +37,7 @@ namespace ERP.Entities.Models
         public int? region_id { get; set; }
 
         [ForeignKey("region_id")]
-        public virtual Regions Region { get; set; }
+        public virtual Regions? Region { get; set; }
 
         /// <summary>
         /// FIX #4: Branch scope (NULL means all branches in region/tenant)
@@ -46,7 +46,7 @@ namespace ERP.Entities.Models
         public int? branch_id { get; set; }
 
         [ForeignKey("branch_id")]
-        public virtual Branches Branch { get; set; }
+        public virtual Branches? Branch { get; set; }
 
         /// <summary>
         /// FIX #4: Department scope (NULL means all departments)
@@ -55,7 +55,7 @@ namespace ERP.Entities.Models
         public int? department_id { get; set; }
 
         [ForeignKey("department_id")]
-        public virtual Departments Department { get; set; }
+        public virtual Departments? Department { get; set; }
 
         /// <summary>
         /// FIX #13, #14: Time-based role assignment
@@ -81,14 +81,14 @@ namespace ERP.Entities.Models
         public int? assigned_by_user_id { get; set; }
 
         [ForeignKey("assigned_by_user_id")]
-        public virtual Users AssignedByUser { get; set; }
+        public virtual Users? AssignedByUser { get; set; }
 
         /// <summary>
         /// FIX #13: Reason for assignment (audit trail)
         /// </summary>
         [Column("assignment_reason")]
         [StringLength(500)]
-        public string assignment_reason { get; set; }
+        public string? assignment_reason { get; set; }
 
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

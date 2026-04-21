@@ -12,7 +12,7 @@ namespace ERP.Entities.Models
 
         [Column("name")]
         [StringLength(200)]
-        public string name { get; set; }
+        public string name { get; set; } = null!;
 
         [Column("region_id")]
         public int? region_id { get; set; }
@@ -22,11 +22,11 @@ namespace ERP.Entities.Models
 
         [Column("code")]
         [StringLength(50)]
-        public string code { get; set; }
+        public string code { get; set; } = null!;
 
         [Column("address")]
         [StringLength(255)]
-        public string address { get; set; }
+        public string? address { get; set; }
 
         public virtual ICollection<Employees> Employees { get; set; } = new HashSet<Employees>();
 

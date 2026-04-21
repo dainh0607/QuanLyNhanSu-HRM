@@ -7,27 +7,27 @@ namespace ERP.DTOs.Auth
     public class RoleSummaryDto
     {
         public int Id { get; set; }
-        public string Name { get; set; }
-        public string Description { get; set; }
+        public string Name { get; set; } = null!;
+        public string? Description { get; set; }
         public bool IsActive { get; set; }
         public bool IsSystemRole { get; set; }
         public int? TenantId { get; set; }
-        public string ScopeLevel { get; set; }
+        public string ScopeLevel { get; set; } = null!;
     }
 
     public class RoleCreateUpdateDto
     {
         [Required(ErrorMessage = "Tên nhóm quyền là bắt buộc")]
         [StringLength(100)]
-        public string Name { get; set; }
+        public string Name { get; set; } = null!;
 
         [StringLength(255)]
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         public bool IsActive { get; set; } = true;
 
         [Required(ErrorMessage = "Cấp độ phạm vi là bắt buộc")]
-        public string ScopeLevel { get; set; } // TENANT, REGION, BRANCH, DEPARTMENT, PERSONAL
+        public string ScopeLevel { get; set; } = null!; // TENANT, REGION, BRANCH, DEPARTMENT, PERSONAL
     }
 
     public class PermissionMappingDto
@@ -39,16 +39,16 @@ namespace ERP.DTOs.Auth
 
     public class ActionPermissionDto
     {
-        public string Action { get; set; } // CREATE, READ, UPDATE, DELETE
-        public string Resource { get; set; } // EMPLOYEE, PAYROLL, etc.
-        public string AllowedScope { get; set; } // SAME_TENANT, SAME_REGION, etc.
-        public string Description { get; set; }
+        public string Action { get; set; } = null!; // CREATE, READ, UPDATE, DELETE
+        public string Resource { get; set; } = null!; // EMPLOYEE, PAYROLL, etc.
+        public string AllowedScope { get; set; } = null!; // SAME_TENANT, SAME_REGION, etc.
+        public string? Description { get; set; }
     }
 
     public class ResourcePermissionDto
     {
-        public string ResourceName { get; set; }
-        public string ScopeLevel { get; set; } // TENANT, REGION, etc.
+        public string ResourceName { get; set; } = null!;
+        public string ScopeLevel { get; set; } = null!; // TENANT, REGION, etc.
     }
 
     public class UserRoleAssignmentDto
@@ -66,13 +66,13 @@ namespace ERP.DTOs.Auth
         public DateTime ValidFrom { get; set; } = DateTime.UtcNow;
         public DateTime? ValidTo { get; set; }
         
-        public string AssignmentReason { get; set; }
+        public string? AssignmentReason { get; set; }
     }
 
     public class PermissionLookupDto
     {
-        public List<string> AvailableActions { get; set; }
-        public List<string> AvailableResources { get; set; }
-        public List<string> AvailableScopes { get; set; }
+        public List<string> AvailableActions { get; set; } = null!;
+        public List<string> AvailableResources { get; set; } = null!;
+        public List<string> AvailableScopes { get; set; } = null!;
     }
 }

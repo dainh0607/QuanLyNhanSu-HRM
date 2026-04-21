@@ -14,17 +14,17 @@ namespace ERP.Entities.Models
         public int asset_id { get; set; }
 
         [ForeignKey("asset_id")]
-        public virtual Assets Asset { get; set; }
+        public virtual Assets Asset { get; set; } = null!;
 
         [Column("employee_id")]
         public int employee_id { get; set; }
 
         [ForeignKey("employee_id")]
-        public virtual Employees Employee { get; set; }
+        public virtual Employees Employee { get; set; } = null!;
 
         [Column("allocation_code")]
         [StringLength(50)]
-        public string allocation_code { get; set; }
+        public string allocation_code { get; set; } = null!;
 
         [Column("allocation_date")]
         public DateTime allocation_date { get; set; }
@@ -37,17 +37,17 @@ namespace ERP.Entities.Models
 
         [Column("location")]
         [StringLength(200)]
-        public string location { get; set; }
+        public string? location { get; set; }
 
         [Column("handover_place")]
         [StringLength(200)]
-        public string handover_place { get; set; }
+        public string? handover_place { get; set; }
 
         [Column("deposit")]
         public decimal? deposit { get; set; }
 
         [Column("note")]
-        public string note { get; set; }
+        public string? note { get; set; }
 
         [Column("return_date")]
         public DateTime? return_date { get; set; }

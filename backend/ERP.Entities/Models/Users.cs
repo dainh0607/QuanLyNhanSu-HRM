@@ -11,18 +11,18 @@ namespace ERP.Entities.Models
         public int employee_id { get; set; }
 
         [ForeignKey("employee_id")]
-        public virtual Employees Employee { get; set; }
+        public virtual Employees Employee { get; set; } = null!;
 
         [Column("username")]
         [StringLength(50)]
-        public string username { get; set; }
+        public string username { get; set; } = null!;
 
         [Column("is_active")]
         public bool is_active { get; set; }
 
         [Column("firebase_uid")]
         [StringLength(128)]
-        public string firebase_uid { get; set; }
+        public string firebase_uid { get; set; } = null!;
 
         // ========== FIX #1, #11: System Admin vs Tenant Admin roles ==========
         [Column("tenant_id")]

@@ -12,10 +12,10 @@ namespace ERP.Entities.Models
 
         [Column("code")]
         [StringLength(10)]
-        public string code { get; set; }
+        public string code { get; set; } = null!;
 
         [Column("name")]
         [StringLength(50)]
-        public string name { get; set; }
+        public string name { get; set; } = null!;
     }
 }
