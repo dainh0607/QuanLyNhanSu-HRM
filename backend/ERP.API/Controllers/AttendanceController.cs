@@ -178,5 +178,36 @@ namespace ERP.API.Controllers
                 return BadRequest(new { Message = ex.Message });
             }
         }
+
+        [HttpGet("employee/{employeeId}/settings")]
+        [HasPermission("attendance", "read")]
+        public async Task<IActionResult> GetEmployeeTimekeepingOptions(int employeeId)
+        {
+            try
+            {
+                var result = await _attendanceService.GetEmployeeTimekeepingOptionsAsync(employeeId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpPut("employee/{employeeId}/settings")]
+        [HasPermission("attendance", "update")]
+        public async Task<IActionResult> UpdateEmployeeTimekeepingOptions(int employeeId, [FromBody] EmployeeTimekeepingOptionsDto dto)
+        {
+            try
+            {
+                var success = await _attendanceService.UpdateEmployeeTimekeepingOptionsAsync(employeeId, dto);
+                if (!success) return BadRequest(new { Message = "Cập nhật thiết lập chấm công thất bại." });
+                return Ok(new { Message = "Cập nhật thiết lập chấm công thành công." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
     }
 }

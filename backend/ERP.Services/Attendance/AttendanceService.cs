@@ -313,5 +313,72 @@ namespace ERP.Services.Attendance
 
             return await _unitOfWork.SaveChangesAsync() > 0;
         }
+
+        public async Task<EmployeeTimekeepingOptionsDto> GetEmployeeTimekeepingOptionsAsync(int employeeId)
+        {
+            var settings = await _unitOfWork.Repository<AttendanceSettings>()
+                .AsQueryable()
+                .FirstOrDefaultAsync(s => s.employee_id == employeeId);
+
+            if (settings == null)
+            {
+                // Trả về mặc định
+                return new EmployeeTimekeepingOptionsDto
+                {
+                    UnrestrictedLocationOption = "NO_GPS"
+                };
+            }
+
+            return new EmployeeTimekeepingOptionsDto
+            {
+                MultiDeviceLogin = settings.multi_device_login,
+                TrackLocation = settings.track_location,
+                NoAttendance = settings.no_attendance,
+                UnrestrictedAttendance = settings.unrestricted_attendance,
+                AllowLateInOut = settings.allow_late_in_out,
+                AllowEarlyInOut = settings.allow_early_in_out,
+                AutoAttendance = settings.auto_attendance,
+                AutoCheckout = settings.auto_checkout,
+                RequireFaceIn = settings.require_face_in,
+                RequireFaceOut = settings.require_face_out,
+                ProxyAttendance = settings.proxy_attendance,
+                ProxyAttendanceWithImage = settings.proxy_attendance_with_image,
+                UnrestrictedLocationOption = settings.unrestricted_location_option ?? "NO_GPS"
+            };
+        }
+
+        public async Task<bool> UpdateEmployeeTimekeepingOptionsAsync(int employeeId, EmployeeTimekeepingOptionsDto dto)
+        {
+            var settings = await _unitOfWork.Repository<AttendanceSettings>()
+                .AsQueryable()
+                .FirstOrDefaultAsync(s => s.employee_id == employeeId);
+
+            if (settings == null)
+            {
+                settings = new AttendanceSettings
+                {
+                    employee_id = employeeId,
+                    tenant_id = _userContext.TenantId
+                };
+                await _unitOfWork.Repository<AttendanceSettings>().AddAsync(settings);
+            }
+
+            // Sync values
+            settings.multi_device_login = dto.MultiDeviceLogin;
+            settings.track_location = dto.TrackLocation;
+            settings.no_attendance = dto.NoAttendance;
+            settings.unrestricted_attendance = dto.UnrestrictedAttendance;
+            settings.allow_late_in_out = dto.AllowLateInOut;
+            settings.allow_early_in_out = dto.AllowEarlyInOut;
+            settings.auto_attendance = dto.AutoAttendance;
+            settings.auto_checkout = dto.AutoCheckout;
+            settings.require_face_in = dto.RequireFaceIn;
+            settings.require_face_out = dto.RequireFaceOut;
+            settings.proxy_attendance = dto.ProxyAttendance;
+            settings.proxy_attendance_with_image = dto.ProxyAttendanceWithImage;
+            settings.unrestricted_location_option = dto.UnrestrictedLocationOption;
+
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
     }
 }
