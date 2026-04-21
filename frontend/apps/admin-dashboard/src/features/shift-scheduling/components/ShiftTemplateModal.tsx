@@ -193,7 +193,7 @@ export const ShiftTemplateModal = ({
                 placeholder="VD: Ca hành chính, Ca đêm HC01..."
                 value={formData.name}
                 onChange={(e) => { setFormData(p => ({...p, name: e.target.value})); setErrors(p => ({...p, name: ""})); }}
-                className={`w-full rounded-xl border ${errors.name ? 'border-red-400 focus:border-red-500 focus:ring-red-200' : 'border-slate-200 focus:border-[#134BBA] focus:ring-[#134BBA]'} bg-white px-4 py-2.5 text-sm font-medium text-slate-900 outline-none transition focus:ring-1`}
+                className={`w-full rounded-lg border ${errors.name ? 'border-red-400 focus:border-red-500 focus:ring-red-200' : 'border-gray-300 focus:border-[#192841] focus:ring-[#192841]'} bg-white px-4 py-2.5 text-[13px] font-medium text-slate-900 outline-none transition focus:ring-1`}
               />
               {errors.name && <p className="mt-1.5 text-[11px] font-medium text-red-500">{errors.name}</p>}
             </div>
@@ -206,7 +206,7 @@ export const ShiftTemplateModal = ({
                   type="time"
                   value={formData.startTime}
                   onChange={(e) => { setFormData(p => ({...p, startTime: e.target.value})); setErrors(p => ({...p, startTime: ""})); }}
-                  className={`w-full rounded-xl border ${errors.startTime ? 'border-red-400' : 'border-slate-200'} bg-white pl-10 pr-4 py-2.5 text-sm font-medium text-slate-900 outline-none transition focus:border-[#134BBA] focus:ring-1 focus:ring-[#134BBA]`}
+                  className={`w-full rounded-lg border ${errors.startTime ? 'border-red-400' : 'border-gray-300'} bg-white pl-10 pr-4 py-2.5 text-[13px] font-medium text-slate-900 outline-none transition focus:border-[#192841] focus:ring-1 focus:ring-[#192841]`}
                 />
               </div>
               {errors.startTime && <p className="mt-1.5 text-[11px] font-medium text-red-500">{errors.startTime}</p>}
@@ -223,7 +223,7 @@ export const ShiftTemplateModal = ({
                   type="time"
                   value={formData.endTime}
                   onChange={(e) => { setFormData(p => ({...p, endTime: e.target.value})); setErrors(p => ({...p, endTime: ""})); }}
-                  className={`w-full rounded-xl border ${errors.endTime ? 'border-red-400' : 'border-slate-200'} bg-white pl-10 pr-4 py-2.5 text-sm font-medium text-slate-900 outline-none transition focus:border-[#134BBA] focus:ring-1 focus:ring-[#134BBA]`}
+                  className={`w-full rounded-lg border ${errors.endTime ? 'border-red-400' : 'border-gray-300'} bg-white pl-10 pr-4 py-2.5 text-[13px] font-medium text-slate-900 outline-none transition focus:border-[#192841] focus:ring-1 focus:ring-[#192841]`}
                 />
               </div>
               {errors.endTime && <p className="mt-1.5 text-[11px] font-medium text-red-500">{errors.endTime}</p>}
@@ -236,7 +236,7 @@ export const ShiftTemplateModal = ({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-900">Phân bổ đối tượng áp dụng</h3>
-              <button type="button" className="flex items-center gap-1 text-xs font-semibold text-[#134BBA] hover:underline bg-[#EFF6FF] px-2 py-1 rounded">
+              <button type="button" className="flex items-center gap-1 text-xs font-bold text-[#192841] hover:underline bg-[#f8f9fa] px-2 py-1 rounded">
                 <span className="material-symbols-outlined text-[14px]">account_tree</span>
                 Chọn nhanh theo tổ chức
               </button>
@@ -249,7 +249,7 @@ export const ShiftTemplateModal = ({
                   value={formData.branchId}
                   onChange={(e) => { setFormData(p => ({...p, branchId: e.target.value})); setErrors(p => ({...p, branchId: ""})); }}
                   data-branch-option-count={resolvedBranchOptions.length}
-                  className={`w-full rounded-xl border ${errors.branchId ? 'border-red-400' : 'border-slate-200'} bg-white px-3 py-2 text-sm outline-none focus:border-[#134BBA] focus:ring-1`}
+                  className={`w-full rounded-lg border ${errors.branchId ? 'border-red-400' : 'border-gray-300'} bg-white px-3 py-[7px] text-[13px] outline-none focus:border-[#192841] focus:ring-[#192841] transition-all`}
                 >
                   <option value="">Chọn...</option>
                   <option value="1">Hà Nội</option>

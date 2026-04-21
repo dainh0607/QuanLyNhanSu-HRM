@@ -93,11 +93,10 @@ export const OpenShiftModal = ({ isOpen, onClose, onSuccess }: OpenShiftModalPro
           <div>
             <label className="mb-2 block text-sm font-semibold text-slate-700">Loại ca mở <span className="text-red-500">*</span></label>
             <div className="relative">
-              <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-slate-400">schedule</span>
-              <select 
+              <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y              <select 
                 value={selectedShiftTypeId}
                 onChange={(e) => setSelectedShiftTypeId(e.target.value === "" ? "" : Number(e.target.value))}
-                className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-10 text-sm font-medium text-slate-700 focus:border-[#134BBA] focus:outline-none focus:ring-1 focus:ring-[#134BBA]"
+                className="w-full appearance-none rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-10 text-[13px] font-medium text-slate-700 focus:border-[#192841] focus:outline-none focus:ring-1 focus:ring-[#192841]"
                 required
               >
                 <option value="" disabled hidden>Chọn loại ca cần khởi tạo</option>
@@ -111,21 +110,21 @@ export const OpenShiftModal = ({ isOpen, onClose, onSuccess }: OpenShiftModalPro
 
           <div className={`flex flex-col gap-5 overflow-hidden transition-all duration-300 ${selectedShiftType ? "max-h-[800px] opacity-100 mt-2" : "max-h-0 opacity-0"}`}>
             
-            <div className="rounded-xl border border-[#E5E7EB] bg-slate-50 p-4 space-y-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-[#134BBA]">Đối tượng áp dụng</p>
+            <div className="rounded-lg border border-[#E5E7EB] bg-slate-50 p-4 space-y-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-[#192841]">Đối tượng áp dụng</p>
               
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-slate-600">Chi nhánh</label>
-                <div className="flex min-h-[42px] flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
+                <div className="flex min-h-[42px] flex-wrap items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2">
                   {tags.branch.map(tag => (
-                    <span key={tag} className="flex items-center gap-1 rounded bg-[#EFF6FF] px-2 py-1 text-[11px] font-semibold text-[#134BBA] border border-[#BFDBFE]">
+                    <span key={tag} className="flex items-center gap-1 rounded bg-[#f8f9fa] px-2 py-1 text-[11px] font-semibold text-[#192841] border border-gray-200">
                       {tag}
                       <button type="button" onClick={() => removeTag("branch", tag)} className="flex items-center justify-center hover:text-red-500">
                         <span className="material-symbols-outlined text-[14px]">close</span>
                       </button>
                     </span>
                   ))}
-                  <input type="text" placeholder="Thêm chi nhánh..." className="flex-1 min-w-[120px] bg-transparent text-xs outline-none text-slate-700" />
+                  <input type="text" placeholder="Thêm chi nhánh..." className="flex-1 min-w-[120px] bg-transparent text-[13px] outline-none text-slate-700 placeholder:text-slate-400" />
                 </div>
               </div>
             </div>
@@ -138,7 +137,7 @@ export const OpenShiftModal = ({ isOpen, onClose, onSuccess }: OpenShiftModalPro
                   min="1"
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-900 outline-none transition focus:border-[#134BBA] focus:ring-1 focus:ring-[#134BBA]"
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-[13px] font-medium text-slate-900 outline-none transition focus:border-[#192841] focus:ring-1 focus:ring-[#192841]"
                   required
                 />
               </div>
@@ -146,9 +145,12 @@ export const OpenShiftModal = ({ isOpen, onClose, onSuccess }: OpenShiftModalPro
                 <label className="flex items-center gap-3 py-2.5 cursor-pointer">
                   <div className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" defaultChecked className="sr-only peer" />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#134BBA]"></div>
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#192841]"></div>
                   </div>
                   <span className="text-sm font-semibold text-slate-700">Công bố tự động</span>
+                </label>
+              </div>
+            </div>bố tự động</span>
                 </label>
               </div>
             </div>

@@ -29,9 +29,9 @@ export const FilterSelect = ({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         aria-label={label}
-        className={`appearance-none h-9 w-full rounded-md border border-slate-200 bg-white py-1.5 ${
+        className={`appearance-none h-9 w-full rounded-lg border border-gray-300 bg-white py-[7px] ${
           icon ? "pl-9" : "pl-3"
-        } pr-8 text-sm font-medium text-slate-700 outline-none transition focus:border-[#134BBA] focus:ring-2 focus:ring-[#BFDBFE]`}
+        } pr-8 text-[13px] font-medium text-slate-700 outline-none transition focus:border-[#192841] focus:ring-[#192841]`}
       >
         {options.map((option) => (
           <option key={`${label}-${option.value || "all"}-${option.label}`} value={option.value}>

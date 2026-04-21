@@ -380,5 +380,23 @@ namespace ERP.Services.Attendance
 
             return await _unitOfWork.SaveChangesAsync() > 0;
         }
+
+        public async Task<IEnumerable<EmployeeDeviceDto>> GetEmployeeDevicesAsync(int employeeId)
+        {
+            var devices = await _unitOfWork.Repository<Devices>()
+                .AsQueryable()
+                .Where(d => d.employee_id == employeeId)
+                .ToListAsync();
+
+            return devices.Select(d => new EmployeeDeviceDto
+            {
+                Id = d.Id,
+                DeviceId = d.imei,
+                DeviceName = d.device_name,
+                OS = d.os,
+                DeviceType = d.device_type,
+                LinkedAt = DateTime.MinValue // Placeholder since column missing
+            });
+        }
     }
 }

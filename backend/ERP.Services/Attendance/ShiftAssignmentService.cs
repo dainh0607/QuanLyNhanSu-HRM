@@ -290,7 +290,7 @@ namespace ERP.Services.Attendance
         private static DateTime ParseDate(string value, string label)
         {
             if (!DateTime.TryParse(value, out var parsedDate))
-                throw new Exception($"{label} khĂ´ng há»£p lá»‡.");
+                throw new Exception($"{label} không hợp lệ.");
 
             return parsedDate.Date;
         }
@@ -376,18 +376,18 @@ namespace ERP.Services.Attendance
         public async Task<ShiftAssignmentCopyResultDto> CopyAssignmentsAsync(ShiftAssignmentCopyDto dto, int currentUserId)
         {
             if (dto.TargetWeekStartDates == null || dto.TargetWeekStartDates.Count == 0)
-                throw new Exception("Danh sáº¡ch tuáº§n Ä‘Ă­ch khĂ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.");
+                throw new Exception("Danh sách tuần đích không được để trống.");
 
-            var sourceWeekStartDate = ParseDate(dto.SourceWeekStartDate, "Tuáº§n nguá»“n");
+            var sourceWeekStartDate = ParseDate(dto.SourceWeekStartDate, "Tuần nguồn");
             var targetWeekStartDates = dto.TargetWeekStartDates
-                .Select(value => ParseDate(value, "Tuáº§n Ä‘Ă­ch"))
+                .Select(value => ParseDate(value, "Tuần đích"))
                 .Where(value => value != sourceWeekStartDate)
                 .Distinct()
                 .OrderBy(value => value)
                 .ToList();
 
             if (targetWeekStartDates.Count == 0)
-                throw new Exception("KhĂ´ng cĂ³ tuáº§n Ä‘Ă­ch há»£p lá»‡ Ä‘á»ƒ sao chĂ©p.");
+                throw new Exception("Không có tuần đích hợp lệ để sao chép.");
 
             var branchIds = NormalizeIds(dto.BranchIds);
             var departmentIds = NormalizeIds(dto.DepartmentIds);

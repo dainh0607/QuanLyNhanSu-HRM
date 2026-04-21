@@ -252,6 +252,15 @@ export interface DocumentFile {
   folderId: string;
 }
 
+export interface EmployeeDevice {
+  id: number;
+  deviceId: string;
+  deviceName: string;
+  os?: string;
+  deviceType?: string;
+  linkedAt: string;
+}
+
 export interface CreateDocumentFolderPayload {
   name: string;
 }

@@ -660,8 +660,9 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
               />
             ) : activeTab === (window as any).EMPLOYEE_DETAIL_TABS?.[5] || activeTab === 'Chấm công' ? (
               <AttendanceTabContent
-                settings={profile?.attendanceSettings}
-                mappings={profile?.timekeepingMachineMappings || []}
+                employeeId={employee.id}
+                initialSettings={profile?.attendanceSettings}
+                initialMappings={profile?.timekeepingMachineMappings || []}
                 isLoading={isLoading}
                 loadError={loadError}
               />

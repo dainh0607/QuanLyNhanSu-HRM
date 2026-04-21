@@ -1,20 +1,112 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { AttendanceSettings, TimekeepingMachineMapping } from '../../../services/employee/types';
+import { employeeProfileService } from '../../../services/employee/profile';
+import { AttendanceOptionsTab } from './attendance/AttendanceOptionsTab';
+import { AttendanceDevicesTab } from './attendance/AttendanceDevicesTab';
+import { AttendanceMachinesTab } from './attendance/AttendanceMachinesTab';
+import { useToast } from '../../../hooks/useToast';
 
 interface AttendanceTabContentProps {
-  settings?: AttendanceSettings;
-  mappings?: TimekeepingMachineMapping[];
+  employeeId: number;
+  initialSettings?: AttendanceSettings;
+  initialMappings?: TimekeepingMachineMapping[];
   isLoading: boolean;
   loadError: string | null;
 }
 
+type SubTab = 'options' | 'devices' | 'machines';
+
 const AttendanceTabContent: React.FC<AttendanceTabContentProps> = ({
-  settings,
-  mappings = [],
-  isLoading,
+  employeeId,
+  initialSettings,
+  initialMappings = [],
+  isLoading: isInitialLoading,
   loadError,
 }) => {
-  if (isLoading) {
+  const [activeSubTab, setActiveSubTab] = useState<SubTab>('options');
+  const [settings, setSettings] = useState<AttendanceSettings | undefined>(initialSettings);
+  const [mappings, setMappings] = useState<TimekeepingMachineMapping[]>(initialMappings);
+  const [devices, setDevices] = useState<any[]>([]);
+  const [isDevicesLoading, setIsDevicesLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const { showToast, ToastComponent } = useToast();
+
+  useEffect(() => {
+    if (initialSettings) {
+      setSettings(JSON.parse(JSON.stringify(initialSettings)));
+    }
+  }, [initialSettings]);
+
+  useEffect(() => {
+    if (initialMappings.length > 0) {
+      setMappings(JSON.parse(JSON.stringify(initialMappings)));
+    }
+  }, [initialMappings]);
+
+  useEffect(() => {
+    if (activeSubTab === 'devices') {
+      fetchDevices();
+    }
+  }, [activeSubTab, employeeId]);
+
+  const fetchDevices = async () => {
+    setIsDevicesLoading(true);
+    try {
+      const data = await employeeProfileService.getEmployeeDevices(employeeId);
+      setDevices(data);
+    } catch (error) {
+      console.error('Error fetching devices:', error);
+    } finally {
+      setIsDevicesLoading(false);
+    }
+  };
+
+  const handleSettingChange = (key: string, value: any) => {
+    if (!settings) return;
+    setIsDirty(true);
+    
+    setSettings(prev => {
+      if (!prev) return prev;
+      const next = { ...prev };
+      
+      if (key.includes('.')) {
+        const [parent, child] = key.split('.');
+        (next as any)[parent] = {
+          ...(next as any)[parent],
+          [child]: value
+        };
+      } else {
+        (next as any)[key] = value;
+      }
+      
+      return next;
+    });
+  };
+
+  const handleMappingChange = (machineId: number, code: string) => {
+    setIsDirty(true);
+    setMappings(prev => prev.map(m => m.machineId === machineId ? { ...m, timekeepingCode: code } : m));
+  };
+
+  const handleSave = async () => {
+    if (!settings) return;
+    setIsSaving(true);
+    try {
+      await Promise.all([
+        employeeProfileService.updateAttendanceSettings(employeeId, settings),
+        employeeProfileService.updateTimekeepingMachineMappings(employeeId, mappings)
+      ]);
+      showToast('Cập nhật thiết lập chấm công thành công!', 'success');
+      setIsDirty(false);
+    } catch (error) {
+      showToast('Có lỗi xảy ra khi lưu thiết lập.', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isInitialLoading) {
     return (
       <div className="flex items-center justify-center p-20">
         <div className="flex flex-col items-center gap-4">
@@ -34,149 +126,73 @@ const AttendanceTabContent: React.FC<AttendanceTabContentProps> = ({
     );
   }
 
-  if (!settings) return null;
-
-  const renderSummaryItem = (title: string, value: boolean, description?: string) => (
-    <div className="flex items-center justify-between py-4 border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors px-2 rounded-xl">
-      <div className="flex flex-col gap-1">
-        <span className="text-[14px] font-bold text-slate-700">{title}</span>
-        {description && <span className="text-[12px] text-slate-400 font-medium">{description}</span>}
-      </div>
-      <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${value ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
-        <span className="material-symbols-outlined text-[16px]">{value ? 'check_circle' : 'cancel'}</span>
-        <span className="text-[12px] font-black uppercase tracking-wider">{value ? 'Bật' : 'Tắt'}</span>
-      </div>
-    </div>
-  );
-
-  const getGpsLabel = (option: AttendanceSettings['unconstrainedAttendance']['gpsOption']) => {
-    switch (option) {
-      case 'required': return 'Yêu cầu GPS';
-      case 'not_required': return 'Không yêu cầu GPS';
-      case 'image_required': return 'Yêu cầu hình ảnh';
-      default: return '';
-    }
-  };
-
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Cấu hình Chấm công</h2>
-        <div className="flex items-center gap-2 bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100">
-          <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
-          <span className="text-[13px] font-bold text-emerald-700">Đang hiệu lực</span>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center p-1 bg-slate-100 rounded-2xl w-auto self-start border border-slate-200/50">
+          {[
+            { id: 'options', label: 'Tùy chọn', icon: 'settings_suggest' },
+            { id: 'devices', label: 'Thiết bị đăng nhập', icon: 'phonelink' },
+            { id: 'machines', label: 'Máy chấm công', icon: 'precision_manufacturing' }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveSubTab(tab.id as SubTab)}
+              className={`flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-300 ${
+                activeSubTab === tab.id
+                  ? 'bg-white text-[#134BBA] shadow-sm shadow-slate-200'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[18px]">{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
         </div>
+
+        {isDirty && (
+          <div className="flex items-center gap-3 animate-in fade-in zoom-in slide-in-from-right-4 duration-300">
+             <span className="text-[12px] font-bold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-100">Cần lưu thay đổi</span>
+             <button
+                onClick={handleSave}
+                disabled={isSaving}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#134BBA] text-white text-[13px] font-bold shadow-lg shadow-[#134BBA]/20 hover:bg-[#1143A7] transition-all disabled:opacity-50"
+              >
+                {isSaving ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                ) : (
+                  <span className="material-symbols-outlined text-[18px]">save</span>
+                )}
+                Lưu thiết lập
+              </button>
+          </div>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* LEFT COLUMN: BASIC CONFIG */}
-        <div className="bg-white rounded-[32px] border border-slate-100 p-8 shadow-sm">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-500">
-              <span className="material-symbols-outlined">settings_suggest</span>
-            </div>
-            <h3 className="text-[16px] font-black text-slate-800 uppercase tracking-wider">Cấu hình chung</h3>
-          </div>
-          <div className="space-y-1">
-            {renderSummaryItem('Đăng nhập nhiều thiết bị', settings.multiDeviceLogin)}
-            {renderSummaryItem('Theo dõi vị trí', settings.locationTracking)}
-            {renderSummaryItem('Không chấm công', settings.noAttendanceRequired)}
-            {renderSummaryItem('Vào/Ra muộn', settings.lateInLateOutAllowed)}
-            {renderSummaryItem('Vào/Ra sớm', settings.earlyInEarlyOutAllowed)}
-          </div>
-        </div>
-
-        {/* RIGHT COLUMN: SECURITY & ADVANCED */}
-        <div className="bg-white rounded-[32px] border border-slate-100 p-8 shadow-sm">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="h-10 w-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-500">
-              <span className="material-symbols-outlined">verified_user</span>
-            </div>
-            <h3 className="text-[16px] font-black text-slate-800 uppercase tracking-wider">An ninh & Xác thực</h3>
-          </div>
-          <div className="space-y-1">
-            {renderSummaryItem('Face ID (Vào ca)', settings.faceIdInRequired)}
-            {renderSummaryItem('Face ID (Ra ca)', settings.faceIdOutRequired)}
-            {renderSummaryItem('Chấm công hộ', settings.proxyAttendanceAllowed)}
-            {renderSummaryItem(
-              'Chấm công không ràng buộc', 
-              settings.unconstrainedAttendance.enabled,
-              settings.unconstrainedAttendance.enabled ? getGpsLabel(settings.unconstrainedAttendance.gpsOption) : undefined
-            )}
-            {renderSummaryItem('Tự động chấm công', settings.autoAttendanceIn)}
-          </div>
-        </div>
-      </div>
-
-      {/* DEVICES TABLE */}
-      <div className="bg-white rounded-[32px] border border-slate-100 overflow-hidden shadow-sm">
-        <div className="p-6 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
-           <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                <span className="material-symbols-outlined text-blue-600 text-[20px]">devices</span>
-              </div>
-              <div>
-                <h3 className="text-[16px] font-bold text-slate-800">Thiết bị đăng nhập</h3>
-                <p className="text-[12px] text-slate-400 font-medium">Danh sách thiết bị di động đã liên kết</p>
-              </div>
-           </div>
-        </div>
-        <div className="py-20 flex flex-col items-center justify-center text-slate-300 bg-white">
-          <span className="material-symbols-outlined text-[48px] mb-2 text-slate-200">devices_off</span>
-          <p className="font-bold text-sm">Không tìm thấy thiết bị nào</p>
-        </div>
-      </div>
-
-      {/* MACHINES TABLE */}
-      <div className="bg-white rounded-[32px] border border-slate-100 overflow-hidden shadow-sm">
-        <div className="p-6 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
-           <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
-                <span className="material-symbols-outlined text-emerald-600 text-[20px]">id_card</span>
-              </div>
-              <div>
-                <h3 className="text-[16px] font-bold text-slate-800">Máy chấm công</h3>
-                <p className="text-[12px] text-slate-400 font-medium">Chi tiết ID ánh xạ máy chấm công</p>
-              </div>
-           </div>
-        </div>
+      <div className="mt-2">
+        {activeSubTab === 'options' && settings && (
+          <AttendanceOptionsTab
+            settings={settings}
+            onSettingChange={handleSettingChange}
+          />
+        )}
         
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-white border-b border-slate-100">
-              <th className="px-8 py-5 text-[13px] font-black text-slate-500 uppercase tracking-wider w-20">STT</th>
-              <th className="px-8 py-5 text-[13px] font-black text-slate-500 uppercase tracking-wider">Tên máy chấm công</th>
-              <th className="px-8 py-5 text-[13px] font-black text-slate-500 uppercase tracking-wider w-[300px]">Mã chấm công</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100/50 bg-white">
-            {mappings.map((mapping, index) => (
-              <tr key={mapping.machineId} className="hover:bg-slate-50/30 transition-colors group">
-                <td className="px-8 py-5 text-[14px] font-bold text-slate-400">{index + 1}</td>
-                <td className="px-8 py-5">
-                  <div className="flex flex-col">
-                    <span className="text-[14px] font-bold text-slate-700">{mapping.machineName}</span>
-                    <span className="text-[11px] text-slate-400 font-medium mt-0.5">ID: {mapping.machineId}</span>
-                  </div>
-                </td>
-                <td className="px-8 py-5">
-                  <span className="text-[14px] font-bold text-slate-700">{mapping.timekeepingCode || <span className="text-slate-300 italic">Chưa thiết lập</span>}</span>
-                </td>
-              </tr>
-            ))}
-            {mappings.length === 0 && (
-              <tr>
-                <td colSpan={3} className="px-8 py-20 text-center">
-                  <div className="flex flex-col items-center justify-center text-slate-300">
-                    <span className="material-symbols-outlined text-[48px] mb-2 text-slate-200">id_card</span>
-                    <p className="font-bold text-sm">Không có máy chấm công nào</p>
-                  </div>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        {activeSubTab === 'devices' && (
+          <AttendanceDevicesTab
+            devices={devices}
+            isLoading={isDevicesLoading}
+          />
+        )}
+        
+        {activeSubTab === 'machines' && (
+          <AttendanceMachinesTab
+            mappings={mappings}
+            onMappingChange={handleMappingChange}
+          />
+        )}
       </div>
+
+      {ToastComponent}
     </div>
   );
 };

@@ -79,7 +79,7 @@ export const ShiftTemplateFiltersBar = ({
           <select
             value={status}
             onChange={(event) => onStatusChange(event.target.value as ShiftTemplateStatusFilter)}
-            className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-[#134BBA] focus:ring-1 focus:ring-[#134BBA]"
+            className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-[13px] text-slate-700 outline-none transition focus:border-[#192841] focus:ring-[#192841]"
           >
             <option value="active">Hoạt động</option>
             <option value="inactive">Ngừng hoạt động</option>
