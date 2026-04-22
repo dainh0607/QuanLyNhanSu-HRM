@@ -140,7 +140,7 @@ export const ShiftScheduleToolbar = ({
                   type="date"
                   value={filters.weekStartDate}
                   onChange={(event) => onWeekChange(event.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm font-medium text-slate-700 shadow-sm outline-none transition focus:border-[#134BBA] focus:ring-2 focus:ring-[#93C5FD]"
+                  className="w-full rounded-lg border border-gray-300 bg-white py-3 pl-10 pr-4 text-[13px] font-medium text-slate-700 shadow-sm outline-none transition focus:border-[#192841] focus:ring-1 focus:ring-[#192841]"
                 />
               </label>
               <button

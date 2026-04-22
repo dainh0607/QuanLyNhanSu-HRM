@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   QuickAddEmployeeDraftRow,
   QuickAddEmployeeOption,
   QuickAddEmployeeRowErrors,
@@ -38,10 +38,10 @@ export const QuickAddEmployeeRow = ({
         value={row.fullName}
         onChange={(event) => onChange(row.id, "fullName", event.target.value)}
         placeholder="Nhập tên nhân viên"
-        className={`h-10 w-full rounded-md border bg-white px-3 text-sm text-slate-700 outline-none transition ${
+        className={`h-10 w-full rounded-lg border bg-white px-3 text-[13px] text-slate-700 outline-none transition ${
           errors?.fullName
-            ? "border-rose-300 bg-rose-50/60 focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
-            : "border-slate-200 focus:border-[#134BBA] focus:ring-2 focus:ring-[#DBEAFE]"
+            ? "border-rose-400 focus:border-rose-500 focus:ring-rose-500/10"
+            : "border-gray-300 focus:border-[#192841] focus:ring-[#192841]"
         }`}
       />
       {errors?.fullName ? (
@@ -59,10 +59,10 @@ export const QuickAddEmployeeRow = ({
           onChange(row.id, "phone", event.target.value.replace(/\D/g, "").slice(0, 10))
         }
         placeholder="Ví dụ: 0912345678"
-        className={`h-10 w-full rounded-md border bg-white px-3 text-sm text-slate-700 outline-none transition ${
+        className={`h-10 w-full rounded-lg border bg-white px-3 text-[13px] text-slate-700 outline-none transition ${
           errors?.phone
-            ? "border-rose-300 bg-rose-50/60 focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
-            : "border-slate-200 focus:border-[#134BBA] focus:ring-2 focus:ring-[#DBEAFE]"
+            ? "border-rose-400 focus:border-rose-500 focus:ring-rose-500/10"
+            : "border-gray-300 focus:border-[#192841] focus:ring-[#192841]"
         }`}
       />
       {errors?.phone ? (
@@ -76,10 +76,10 @@ export const QuickAddEmployeeRow = ({
       <select
         value={row.accessGroupId}
         onChange={(event) => onChange(row.id, "accessGroupId", event.target.value)}
-        className={`h-10 w-full rounded-md border bg-white px-3 text-sm text-slate-700 outline-none transition ${
+        className={`h-10 w-full rounded-lg border bg-white px-3 text-[13px] text-slate-700 outline-none transition ${
           errors?.accessGroupId
-            ? "border-rose-300 bg-rose-50/60 focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
-            : "border-slate-200 focus:border-[#134BBA] focus:ring-2 focus:ring-[#DBEAFE]"
+            ? "border-rose-400 focus:border-rose-500 focus:ring-rose-500/10"
+            : "border-gray-300 focus:border-[#192841] focus:ring-[#192841]"
         }`}
       >
         <option value="">Chọn nhóm truy cập</option>

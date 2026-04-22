@@ -1,4 +1,4 @@
-﻿import type { SelectOption } from "../../types";
+import type { SelectOption } from "../../types";
 import {
   parseIsoWeekInputValue,
   toIsoWeekInputValue,
@@ -32,7 +32,7 @@ export const ShiftAssignFiltersBar = ({
         <select
           value={branchId}
           onChange={(event) => onBranchChange(event.target.value)}
-          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#134BBA] focus:ring-1 focus:ring-[#134BBA]"
+          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-[7px] text-[13px] text-slate-700 outline-none transition focus:border-[#192841] focus:ring-[#192841]"
         >
           {branchOptions.map((option) => (
             <option key={option.value} value={option.value}>

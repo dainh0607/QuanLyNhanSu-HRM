@@ -11,6 +11,7 @@ import type {
   AvailableShiftOption,
   DirectShiftTemplatePayload,
   LeaveRequestFormValues,
+  LeaveRequestReasonCode,
   ShiftAssignmentDetail,
   ShiftAttendanceHistoryItem,
   ShiftMapPoint,
@@ -124,7 +125,7 @@ const toPositiveNumber = (value: string): number => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 };
 
-const LEAVE_REASON_LABEL_MAP: Record<NonNullable<LeaveRequestFormValues["leaveReasonCode"]>, string> = {
+const LEAVE_REASON_LABEL_MAP: Record<LeaveRequestReasonCode, string> = {
   annualLeave: "Phép năm",
   sickLeave: "Nghỉ ốm",
   personalLeave: "Việc riêng",

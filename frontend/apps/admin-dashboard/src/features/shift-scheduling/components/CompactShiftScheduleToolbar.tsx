@@ -180,7 +180,7 @@ export const CompactShiftScheduleToolbar = ({
           value={searchTerm}
           onChange={(event) => onSearchChange(event.target.value)}
           placeholder="Tìm kiếm nhân viên"
-          className="h-9 w-full rounded-md border border-slate-200 bg-white py-1.5 pl-9 pr-3 text-sm font-medium text-slate-700 outline-none transition focus:border-[#134BBA] focus:ring-2 focus:ring-[#BFDBFE]"
+          className="h-9 w-full rounded-lg border border-gray-300 bg-white py-1.5 pl-9 pr-3 text-[13px] font-medium text-slate-700 outline-none transition focus:border-[#192841] focus:ring-[#192841]"
         />
       </label>
     </div>

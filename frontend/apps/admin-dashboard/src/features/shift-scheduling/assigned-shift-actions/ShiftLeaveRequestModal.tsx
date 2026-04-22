@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { WeeklyScheduleEmployee } from "../types";
 import ActionModalShell from "./ActionModalShell";
 import LeaveRequestField from "./leave-request/LeaveRequestField";
@@ -50,10 +50,10 @@ const formatDateLabel = (value: string): string => {
 };
 
 const inputClassName = (hasError?: boolean): string =>
-  `w-full rounded-xl border bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition ${
+  `w-full rounded-lg border bg-white px-3 py-[7px] text-[13px] text-slate-700 outline-none transition ${
     hasError
-      ? "border-rose-300 ring-1 ring-rose-200"
-      : "border-slate-200 focus:border-[#134BBA] focus:ring-1 focus:ring-[#134BBA]"
+      ? "border-rose-400 focus:border-rose-500 focus:ring-rose-500/10"
+      : "border-gray-300 focus:border-[#192841] focus:ring-[#192841]"
   }`;
 
 export const ShiftLeaveRequestModal = ({

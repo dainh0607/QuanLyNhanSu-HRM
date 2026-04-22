@@ -1611,6 +1611,65 @@ const updateEmployeeEditAsset = async (
   return { success: true };
 };
 
+const getAttendanceSettings = async (employeeId: number): Promise<AttendanceSettings> => {
+  const endpoint = `/api/Attendance/employee/${employeeId}/settings`;
+  return requestJson<AttendanceSettings>(
+    endpoint,
+    { method: "GET" },
+    "Error fetching attendance settings",
+  );
+};
+
+const updateAttendanceSettings = async (
+  employeeId: number,
+  payload: AttendanceSettings,
+): Promise<unknown> => {
+  const endpoint = `/api/Attendance/employee/${employeeId}/settings`;
+  return requestJson<unknown>(
+    endpoint,
+    {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    },
+    "Error updating attendance settings",
+  );
+};
+
+const getTimekeepingMachineMappings = async (
+  employeeId: number,
+): Promise<TimekeepingMachineMapping[]> => {
+  const endpoint = `/api/Attendance/employee/${employeeId}/machine-mappings`;
+  return requestJson<TimekeepingMachineMapping[]>(
+    endpoint,
+    { method: "GET" },
+    "Error fetching machine mappings",
+  );
+};
+
+const updateTimekeepingMachineMappings = async (
+  employeeId: number,
+  payload: TimekeepingMachineMapping[],
+): Promise<unknown> => {
+  const endpoint = `/api/Attendance/employee/${employeeId}/machine-mappings`;
+  return requestJson<unknown>(
+    endpoint,
+    {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    },
+    "Error updating machine mappings",
+  );
+};
+
+const getEmployeeDevices = async (employeeId: number): Promise<EmployeeDevice[]> => {
+  const endpoint = `/api/Attendance/employee/${employeeId}/devices`;
+  return requestJson<EmployeeDevice[]>(
+    endpoint,
+    { method: "GET" },
+    "Error fetching employee devices",
+  );
+};
+
 export {
   getEmployeeFullProfile,
   fetchEmployeeFullProfileFallback,
@@ -1695,7 +1754,11 @@ export const employeeProfileService = {
   deleteDocumentFolderMock,
   renameDocumentFileMock,
   renameDocumentFolderMock,
-  updateAttendanceSettingsMock,
+  getAttendanceSettings,
+  updateAttendanceSettings,
+  getTimekeepingMachineMappings,
+  updateTimekeepingMachineMappings,
+  getEmployeeDevices,
   getPromotionHistoryList,
   deletePromotionHistory,
   bulkDeletePromotionHistory,

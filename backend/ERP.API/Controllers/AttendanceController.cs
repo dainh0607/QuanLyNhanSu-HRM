@@ -209,5 +209,20 @@ namespace ERP.API.Controllers
                 return BadRequest(new { Message = ex.Message });
             }
         }
+
+        [HttpGet("employee/{employeeId}/devices")]
+        [HasPermission("attendance", "read")]
+        public async Task<IActionResult> GetEmployeeDevices(int employeeId)
+        {
+            try
+            {
+                var result = await _attendanceService.GetEmployeeDevicesAsync(employeeId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
     }
 }

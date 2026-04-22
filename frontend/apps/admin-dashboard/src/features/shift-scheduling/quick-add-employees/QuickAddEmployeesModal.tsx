@@ -395,10 +395,10 @@ export const QuickAddEmployeesModal = ({
                     }));
                   }}
                   disabled={isLoading || isSubmitting}
-                  className={`h-10 w-full rounded-md border bg-white px-3 text-sm text-slate-700 outline-none transition ${
+                  className={`h-11 w-full rounded-lg border bg-white px-3 text-[13px] text-slate-700 outline-none transition ${
                     validation.branchId
-                      ? "border-rose-300 bg-rose-50/60 focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
-                      : "border-slate-200 focus:border-[#134BBA] focus:ring-2 focus:ring-[#DBEAFE]"
+                      ? "border-rose-400 focus:border-rose-500 focus:ring-rose-500/10"
+                      : "border-gray-300 focus:border-[#192841] focus:ring-[#192841]"
                   }`}
                 >
                   <option value="">{isLoading ? "Đang tải chi nhánh..." : "Chọn chi nhánh"}</option>
