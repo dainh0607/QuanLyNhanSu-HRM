@@ -432,75 +432,53 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
 
   const handleIssueAsset = async (asset: any) => {
     try {
-      await employeeService.issueEmployeeAssetMock(displayEmployee.id, asset);
-      showToast(`Đã cấp phát ${asset.assetName} cho nhân viên.`, 'success');
+      await employeeService.updateEmployeeEditAsset(displayEmployee.id, [asset]);
+      showToast(`Da cap nhat tai san ${asset.assetName}.`, 'success');
       setProfileReloadToken((prev) => prev + 1);
-    } catch (error) {
-      showToast('Có lỗi xảy ra khi cấp phát tài sản.', 'error');
+    } catch {
+      showToast('Backend hien chua ho tro cap phat tai san tu man nay.', 'info');
     }
   };
 
   const handleCreateFolder = async (name: string) => {
-    try {
-      await employeeService.createDocumentFolderMock(displayEmployee.id, name);
-      showToast(`Đã tạo thư mục "${name}" thành công.`, 'success');
-      setProfileReloadToken((prev) => prev + 1);
-    } catch (error) {
-      showToast('Có lỗi xảy ra khi tạo thư mục.', 'error');
-    }
+    void name;
+    showToast('Backend hien chua ho tro tao thu muc tai lieu rieng.', 'info');
   };
 
   const handleUploadFile = async (file: File, folderId: string) => {
     try {
-      await employeeService.uploadDocumentFileMock(displayEmployee.id, file, folderId);
-      showToast(`Đã tải lên tệp "${file.name}" thành công.`, 'success');
+      await employeeService.uploadEmployeeDocument(displayEmployee.id, file, folderId);
+      showToast(`Da tai len tep "${file.name}" thanh cong.`, 'success');
       setProfileReloadToken((prev) => prev + 1);
-    } catch (error) {
-      showToast('Có lỗi xảy ra khi tải lên tệp.', 'error');
+    } catch {
+      showToast('Co loi xay ra khi tai len tep.', 'error');
     }
   };
 
   const handleDeleteFile = async (fileId: string) => {
-    if (!selectedFolder) return;
     try {
-      await employeeService.deleteDocumentFileMock(employee.id, fileId, selectedFolder.id);
-      showToast('Đã xóa tệp thành công.', 'success');
-      // Trigger reload
+      await employeeService.deleteEmployeeDocument(Number(fileId));
+      showToast('Da xoa tep thanh cong.', 'success');
       setProfileReloadToken((prev) => prev + 1);
-    } catch (error) {
-      showToast('Có lỗi xảy ra khi xóa tệp.', 'error');
+    } catch {
+      showToast('Co loi xay ra khi xoa tep.', 'error');
     }
   };
 
   const handleRenameFolder = async (folderId: string, newName: string) => {
-    try {
-      await employeeService.renameDocumentFolderMock(employee.id, folderId, newName);
-      showToast('Đã đổi tên thư mục thành công.', 'success');
-      setProfileReloadToken((prev) => prev + 1);
-    } catch (error) {
-      showToast('Có lỗi xảy ra khi đổi tên thư mục.', 'error');
-    }
+    void folderId;
+    void newName;
+    showToast('Backend hien chua ho tro doi ten nhom tai lieu.', 'info');
   };
 
   const handleDeleteFolder = async () => {
-    if (!selectedFolderForAction) return;
-    try {
-      await employeeService.deleteDocumentFolderMock(employee.id, selectedFolderForAction.id);
-      showToast('Đã xóa thư mục thành công.', 'success');
-      setProfileReloadToken((prev) => prev + 1);
-    } catch (error) {
-      showToast('Có lỗi xảy ra khi xóa thư mục.', 'error');
-    }
+    showToast('Backend hien chua ho tro xoa ca nhom tai lieu.', 'info');
   };
 
   const handleRenameFile = async (fileId: string, newName: string) => {
-    try {
-      await employeeService.renameDocumentFileMock(employee.id, fileId, newName);
-      showToast('Đã đổi tên tệp thành công.', 'success');
-      setProfileReloadToken((prev) => prev + 1);
-    } catch (error) {
-      showToast('Có lỗi xảy ra khi đổi tên tệp.', 'error');
-    }
+    void fileId;
+    void newName;
+    showToast('Backend hien chua ho tro doi ten tai lieu.', 'info');
   };
 
   return (

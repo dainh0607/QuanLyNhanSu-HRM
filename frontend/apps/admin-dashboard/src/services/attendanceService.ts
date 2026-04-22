@@ -34,48 +34,27 @@ export interface SigningCompletionRequest {
   signatureTimestamp: string;
 }
 
-// Mock data
-const mockAttendance: Attendance[] = [
-  {
-    id: 1,
-    employeeId: 1,
-    date: new Date().toISOString().split("T")[0],
-    checkInTime: "08:00",
-    checkOutTime: "17:00",
-    workingHours: 9,
-    status: "present",
-  },
-];
-
 export const attendanceService = {
   async checkIn(employeeId: number, location?: string): Promise<Attendance> {
-    try {
-      return await requestJson<Attendance>(
-        `${API_URL}/attendance/check-in`,
-        {
-          method: "POST",
-          body: JSON.stringify({ employeeId, location }),
-        },
-        "Failed to check in",
-      );
-    } catch {
-      return mockAttendance[0];
-    }
+    return requestJson<Attendance>(
+      `${API_URL}/attendance/check-in`,
+      {
+        method: "POST",
+        body: JSON.stringify({ employeeId, location }),
+      },
+      "Failed to check in",
+    );
   },
 
   async checkOut(employeeId: number, location?: string): Promise<Attendance> {
-    try {
-      return await requestJson<Attendance>(
-        `${API_URL}/attendance/check-out`,
-        {
-          method: "POST",
-          body: JSON.stringify({ employeeId, location }),
-        },
-        "Failed to check out",
-      );
-    } catch {
-      return mockAttendance[0];
-    }
+    return requestJson<Attendance>(
+      `${API_URL}/attendance/check-out`,
+      {
+        method: "POST",
+        body: JSON.stringify({ employeeId, location }),
+      },
+      "Failed to check out",
+    );
   },
 
   async getTodayAttendance(employeeId: number): Promise<Attendance | null> {
@@ -86,7 +65,7 @@ export const attendanceService = {
         "Failed to fetch today's attendance",
       );
     } catch {
-      return mockAttendance[0];
+      return null;
     }
   },
 
@@ -106,7 +85,7 @@ export const attendanceService = {
         "Failed to fetch attendance history",
       );
     } catch {
-      return mockAttendance;
+      return [];
     }
   },
 };
@@ -115,55 +94,40 @@ export const signersService = {
   async generateOtp(
     request: OtpGenerationRequest,
   ): Promise<{ tokenId: string; otpSent: boolean }> {
-    try {
-      return await requestJson<{ tokenId: string; otpSent: boolean }>(
-        `${API_URL}/signers/generate-otp`,
-        {
-          method: "POST",
-          body: JSON.stringify(request),
-        },
-        "Failed to generate OTP",
-      );
-    } catch (error) {
-      console.error("Generate OTP error:", error);
-      throw error;
-    }
+    return requestJson<{ tokenId: string; otpSent: boolean }>(
+      `${API_URL}/signers/generate-otp`,
+      {
+        method: "POST",
+        body: JSON.stringify(request),
+      },
+      "Failed to generate OTP",
+    );
   },
 
   async verifyOtp(
     request: OtpVerificationRequest,
   ): Promise<{ verified: boolean; token: string }> {
-    try {
-      return await requestJson<{ verified: boolean; token: string }>(
-        `${API_URL}/signers/verify-otp`,
-        {
-          method: "POST",
-          body: JSON.stringify(request),
-        },
-        "Failed to verify OTP",
-      );
-    } catch (error) {
-      console.error("Verify OTP error:", error);
-      throw error;
-    }
+    return requestJson<{ verified: boolean; token: string }>(
+      `${API_URL}/signers/verify-otp`,
+      {
+        method: "POST",
+        body: JSON.stringify(request),
+      },
+      "Failed to verify OTP",
+    );
   },
 
   async completeSigning(
     request: SigningCompletionRequest,
   ): Promise<{ success: boolean; contractId: number }> {
-    try {
-      return await requestJson<{ success: boolean; contractId: number }>(
-        `${API_URL}/signers/complete-signing`,
-        {
-          method: "POST",
-          body: JSON.stringify(request),
-        },
-        "Failed to complete signing",
-      );
-    } catch (error) {
-      console.error("Complete signing error:", error);
-      throw error;
-    }
+    return requestJson<{ success: boolean; contractId: number }>(
+      `${API_URL}/signers/complete-signing`,
+      {
+        method: "POST",
+        body: JSON.stringify(request),
+      },
+      "Failed to complete signing",
+    );
   },
 };
 
@@ -175,19 +139,14 @@ export const leaveRequestsService = {
     endDate: string;
     reason?: string;
   }): Promise<{ id: number; status: string }> {
-    try {
-      return await requestJson<{ id: number; status: string }>(
-        `${API_URL}/leave-requests`,
-        {
-          method: "POST",
-          body: JSON.stringify(data),
-        },
-        "Failed to submit leave request",
-      );
-    } catch (error) {
-      console.error("Submit leave request error:", error);
-      throw error;
-    }
+    return requestJson<{ id: number; status: string }>(
+      `${API_URL}/leave-requests`,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      },
+      "Failed to submit leave request",
+    );
   },
 };
 
@@ -197,23 +156,18 @@ export const employeeDocumentService = {
     file: File,
     documentType: string,
   ): Promise<{ documentId: number; url: string }> {
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("documentType", documentType);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("documentType", documentType);
 
-      return await requestJson<{ documentId: number; url: string }>(
-        `${API_URL}/employee-documents/${employeeId}/upload`,
-        {
-          method: "POST",
-          body: formData,
-        },
-        "Failed to upload document",
-      );
-    } catch (error) {
-      console.error("Upload document error:", error);
-      throw error;
-    }
+    return requestJson<{ documentId: number; url: string }>(
+      `${API_URL}/employee-documents/${employeeId}/upload`,
+      {
+        method: "POST",
+        body: formData,
+      },
+      "Failed to upload document",
+    );
   },
 
   async getDocuments(
@@ -233,15 +187,10 @@ export const employeeDocumentService = {
   },
 
   async deleteDocument(documentId: number): Promise<{ success: boolean }> {
-    try {
-      return await requestJson<{ success: boolean }>(
-        `${API_URL}/employee-documents/${documentId}`,
-        { method: "DELETE" },
-        `Failed to delete document ${documentId}`,
-      );
-    } catch (error) {
-      console.error("Delete document error:", error);
-      throw error;
-    }
+    return requestJson<{ success: boolean }>(
+      `${API_URL}/employee-documents/${documentId}`,
+      { method: "DELETE" },
+      `Failed to delete document ${documentId}`,
+    );
   },
 };

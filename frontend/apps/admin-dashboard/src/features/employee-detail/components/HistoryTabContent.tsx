@@ -49,7 +49,11 @@ const HistoryTabContent: React.FC<HistoryTabContentProps> = ({ employeeId }) => 
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      await historyService.exportAuditLogs(logs);
+      await historyService.exportAuditLogs(employeeId, {
+        search: search.trim(),
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+      });
     } catch (error) {
       console.error('Export error:', error);
     } finally {

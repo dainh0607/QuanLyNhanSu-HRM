@@ -250,6 +250,10 @@ export interface DocumentFile {
   uploadDate: string;
   uploadedBy: string;
   folderId: string;
+  url?: string;
+  fileExtension?: string;
+  note?: string;
+  expiryDate?: string;
 }
 
 export interface EmployeeDevice {

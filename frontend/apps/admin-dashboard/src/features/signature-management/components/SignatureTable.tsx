@@ -54,7 +54,9 @@ const SignatureTable: React.FC<SignatureTableProps> = ({
                   <span className="text-[14px] font-medium text-slate-500">{new Date(sig.createdAt).toLocaleDateString('vi-VN')}</span>
                 </td>
                 <td className="px-8 py-5">
-                  <span className="text-[14px] font-medium text-slate-500">{new Date(sig.updatedAt).toLocaleDateString('vi-VN')}</span>
+                  <span className="text-[14px] font-medium text-slate-500">
+                    {new Date(sig.updatedAt || sig.createdAt).toLocaleDateString('vi-VN')}
+                  </span>
                 </td>
                 <td className="px-8 py-5">
                   {sig.isDefault ? (

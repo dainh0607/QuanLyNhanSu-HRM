@@ -54,6 +54,16 @@ const SignatureTabContent = forwardRef<SignatureTabContentRef, SignatureTabConte
 
   return (
     <div className="flex flex-col gap-8">
+      <div className="flex items-center justify-end">
+        <button
+          type="button"
+          onClick={() => setIsModalOpen(true)}
+          className="inline-flex items-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-emerald-600"
+        >
+          <span className="material-symbols-outlined text-[18px]">add</span>
+          Tạo mới
+        </button>
+      </div>
 
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-20">

@@ -15,6 +15,7 @@ import {
   SigningPortalPage,
 } from "./features/employees-contracts";
 import { WeeklyShiftSchedulePage } from "./features/shift-scheduling";
+import { ShiftTemplateManagementPage } from "./features/shift-scheduling/shift-template-management/ShiftTemplateManagementPage";
 import { EmployeeDetail } from "./features/employee-detail/EmployeeDetailViewIntegrated";
 import type { PersonalTabKey } from "./features/employee-detail/edit-modal/types";
 import type { Employee } from "./features/employees/types";
@@ -330,104 +331,6 @@ const Header = ({
   );
 };
 
-function LegacyStateApp() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [user, setUser] = useState<User | null>(null);
-  const [currentPage, setCurrentPage] = useState<"login" | "activation">(
-    "login",
-  );
-  const [isInitializing, setIsInitializing] = useState<boolean>(true);
-
-  // Navigation state
-  const [currentView, setCurrentView] = useState<"list" | "detail">("list");
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
-    null,
-  );
-
-  useEffect(() => {
-    const initAuth = async () => {
-      try {
-        const currentUser = await authService.checkAuth();
-        if (currentUser) {
-          setIsAuthenticated(true);
-          setUser(currentUser);
-        }
-      } finally {
-        setIsInitializing(false);
-      }
-    };
-
-    initAuth();
-  }, []);
-
-  const handleLoginSuccess = () => {
-    setIsAuthenticated(true);
-    setUser(authService.getCurrentUser());
-  };
-
-  const handleLogout = async () => {
-    await authService.logout();
-    setIsAuthenticated(false);
-    setUser(null);
-    setCurrentPage("login");
-    setCurrentView("list");
-  };
-
-  const handleSelectEmployee = (emp: Employee) => {
-    setSelectedEmployee(emp);
-    setCurrentView("detail");
-  };
-
-  // Màn hình loading khi khởi tạo ứng dụng (kiểm tra session)
-  if (isInitializing) {
-    return (
-      <div className="min-h-screen bg-[#0a0f23] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-white/60 text-sm font-medium">
-            Đang khởi động hệ thống...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div id="app-root-container">
-      {isAuthenticated ? (
-        <div className="min-h-screen bg-[#f8fafc]">
-          {/* Ẩn Header nếu đang ở trang Detail */}
-          {currentView === "list" && (
-            <Header user={user} onLogout={handleLogout} />
-          )}
-
-          {currentView === "list" ? (
-            <EmployeeList onSelectEmployee={handleSelectEmployee} />
-          ) : (
-            selectedEmployee && (
-              <EmployeeDetail
-                employee={selectedEmployee}
-                onBack={() => setCurrentView("list")}
-              />
-            )
-          )}
-        </div>
-      ) : currentPage === "login" ? (
-        <LoginPage
-          onNavigateToActivation={() => setCurrentPage("activation")}
-          onLoginSuccess={handleLoginSuccess}
-        />
-      ) : (
-        <WorkspaceOwnerActivationPage
-          onNavigateToLogin={() => setCurrentPage("login")}
-        />
-      )}
-    </div>
-  );
-}
-
-void LegacyStateApp;
-
 type AuthRedirectState = {
   from?: string;
 };
@@ -710,6 +613,26 @@ const WeeklyShiftSchedulingRoute = ({
   );
 };
 
+const ShiftTemplateManagementRoute = ({
+  user,
+  onLogout,
+}: {
+  user: User | null;
+  onLogout: () => Promise<void>;
+}) => {
+  return (
+    <div className="min-h-screen bg-[#f8fafc]">
+      <Header
+        user={user}
+        onLogout={() => {
+          void onLogout();
+        }}
+      />
+      <ShiftTemplateManagementPage />
+    </div>
+  );
+};
+
 function RoutedApp() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -847,6 +770,22 @@ function RoutedApp() {
             isAuthenticated ? (
               <PermissionRoute user={user} resource="shifts" action="read">
                 <WeeklyShiftSchedulingRoute user={user} onLogout={handleLogout} />
+              </PermissionRoute>
+            ) : (
+              <Navigate
+                to="/login"
+                replace
+                state={{ from: loginRedirectPath }}
+              />
+            )
+          }
+        />
+        <Route
+          path="/working-day/timekeeping/shift-templates"
+          element={
+            isAuthenticated ? (
+              <PermissionRoute user={user} resource="shifts" action="read">
+                <ShiftTemplateManagementRoute user={user} onLogout={handleLogout} />
               </PermissionRoute>
             ) : (
               <Navigate

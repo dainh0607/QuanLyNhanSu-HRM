@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from "react";
 import { SCHEDULE_VIEW_OPTIONS } from "../data/constants";
 import type {
   SelectOption,
@@ -81,6 +82,36 @@ export const CompactShiftScheduleToolbarWithAdvancedSidebar = ({
   const canRead = hasPermission(user, "shifts", "read");
   const canCreate = hasPermission(user, "shifts", "create");
 
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isExportOpen, setIsExportOpen] = useState(false);
+  const importDropdownRef = useRef<HTMLDivElement>(null);
+  const exportDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        importDropdownRef.current &&
+        !importDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsImportOpen(false);
+      }
+      if (
+        exportDropdownRef.current &&
+        !exportDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsExportOpen(false);
+      }
+    };
+
+    if (isImportOpen || isExportOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isImportOpen, isExportOpen]);
+
   return (
     <section className="space-y-3">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -93,15 +124,15 @@ export const CompactShiftScheduleToolbarWithAdvancedSidebar = ({
 
         <div className="flex flex-wrap items-center gap-3">
           {canRead && (
-            <div className="group relative inline-block text-left">
+            <div ref={exportDropdownRef} className="relative inline-block text-left">
               <button
                 type="button"
-                onClick={onExport}
-                className="flex items-center rounded-lg border border-[#192841] bg-white px-4 py-2 text-sm font-semibold text-[#192841] transition-colors hover:bg-[#192841]/5"
+                onClick={() => setIsExportOpen(!isExportOpen)}
+                className={`flex items-center rounded-lg border border-[#192841] bg-white px-4 py-2 text-sm font-semibold text-[#192841] transition-colors hover:bg-[#192841]/5 ${isExportOpen ? 'bg-[#192841]/5' : ''}`}
               >
                 Xuất file
                 <svg
-                  className="ml-2 h-4 w-4 text-[#192841] transition-transform duration-200 group-hover:rotate-180"
+                  className={`ml-2 h-4 w-4 text-[#192841] transition-transform duration-200 ${isExportOpen ? 'rotate-180' : ''}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -115,34 +146,39 @@ export const CompactShiftScheduleToolbarWithAdvancedSidebar = ({
                 </svg>
               </button>
 
-              <div className="absolute right-0 top-full z-50 hidden pt-1.5 transition-all duration-200 group-hover:block">
+              <div className={`absolute right-0 top-full z-50 animate-[fadeSlideDown_0.2s_ease-out] pt-1.5 ${isExportOpen ? 'block' : 'hidden'}`}>
                 <div className="w-52 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
                   <button
                     type="button"
+                    onClick={() => { setIsExportOpen(false); onExport(); }}
                     className="block min-h-[28px] w-full px-4 py-1 text-left text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
                   >
                     Xuất theo ngày công
                   </button>
                   <button
                     type="button"
+                    onClick={() => { setIsExportOpen(false); onExport(); }}
                     className="block min-h-[28px] w-full px-4 py-1 text-left text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
                   >
                     Xuất theo giờ công
                   </button>
                   <button
                     type="button"
+                    onClick={() => { setIsExportOpen(false); onExport(); }}
                     className="block min-h-[28px] w-full px-4 py-1 text-left text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
                   >
                     Bảng phân ca
                   </button>
                   <button
                     type="button"
+                    onClick={() => { setIsExportOpen(false); onExport(); }}
                     className="block min-h-[28px] w-full px-4 py-1 text-left text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
                   >
                     Bảng đi muộn, về sớm
                   </button>
                   <button
                     type="button"
+                    onClick={() => { setIsExportOpen(false); onExport(); }}
                     className="block min-h-[28px] w-full px-4 py-1 text-left text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
                   >
                     Bảng tăng ca
@@ -154,26 +190,30 @@ export const CompactShiftScheduleToolbarWithAdvancedSidebar = ({
 
           {canCreate && (
             <div className="flex items-center">
-              <div className="flex items-center rounded-lg bg-[#134BBA] shadow-md transition-all duration-200 hover:shadow-lg">
+              <div ref={importDropdownRef} className="flex items-center rounded-lg bg-[#134BBA] shadow-md transition-all duration-200 hover:shadow-lg relative">
                 <button
                   type="button"
-                  onClick={onImport}
+                  onClick={() => {
+                    setIsImportOpen(false);
+                    onImport();
+                  }}
                   className="flex items-center rounded-l-lg border-r border-white/20 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[#0e378c]"
                 >
                   Nhập dữ liệu
                 </button>
 
-                <div className="group/chevron relative h-full">
+                <div className="relative h-full">
                   <button
                     type="button"
-                    className="flex h-full items-center justify-center rounded-r-lg px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#0e378c]"
+                    onClick={() => setIsImportOpen(!isImportOpen)}
+                    className={`flex h-full items-center justify-center rounded-r-lg px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#0e378c] ${isImportOpen ? 'bg-[#0e378c]' : ''}`}
                   >
-                    <span className="material-symbols-outlined text-[18px] text-white transition-transform duration-200 group-hover/chevron:rotate-180">
+                    <span className={`material-symbols-outlined text-[18px] text-white transition-transform duration-200 ${isImportOpen ? 'rotate-180' : ''}`}>
                       expand_more
                     </span>
                   </button>
 
-                  <div className="absolute right-0 top-full z-[1000] hidden animate-[fadeSlideDown_0.2s_ease-out] pt-1.5 group-hover/chevron:block">
+                  <div className={`absolute right-0 top-full z-[1000] animate-[fadeSlideDown_0.2s_ease-out] pt-1.5 ${isImportOpen ? 'block' : 'hidden'}`}>
                     <div className="w-52 overflow-hidden rounded-xl border border-gray-200 bg-white py-2 shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
                       <div className="mb-1 border-b border-gray-100 px-4 py-[7px]">
                         <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
@@ -182,41 +222,42 @@ export const CompactShiftScheduleToolbarWithAdvancedSidebar = ({
                       </div>
                       <button
                         type="button"
-                        onClick={onImport}
+                        onClick={() => { setIsImportOpen(false); onImport(); }}
                         className="flex min-h-[28px] w-full items-center gap-3 px-4 py-1 text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
                       >
                         Tạo ca làm
                       </button>
                       <button
                         type="button"
-                        onClick={onOpenShiftTemplateList}
+                        onClick={() => { setIsImportOpen(false); onOpenShiftTemplateList(); }}
                         className="flex min-h-[28px] w-full items-center gap-3 px-4 py-1 text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
                       >
                         Danh sách ca
                       </button>
                       <button
                         type="button"
-                        onClick={onOpenAssignShift}
+                        onClick={() => { setIsImportOpen(false); onOpenAssignShift(); }}
                         className="flex min-h-[28px] w-full items-center gap-3 px-4 py-1 text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
                       >
                         Xếp ca
                       </button>
                       <button
                         type="button"
-                        onClick={onOpenCopyShift}
+                        onClick={() => { setIsImportOpen(false); onOpenCopyShift(); }}
                         className="flex min-h-[28px] w-full items-center gap-3 px-4 py-1 text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
                       >
                         Sao chép ca
                       </button>
                       <button
                         type="button"
-                        onClick={onImport}
+                        onClick={() => { setIsImportOpen(false); onImport(); }}
                         className="flex min-h-[28px] w-full items-center gap-3 px-4 py-1 text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
                       >
                         Nhập dữ liệu
                       </button>
                       <button
                         type="button"
+                        onClick={() => setIsImportOpen(false)}
                         className="flex min-h-[28px] w-full items-center gap-3 px-4 py-1 text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
                       >
                         Phân ca thông minh

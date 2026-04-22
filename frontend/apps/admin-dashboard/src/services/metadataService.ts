@@ -33,49 +33,6 @@ export interface JobTitle {
   isActive: boolean;
 }
 
-// Mock data
-const mockRegions: Region[] = [
-  { id: 1, name: "North Region", code: "NORTH", isActive: true },
-  { id: 2, name: "Central Region", code: "CENTRAL", isActive: true },
-  { id: 3, name: "South Region", code: "SOUTH", isActive: true },
-];
-
-const mockBranches: Branch[] = [
-  {
-    id: 1,
-    name: "Hanoi Branch",
-    code: "HN-001",
-    regionId: 1,
-    location: "Hanoi",
-    isActive: true,
-  },
-  {
-    id: 2,
-    name: "Ho Chi Minh Branch",
-    code: "HCM-001",
-    regionId: 3,
-    location: "Ho Chi Minh",
-    isActive: true,
-  },
-];
-
-const mockDepartments: Department[] = [
-  { id: 1, name: "HR Department", code: "HR-001", branchId: 1, isActive: true },
-  {
-    id: 2,
-    name: "Finance Department",
-    code: "FIN-001",
-    branchId: 1,
-    isActive: true,
-  },
-];
-
-const mockJobTitles: JobTitle[] = [
-  { id: 1, name: "Manager", code: "MGR", isActive: true },
-  { id: 2, name: "Developer", code: "DEV", isActive: true },
-  { id: 3, name: "HR Officer", code: "HRO", isActive: true },
-];
-
 export const metadataService = {
   async getRegions(): Promise<Region[]> {
     try {
@@ -84,8 +41,9 @@ export const metadataService = {
         { method: "GET" },
         "Failed to fetch regions",
       );
-    } catch {
-      return mockRegions;
+    } catch (error) {
+      console.warn("Failed to fetch regions from API:", error);
+      return [];
     }
   },
 
@@ -96,8 +54,9 @@ export const metadataService = {
         { method: "GET" },
         "Failed to fetch branches",
       );
-    } catch {
-      return mockBranches;
+    } catch (error) {
+      console.warn("Failed to fetch branches from API:", error);
+      return [];
     }
   },
 
@@ -111,8 +70,9 @@ export const metadataService = {
         { method: "GET" },
         "Failed to fetch departments",
       );
-    } catch {
-      return mockDepartments;
+    } catch (error) {
+      console.warn("Failed to fetch departments from API:", error);
+      return [];
     }
   },
 
@@ -123,8 +83,9 @@ export const metadataService = {
         { method: "GET" },
         "Failed to fetch job titles",
       );
-    } catch {
-      return mockJobTitles;
+    } catch (error) {
+      console.warn("Failed to fetch job titles from API:", error);
+      return [];
     }
   },
 
@@ -135,12 +96,9 @@ export const metadataService = {
         { method: "GET" },
         "Failed to fetch address types",
       );
-    } catch {
-      return [
-        { id: 1, name: "Permanent Address" },
-        { id: 2, name: "Temporary Address" },
-        { id: 3, name: "Billing Address" },
-      ];
+    } catch (error) {
+      console.warn("Failed to fetch address types from API:", error);
+      return [];
     }
   },
 
@@ -151,8 +109,9 @@ export const metadataService = {
         { method: "GET" },
         "Failed to fetch address countries",
       );
-    } catch {
-      return [{ code: "VN", name: "Vietnam" }];
+    } catch (error) {
+      console.warn("Failed to fetch address countries from API:", error);
+      return [];
     }
   },
 
@@ -201,8 +160,9 @@ export const branchesService = {
         { method: "GET" },
         "Failed to fetch branches",
       );
-    } catch {
-      return mockBranches;
+    } catch (error) {
+      console.warn("Failed to fetch branches from API:", error);
+      return [];
     }
   },
 
@@ -213,48 +173,34 @@ export const branchesService = {
         { method: "GET" },
         `Failed to fetch branch ${id}`,
       );
-    } catch {
-      return mockBranches.find((b) => b.id === id) || null;
+    } catch (error) {
+      console.warn(`Failed to fetch branch ${id} from API:`, error);
+      return null;
     }
   },
 
   async createBranch(data: Partial<Branch>): Promise<Branch> {
-    try {
-      return await requestJson<Branch>(
-        `${API_URL}/branches`,
-        { method: "POST", body: JSON.stringify(data) },
-        "Failed to create branch",
-      );
-    } catch (error) {
-      console.error("Create branch error:", error);
-      throw error;
-    }
+    return requestJson<Branch>(
+      `${API_URL}/branches`,
+      { method: "POST", body: JSON.stringify(data) },
+      "Failed to create branch",
+    );
   },
 
   async updateBranch(id: number, data: Partial<Branch>): Promise<Branch> {
-    try {
-      return await requestJson<Branch>(
-        `${API_URL}/branches/${id}`,
-        { method: "PUT", body: JSON.stringify(data) },
-        `Failed to update branch ${id}`,
-      );
-    } catch (error) {
-      console.error("Update branch error:", error);
-      throw error;
-    }
+    return requestJson<Branch>(
+      `${API_URL}/branches/${id}`,
+      { method: "PUT", body: JSON.stringify(data) },
+      `Failed to update branch ${id}`,
+    );
   },
 
   async deleteBranch(id: number): Promise<{ success: boolean }> {
-    try {
-      return await requestJson<{ success: boolean }>(
-        `${API_URL}/branches/${id}`,
-        { method: "DELETE" },
-        `Failed to delete branch ${id}`,
-      );
-    } catch (error) {
-      console.error("Delete branch error:", error);
-      throw error;
-    }
+    return requestJson<{ success: boolean }>(
+      `${API_URL}/branches/${id}`,
+      { method: "DELETE" },
+      `Failed to delete branch ${id}`,
+    );
   },
 };
 
@@ -266,8 +212,9 @@ export const departmentsService = {
         { method: "GET" },
         "Failed to fetch departments",
       );
-    } catch {
-      return mockDepartments;
+    } catch (error) {
+      console.warn("Failed to fetch departments from API:", error);
+      return [];
     }
   },
 
@@ -278,51 +225,37 @@ export const departmentsService = {
         { method: "GET" },
         `Failed to fetch department ${id}`,
       );
-    } catch {
-      return mockDepartments.find((d) => d.id === id) || null;
+    } catch (error) {
+      console.warn(`Failed to fetch department ${id} from API:`, error);
+      return null;
     }
   },
 
   async createDepartment(data: Partial<Department>): Promise<Department> {
-    try {
-      return await requestJson<Department>(
-        `${API_URL}/departments`,
-        { method: "POST", body: JSON.stringify(data) },
-        "Failed to create department",
-      );
-    } catch (error) {
-      console.error("Create department error:", error);
-      throw error;
-    }
+    return requestJson<Department>(
+      `${API_URL}/departments`,
+      { method: "POST", body: JSON.stringify(data) },
+      "Failed to create department",
+    );
   },
 
   async updateDepartment(
     id: number,
     data: Partial<Department>,
   ): Promise<Department> {
-    try {
-      return await requestJson<Department>(
-        `${API_URL}/departments/${id}`,
-        { method: "PUT", body: JSON.stringify(data) },
-        `Failed to update department ${id}`,
-      );
-    } catch (error) {
-      console.error("Update department error:", error);
-      throw error;
-    }
+    return requestJson<Department>(
+      `${API_URL}/departments/${id}`,
+      { method: "PUT", body: JSON.stringify(data) },
+      `Failed to update department ${id}`,
+    );
   },
 
   async deleteDepartment(id: number): Promise<{ success: boolean }> {
-    try {
-      return await requestJson<{ success: boolean }>(
-        `${API_URL}/departments/${id}`,
-        { method: "DELETE" },
-        `Failed to delete department ${id}`,
-      );
-    } catch (error) {
-      console.error("Delete department error:", error);
-      throw error;
-    }
+    return requestJson<{ success: boolean }>(
+      `${API_URL}/departments/${id}`,
+      { method: "DELETE" },
+      `Failed to delete department ${id}`,
+    );
   },
 };
 
@@ -334,22 +267,18 @@ export const regionsService = {
         { method: "GET" },
         "Failed to fetch regions",
       );
-    } catch {
-      return mockRegions;
+    } catch (error) {
+      console.warn("Failed to fetch regions from API:", error);
+      return [];
     }
   },
 
   async updateRegion(id: number, data: Partial<Region>): Promise<Region> {
-    try {
-      return await requestJson<Region>(
-        `${API_URL}/regions/${id}`,
-        { method: "PUT", body: JSON.stringify(data) },
-        `Failed to update region ${id}`,
-      );
-    } catch (error) {
-      console.error("Update region error:", error);
-      throw error;
-    }
+    return requestJson<Region>(
+      `${API_URL}/regions/${id}`,
+      { method: "PUT", body: JSON.stringify(data) },
+      `Failed to update region ${id}`,
+    );
   },
 };
 
@@ -357,38 +286,29 @@ export const jobTitlesService = {
   async getJobTitles(): Promise<JobTitle[]> {
     try {
       return await requestJson<JobTitle[]>(
-        `${API_URL}/job-titles`,
+        `${API_URL}/jobtitles`,
         { method: "GET" },
         "Failed to fetch job titles",
       );
-    } catch {
-      return mockJobTitles;
+    } catch (error) {
+      console.warn("Failed to fetch job titles from API:", error);
+      return [];
     }
   },
 
   async createJobTitle(data: Partial<JobTitle>): Promise<JobTitle> {
-    try {
-      return await requestJson<JobTitle>(
-        `${API_URL}/job-titles`,
-        { method: "POST", body: JSON.stringify(data) },
-        "Failed to create job title",
-      );
-    } catch (error) {
-      console.error("Create job title error:", error);
-      throw error;
-    }
+    return requestJson<JobTitle>(
+      `${API_URL}/jobtitles`,
+      { method: "POST", body: JSON.stringify(data) },
+      "Failed to create job title",
+    );
   },
 
   async updateJobTitle(id: number, data: Partial<JobTitle>): Promise<JobTitle> {
-    try {
-      return await requestJson<JobTitle>(
-        `${API_URL}/job-titles/${id}`,
-        { method: "PUT", body: JSON.stringify(data) },
-        `Failed to update job title ${id}`,
-      );
-    } catch (error) {
-      console.error("Update job title error:", error);
-      throw error;
-    }
+    return requestJson<JobTitle>(
+      `${API_URL}/jobtitles/${id}`,
+      { method: "PUT", body: JSON.stringify(data) },
+      `Failed to update job title ${id}`,
+    );
   },
 };

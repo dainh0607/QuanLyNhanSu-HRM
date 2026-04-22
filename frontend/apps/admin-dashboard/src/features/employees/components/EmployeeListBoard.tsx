@@ -5,7 +5,7 @@ import {
   BASIC_INFO_EXPORT_COLUMNS,
   type BasicInfoExportColumn,
 } from '../data/basicInfoExportColumns';
-import { DEFAULT_COLUMNS } from '../data/mockData';
+import { DEFAULT_COLUMNS } from '../data/columnConfig';
 import type { ColumnConfig, Employee } from '../types';
 import AddEmployeeModal from './AddEmployeeModal';
 import BasicInfoExportModal from './BasicInfoExportModal';

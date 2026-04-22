@@ -41,16 +41,16 @@ const FolderDetailModal: React.FC<FolderDetailModalProps> = ({
     return () => document.removeEventListener('click', handleClickOutside);
   }, [activeMenuId]);
 
-  const handleDownload = (fileName: string) => {
-    // Giả lập hành động tải tệp 
-    const element = document.createElement('a');
-    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent('Nội dung giả định của tệp: ' + fileName));
-    element.setAttribute('download', fileName);
-    element.style.display = 'none';
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+  const handleDownload = (file: DocumentFile) => {
+    if (file.url) {
+      window.open(file.url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    setSelectedFileForAction(file);
+    setIsPreviewModalOpen(true);
   };
+
 
   return (
     <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-[#1e293b]/60 backdrop-blur-[4px] transition-all p-4">
@@ -103,7 +103,7 @@ const FolderDetailModal: React.FC<FolderDetailModalProps> = ({
                 <div 
                   key={file.id} 
                   className="flex items-center justify-between p-4 bg-white border-b border-slate-50 hover:bg-slate-50/50 transition-colors group relative rounded-2xl"
-                  onClick={() => handleDownload(file.name)}
+                  onClick={() => handleDownload(file)}
                 >
                   <div className="flex items-center gap-5">
                     <div className="h-12 w-12 rounded-2xl bg-blue-50/50 flex items-center justify-center text-blue-500">
