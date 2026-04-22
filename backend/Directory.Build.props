@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- Suppress Nullable Reference Type warnings since the project heavily mocks null states -->
+    <NoWarn>$(NoWarn);CS8618;CS8600;CS8601;CS8602;CS8603;CS8604;CS8609;CS8613;CS8625;CS8629</NoWarn>
+  </PropertyGroup>
+</Project>

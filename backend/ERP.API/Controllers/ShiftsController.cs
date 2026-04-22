@@ -30,7 +30,12 @@ namespace ERP.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { Message = ex.Message });
+                var message = ex.Message;
+                if (ex.InnerException != null)
+                {
+                    message += " Inner error: " + ex.InnerException.Message;
+                }
+                return BadRequest(new { Message = message });
             }
         }
 
@@ -46,7 +51,12 @@ namespace ERP.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { Message = ex.Message });
+                var message = ex.Message;
+                if (ex.InnerException != null)
+                {
+                    message += " Inner error: " + ex.InnerException.Message;
+                }
+                return BadRequest(new { Message = message });
             }
         }
 
@@ -61,7 +71,12 @@ namespace ERP.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { Message = ex.Message });
+                var message = ex.Message;
+                if (ex.InnerException != null)
+                {
+                    message += " Inner error: " + ex.InnerException.Message;
+                }
+                return BadRequest(new { Message = message });
             }
         }
 
@@ -79,7 +94,12 @@ namespace ERP.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { Message = ex.Message });
+                var message = ex.Message;
+                if (ex.InnerException != null)
+                {
+                    message += " Inner error: " + ex.InnerException.Message;
+                }
+                return BadRequest(new { Message = message });
             }
         }
 
@@ -95,7 +115,12 @@ namespace ERP.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { Message = ex.Message });
+                var message = ex.Message;
+                if (ex.InnerException != null)
+                {
+                    message += " Inner error: " + ex.InnerException.Message;
+                }
+                return BadRequest(new { Message = message });
             }
         }
 
@@ -109,7 +134,12 @@ namespace ERP.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { Message = ex.Message });
+                var message = ex.Message;
+                if (ex.InnerException != null)
+                {
+                    message += " Inner error: " + ex.InnerException.Message;
+                }
+                return BadRequest(new { Message = message });
             }
         }
 
@@ -123,7 +153,12 @@ namespace ERP.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { Message = ex.Message });
+                var message = ex.Message;
+                if (ex.InnerException != null)
+                {
+                    message += " Inner error: " + ex.InnerException.Message;
+                }
+                return BadRequest(new { Message = message });
             }
         }
 
@@ -139,7 +174,12 @@ namespace ERP.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { Message = ex.Message });
+                var message = ex.Message;
+                if (ex.InnerException != null)
+                {
+                    message += " Inner error: " + ex.InnerException.Message;
+                }
+                return BadRequest(new { Message = message });
             }
         }
 
@@ -156,7 +196,12 @@ namespace ERP.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { Message = ex.Message });
+                var message = ex.Message;
+                if (ex.InnerException != null)
+                {
+                    message += " Inner error: " + ex.InnerException.Message;
+                }
+                return BadRequest(new { Message = message });
             }
         }
 
@@ -171,7 +216,12 @@ namespace ERP.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { Message = ex.Message });
+                var message = ex.Message;
+                if (ex.InnerException != null)
+                {
+                    message += " Inner error: " + ex.InnerException.Message;
+                }
+                return BadRequest(new { Message = message });
             }
         }
 
@@ -189,7 +239,8 @@ namespace ERP.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { Message = ex.Message });
+                // Trả về toàn bộ chi tiết lỗi để chẩn đoán chính xác lỗi Database
+                return BadRequest(new { Message = ex.ToString() });
             }
         }
 

@@ -64,7 +64,15 @@ const toIdList = (...values: Array<Array<number | string> | number | string | nu
     new Set(
       normalized
         .map((value) => String(value))
-        .filter((value) => value.trim().length > 0),
+        .filter((value) => {
+          const trimmed = value.trim();
+          return (
+            trimmed.length > 0 &&
+            trimmed !== "undefined" &&
+            trimmed !== "null" &&
+            trimmed !== "NaN"
+          );
+        }),
     ),
   );
 };

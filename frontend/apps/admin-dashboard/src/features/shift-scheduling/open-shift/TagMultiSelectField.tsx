@@ -86,9 +86,9 @@ export const TagMultiSelectField = ({
           } ${disabled ? "cursor-not-allowed bg-slate-50 text-slate-400" : ""}`}
         >
           {selectedOptions.length > 0 ? (
-            selectedOptions.map((option) => (
+            selectedOptions.map((option, index) => (
               <span
-                key={option.value}
+                key={option.value || `selected-${index}`}
                 className="inline-flex items-center gap-1.5 rounded-full border border-[#BFDBFE] bg-[#EFF6FF] px-2.5 py-1 text-xs font-semibold text-[#134BBA]"
               >
                 {option.label}
@@ -138,11 +138,11 @@ export const TagMultiSelectField = ({
 
             <div className="mt-3 max-h-56 overflow-y-auto rounded-xl border border-slate-100 shift-scheduling-scrollbar">
               {filteredOptions.length > 0 ? (
-                filteredOptions.map((option) => {
+                filteredOptions.map((option, index) => {
                   const checked = selectedValues.includes(option.value);
                   return (
                     <label
-                      key={option.value}
+                      key={option.value || `option-${index}`}
                       className="flex cursor-pointer items-center gap-3 border-b border-slate-50 px-3 py-2.5 text-sm text-slate-700 last:border-b-0 hover:bg-slate-50"
                     >
                       <input

@@ -51,6 +51,6 @@ namespace ERP.Entities.Models
         public DateTime? close_date { get; set; }
 
         [Column("note")]
-        public string note { get; set; }
+        public string? note { get; set; }
     }
 }

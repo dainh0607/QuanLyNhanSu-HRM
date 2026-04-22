@@ -33,8 +33,8 @@ export const FilterSelect = ({
           icon ? "pl-9" : "pl-3"
         } pr-8 text-[13px] font-medium text-slate-700 outline-none transition focus:border-[#192841] focus:ring-[#192841]`}
       >
-        {options.map((option) => (
-          <option key={option.value || "all"} value={option.value}>
+        {options.map((option, index) => (
+          <option key={`${option.value || "all"}-${index}`} value={option.value}>
             {option.label}
           </option>
         ))}

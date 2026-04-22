@@ -20,8 +20,13 @@ const toShiftTargetOption = (
     return null;
   }
 
+  const stringValue = String(value).trim();
+  if (!stringValue || stringValue === "undefined" || stringValue === "null" || stringValue === "NaN") {
+    return null;
+  }
+
   return {
-    value: String(value),
+    value: stringValue,
     label: label.trim(),
     branchIds: branchIds ? Array.from(branchIds) : [],
   };

@@ -338,12 +338,25 @@ namespace ERP.Services.Attendance
                                 auto_publish = dto.IsAutoPublish,
                                 open_date = dto.Date,
                                 status = "OPEN",
-                                note = dto.Note,
+                                note = dto.Note ?? "",
                                 CreatedAt = DateTime.UtcNow,
                                 UpdatedAt = DateTime.UtcNow
                             };
 
-                            await _unitOfWork.Repository<OpenShifts>().AddAsync(openShift);
+                            var existingList = await _unitOfWork.Repository<OpenShifts>()
+                                .FindAsync(o => o.shift_id == dto.ShiftId 
+                                    && o.branch_id == bid 
+                                    && o.department_id == did 
+                                    && o.job_title_id == pid 
+                                    && o.open_date.Date == dto.Date.Date);
+                            if (existingList.Any()) {
+                                var existing = existingList.First();
+                                existing.required_quantity = dto.Quantity;
+                                existing.UpdatedAt = DateTime.UtcNow;
+                                _unitOfWork.Repository<OpenShifts>().Update(existing);
+                            } else {
+                                await _unitOfWork.Repository<OpenShifts>().AddAsync(openShift);
+                            }
                         }
                     }
                 }

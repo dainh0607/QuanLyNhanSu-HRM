@@ -12,12 +12,12 @@ export const ShiftTypePicker = ({
   onSelect,
 }: ShiftTypePickerProps) => (
   <div className="grid gap-2 md:grid-cols-2">
-    {shiftTemplates.map((shift) => {
+    {shiftTemplates.map((shift, index) => {
       const selected = selectedShiftId === shift.id;
 
       return (
         <button
-          key={shift.id}
+          key={shift.id || `shift-${index}`}
           type="button"
           onClick={() => onSelect(shift)}
           className={`flex items-start justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition ${

@@ -101,9 +101,10 @@ const normalizeAssignmentStatus = (
 const normalizeEmployee = (
   employee: WeeklyScheduleApiEmployee,
 ): WeeklyScheduleEmployee => {
+  const empId = getVal<number>(employee, "id", "Id") || 0;
   return {
-    id: employee.id,
-    fullName: getVal<string>(employee, "full_name", "fullName")?.trim() || `Nhân viên #${employee.id}`,
+    id: empId,
+    fullName: getVal<string>(employee, "full_name", "fullName")?.trim() || `Nhân viên #${empId}`,
     avatar: getVal<string>(employee, "avatar", "avatar") ?? null,
     employeeCode: getVal<string>(employee, "employee_code", "employeeCode") ?? null,
     regionId: getVal<number>(employee, "region_id", "regionId") ?? null,
@@ -123,10 +124,11 @@ const normalizeEmployee = (
 
 const createShiftFromAssignment = (assignment: WeeklyScheduleApiAssignment): WeeklyScheduleShift => {
   const attendanceStatus = normalizeAttendanceStatus(getVal<string>(assignment, "attendance_status", "attendanceStatus"));
+  const assignmentId = getVal<number>(assignment, "id", "Id");
   const isPublished = getVal<boolean>(assignment, "is_published", "isPublished") ?? true;
   return {
-    id: `assignment-${assignment.id}`,
-    sourceId: assignment.id,
+    id: `assignment-${assignmentId || Math.random()}`,
+    sourceId: assignmentId,
     shiftId: getVal<number>(assignment, "shift_id", "shiftId") ?? null,
     shiftName: getVal<string>(assignment, "shift_name", "shiftName")?.trim() || "Ca chưa đặt tên",
     startTime: getVal<string>(assignment, "start_time", "startTime") ?? "",
@@ -153,9 +155,10 @@ const createShiftFromAssignment = (assignment: WeeklyScheduleApiAssignment): Wee
 const createShiftFromOpenShift = (openShift: WeeklyScheduleApiOpenShift): WeeklyScheduleShift => {
   const status = getVal<string>(openShift, "status", "status");
   const attendanceStatus = status?.trim().toLowerCase() === "locked" ? "locked" : "upcoming";
+  const openShiftId = getVal<number>(openShift, "id", "Id");
   return {
-    id: `open-shift-${openShift.id}`,
-    sourceId: openShift.id,
+    id: `open-shift-${openShiftId || Math.random()}`,
+    sourceId: openShiftId,
     shiftId: getVal<number>(openShift, "shift_id", "shiftId") ?? null,
     shiftName: getVal<string>(openShift, "shift_name", "shiftName")?.trim() || "Ca mở",
     startTime: getVal<string>(openShift, "start_time", "startTime") ?? "",
@@ -291,13 +294,28 @@ const getLookups = async (): Promise<ShiftScheduleLookups & { employees: SelectO
   ]);
 
   return {
-    branches: [{ value: "", label: "Tất cả chi nhánh" }, ...branches.map(b => ({ value: String(b.id), label: b.name }))],
-    jobTitles: [{ value: "", label: "Tất cả công việc" }, ...jobTitles.map(j => ({ value: String(j.id), label: j.name }))],
+    branches: [
+      { value: "", label: "Tất cả chi nhánh" },
+      ...branches.map(b => ({
+        value: String(getVal<number>(b, "id", "Id") ?? ""),
+        label: getVal<string>(b, "name", "Name") || ""
+      }))
+    ],
+    jobTitles: [
+      { value: "", label: "Tất cả công việc" },
+      ...jobTitles.map(j => ({
+        value: String(getVal<number>(j, "id", "Id") ?? ""),
+        label: getVal<string>(j, "name", "Name") || ""
+      }))
+    ],
     projects: PROJECT_FILTER_OPTIONS,
     workingHours: WORKING_HOURS_OPTIONS,
     workingDays: WORKING_DAYS_OPTIONS,
     workedHours: WORKED_HOURS_OPTIONS,
-    employees: employees.map(e => ({ value: String(e.id), label: e.fullName || `Nhân viên #${e.id}` })),
+    employees: employees.map(e => ({
+      value: String(getVal<number>(e, "id", "Id") ?? ""),
+      label: getVal<string>(e, "fullName", "fullName") || `Nhân viên #${getVal<number>(e, "id", "Id")}`
+    })),
   };
 };
 

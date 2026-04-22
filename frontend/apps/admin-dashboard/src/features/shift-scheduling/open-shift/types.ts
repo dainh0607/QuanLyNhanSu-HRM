@@ -28,4 +28,5 @@ export interface OpenShiftCreatePayload {
   jobTitleIds: string[];
   requiredQuantity: number;
   autoPublish: boolean;
+  note?: string | null;
 }

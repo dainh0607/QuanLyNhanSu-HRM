@@ -62,6 +62,7 @@ export const OpenShiftModal = ({
   const [jobTitleIds, setJobTitleIds] = useState<string[]>([]);
   const [quantity, setQuantity] = useState("1");
   const [autoPublish, setAutoPublish] = useState(true);
+  const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState("");
@@ -75,6 +76,7 @@ export const OpenShiftModal = ({
     setJobTitleIds([]);
     setQuantity("1");
     setAutoPublish(true);
+    setNote("");
     setErrors({});
     setSubmitError("");
     setIsSubmitting(false);
@@ -204,6 +206,18 @@ export const OpenShiftModal = ({
       nextErrors.shiftId = "Vui lòng chọn loại ca cần khởi tạo.";
     }
 
+    if (!branchIds.length) {
+      nextErrors.branchIds = "Vui lòng chọn ít nhất một chi nhánh.";
+    }
+
+    if (!departmentIds.length) {
+      nextErrors.departmentIds = "Vui lòng chọn ít nhất một phòng ban.";
+    }
+
+    if (!jobTitleIds.length) {
+      nextErrors.jobTitleIds = "Vui lòng chọn ít nhất một chức danh.";
+    }
+
     if (!isPositiveInteger(quantity)) {
       nextErrors.quantity = "Số lượng phải là số nguyên dương lớn hơn hoặc bằng 1.";
     }
@@ -222,6 +236,19 @@ export const OpenShiftModal = ({
     setSubmitError("");
 
     try {
+      const cleanIds = (ids: (string | number)[]) => 
+        ids.map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+
+      const finalBranchIds = cleanIds(branchIds.length > 0 ? branchIds : formData.targets.branches.map(b => b.value));
+      const finalDepartmentIds = cleanIds(departmentIds.length > 0 ? departmentIds : formData.targets.departments.map(d => d.value));
+      const finalJobTitleIds = cleanIds(jobTitleIds.length > 0 ? jobTitleIds : formData.targets.jobTitles.map(j => j.value));
+
+      if (finalBranchIds.length === 0 || finalDepartmentIds.length === 0 || finalJobTitleIds.length === 0) {
+        setSubmitError("Vui lòng chọn ít nhất một Chi nhánh, Phòng ban và Chức danh hợp lệ.");
+        setIsSubmitting(false);
+        return;
+      }
+
       await openShiftService.createOpenShift(
         {
           shiftId: selectedShift.shiftId,
@@ -229,22 +256,44 @@ export const OpenShiftModal = ({
           startTime: selectedShift.startTime,
           endTime: selectedShift.endTime,
           openDate: selectedDate,
-          branchIds,
-          departmentIds,
-          jobTitleIds,
+          branchIds: finalBranchIds,
+          departmentIds: finalDepartmentIds,
+          jobTitleIds: finalJobTitleIds,
           requiredQuantity: Number(quantity),
           autoPublish,
+          note,
         },
       );
 
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to create open shift.", error);
-      setSubmitError(
-        error instanceof Error
-          ? error.message
-          : "Không thể tạo ca mở. Vui lòng thử lại.",
-      );
+      
+      let message = "Không thể tạo ca mở. Vui lòng thử lại.";
+      if (error?.errors && typeof error.errors === "object") {
+        // Handle ASP.NET Core ValidationProblemDetails
+        const messages = Object.entries(error.errors)
+          .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
+          .join(" | ");
+        message = `Lỗi dữ liệu: ${messages}`;
+      } else if (error?.response?.data?.errors) {
+        const messages = Object.entries(error.response.data.errors)
+          .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
+          .join(" | ");
+        message = `Lỗi dữ liệu: ${messages}`;
+      } else if (error?.Message) {
+        message = error.Message;
+      } else if (error?.message) {
+        message = error.message;
+      } else if (error?.response?.data?.Message) {
+        message = error.response.data.Message;
+      } else if (error?.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error instanceof Error) {
+        message = error.message;
+      }
+      
+      setSubmitError(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -445,6 +494,18 @@ export const OpenShiftModal = ({
                         </span>
                       </label>
                     </div>
+
+                    <label className="block rounded-2xl border border-slate-200 bg-white p-4">
+                      <span className="mb-2 block text-sm font-semibold text-slate-700">
+                        Ghi chú
+                      </span>
+                      <textarea
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        placeholder="Nhập ghi chú cho ca mở này..."
+                        className="h-24 w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#134BBA] focus:ring-1 focus:ring-[#134BBA]"
+                      />
+                    </label>
                   </div>
                 </section>
               </div>
