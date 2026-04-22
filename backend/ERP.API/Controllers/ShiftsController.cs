@@ -239,8 +239,16 @@ namespace ERP.API.Controllers
             }
             catch (Exception ex)
             {
-                // Trả về toàn bộ chi tiết lỗi để chẩn đoán chính xác lỗi Database
-                return BadRequest(new { Message = ex.ToString() });
+                var message = ex.Message;
+                if (ex.InnerException != null)
+                {
+                    message += " | Inner: " + ex.InnerException.Message;
+                    if (ex.InnerException.InnerException != null)
+                    {
+                        message += " | Root: " + ex.InnerException.InnerException.Message;
+                    }
+                }
+                return BadRequest(new { Message = message });
             }
         }
 

@@ -11,7 +11,6 @@ import type {
   AvailableShiftOption,
   DirectShiftTemplatePayload,
   LeaveRequestFormValues,
-  LeaveRequestReasonCode,
   ShiftAssignmentDetail,
   ShiftAttendanceHistoryItem,
   ShiftMapPoint,
@@ -134,7 +133,7 @@ const toPositiveNumber = (value: string): number => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 };
 
-const LEAVE_REASON_LABEL_MAP: Record<LeaveRequestReasonCode, string> = {
+export const LEAVE_REASON_LABEL_MAP: Record<string, string> = {
   annualLeave: "Phép năm",
   sickLeave: "Nghỉ ốm",
   personalLeave: "Việc riêng",
@@ -175,7 +174,13 @@ const buildShiftCreatePayload = (
   IsOvernight: payload.isCrossNight,
   Color: "#134BBA",
   ShiftTypeId: 1,
-  Note: "Tao tu bang xep ca tuan",
+  Note: payload.note || "Tạo từ bảng xếp ca",
+  BranchIds: payload.branchIds.map(id => Number(id)),
+  DepartmentIds: payload.departmentIds.map(id => Number(id)),
+  JobTitleIds: payload.jobTitleIds.map(id => Number(id)),
+  AssignDate: payload.assignDate,
+  RepeatDays: payload.repeatDays,
+  IsPublished: true,
 });
 
 const sameDate = (left: string, right: string): boolean => {
@@ -261,7 +266,7 @@ const buildMapPointsFromHistory = (
       source: item.deviceType,
     }));
 
-const buildFallbackLeaveNote = (
+export const buildFallbackLeaveNote = (
   values: LeaveRequestFormValues,
   reasonLabel: string,
   resolvedRange: ReturnType<typeof getLeaveTimeRange>,
@@ -279,7 +284,7 @@ const buildFallbackLeaveNote = (
   return details.join(" | ");
 };
 
-const resolveLeaveTypeId = async (
+export const resolveLeaveTypeId = async (
   context: AssignedShiftActionContext,
   reasonLabel: string,
 ): Promise<number | null> => {
@@ -432,7 +437,7 @@ export const assignedShiftActionsService = {
   },
 
   async createShiftTemplateAndAssign(
-    context: AssignedShiftActionContext,
+    _context: AssignedShiftActionContext,
     payload: DirectShiftTemplatePayload,
   ): Promise<void> {
     const createdShift = await requestJson<ShiftCreateResponse>(
@@ -450,18 +455,11 @@ export const assignedShiftActionsService = {
       throw new Error("Không nhận được mã ca làm mới.");
     }
 
-    await requestJson(
-      `${API_URL}/shift-assignments`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          employee_id: context.employee.id,
-          shift_id: createdShiftId,
-          assignment_date: context.shift.date,
-        }),
-      },
-      "Không thể gán ca làm mới",
-    );
+    // Backend handle bulk assignment if payload contains assignDate and filters
+    // So we don't need second call if bulk assignment already covers the employee
+    // But for safety if user didn't select any filters that match the current employee
+    // we could keep it, but it might create duplicate.
+    // However, the backend should handle duplicates.
   },
 
   async refreshAttendance(

@@ -189,7 +189,7 @@ const appendIfValue = (url: URL, key: string, value: string | number | undefined
   }
 };
 
-const toNumericIdList = (values: string[]): number[] =>
+const toNumericIdList = (values: (string | number)[]): number[] =>
   Array.from(
     new Set(
       values
@@ -417,7 +417,33 @@ export const shiftSchedulingApi = {
     );
   },
 
-  createShift(payload: Record<string, unknown>): Promise<ShiftMutationResponse> {
+  getShiftList(params: {
+    search?: string;
+    startTime?: string;
+    endTime?: string;
+    isActive?: boolean;
+    skip?: number;
+    take?: number;
+  }): Promise<{ items: ShiftOptionApiItem[]; totalCount: number }> {
+    const url = new URL(`${API_URL}/shifts/list`);
+    if (params.search) url.searchParams.set("search", params.search);
+    if (params.startTime) url.searchParams.set("startTime", params.startTime);
+    if (params.endTime) url.searchParams.set("endTime", params.endTime);
+    if (params.isActive !== undefined) url.searchParams.set("isActive", String(params.isActive));
+    url.searchParams.set("skip", String(params.skip || 0));
+    url.searchParams.set("take", String(params.take || 10));
+
+    return requestJson<any>(
+      url.toString(),
+      { method: "GET" },
+      "Không thể tải danh sách ca làm việc",
+    ).then(response => ({
+      items: response.items || response.Items || [],
+      totalCount: response.totalCount ?? response.TotalCount ?? 0
+    }));
+  },
+
+  createShift(payload: any): Promise<ShiftMutationResponse> {
     return requestJson<ShiftMutationResponse>(
       `${API_URL}/shifts`,
       {
@@ -425,6 +451,25 @@ export const shiftSchedulingApi = {
         body: JSON.stringify(payload),
       },
       "Không thể tạo ca làm",
+    );
+  },
+
+  updateShift(shiftId: number, payload: any): Promise<void> {
+    return requestJson<void>(
+      `${API_URL}/shifts/${shiftId}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      },
+      "Không thể cập nhật ca làm",
+    );
+  },
+
+  deleteShift(shiftId: number): Promise<void> {
+    return requestJson<void>(
+      `${API_URL}/shifts/${shiftId}`,
+      { method: "DELETE" },
+      "Không thể xóa ca làm",
     );
   },
 

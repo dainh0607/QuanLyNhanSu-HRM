@@ -43,6 +43,8 @@ export interface ShiftTemplateSubmitPayload extends ShiftTemplateAdvancedSetting
   departmentIds: string[];
   jobTitleIds: string[];
   repeatDays: string[];
+  note?: string | null;
+  assignDate?: string;
 }
 
 export interface ShiftTemplateInitialData extends Partial<ShiftTemplateSubmitPayload> {

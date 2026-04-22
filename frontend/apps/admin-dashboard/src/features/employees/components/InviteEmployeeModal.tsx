@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { authService } from '../../../services/authService';
 import { employeeService } from '../../../services/employeeService';
 import { useToast } from '../../../hooks/useToast';
@@ -104,6 +104,7 @@ const InviteEmployeeModal: React.FC<InviteEmployeeModalProps> = ({ isOpen, onClo
           token: result.token || '',
           expiresAt: result.expiresAt || '',
         });
+        onSuccess?.();
         showToast('Tạo link mời thành công!', 'success');
       } else {
         showToast(result.message || 'Lỗi khi tạo link mời', 'error');

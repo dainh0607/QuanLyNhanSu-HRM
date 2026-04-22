@@ -16,6 +16,8 @@ import QuickAddEmployeesModal from "./quick-add-employees/QuickAddEmployeesModal
 import ShiftCopyModal from "./shift-copy/ShiftCopyModal";
 import ShiftTabAssignModal from "./shift-tab-assign/ShiftTabAssignModal";
 import ShiftTemplateModal from "./shift-template/ShiftTemplateModal";
+import { shiftTemplateService } from "./shift-template/services/shiftTemplateService";
+import type { ShiftTemplateSubmitPayload } from "./shift-template/types";
 import type {
   ScheduleViewMode,
   ShiftScheduleFilters,
@@ -206,6 +208,15 @@ export const WeeklyShiftSchedulePage = () => {
     setSettings(nextSettings);
     setIsSettingsOpen(false);
     notify("Đã cập nhật cấu hình hiển thị bảng xếp ca.", "success");
+  };
+
+  const handleCreateShiftForSchedule = async (
+    payload: ShiftTemplateSubmitPayload,
+  ) => {
+    await shiftTemplateService.createShiftTemplate({
+      ...payload,
+      assignDate: payload.assignDate || toIsoDate(new Date()),
+    });
   };
 
   useEffect(() => {
@@ -429,7 +440,10 @@ export const WeeklyShiftSchedulePage = () => {
 
       <ShiftTemplateModal
         isOpen={isTemplateModalOpen}
+        mode="create"
+        submitLabel="Lưu / Công bố"
         onClose={() => setIsTemplateModalOpen(false)}
+        onSubmit={handleCreateShiftForSchedule}
         onSuccess={() => {
           setIsTemplateModalOpen(false);
           notify("Tạo ca làm thành công", "success");

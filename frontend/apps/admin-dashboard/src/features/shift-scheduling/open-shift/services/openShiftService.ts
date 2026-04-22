@@ -137,27 +137,15 @@ export const openShiftService = {
     const targets = await shiftTemplateService.getCatalogData();
 
     try {
-      const [shiftsResponse, templatesResponse] = await Promise.all([
-        shiftSchedulingApi.getShiftOptions({ isActive: true }),
-        shiftSchedulingApi.getShiftTemplates(),
-      ]);
+      const shiftsResponse = await shiftSchedulingApi.getShiftOptions({ isActive: true });
 
       const shiftOptions = (Array.isArray(shiftsResponse) ? shiftsResponse : [])
         .map((item) => mapApiTemplate(item as ShiftTemplateApiItem))
         .filter((item): item is OpenShiftTemplateOption => Boolean(item));
 
-      const templateOptions = (Array.isArray(templatesResponse) ? templatesResponse : [])
-        .map((item) => mapApiTemplate(item as ShiftTemplateApiItem))
-        .filter((item): item is OpenShiftTemplateOption => Boolean(item));
-
-      // Combine and deduplicate by shiftId
-      const merged = new Map<number, OpenShiftTemplateOption>();
-      shiftOptions.forEach(opt => merged.set(opt.shiftId, opt));
-      templateOptions.forEach(opt => merged.set(opt.shiftId, opt));
-
       return {
         targets,
-        shiftTemplates: sortTemplates(Array.from(merged.values())),
+        shiftTemplates: sortTemplates(shiftOptions),
       };
     } catch (error) {
       console.warn("Failed to load shift data from API. Returning catalog with empty shifts.", error);

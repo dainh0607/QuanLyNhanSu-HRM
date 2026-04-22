@@ -29,6 +29,88 @@ namespace ERP.Services.Attendance
             _userContext = userContext;
         }
 
+        private static string BuildAssignmentSlotKey(int employeeId, DateTime assignmentDate)
+            => $"{employeeId}:{assignmentDate:yyyy-MM-dd}";
+
+        private static HashSet<DayOfWeek> ResolveRepeatDays(IEnumerable<string>? repeatDays, DateTime fallbackDate)
+        {
+            var resolvedDays = new HashSet<DayOfWeek>();
+
+            foreach (var rawDay in repeatDays ?? Enumerable.Empty<string>())
+            {
+                if (string.IsNullOrWhiteSpace(rawDay))
+                {
+                    continue;
+                }
+
+                var token = rawDay.Trim()
+                    .ToLowerInvariant()
+                    .Replace("_", string.Empty)
+                    .Replace("-", string.Empty)
+                    .Replace(" ", string.Empty);
+
+                switch (token)
+                {
+                    case "1":
+                    case "mon":
+                    case "monday":
+                    case "t2":
+                    case "thu2":
+                        resolvedDays.Add(DayOfWeek.Monday);
+                        break;
+                    case "2":
+                    case "tue":
+                    case "tuesday":
+                    case "t3":
+                    case "thu3":
+                        resolvedDays.Add(DayOfWeek.Tuesday);
+                        break;
+                    case "3":
+                    case "wed":
+                    case "wednesday":
+                    case "t4":
+                    case "thu4":
+                        resolvedDays.Add(DayOfWeek.Wednesday);
+                        break;
+                    case "4":
+                    case "thu":
+                    case "thursday":
+                    case "t5":
+                    case "thu5":
+                        resolvedDays.Add(DayOfWeek.Thursday);
+                        break;
+                    case "5":
+                    case "fri":
+                    case "friday":
+                    case "t6":
+                    case "thu6":
+                        resolvedDays.Add(DayOfWeek.Friday);
+                        break;
+                    case "6":
+                    case "sat":
+                    case "saturday":
+                    case "t7":
+                    case "thu7":
+                        resolvedDays.Add(DayOfWeek.Saturday);
+                        break;
+                    case "7":
+                    case "sun":
+                    case "sunday":
+                    case "cn":
+                    case "chunhat":
+                        resolvedDays.Add(DayOfWeek.Sunday);
+                        break;
+                }
+            }
+
+            if (resolvedDays.Count == 0)
+            {
+                resolvedDays.Add(fallbackDate.DayOfWeek);
+            }
+
+            return resolvedDays;
+        }
+
         private async Task EnsureBranchAccess(int branchId)
         {
             var currentUserId = _userContext.UserId ?? 0;
@@ -240,14 +322,99 @@ namespace ERP.Services.Attendance
                     grace_period_out = dto.GracePeriodOut,
                     min_checkin_before = dto.MinCheckinBefore,
                     is_overnight = dto.IsOvernight,
-                    color = dto.Color,
-                    shift_type_id = dto.ShiftTypeId,
+                    color = string.IsNullOrEmpty(dto.Color) ? "#3B82F6" : dto.Color,
+                    shift_type_id = dto.ShiftTypeId == 0 ? 1 : dto.ShiftTypeId,
                     is_active = true,
-                    note = dto.Note
+                    note = dto.Note,
+                    default_branch_ids = dto.BranchIds != null ? string.Join(",", dto.BranchIds) : null,
+                    default_department_ids = dto.DepartmentIds != null ? string.Join(",", dto.DepartmentIds) : null,
+                    default_job_title_ids = dto.JobTitleIds != null ? string.Join(",", dto.JobTitleIds) : null
                 };
 
                 await _unitOfWork.Repository<Shifts>().AddAsync(shift);
                 await _unitOfWork.SaveChangesAsync();
+
+                // T300: Bulk Assignment if AssignDate and Filters are provided
+                if (dto.IsPublished && dto.AssignDate.HasValue &&
+                    (dto.BranchIds?.Any() == true || dto.DepartmentIds?.Any() == true || dto.JobTitleIds?.Any() == true))
+                {
+                    var query = _unitOfWork.Repository<ERP.Entities.Models.Employees>().AsQueryable()
+                        .Where(e => e.is_active && !e.is_resigned && e.branch_id != null && e.department_id != null);
+
+                    if (dto.BranchIds?.Any() == true) query = query.Where(e => e.branch_id != null && dto.BranchIds.Contains(e.branch_id.Value));
+                    if (dto.DepartmentIds?.Any() == true) query = query.Where(e => e.department_id != null && dto.DepartmentIds.Contains(e.department_id.Value));
+                    if (dto.JobTitleIds?.Any() == true) query = query.Where(e => e.job_title_id != null && dto.JobTitleIds.Contains(e.job_title_id.Value));
+
+                    var matchingEmployees = await query.ToListAsync();
+                    var startDate = dto.AssignDate.Value.Date;
+                    var horizonEndDate = startDate.AddMonths(6);
+                    var selectedDays = ResolveRepeatDays(dto.RepeatDays, startDate);
+
+                    var assignmentsToCreate = new List<ShiftAssignments>();
+                    var now = DateTime.UtcNow;
+                    var employeeIds = matchingEmployees.Select(emp => emp.Id).ToList();
+                    var existingAssignmentKeys = new HashSet<string>();
+
+                    if (employeeIds.Count > 0)
+                    {
+                        var existingAssignments = await _unitOfWork.Repository<ShiftAssignments>()
+                            .AsQueryable()
+                            .Where(a =>
+                                a.shift_id == shift.Id &&
+                                employeeIds.Contains(a.employee_id) &&
+                                a.assignment_date >= startDate &&
+                                a.assignment_date <= horizonEndDate)
+                            .Select(a => new
+                            {
+                                a.employee_id,
+                                AssignmentDate = a.assignment_date
+                            })
+                            .ToListAsync();
+
+                        existingAssignmentKeys = existingAssignments
+                            .Select(item => BuildAssignmentSlotKey(item.employee_id, item.AssignmentDate.Date))
+                            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    }
+
+                    foreach (var emp in matchingEmployees)
+                    {
+                        for (var date = startDate; date <= horizonEndDate; date = date.AddDays(1))
+                        {
+                            if (!selectedDays.Contains(date.DayOfWeek))
+                            {
+                                continue;
+                            }
+
+                            var slotKey = BuildAssignmentSlotKey(emp.Id, date);
+                            if (existingAssignmentKeys.Contains(slotKey))
+                            {
+                                continue;
+                            }
+
+                            assignmentsToCreate.Add(new ShiftAssignments
+                            {
+                                tenant_id = shift.tenant_id,
+                                employee_id = emp.Id,
+                                shift_id = shift.Id,
+                                assignment_date = date,
+                                is_published = true,
+                                status = "published",
+                                published_at = now,
+                                CreatedAt = now,
+                                UpdatedAt = now,
+                                note = "Tự động gán hàng loạt trong 6 tháng"
+                            });
+
+                            existingAssignmentKeys.Add(slotKey);
+                        }
+                    }
+
+                    if (assignmentsToCreate.Any())
+                    {
+                        await _unitOfWork.Repository<ShiftAssignments>().AddRangeAsync(assignmentsToCreate);
+                        await _unitOfWork.SaveChangesAsync();
+                    }
+                }
 
                 // 2. Optional Assignment (T201)
                 if (dto.AssignToUserId.HasValue && dto.AssignDate.HasValue)
@@ -257,10 +424,13 @@ namespace ERP.Services.Attendance
 
                     var assignment = new ShiftAssignments
                     {
+                        tenant_id = shift.tenant_id,
                         employee_id = user.employee_id,
                         shift_id = shift.Id,
                         assignment_date = dto.AssignDate.Value,
                         is_published = true,
+                        status = "published",
+                        published_at = DateTime.UtcNow,
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow,
                         note = "Tự động gán khi tạo ca (Template)"
@@ -318,6 +488,15 @@ namespace ERP.Services.Attendance
                 throw new Exception("Danh sách Chi nhánh, Phòng ban và Chức danh không được để trống.");
             }
 
+            // Verify Shift existence first to avoid FK constraint errors
+            var shiftExists = await _unitOfWork.Repository<Shifts>().AsQueryable()
+                .AnyAsync(s => s.Id == dto.ShiftId);
+
+            if (!shiftExists)
+            {
+                throw new Exception($"Lỗi: Loại ca làm việc (ID: {dto.ShiftId}) không tồn tại trong hệ thống hoặc bạn không có quyền truy cập. Vui lòng làm mới danh sách mẫu ca và thử lại.");
+            }
+
             await _unitOfWork.BeginTransactionAsync();
             try
             {
@@ -343,19 +522,64 @@ namespace ERP.Services.Attendance
                                 UpdatedAt = DateTime.UtcNow
                             };
 
+                            var dateOnly = dto.Date.Date;
+                            var nextDay = dateOnly.AddDays(1);
+
                             var existingList = await _unitOfWork.Repository<OpenShifts>()
                                 .FindAsync(o => o.shift_id == dto.ShiftId 
                                     && o.branch_id == bid 
                                     && o.department_id == did 
                                     && o.job_title_id == pid 
-                                    && o.open_date.Date == dto.Date.Date);
-                            if (existingList.Any()) {
+                                    && o.open_date >= dateOnly 
+                                    && o.open_date < nextDay);
+
+                            if (existingList.Any()) 
+                            {
                                 var existing = existingList.First();
                                 existing.required_quantity = dto.Quantity;
-                                existing.UpdatedAt = DateTime.UtcNow;
                                 _unitOfWork.Repository<OpenShifts>().Update(existing);
-                            } else {
+                            } 
+                            else 
+                            {
                                 await _unitOfWork.Repository<OpenShifts>().AddAsync(openShift);
+                            }
+
+                            // T300: Auto Assignment to employees if AutoPublish is enabled
+                            if (dto.IsAutoPublish)
+                            {
+                                var matchingEmployees = await _unitOfWork.Repository<ERP.Entities.Models.Employees>()
+                                    .AsQueryable()
+                                    .Where(e => e.branch_id == bid 
+                                             && e.department_id == did 
+                                             && e.job_title_id == pid 
+                                             && e.is_active 
+                                             && !e.is_resigned)
+                                    .ToListAsync();
+
+                                foreach (var emp in matchingEmployees)
+                                {
+                                    // Check if employee already has an assignment for this shift on this day to avoid duplicates
+                                    var existingAssignment = await _unitOfWork.Repository<ShiftAssignments>()
+                                        .AsQueryable()
+                                        .AnyAsync(a => a.employee_id == emp.Id 
+                                                    && a.shift_id == dto.ShiftId 
+                                                    && a.assignment_date.Date == dateOnly);
+
+                                    if (!existingAssignment)
+                                    {
+                                        var assignment = new ShiftAssignments
+                                        {
+                                            employee_id = emp.Id,
+                                            shift_id = dto.ShiftId,
+                                            assignment_date = dateOnly,
+                                            is_published = true,
+                                            CreatedAt = DateTime.UtcNow,
+                                            UpdatedAt = DateTime.UtcNow,
+                                            note = "Tự động gán từ Ca mở (Auto-Publish)"
+                                        };
+                                        await _unitOfWork.Repository<ShiftAssignments>().AddAsync(assignment);
+                                    }
+                                }
                             }
                         }
                     }

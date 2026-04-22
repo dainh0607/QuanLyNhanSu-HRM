@@ -257,16 +257,29 @@ namespace ERP.Entities
 
         public override async Task<int> SaveChangesAsync(System.Threading.CancellationToken cancellationToken = default)
         {
-            // ========== FIX #1: Multi-tenant Auto-assignment ==========
-            var entries = ChangeTracker.Entries()
-                .Where(e => e.Entity is ITenantEntity && e.State == EntityState.Added);
-
-            foreach (var entry in entries)
+            foreach (var entry in ChangeTracker.Entries())
             {
-                var tenantEntity = (ITenantEntity)entry.Entity;
-                if (!tenantEntity.tenant_id.HasValue && _currentUserContext.TenantId.HasValue)
+                // Multi-tenant Auto-assignment
+                if (entry.Entity is ITenantEntity tenantEntity && entry.State == EntityState.Added)
                 {
-                    tenantEntity.tenant_id = _currentUserContext.TenantId;
+                    if (!tenantEntity.tenant_id.HasValue && _currentUserContext.TenantId.HasValue)
+                    {
+                        tenantEntity.tenant_id = _currentUserContext.TenantId;
+                    }
+                }
+
+                // Audit Fields Auto-assignment
+                if (entry.Entity is AuditableEntity auditableEntity)
+                {
+                    if (entry.State == EntityState.Added)
+                    {
+                        auditableEntity.CreatedAt = DateTime.UtcNow;
+                    }
+                    
+                    if (entry.State == EntityState.Added || entry.State == EntityState.Modified)
+                    {
+                        auditableEntity.UpdatedAt = DateTime.UtcNow;
+                    }
                 }
             }
 

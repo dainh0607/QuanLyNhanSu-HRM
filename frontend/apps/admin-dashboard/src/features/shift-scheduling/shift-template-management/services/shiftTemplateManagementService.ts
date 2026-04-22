@@ -1,6 +1,9 @@
 import { shiftSchedulingApi } from "../../services/shiftSchedulingApi";
-import { getHoursBetween, getMinutesFromTime } from "../../utils/week";
-import type { ShiftTemplateInitialData } from "../../shift-template/types";
+import { getHoursBetween } from "../../utils/week";
+import type {
+  ShiftTemplateInitialData,
+  ShiftTemplateSubmitPayload,
+} from "../../shift-template/types";
 import { createXlsxBlob, triggerBlobDownload } from "../utils/exportXlsx";
 import type {
   ShiftTemplateListExportResult,
@@ -13,11 +16,19 @@ import type {
 interface ShiftTemplateApiItem {
   id?: number;
   Id?: number;
+  shiftId?: number | null;
+  ShiftId?: number | null;
   templateName?: string | null;
   template_name?: string | null;
   TemplateName?: string | null;
+  shiftName?: string | null;
   shift_name?: string | null;
   ShiftName?: string | null;
+  shiftCode?: string | null;
+  shift_code?: string | null;
+  ShiftCode?: string | null;
+  code?: string | null;
+  Code?: string | null;
   name?: string | null;
   Name?: string | null;
   startTime?: string | null;
@@ -59,15 +70,6 @@ const API_REPEAT_DAY_TO_ID: Record<number, string> = {
   6: "sat",
   7: "sun",
 };
-
-const normalizeSearchText = (value: string): string =>
-  value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
 
 const toStringArray = (values?: Array<number | string> | null): string[] =>
   Array.isArray(values)
@@ -135,25 +137,28 @@ const mapApiItemToListItem = (
 ): ShiftTemplateListItem | null => {
   const id = Number(item.id ?? item.Id);
   const name =
-    item.templateName ??
-    item.template_name ??
-    item.TemplateName ??
-    item.shift_name ??
+    item.shiftName ??
     item.ShiftName ??
+    item.shift_name ??
+    item.templateName ??
+    item.TemplateName ??
+    item.template_name ??
     item.name ??
     item.Name;
-  const startTime = normalizeTimeValue(item.startTime ?? item.start_time ?? item.StartTime);
-  const endTime = normalizeTimeValue(item.endTime ?? item.end_time ?? item.EndTime);
+  const startTime = normalizeTimeValue(item.startTime ?? item.start_time ?? item.StartTime ?? item.StartTime);
+  const endTime = normalizeTimeValue(item.endTime ?? item.end_time ?? item.EndTime ?? item.EndTime);
 
   if (!Number.isFinite(id) || !name?.trim() || !startTime || !endTime) {
     return null;
   }
 
+  const code = item.shiftCode ?? item.ShiftCode ?? item.code ?? item.Code ?? normalizeCode(name);
+
   return {
     id,
     shiftId: id,
     name: name.trim(),
-    code: normalizeCode(name),
+    code: code,
     startTime,
     endTime,
     durationHours: getHoursBetween(startTime, endTime),
@@ -177,96 +182,6 @@ const mapApiItemToListItem = (
   };
 };
 
-const doesShiftMatchTimeRange = (
-  item: ShiftTemplateListItem,
-  timeFrom: string,
-  timeTo: string,
-): boolean => {
-  if (!timeFrom && !timeTo) {
-    return true;
-  }
-
-  const shiftStart = getMinutesFromTime(item.startTime);
-  let shiftEnd = getMinutesFromTime(item.endTime);
-  if (shiftEnd <= shiftStart) {
-    shiftEnd += 24 * 60;
-  }
-
-  if (timeFrom) {
-    let queryFrom = getMinutesFromTime(timeFrom);
-    if (queryFrom > shiftEnd) {
-      queryFrom -= 24 * 60;
-    }
-
-    if (shiftStart < queryFrom) {
-      return false;
-    }
-  }
-
-  if (timeTo) {
-    let queryTo = getMinutesFromTime(timeTo);
-    if (queryTo <= shiftStart) {
-      queryTo += 24 * 60;
-    }
-
-    if (shiftEnd > queryTo) {
-      return false;
-    }
-  }
-
-  return true;
-};
-
-const applyFilters = (
-  items: ShiftTemplateListItem[],
-  filters: ShiftTemplateListQuery,
-): ShiftTemplateListItem[] => {
-  const normalizedSearch = normalizeSearchText(filters.searchTerm);
-
-  return items
-    .filter((item) => {
-      if (!normalizedSearch) {
-        return true;
-      }
-
-      const haystack = normalizeSearchText(`${item.name} ${item.code}`);
-      return haystack.includes(normalizedSearch);
-    })
-    .filter((item) =>
-      filters.status === "all"
-        ? true
-        : filters.status === "active"
-          ? item.isActive
-          : !item.isActive,
-    )
-    .filter((item) => doesShiftMatchTimeRange(item, filters.timeFrom, filters.timeTo))
-    .sort((left, right) => {
-      if (left.displayOrder !== right.displayOrder) {
-        return left.displayOrder - right.displayOrder;
-      }
-
-      return `${left.name}-${left.code}`.localeCompare(`${right.name}-${right.code}`, "vi");
-    });
-};
-
-const paginateItems = (
-  items: ShiftTemplateListItem[],
-  filters: ShiftTemplateListQuery,
-): ShiftTemplateListResponse => {
-  const safePageSize = Math.max(filters.pageSize, 1);
-  const totalCount = items.length;
-  const totalPages = Math.max(1, Math.ceil(totalCount / safePageSize));
-  const safePage = Math.min(Math.max(filters.page, 1), totalPages);
-  const startIndex = (safePage - 1) * safePageSize;
-
-  return {
-    items: items.slice(startIndex, startIndex + safePageSize),
-    totalCount,
-    page: safePage,
-    pageSize: safePageSize,
-  };
-};
-
 const toExportRows = (items: ShiftTemplateListItem[]): Array<Array<string | number>> => [
   ["STT", "Ten ca lam", "Tu khoa", "Gio cong", "Thoi gian", "Thu tu hien thi", "Trang thai"],
   ...items.map((item, index) => [
@@ -284,38 +199,76 @@ export const shiftTemplateManagementService = {
   async getShiftTemplates(
     filters: ShiftTemplateListQuery,
   ): Promise<ShiftTemplateListResponse> {
-    const response = await shiftSchedulingApi.getShiftTemplates() as ShiftTemplateApiItem[];
+    const response = await shiftSchedulingApi.getShiftList({
+      search: filters.searchTerm,
+      startTime: filters.timeFrom,
+      endTime: filters.timeTo,
+      isActive: filters.status === "active" ? true : filters.status === "inactive" ? false : undefined,
+      skip: (filters.page - 1) * filters.pageSize,
+      take: filters.pageSize,
+    });
 
-    const items = response
+    const items = response.items
       .map((item, index) => mapApiItemToListItem(item, index))
       .filter((item): item is ShiftTemplateListItem => Boolean(item));
 
-    return paginateItems(applyFilters(items, filters), filters);
+    return {
+      items,
+      totalCount: response.totalCount,
+      page: filters.page,
+      pageSize: filters.pageSize,
+    };
   },
 
   async getShiftTemplateDetail(
     templateId: number,
   ): Promise<ShiftTemplateInitialData> {
-    const response = await shiftSchedulingApi.getShiftTemplate(templateId) as ShiftTemplateApiItem;
+    const response = await shiftSchedulingApi.getShiftDetail(templateId) as ShiftTemplateApiItem;
     const mapped = mapApiItemToListItem(response, 0);
 
     if (mapped) {
       return mapped;
     }
 
-    throw new Error("Khong tim thay ca lam can chinh sua.");
+    throw new Error("Không tìm thấy ca làm cần chỉnh sửa.");
   },
 
   async updateShiftTemplate(
     payload: ShiftTemplateUpdatePayload,
   ): Promise<void> {
-    await shiftSchedulingApi.updateShiftTemplate(payload.id, payload.values);
+    const dto = {
+      shiftCode: normalizeCode(payload.values.name),
+      shiftName: payload.values.name,
+      startTime: payload.values.startTime,
+      endTime: payload.values.endTime,
+      isOvernight: payload.values.isCrossNight,
+      gracePeriodIn: Number(payload.values.allowedLateCheckInMinutes || 0),
+      gracePeriodOut: Number(payload.values.allowedEarlyCheckOutMinutes || 0),
+      note: payload.values.note,
+    };
+    await shiftSchedulingApi.updateShift(payload.id, dto);
   },
 
   async deleteShiftTemplate(
     templateId: number,
   ): Promise<void> {
-    await shiftSchedulingApi.deleteShiftTemplate(templateId);
+    await shiftSchedulingApi.deleteShift(templateId);
+  },
+
+  async createShift(
+    payload: ShiftTemplateSubmitPayload,
+  ): Promise<void> {
+    const dto = {
+      shiftCode: normalizeCode(payload.name),
+      shiftName: payload.name,
+      startTime: payload.startTime,
+      endTime: payload.endTime,
+      isOvernight: payload.isCrossNight,
+      gracePeriodIn: Number(payload.allowedLateCheckInMinutes || 0),
+      gracePeriodOut: Number(payload.allowedEarlyCheckOutMinutes || 0),
+      note: payload.note,
+    };
+    await shiftSchedulingApi.createShift(dto);
   },
 
   async exportShiftTemplates(

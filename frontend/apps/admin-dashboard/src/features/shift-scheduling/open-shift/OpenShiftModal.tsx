@@ -267,21 +267,12 @@ export const OpenShiftModal = ({
 
       onSuccess();
     } catch (error: any) {
-      console.error("Failed to create open shift.", error);
+      console.error("DEBUG: Open Shift Creation Error Object:", error);
       
       let message = "Không thể tạo ca mở. Vui lòng thử lại.";
-      if (error?.errors && typeof error.errors === "object") {
-        // Handle ASP.NET Core ValidationProblemDetails
-        const messages = Object.entries(error.errors)
-          .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
-          .join(" | ");
-        message = `Lỗi dữ liệu: ${messages}`;
-      } else if (error?.response?.data?.errors) {
-        const messages = Object.entries(error.response.data.errors)
-          .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
-          .join(" | ");
-        message = `Lỗi dữ liệu: ${messages}`;
-      } else if (error?.Message) {
+      
+      // Extract detailed error message from Backend
+      if (error?.Message) {
         message = error.Message;
       } else if (error?.message) {
         message = error.message;
@@ -357,7 +348,7 @@ export const OpenShiftModal = ({
                   </span>
                 </div>
 
-                <div className="mt-4">
+                <div className={`mt-4 rounded-2xl p-1 transition ${errors.shiftId ? 'bg-rose-50 ring-2 ring-rose-400' : ''}`}>
                   {formData.shiftTemplates.length > 0 ? (
                     <ShiftTypePicker
                       shiftTemplates={formData.shiftTemplates}
@@ -395,41 +386,97 @@ export const OpenShiftModal = ({
                     </div>
 
                     <div className="grid gap-4">
-                      <TagMultiSelectField
-                        label="Chi nhánh"
-                        placeholder="Chọn chi nhánh áp dụng"
-                        options={formData.targets.branches}
-                        selectedValues={branchIds}
-                        onChange={setBranchIds}
-                      />
+                      <div className="space-y-1">
+                        <TagMultiSelectField
+                          label="Chi nhánh"
+                          placeholder="Chọn chi nhánh áp dụng"
+                          options={formData.targets.branches}
+                          selectedValues={branchIds}
+                          onChange={(values) => {
+                            setBranchIds(values);
+                            setErrors(prev => ({ ...prev, branchIds: "" }));
+                          }}
+                          error={errors.branchIds}
+                        />
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setBranchIds(formData.targets.branches.map(b => b.value));
+                              setErrors(prev => ({ ...prev, branchIds: "" }));
+                            }}
+                            className="text-[11px] font-medium text-[#134BBA] transition hover:underline"
+                          >
+                            Chọn tất cả chi nhánh
+                          </button>
+                        </div>
+                      </div>
 
-                      <TagMultiSelectField
-                        label="Phòng ban"
-                        placeholder="Chọn phòng ban"
-                        options={filteredDepartments}
-                        selectedValues={departmentIds}
-                        onChange={setDepartmentIds}
-                        helperText={
-                          branchIds.length
-                            ? "Đang lọc theo chi nhánh đang chọn."
-                            : "Chọn chi nhánh để thu gọn danh sách phòng ban."
-                        }
-                        disabled={!filteredDepartments.length}
-                      />
+                      <div className="space-y-1">
+                        <TagMultiSelectField
+                          label="Phòng ban"
+                          placeholder="Chọn phòng ban"
+                          options={filteredDepartments}
+                          selectedValues={departmentIds}
+                          onChange={(values) => {
+                            setDepartmentIds(values);
+                            setErrors(prev => ({ ...prev, departmentIds: "" }));
+                          }}
+                          helperText={
+                            branchIds.length
+                              ? "Đang lọc theo chi nhánh đang chọn."
+                              : "Chọn chi nhánh để thu gọn danh sách phòng ban."
+                          }
+                          error={errors.departmentIds}
+                          disabled={!filteredDepartments.length}
+                        />
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            disabled={!filteredDepartments.length}
+                            onClick={() => {
+                              setDepartmentIds(filteredDepartments.map(d => d.value));
+                              setErrors(prev => ({ ...prev, departmentIds: "" }));
+                            }}
+                            className="text-[11px] font-medium text-[#134BBA] transition hover:underline disabled:no-underline disabled:opacity-40"
+                          >
+                            Chọn tất cả phòng ban ({filteredDepartments.length})
+                          </button>
+                        </div>
+                      </div>
 
-                      <TagMultiSelectField
-                        label="Chức danh"
-                        placeholder="Chọn chức danh"
-                        options={filteredJobTitles}
-                        selectedValues={jobTitleIds}
-                        onChange={setJobTitleIds}
-                        helperText={
-                          branchIds.length
-                            ? "Đang lọc theo chi nhánh đang chọn."
-                            : "Chọn chi nhánh để thu gọn danh sách chức danh."
-                        }
-                        disabled={!filteredJobTitles.length}
-                      />
+                      <div className="space-y-1">
+                        <TagMultiSelectField
+                          label="Chức danh"
+                          placeholder="Chọn chức danh"
+                          options={filteredJobTitles}
+                          selectedValues={jobTitleIds}
+                          onChange={(values) => {
+                            setJobTitleIds(values);
+                            setErrors(prev => ({ ...prev, jobTitleIds: "" }));
+                          }}
+                          helperText={
+                            branchIds.length
+                              ? "Đang lọc theo chi nhánh đang chọn."
+                              : "Chọn chi nhánh để thu gọn danh sách chức danh."
+                          }
+                          error={errors.jobTitleIds}
+                          disabled={!filteredJobTitles.length}
+                        />
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            disabled={!filteredJobTitles.length}
+                            onClick={() => {
+                              setJobTitleIds(filteredJobTitles.map(j => j.value));
+                              setErrors(prev => ({ ...prev, jobTitleIds: "" }));
+                            }}
+                            className="text-[11px] font-medium text-[#134BBA] transition hover:underline disabled:no-underline disabled:opacity-40"
+                          >
+                            Chọn tất cả chức danh ({filteredJobTitles.length})
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
 

@@ -36,5 +36,12 @@ namespace ERP.DTOs.Attendance
         // Optional assignment parameters (T201)
         public int? AssignToUserId { get; set; }
         public DateTime? AssignDate { get; set; }
+
+        // Bulk assignment filters (T300)
+        public int[]? BranchIds { get; set; }
+        public int[]? DepartmentIds { get; set; }
+        public int[]? JobTitleIds { get; set; }
+        public string[]? RepeatDays { get; set; }
+        public bool IsPublished { get; set; } = false;
     }
 }

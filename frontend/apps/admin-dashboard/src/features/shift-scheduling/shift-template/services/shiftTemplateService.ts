@@ -82,7 +82,7 @@ const buildBranchRelations = async (): Promise<ShiftTemplateCatalogData> => {
     departments: sortOptions(
       (Array.isArray(departments) ? departments : [])
         .map((item) => {
-          const id = item.id ?? item.Id;
+          const id = item.id;
           return toShiftTargetOption(item, id ? departmentBranchMap.get(String(id)) : undefined);
         })
         .filter((item): item is ShiftTemplateTargetOption => Boolean(item)),
@@ -90,7 +90,7 @@ const buildBranchRelations = async (): Promise<ShiftTemplateCatalogData> => {
     jobTitles: sortOptions(
       (Array.isArray(jobTitles) ? jobTitles : [])
         .map((item) => {
-          const id = item.id ?? item.Id;
+          const id = item.id;
           return toShiftTargetOption(item, id ? jobTitleBranchMap.get(String(id)) : undefined);
         })
         .filter((item): item is ShiftTemplateTargetOption => Boolean(item)),
@@ -134,7 +134,24 @@ export const shiftTemplateService = {
   async createShiftTemplate(
     payload: ShiftTemplateSubmitPayload,
   ): Promise<void> {
-    await shiftSchedulingApi.createShiftTemplate(payload);
+    // Standardize to create Shifts record (Master Data)
+    const dto = {
+      shiftCode: payload.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "_").toUpperCase().slice(0, 20),
+      shiftName: payload.name,
+      startTime: payload.startTime.includes(":") && payload.startTime.split(":").length === 2 ? `${payload.startTime}:00` : payload.startTime,
+      endTime: payload.endTime.includes(":") && payload.endTime.split(":").length === 2 ? `${payload.endTime}:00` : payload.endTime,
+      isOvernight: payload.isCrossNight,
+      gracePeriodIn: Number(payload.allowedLateCheckInMinutes || 0),
+      gracePeriodOut: Number(payload.allowedEarlyCheckOutMinutes || 0),
+      note: payload.note,
+      branchIds: payload.branchIds.map(Number),
+      departmentIds: payload.departmentIds.map(Number),
+      jobTitleIds: payload.jobTitleIds.map(Number),
+      isPublished: true,
+      assignDate: payload.assignDate,
+      repeatDays: payload.repeatDays,
+    };
+    await shiftSchedulingApi.createShift(dto);
   },
 };
 

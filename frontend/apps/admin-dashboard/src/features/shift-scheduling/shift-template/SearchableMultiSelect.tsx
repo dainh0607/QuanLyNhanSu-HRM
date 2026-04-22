@@ -88,9 +88,9 @@ export const SearchableMultiSelect = ({
           <div className="min-w-0 flex-1">
             {selectedOptions.length > 0 ? (
               <div className="flex flex-wrap gap-1.5">
-                {selectedOptions.slice(0, 3).map((option) => (
+                {selectedOptions.slice(0, 3).map((option, index) => (
                   <span
-                    key={option.value}
+                    key={option.value || `selected-${index}`}
                     className="rounded-full bg-[#EFF6FF] px-2.5 py-1 text-xs font-medium text-[#134BBA]"
                   >
                     {option.label}
@@ -129,11 +129,11 @@ export const SearchableMultiSelect = ({
 
             <div className="mt-3 max-h-56 overflow-y-auto rounded-xl border border-slate-100 shift-scheduling-scrollbar">
               {filteredOptions.length > 0 ? (
-                filteredOptions.map((option) => {
+                filteredOptions.map((option, index) => {
                   const checked = selectedValues.includes(option.value);
                   return (
                     <label
-                      key={option.value}
+                      key={option.value || `option-${index}`}
                       className="flex cursor-pointer items-center gap-3 border-b border-slate-50 px-3 py-2.5 text-sm text-slate-700 last:border-b-0 hover:bg-slate-50"
                     >
                       <input

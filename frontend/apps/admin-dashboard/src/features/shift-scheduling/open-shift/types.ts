@@ -23,9 +23,9 @@ export interface OpenShiftCreatePayload {
   startTime: string;
   endTime: string;
   openDate: string;
-  branchIds: string[];
-  departmentIds: string[];
-  jobTitleIds: string[];
+  branchIds: number[];
+  departmentIds: number[];
+  jobTitleIds: number[];
   requiredQuantity: number;
   autoPublish: boolean;
   note?: string | null;

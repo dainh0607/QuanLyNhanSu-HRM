@@ -39,8 +39,6 @@ import type {
   AssetMetadata,
   AssetLocationMetadata,
   AttendanceSettings,
-  DocumentFolder,
-  DocumentFile,
   PaginatedResponse,
   EmployeePromotionHistoryProfile,
   EmployeePromotionHistoryFilters,
@@ -1662,6 +1660,62 @@ const deleteEmployeeDocument = async (documentId: number): Promise<void> => {
   );
 };
 
+const createDocumentFolderMock = async (
+  _employeeId: number,
+  _name: string,
+): Promise<void> => {
+  throw createMissingEndpointError("PUT", "Thu muc tai lieu");
+};
+
+const uploadDocumentFileMock = async (
+  employeeId: number,
+  file: File,
+  folderId: string,
+): Promise<void> => {
+  await uploadEmployeeDocument(employeeId, file, folderId);
+};
+
+const deleteDocumentFileMock = async (
+  _employeeId: number,
+  fileId: string,
+  _folderId: string,
+): Promise<void> => {
+  const documentId = Number(fileId);
+  if (!Number.isFinite(documentId)) {
+    throw new Error("Khong xac dinh duoc tep can xoa.");
+  }
+
+  await deleteEmployeeDocument(documentId);
+};
+
+const renameDocumentFileMock = async (
+  _employeeId: number,
+  _fileId: string,
+  _newName: string,
+): Promise<void> => {
+  throw createMissingEndpointError("PUT", "Doi ten tai lieu");
+};
+
+const renameDocumentFolderMock = async (
+  _employeeId: number,
+  _folderId: string,
+  _newName: string,
+): Promise<void> => {
+  throw createMissingEndpointError("PUT", "Doi ten thu muc tai lieu");
+};
+
+const deleteDocumentFolderMock = async (
+  _employeeId: number,
+  _folderId: string,
+): Promise<void> => {
+  throw createMissingEndpointError("PUT", "Thu muc tai lieu");
+};
+
+const updateAttendanceSettingsMock = async (
+  employeeId: number,
+  payload: AttendanceSettings,
+): Promise<unknown> => updateAttendanceSettings(employeeId, payload);
+
 const getEmployeeMobilePermissions = async (
   employeeId: number,
 ): Promise<PermissionItem[]> => {
@@ -1763,8 +1817,15 @@ export {
   getEmployeeDocuments,
   uploadEmployeeDocument,
   deleteEmployeeDocument,
+  createDocumentFolderMock,
+  uploadDocumentFileMock,
+  deleteDocumentFileMock,
+  renameDocumentFileMock,
+  renameDocumentFolderMock,
+  deleteDocumentFolderMock,
   getEmployeeMobilePermissions,
   updateEmployeeMobilePermissions,
+  updateAttendanceSettingsMock,
   getPromotionHistoryList,
   deletePromotionHistory,
   bulkDeletePromotionHistory,
@@ -1809,10 +1870,17 @@ export const employeeProfileService = {
   getEmployeeDocuments,
   uploadEmployeeDocument,
   deleteEmployeeDocument,
+  createDocumentFolderMock,
+  uploadDocumentFileMock,
+  deleteDocumentFileMock,
+  renameDocumentFileMock,
+  renameDocumentFolderMock,
+  deleteDocumentFolderMock,
   getEmployeeMobilePermissions,
   updateEmployeeMobilePermissions,
   getAttendanceSettings,
   updateAttendanceSettings,
+  updateAttendanceSettingsMock,
   getTimekeepingMachineMappings,
   updateTimekeepingMachineMappings,
   getEmployeeDevices,

@@ -309,6 +309,7 @@ export const ShiftTemplateModal = ({
       breakDurationMinutes: formValues.breakDurationMinutes,
       allowedLateCheckInMinutes: formValues.allowedLateCheckInMinutes,
       allowedEarlyCheckOutMinutes: formValues.allowedEarlyCheckOutMinutes,
+      assignDate: assignmentContext?.assignmentDate,
     };
 
     setSubmitError("");

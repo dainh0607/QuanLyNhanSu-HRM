@@ -649,7 +649,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
 
   const handleSaveAttendance = async (settings: AttendanceSettings) => {
     try {
-      await employeeService.updateAttendanceSettingsMock(employee.id, settings);
+      await employeeService.updateAttendanceSettings(employee.id, settings);
       showToast('Cập nhật cấu hình chấm công thành công.', 'success');
       onSaved?.();
     } catch (error) {
@@ -660,7 +660,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
 
   const handleSaveTimekeepingMappings = async (mappings: TimekeepingMachineMapping[]) => {
     try {
-      await (employeeService as any).updateTimekeepingMachineMappingsMock(employee.id, mappings);
+      await employeeService.updateTimekeepingMachineMappings(employee.id, mappings);
       showToast('Cập nhật ánh xạ máy chấm công thành công.', 'success');
       onSaved?.();
     } catch (error) {
@@ -694,7 +694,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
   const handleResetMobilePermissions = async () => {
     try {
       // Giả lập lấy cấu hình mặc định (ở đây ta dùng lại mock fetch của service)
-      const fullProfile = await (employeeService as any).getEmployeeFullProfile(employee.id);
+      const fullProfile = await employeeService.getEmployeeFullProfile(employee.id);
       return fullProfile.mobilePermissions || [];
     } catch (error) {
       showToast('Không thể tải cấu hình mặc định.', 'error');
