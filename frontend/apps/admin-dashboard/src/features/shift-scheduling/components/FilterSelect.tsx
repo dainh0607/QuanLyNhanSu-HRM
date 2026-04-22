@@ -34,7 +34,7 @@ export const FilterSelect = ({
         } pr-8 text-sm font-medium text-slate-700 outline-none transition focus:border-[#134BBA] focus:ring-2 focus:ring-[#BFDBFE]`}
       >
         {options.map((option) => (
-          <option key={`${label}-${option.value || "all"}-${option.label}`} value={option.value}>
+          <option key={option.value || "all"} value={option.value}>
             {option.label}
           </option>
         ))}

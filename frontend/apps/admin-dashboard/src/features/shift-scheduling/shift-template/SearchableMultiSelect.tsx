@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ShiftTemplateTargetOption } from "./types";
 
 interface SearchableMultiSelectProps {
@@ -43,11 +43,8 @@ export const SearchableMultiSelect = ({
     return () => window.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
-  const selectedLabels = useMemo(
-    () =>
-      options
-        .filter((option) => selectedValues.includes(option.value))
-        .map((option) => option.label),
+  const selectedOptions = useMemo(
+    () => options.filter((option) => selectedValues.includes(option.value)),
     [options, selectedValues],
   );
 
@@ -89,19 +86,19 @@ export const SearchableMultiSelect = ({
           } ${disabled ? "cursor-not-allowed bg-slate-50 text-slate-400" : ""}`}
         >
           <div className="min-w-0 flex-1">
-            {selectedLabels.length > 0 ? (
+            {selectedOptions.length > 0 ? (
               <div className="flex flex-wrap gap-1.5">
-                {selectedLabels.slice(0, 3).map((item) => (
+                {selectedOptions.slice(0, 3).map((option) => (
                   <span
-                    key={item}
+                    key={option.value}
                     className="rounded-full bg-[#EFF6FF] px-2.5 py-1 text-xs font-medium text-[#134BBA]"
                   >
-                    {item}
+                    {option.label}
                   </span>
                 ))}
-                {selectedLabels.length > 3 ? (
+                {selectedOptions.length > 3 ? (
                   <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500">
-                    +{selectedLabels.length - 3}
+                    +{selectedOptions.length - 3}
                   </span>
                 ) : null}
               </div>
