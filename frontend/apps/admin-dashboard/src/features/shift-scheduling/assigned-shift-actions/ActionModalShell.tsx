@@ -24,7 +24,7 @@ export const ActionModalShell = ({
   }
 
   return (
-    <div className="fixed inset-0 z-[560] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[560] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm antialiased">
       <div
         className={`flex max-h-[90vh] w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl ${widthClassName}`}
       >

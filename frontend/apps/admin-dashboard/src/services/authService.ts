@@ -547,4 +547,47 @@ export const authService = {
     setAuthSession(user, token);
     rememberAuthCheck(user);
   },
+
+  invite: async (data: {
+    email: string;
+    fullName: string;
+    departmentId?: number;
+    jobTitleId?: number;
+    expirationDays?: number;
+  }): Promise<{
+    success: boolean;
+    message: string;
+    invitationLink?: string;
+    token?: string;
+    expiresAt?: string;
+  }> => {
+    try {
+      const response = await authFetch(`${API_URL}/auth/invite`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+
+      const result = await readJsonSafely<any>(response);
+
+      if (response.ok && result?.success) {
+        return {
+          success: true,
+          message: result.message || "Tạo link mời thành công.",
+          invitationLink: result.invitationLink,
+          token: result.token,
+          expiresAt: result.expiresAt,
+        };
+      }
+
+      return {
+        success: false,
+        message: result?.message || "Không thể tạo link mời.",
+      };
+    } catch {
+      return {
+        success: false,
+        message: "Lỗi kết nối khi tạo link mời.",
+      };
+    }
+  },
 };

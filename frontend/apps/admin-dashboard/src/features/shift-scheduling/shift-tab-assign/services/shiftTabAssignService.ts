@@ -1,6 +1,5 @@
 import { employeeListService } from "../../../../services/employee/list";
 import { API_URL, requestJson } from "../../../../services/employee/core";
-import { getRuntimeShiftTemplateCatalog } from "../../open-shift/openShiftRuntimeStore";
 import { weeklyShiftScheduleService } from "../../services/weeklyShiftScheduleService";
 import type { ShiftScheduleGridData } from "../../types";
 import {
@@ -19,22 +18,31 @@ import type {
 interface ShiftCatalogApiItem {
   id?: number;
   Id?: number;
-  shift_id?: number;
+  shiftId?: number;
   ShiftId?: number;
-  shift_name?: string;
+  shift_id?: number;
+  shiftName?: string;
   ShiftName?: string;
-  start_time?: string;
+  shift_name?: string;
+  name?: string;
+  Name?: string;
+  startTime?: string;
   StartTime?: string;
-  end_time?: string;
+  start_time?: string;
+  endTime?: string;
   EndTime?: string;
+  end_time?: string;
   color?: string | null;
   Color?: string | null;
-  branch_id?: number | null;
+  branchId?: number | null;
   BranchId?: number | null;
-  branch_name?: string | null;
+  branch_id?: number | null;
+  branchName?: string | null;
   BranchName?: string | null;
-  branch_ids?: Array<number | string> | null;
+  branch_name?: string | null;
+  branchIds?: Array<number | string> | null;
   BranchIds?: Array<number | string> | null;
+  branch_ids?: Array<number | string> | null;
 }
 
 const DEFAULT_SCHEDULE_FILTERS: ShiftTabAssignScheduleFilters = {
@@ -106,10 +114,10 @@ const getPrimaryBranchId = (
 };
 
 const mapShiftCatalogItem = (item: ShiftCatalogApiItem): ShiftTabAssignTab | null => {
-  const shiftId = item.shift_id ?? item.ShiftId ?? item.id ?? item.Id ?? null;
-  const shiftName = item.shift_name ?? item.ShiftName ?? "";
-  const startTime = formatTime(item.start_time ?? item.StartTime ?? "");
-  const endTime = formatTime(item.end_time ?? item.EndTime ?? "");
+  const shiftId = item.shiftId ?? item.ShiftId ?? item.shift_id ?? item.id ?? item.Id ?? null;
+  const shiftName = item.shiftName ?? item.ShiftName ?? item.shift_name ?? item.name ?? item.Name ?? "";
+  const startTime = formatTime(item.startTime ?? item.StartTime ?? item.start_time ?? "");
+  const endTime = formatTime(item.endTime ?? item.EndTime ?? item.end_time ?? "");
 
   if (!shiftName || !startTime || !endTime) {
     return null;
@@ -122,46 +130,14 @@ const mapShiftCatalogItem = (item: ShiftCatalogApiItem): ShiftTabAssignTab | nul
     startTime,
     endTime,
     branchId:
-      item.branch_id ??
+      item.branchId ??
       item.BranchId ??
-      getPrimaryBranchId(item.branch_ids ?? item.BranchIds) ??
+      item.branch_id ??
+      getPrimaryBranchId(item.branchIds ?? item.BranchIds ?? item.branch_ids) ??
       null,
-    branchName: item.branch_name ?? item.BranchName ?? null,
+    branchName: item.branchName ?? item.BranchName ?? item.branch_name ?? null,
     days: [],
   };
-};
-
-const mapRuntimeShiftCatalogItem = (
-  item: ReturnType<typeof getRuntimeShiftTemplateCatalog>[number],
-): ShiftTabAssignTab => ({
-  key: getTabKey(item.shiftId, item.name, item.startTime, item.endTime),
-  shiftId: item.shiftId,
-  shiftName: item.name,
-  startTime: item.startTime,
-  endTime: item.endTime,
-  branchId: getPrimaryBranchId(item.branchIds),
-  branchName: null,
-  days: [],
-});
-
-const mergeShiftCatalogWithRuntime = (
-  items: ShiftTabAssignTab[],
-  branchId: string,
-): ShiftTabAssignTab[] => {
-  const merged = new Map<string, ShiftTabAssignTab>();
-
-  items.forEach((item) => {
-    merged.set(item.key, item);
-  });
-
-  getRuntimeShiftTemplateCatalog()
-    .map((item) => mapRuntimeShiftCatalogItem(item))
-    .filter((item) => !branchId || item.branchId === null || String(item.branchId) === branchId)
-    .forEach((item) => {
-      merged.set(item.key, item);
-    });
-
-  return Array.from(merged.values());
 };
 
 const loadShiftCatalog = async (
@@ -173,22 +149,17 @@ const loadShiftCatalog = async (
     url.searchParams.set("branchId", branchId);
   }
 
-  try {
-    const response = await requestJson<ShiftCatalogApiItem[]>(
-      url.toString(),
-      { method: "GET" },
-      "Failed to load shift list",
-    );
+  const response = await requestJson<ShiftCatalogApiItem[]>(
+    url.toString(),
+    { method: "GET" },
+    "Failed to load shift list",
+  );
 
-    const mapped = response
-      .map((item) => mapShiftCatalogItem(item))
-      .filter((item): item is ShiftTabAssignTab => Boolean(item));
+  const items = Array.isArray(response) ? response : [];
 
-    return mergeShiftCatalogWithRuntime(mapped, branchId);
-  } catch (error) {
-    console.warn("Shift catalog API is unavailable, using runtime shift catalog.", error);
-    return mergeShiftCatalogWithRuntime([], branchId);
-  }
+  return items
+    .map((item) => mapShiftCatalogItem(item))
+    .filter((item): item is ShiftTabAssignTab => Boolean(item));
 };
 
 const enrichPhones = async (

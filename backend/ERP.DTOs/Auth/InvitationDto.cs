@@ -7,13 +7,17 @@ namespace ERP.DTOs.Auth
     {
         [Required]
         [EmailAddress]
-        public string Email { get; set; }
+        public string Email { get; set; } = string.Empty;
 
         [Required]
         [StringLength(100)]
-        public string FullName { get; set; }
+        public string FullName { get; set; } = string.Empty;
 
         public int? EmployeeId { get; set; }
+
+        public int? DepartmentId { get; set; }
+
+        public int? JobTitleId { get; set; }
         
         public int ExpirationDays { get; set; } = 7;
     }
@@ -21,17 +25,19 @@ namespace ERP.DTOs.Auth
     public class InvitationResponseDto
     {
         public bool Success { get; set; }
-        public string Message { get; set; }
-        public string InvitationLink { get; set; }
-        public string Token { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public string InvitationLink { get; set; } = string.Empty;
+        public string Token { get; set; } = string.Empty;
         public DateTime ExpiresAt { get; set; }
     }
 
     public class InvitationValidationDto
     {
         public bool Valid { get; set; }
-        public string Email { get; set; }
-        public string FullName { get; set; }
-        public string Message { get; set; }
+        public string Email { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public int? DepartmentId { get; set; }
+        public int? JobTitleId { get; set; }
+        public string Message { get; set; } = string.Empty;
     }
 }

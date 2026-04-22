@@ -1,5 +1,4 @@
 import { employeeService } from "../../../../services/employeeService";
-import { registerRuntimeShiftTemplate } from "../../open-shift/openShiftRuntimeStore";
 import { shiftSchedulingApi } from "../../services/shiftSchedulingApi";
 import type {
   ShiftTemplateCatalogData,
@@ -11,10 +10,12 @@ const sortOptions = <T extends { label: string }>(options: T[]): T[] =>
   [...options].sort((left, right) => left.label.localeCompare(right.label, "vi"));
 
 const toShiftTargetOption = (
-  value: number | string | undefined | null,
-  label: string | undefined | null,
+  item: any,
   branchIds?: Set<string>,
 ): ShiftTemplateTargetOption | null => {
+  const value = item.id ?? item.Id ?? item.value ?? item.Value;
+  const label = item.name ?? item.Name ?? item.label ?? item.Label ?? item.fullName ?? item.FullName;
+
   if (value === undefined || value === null || !label?.trim()) {
     return null;
   }
@@ -37,88 +38,59 @@ const buildBranchRelations = async (): Promise<ShiftTemplateCatalogData> => {
   const departmentBranchMap = new Map<string, Set<string>>();
   const jobTitleBranchMap = new Map<string, Set<string>>();
 
-  employeesResponse.items.forEach((employee) => {
-    const branchId = employee.branchId ? String(employee.branchId) : "";
-    if (!branchId) {
+  // Extract employees array safely
+  const employeeItems = Array.isArray(employeesResponse) 
+    ? employeesResponse 
+    : (employeesResponse as any)?.items || [];
+
+  (employeeItems as any[]).forEach((employee) => {
+    const branchId = employee.branchId ?? employee.BranchId ?? employee.branch_id;
+    if (branchId === undefined || branchId === null) {
       return;
     }
 
-    if (employee.departmentId) {
-      const key = String(employee.departmentId);
+    const branchIdStr = String(branchId);
+
+    const deptId = employee.departmentId ?? employee.DepartmentId ?? employee.department_id;
+    if (deptId !== undefined && deptId !== null) {
+      const key = String(deptId);
       const entry = departmentBranchMap.get(key) ?? new Set<string>();
-      entry.add(branchId);
+      entry.add(branchIdStr);
       departmentBranchMap.set(key, entry);
     }
 
-    if (employee.jobTitleId) {
-      const key = String(employee.jobTitleId);
+    const titleId = employee.jobTitleId ?? employee.JobTitleId ?? employee.job_title_id ?? employee.positionId ?? employee.PositionId;
+    if (titleId !== undefined && titleId !== null) {
+      const key = String(titleId);
       const entry = jobTitleBranchMap.get(key) ?? new Set<string>();
-      entry.add(branchId);
+      entry.add(branchIdStr);
       jobTitleBranchMap.set(key, entry);
     }
   });
 
   return {
     branches: sortOptions(
-      branches
-        .map((item) => toShiftTargetOption(item.id, item.name))
+      (Array.isArray(branches) ? branches : [])
+        .map((item) => toShiftTargetOption(item))
         .filter((item): item is ShiftTemplateTargetOption => Boolean(item)),
     ),
     departments: sortOptions(
-      departments
-        .map((item) =>
-          toShiftTargetOption(item.id, item.name, departmentBranchMap.get(String(item.id))),
-        )
+      (Array.isArray(departments) ? departments : [])
+        .map((item) => {
+          const id = item.id ?? item.Id;
+          return toShiftTargetOption(item, id ? departmentBranchMap.get(String(id)) : undefined);
+        })
         .filter((item): item is ShiftTemplateTargetOption => Boolean(item)),
     ),
     jobTitles: sortOptions(
-      jobTitles
-        .map((item) =>
-          toShiftTargetOption(item.id, item.name, jobTitleBranchMap.get(String(item.id))),
-        )
+      (Array.isArray(jobTitles) ? jobTitles : [])
+        .map((item) => {
+          const id = item.id ?? item.Id;
+          return toShiftTargetOption(item, id ? jobTitleBranchMap.get(String(id)) : undefined);
+        })
         .filter((item): item is ShiftTemplateTargetOption => Boolean(item)),
     ),
   };
-};
-
-const getCreatedTemplateId = (
-  response:
-    | {
-        templateId?: number;
-        TemplateId?: number;
-        id?: number;
-        Id?: number;
-      }
-    | null
-    | undefined,
-): number | undefined => {
-  const rawValue =
-    response?.templateId ??
-    response?.TemplateId ??
-    response?.id ??
-    response?.Id;
-
-  return typeof rawValue === "number" && Number.isFinite(rawValue)
-    ? rawValue
-    : undefined;
-};
-
-const isRecoverableCreateError = (error: unknown): boolean => {
-  if (error instanceof TypeError) {
-    return true;
-  }
-
-  if (error instanceof Error) {
-    const normalizedMessage = error.message.trim().toLowerCase();
-    return (
-      normalizedMessage.includes("failed to fetch") ||
-      normalizedMessage.includes("khong the ket noi") ||
-      normalizedMessage.includes("không thể kết nối") ||
-      normalizedMessage.includes("incomplete_chunked_encoding")
-    );
-  }
-
-  return false;
 };
 
 export const shiftTemplateService = {
@@ -136,18 +108,18 @@ export const shiftTemplateService = {
 
       return {
         branches: sortOptions(
-          branches
-            .map((item) => toShiftTargetOption(item.id, item.name))
+          (Array.isArray(branches) ? branches : [])
+            .map((item) => toShiftTargetOption(item))
             .filter((item): item is ShiftTemplateTargetOption => Boolean(item)),
         ),
         departments: sortOptions(
-          departments
-            .map((item) => toShiftTargetOption(item.id, item.name))
+          (Array.isArray(departments) ? departments : [])
+            .map((item) => toShiftTargetOption(item))
             .filter((item): item is ShiftTemplateTargetOption => Boolean(item)),
         ),
         jobTitles: sortOptions(
-          jobTitles
-            .map((item) => toShiftTargetOption(item.id, item.name))
+          (Array.isArray(jobTitles) ? jobTitles : [])
+            .map((item) => toShiftTargetOption(item))
             .filter((item): item is ShiftTemplateTargetOption => Boolean(item)),
         ),
       };
@@ -157,24 +129,7 @@ export const shiftTemplateService = {
   async createShiftTemplate(
     payload: ShiftTemplateSubmitPayload,
   ): Promise<void> {
-    try {
-      const response = await shiftSchedulingApi.createShiftTemplate(payload);
-      const createdTemplateId = getCreatedTemplateId(response);
-
-      if (createdTemplateId !== undefined) {
-        registerRuntimeShiftTemplate(payload, createdTemplateId);
-      }
-    } catch (error) {
-      if (!isRecoverableCreateError(error)) {
-        throw error;
-      }
-
-      console.warn(
-        "Shift template API is temporarily unavailable. Falling back to runtime shift creation.",
-        error,
-      );
-      registerRuntimeShiftTemplate(payload);
-    }
+    await shiftSchedulingApi.createShiftTemplate(payload);
   },
 };
 

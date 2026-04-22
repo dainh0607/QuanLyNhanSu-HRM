@@ -1706,7 +1706,10 @@ namespace ERP.Services.Auth
                 {
                     Token = token,
                     Email = dto.Email,
+                    FullName = dto.FullName,
                     EmployeeId = dto.EmployeeId,
+                    DepartmentId = dto.DepartmentId,
+                    JobTitleId = dto.JobTitleId,
                     ExpiresAt = expiresAt,
                     CreatedBy = creatorId,
                     IsUsed = false,
@@ -1764,7 +1767,9 @@ namespace ERP.Services.Auth
                 {
                     Valid = true,
                     Email = invitation.Email,
-                    FullName = invitation.Employee?.full_name ?? "",
+                    FullName = invitation.FullName,
+                    DepartmentId = invitation.DepartmentId,
+                    JobTitleId = invitation.JobTitleId,
                     Message = "Mã mời hợp lệ."
                 };
             }

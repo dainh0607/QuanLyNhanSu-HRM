@@ -4,12 +4,14 @@ import { authService, hasPermission } from '../../../services/authService';
 interface ExportPageToolbarProps {
   onAddEmployee?: () => void;
   onAddBulkEmployee?: () => void;
+  onInviteEmployee?: () => void;
   onOpenBasicInfoExport?: () => void;
 }
 
 const ExportPageToolbar: React.FC<ExportPageToolbarProps> = ({
   onAddEmployee,
   onAddBulkEmployee,
+  onInviteEmployee,
   onOpenBasicInfoExport,
 }) => {
   const user = authService.getCurrentUser();
@@ -103,9 +105,18 @@ const ExportPageToolbar: React.FC<ExportPageToolbarProps> = ({
                     </div>
                     <button
                       type="button"
+                      onClick={onAddEmployee}
                       className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-[#192841]/5 hover:text-[#192841] transition-colors"
                     >
                       Thêm nhân viên mới
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onInviteEmployee}
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-[#134BBA] font-semibold hover:bg-[#134BBA]/5 transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">mail</span>
+                      Mời qua Email
                     </button>
                     <button
                       type="button"

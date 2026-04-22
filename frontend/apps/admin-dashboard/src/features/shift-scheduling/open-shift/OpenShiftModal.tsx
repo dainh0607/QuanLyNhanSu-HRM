@@ -255,7 +255,7 @@ export const OpenShiftModal = ({
   }
 
   return (
-    <div className="fixed inset-0 z-[590] flex items-center justify-center bg-slate-900/45 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[590] flex items-center justify-center bg-slate-900/45 p-4 backdrop-blur-sm antialiased">
       <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
         <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
           <div>

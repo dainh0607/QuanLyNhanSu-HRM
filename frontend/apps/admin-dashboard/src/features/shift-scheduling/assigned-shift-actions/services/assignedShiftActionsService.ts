@@ -68,24 +68,33 @@ interface PaginatedApiResponse<T> {
 interface ShiftOptionApiItem {
   id?: number;
   Id?: number;
-  shift_id?: number;
+  shiftId?: number;
   ShiftId?: number;
-  shift_name?: string;
+  shift_id?: number;
+  shiftName?: string;
   ShiftName?: string;
-  start_time?: string;
+  shift_name?: string;
+  name?: string;
+  Name?: string;
+  startTime?: string;
   StartTime?: string;
-  end_time?: string;
+  start_time?: string;
+  endTime?: string;
   EndTime?: string;
+  end_time?: string;
   branch_id?: number | null;
   BranchId?: number | null;
+  branchId?: number | null;
   branch_name?: string | null;
   BranchName?: string | null;
+  branchName?: string | null;
   color?: string | null;
   Color?: string | null;
   note?: string | null;
   Note?: string | null;
   branch_ids?: Array<number | string> | null;
   BranchIds?: Array<number | string> | null;
+  branchIds?: Array<number | string> | null;
 }
 
 interface ShiftCreateResponse {
@@ -296,27 +305,28 @@ const resolveLeaveTypeId = async (
 
 const mapShiftOption = (item: ShiftOptionApiItem): AvailableShiftOption | null => {
   const id = item.id ?? item.Id;
-  const shiftId = item.shift_id ?? item.ShiftId ?? id;
-  const name = item.shift_name ?? item.ShiftName;
-  const startTime = item.start_time ?? item.StartTime;
-  const endTime = item.end_time ?? item.EndTime;
+  const shiftId = item.shiftId ?? item.ShiftId ?? item.shift_id ?? id;
+  const name = item.shiftName ?? item.ShiftName ?? item.shift_name ?? item.name ?? item.Name;
+  const startTime = item.startTime ?? item.StartTime ?? item.start_time;
+  const endTime = item.endTime ?? item.EndTime ?? item.end_time;
 
-  if (!id || !shiftId || !name || !startTime || !endTime) {
+  if (id === undefined || id === null || shiftId === undefined || shiftId === null || !name?.trim() || !startTime || !endTime) {
     return null;
   }
 
   return {
     id,
     shiftId,
-    name,
+    name: name.trim(),
     startTime,
     endTime,
     branchId:
-      item.branch_id ??
+      item.branchId ??
       item.BranchId ??
-      getPrimaryBranchId(item.branch_ids ?? item.BranchIds) ??
+      item.branch_id ??
+      getPrimaryBranchId(item.branchIds ?? item.BranchIds ?? item.branch_ids) ??
       null,
-    branchName: item.branch_name ?? item.BranchName ?? null,
+    branchName: item.branchName ?? item.BranchName ?? item.branch_name ?? null,
     color: item.color ?? item.Color ?? null,
     note: item.note ?? item.Note ?? null,
   };
@@ -345,9 +355,7 @@ const filterHistoryByShiftDate = (
   history.filter((item) => sameDate(item.timestamp, shiftDate));
 
 export const assignedShiftActionsService = {
-  async getShiftAssignmentDetail(
-    context: AssignedShiftActionContext,
-  ): Promise<ShiftAssignmentDetail> {
+  getShiftAssignmentDetail: async (context: AssignedShiftActionContext): Promise<ShiftAssignmentDetail> => {
     let datedHistory: ShiftAttendanceHistoryItem[] = [];
 
     try {
@@ -395,21 +403,12 @@ export const assignedShiftActionsService = {
     const response = await shiftSchedulingApi.getShiftOptions({
       branchId: context.shift.branchId,
       isActive: true,
-    }); /*
-    if (context.shift.branchId) {
-      url.searchParams.set("branchId", String(context.shift.branchId));
-    }
-    url.searchParams.set("isActive", "true");
+    });
 
-    const response = await requestJson<ShiftOptionApiItem[]>(
-      url.toString(),
-      { method: "GET" },
-      "Không thể tải danh sách ca làm",
-    );
+    const items = Array.isArray(response) ? response : [];
 
-    */
-    return response
-      .map((item) => mapShiftOption(item))
+    return items
+      .map((item) => mapShiftOption(item as ShiftOptionApiItem))
       .filter((item): item is AvailableShiftOption => Boolean(item));
   },
 
@@ -518,3 +517,5 @@ export const assignedShiftActionsService = {
     );
   },
 };
+
+export default assignedShiftActionsService;

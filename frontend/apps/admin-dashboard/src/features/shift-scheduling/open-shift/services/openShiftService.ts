@@ -1,4 +1,3 @@
-import { getRuntimeShiftTemplateCatalog } from "../openShiftRuntimeStore";
 import { shiftSchedulingApi } from "../../services/shiftSchedulingApi";
 import { shiftTemplateService } from "../../shift-template/services/shiftTemplateService";
 import type {
@@ -10,31 +9,49 @@ import type {
 interface ShiftTemplateApiItem {
   id?: number;
   Id?: number;
-  shift_id?: number;
+  shiftId?: number;
   ShiftId?: number;
-  shift_name?: string;
-  ShiftName?: string;
-  start_time?: string;
-  StartTime?: string;
-  end_time?: string;
-  EndTime?: string;
-  branch_id?: number | null;
-  BranchId?: number | null;
-  branch_ids?: number[];
-  BranchIds?: number[];
-  department_id?: number | null;
-  DepartmentId?: number | null;
-  department_ids?: number[];
-  DepartmentIds?: number[];
-  job_title_id?: number | null;
-  JobTitleId?: number | null;
-  job_title_ids?: number[];
-  JobTitleIds?: number[];
+  shift_id?: number;
+  templateName?: string | null;
+  TemplateName?: string | null;
+  template_name?: string | null;
+  shiftName?: string | null;
+  ShiftName?: string | null;
+  shift_name?: string | null;
+  name?: string | null;
+  Name?: string | null;
+  startTime?: string | null;
+  StartTime?: string | null;
+  start_time?: string | null;
+  endTime?: string | null;
+  EndTime?: string | null;
+  end_time?: string | null;
+  branchIds?: Array<number | string> | null;
+  BranchIds?: Array<number | string> | null;
+  branch_ids?: Array<number | string> | null;
+  branchId?: number | string | null;
+  BranchId?: number | string | null;
+  branch_id?: number | string | null;
+  departmentIds?: Array<number | string> | null;
+  DepartmentIds?: Array<number | string> | null;
+  department_ids?: Array<number | string> | null;
+  departmentId?: number | string | null;
+  DepartmentId?: number | string | null;
+  department_id?: number | string | null;
+  jobTitleIds?: Array<number | string> | null;
+  JobTitleIds?: Array<number | string> | null;
+  job_title_ids?: Array<number | string> | null;
+  positionIds?: Array<number | string> | null;
+  PositionIds?: Array<number | string> | null;
+  position_ids?: Array<number | string> | null;
+  jobTitleId?: number | string | null;
+  JobTitleId?: number | string | null;
+  job_title_id?: number | string | null;
   note?: string | null;
   Note?: string | null;
 }
 
-const toIdList = (...values: Array<number[] | number | null | undefined>): string[] => {
+const toIdList = (...values: Array<Array<number | string> | number | string | null | undefined>): string[] => {
   const normalized = values.flatMap((value) => {
     if (Array.isArray(value)) {
       return value;
@@ -47,7 +64,7 @@ const toIdList = (...values: Array<number[] | number | null | undefined>): strin
     new Set(
       normalized
         .map((value) => String(value))
-        .filter(Boolean),
+        .filter((value) => value.trim().length > 0),
     ),
   );
 };
@@ -60,66 +77,51 @@ const sortTemplates = (
 const mapApiTemplate = (
   item: ShiftTemplateApiItem,
 ): OpenShiftTemplateOption | null => {
-  const rawId = item.shift_id ?? item.ShiftId ?? item.id ?? item.Id;
-  const shiftName = item.shift_name ?? item.ShiftName;
-  const startTime = item.start_time ?? item.StartTime;
-  const endTime = item.end_time ?? item.EndTime;
+  const rawId = item.shiftId ?? item.ShiftId ?? item.shift_id ?? item.id ?? item.Id;
+  const shiftName = 
+    item.shiftName ?? 
+    item.ShiftName ?? 
+    item.shift_name ?? 
+    item.templateName ?? 
+    item.TemplateName ?? 
+    item.template_name ?? 
+    item.name ?? 
+    item.Name;
+  const startTime = item.startTime ?? item.StartTime ?? item.start_time;
+  const endTime = item.endTime ?? item.EndTime ?? item.end_time;
 
-  if (!rawId || !shiftName || !startTime || !endTime) {
+  if (rawId === undefined || rawId === null || !shiftName?.trim() || !startTime || !endTime) {
     return null;
   }
 
   return {
     id: String(rawId),
-    shiftId: rawId,
-    name: shiftName,
-    startTime,
-    endTime,
-    branchIds: toIdList(item.branch_ids, item.BranchIds, item.branch_id, item.BranchId),
+    shiftId: Number(rawId),
+    name: shiftName.trim(),
+    startTime: startTime.length > 5 ? startTime.slice(0, 5) : startTime,
+    endTime: endTime.length > 5 ? endTime.slice(0, 5) : endTime,
+    branchIds: toIdList(item.branchIds, item.BranchIds, item.branch_ids, item.branchId, item.BranchId, item.branch_id),
     departmentIds: toIdList(
-      item.department_ids,
+      item.departmentIds,
       item.DepartmentIds,
-      item.department_id,
+      item.department_ids,
+      item.departmentId,
       item.DepartmentId,
+      item.department_id,
     ),
     jobTitleIds: toIdList(
-      item.job_title_ids,
+      item.jobTitleIds,
       item.JobTitleIds,
-      item.job_title_id,
+      item.job_title_ids,
+      item.positionIds,
+      item.PositionIds,
+      item.position_ids,
+      item.jobTitleId,
       item.JobTitleId,
+      item.job_title_id,
     ),
     note: item.note ?? item.Note ?? null,
   };
-};
-
-const mapRuntimeTemplate = (
-  item: ReturnType<typeof getRuntimeShiftTemplateCatalog>[number],
-): OpenShiftTemplateOption => ({
-  id: String(item.shiftId),
-  shiftId: item.shiftId,
-  name: item.name,
-  startTime: item.startTime,
-  endTime: item.endTime,
-  branchIds: item.branchIds,
-  departmentIds: item.departmentIds,
-  jobTitleIds: item.jobTitleIds,
-  note: item.note ?? null,
-});
-
-const mergeTemplatesWithRuntime = (
-  apiTemplates: OpenShiftTemplateOption[],
-): OpenShiftTemplateOption[] => {
-  const merged = new Map<number, OpenShiftTemplateOption>();
-
-  apiTemplates.forEach((item) => {
-    merged.set(item.shiftId, item);
-  });
-
-  getRuntimeShiftTemplateCatalog().forEach((item) => {
-    merged.set(item.shiftId, mapRuntimeTemplate(item));
-  });
-
-  return sortTemplates(Array.from(merged.values()));
 };
 
 export const openShiftService = {
@@ -127,24 +129,34 @@ export const openShiftService = {
     const targets = await shiftTemplateService.getCatalogData();
 
     try {
-      const response = await shiftSchedulingApi.getShiftOptions({
-        isActive: true,
-      }) as ShiftTemplateApiItem[];
+      const [shiftsResponse, templatesResponse] = await Promise.all([
+        shiftSchedulingApi.getShiftOptions({ isActive: true }),
+        shiftSchedulingApi.getShiftTemplates(),
+      ]);
 
-      const apiTemplates = response
-        .map((item) => mapApiTemplate(item))
+      const shiftOptions = (Array.isArray(shiftsResponse) ? shiftsResponse : [])
+        .map((item) => mapApiTemplate(item as ShiftTemplateApiItem))
         .filter((item): item is OpenShiftTemplateOption => Boolean(item));
 
-      return {
-        targets,
-        shiftTemplates: mergeTemplatesWithRuntime(apiTemplates),
-      };
-    } catch (error) {
-      console.warn("Shift template catalog is unavailable.", error);
+      const templateOptions = (Array.isArray(templatesResponse) ? templatesResponse : [])
+        .map((item) => mapApiTemplate(item as ShiftTemplateApiItem))
+        .filter((item): item is OpenShiftTemplateOption => Boolean(item));
+
+      // Combine and deduplicate by shiftId
+      const merged = new Map<number, OpenShiftTemplateOption>();
+      shiftOptions.forEach(opt => merged.set(opt.shiftId, opt));
+      templateOptions.forEach(opt => merged.set(opt.shiftId, opt));
 
       return {
         targets,
-        shiftTemplates: mergeTemplatesWithRuntime([]),
+        shiftTemplates: sortTemplates(Array.from(merged.values())),
+      };
+    } catch (error) {
+      console.warn("Failed to load shift data from API. Returning catalog with empty shifts.", error);
+
+      return {
+        targets,
+        shiftTemplates: [],
       };
     }
   },

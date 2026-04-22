@@ -24,46 +24,46 @@ namespace ERP.Entities.Seeding
             // 2. Genders
             modelBuilder.Entity<Genders>().HasData(
                 new Genders { Id = 1, code = "MALE", name = "Nam" },
-                new Genders { Id = 2, code = "FEMALE", name = "Nữ" },
-                new Genders { Id = 3, code = "OTHER", name = "Khác" }
+                new Genders { Id = 2, code = "FEMALE", name = "N\u1EEF" },
+                new Genders { Id = 3, code = "OTHER", name = "Kh\u00E1c" }
             );
 
             // 3. MaritalStatuses
             modelBuilder.Entity<MaritalStatuses>().HasData(
-                new MaritalStatuses { Id = 1, code = "SINGLE", name = "Độc thân" },
-                new MaritalStatuses { Id = 2, code = "MARRIED", name = "Đã kết hôn" },
-                new MaritalStatuses { Id = 3, code = "DIVORCED", name = "Ly hôn" },
-                new MaritalStatuses { Id = 4, code = "WIDOWED", name = "Góa" }
+                new MaritalStatuses { Id = 1, code = "SINGLE", name = "\u0110\u1ED9c th\u00E2n" },
+                new MaritalStatuses { Id = 2, code = "MARRIED", name = "\u0110\u00E3 k\u1EBFt h\u00F4n" },
+                new MaritalStatuses { Id = 3, code = "DIVORCED", name = "Ly h\u00F4n" },
+                new MaritalStatuses { Id = 4, code = "WIDOWED", name = "G\u00F3a" }
             );
 
             // 4. AddressTypes
             modelBuilder.Entity<AddressTypes>().HasData(
-                new AddressTypes { Id = 1, name = "Thường trú" },
-                new AddressTypes { Id = 2, name = "Tạm trú" },
-                new AddressTypes { Id = 3, name = "Sát nhập" }
+                new AddressTypes { Id = 1, name = "Th\u01B0\u1EDDng tr\u00FA" },
+                new AddressTypes { Id = 2, name = "T\u1EA1m tr\u00FA" },
+                new AddressTypes { Id = 3, name = "S\u00E1t nh\u1EADp" }
             );
 
             // 5. LeaveTypes
             modelBuilder.Entity<LeaveTypes>().HasData(
-                new LeaveTypes { Id = 1, name = "Nghỉ phép năm", is_paid = true },
-                new LeaveTypes { Id = 2, name = "Nghỉ ốm", is_paid = true },
-                new LeaveTypes { Id = 3, name = "Nghỉ không lương", is_paid = false },
-                new LeaveTypes { Id = 4, name = "Nghỉ thai sản", is_paid = true },
-                new LeaveTypes { Id = 5, name = "Nghỉ hiếu hỉ", is_paid = true }
+                new LeaveTypes { Id = 1, name = "Ngh\u1ECB ph\u00E9p n\u0103m", is_paid = true },
+                new LeaveTypes { Id = 2, name = "Ngh\u1ECB \u1ED1m", is_paid = true },
+                new LeaveTypes { Id = 3, name = "Ngh\u1ECB kh\u00F4ng l\u01B0\u01A1ng", is_paid = false },
+                new LeaveTypes { Id = 4, name = "Ngh\u1ECB thai s\u1EA3n", is_paid = true },
+                new LeaveTypes { Id = 5, name = "Ngh\u1ECB hi\u1EBFu h\u1EF7", is_paid = true }
             );
 
             // 6. LeaveDurationTypes
             modelBuilder.Entity<LeaveDurationTypes>().HasData(
-                new LeaveDurationTypes { Id = 1, name = "Cả ngày", code = "FULL", hours = 8 },
-                new LeaveDurationTypes { Id = 2, name = "Sáng", code = "MORNING", hours = 4 },
-                new LeaveDurationTypes { Id = 3, name = "Chiều", code = "AFTERNOON", hours = 4 }
+                new LeaveDurationTypes { Id = 1, name = "C\u1EA3 ng\u00E0y", code = "FULL", hours = 8 },
+                new LeaveDurationTypes { Id = 2, name = "S\u00E1ng", code = "MORNING", hours = 4 },
+                new LeaveDurationTypes { Id = 3, name = "Chi\u1EC1u", code = "AFTERNOON", hours = 4 }
             );
 
             // 7. Regions (Vùng miền)
             modelBuilder.Entity<Regions>().HasData(
-                new Regions { Id = 1, name = "Miền Bắc", code = "NORTH" },
-                new Regions { Id = 2, name = "Miền Trung", code = "CENTRAL" },
-                new Regions { Id = 3, name = "Miền Nam", code = "SOUTH" }
+                new Regions { Id = 1, name = "Mi\u1EC1n B\u1EAFc", code = "NORTH" },
+                new Regions { Id = 2, name = "Mi\u1EC1n Trung", code = "CENTRAL" },
+                new Regions { Id = 3, name = "Mi\u1EC1n Nam", code = "SOUTH" }
             );
 
             // 8. Branches (Chi nhánh)
@@ -98,10 +98,10 @@ namespace ERP.Entities.Seeding
 
             // 12. ShiftTypes (Ca làm việc)
             modelBuilder.Entity<ShiftTypes>().HasData(
-                new ShiftTypes { Id = 1, name = "Ca hành chính", description = "Làm việc giờ hành chính (08:00 - 17:00)" },
-                new ShiftTypes { Id = 2, name = "Ca sáng (06:00 - 14:00)", description = "Ca làm việc buổi sáng" },
-                new ShiftTypes { Id = 3, name = "Ca chiều (14:00 - 22:00)", description = "Ca làm việc buổi chiều" },
-                new ShiftTypes { Id = 4, name = "Ca đêm (22:00 - 06:00)", description = "Ca làm việc ban đêm" }
+                new ShiftTypes { Id = 1, name = "Ca h\u00E0nh ch\u00EDnh", description = "L\u00E0m vi\u1EC7c gi\u1EDD h\u00E0nh ch\u00EDnh (08:00 - 17:00)" },
+                new ShiftTypes { Id = 2, name = "Ca s\u00E1ng (06:00 - 14:00)", description = "Ca l\u00E0m vi\u1EC7c bu\u1ED5i s\u00E1ng" },
+                new ShiftTypes { Id = 3, name = "Ca chi\u1EC1u (14:00 - 22:00)", description = "Ca l\u00E0m vi\u1EC7c bu\u1ED5i chi\u1EC1u" },
+                new ShiftTypes { Id = 4, name = "Ca \u0111\u00EAm (22:00 - 06:00)", description = "Ca l\u00E0m vi\u1EC7c ban \u0111\u00EAm" }
             );
 
             // 13. DecisionTypes (Loại quyết định)

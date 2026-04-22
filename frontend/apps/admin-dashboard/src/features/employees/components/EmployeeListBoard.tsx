@@ -8,6 +8,7 @@ import {
 import { DEFAULT_COLUMNS } from '../data/columnConfig';
 import type { ColumnConfig, Employee } from '../types';
 import AddEmployeeModal from './AddEmployeeModal';
+import InviteEmployeeModal from './InviteEmployeeModal';
 import BasicInfoExportModal from './BasicInfoExportModal';
 import BulkAddEmployeeModal from './BulkAddEmployeeModal';
 import ColumnConfigSidebar from './ColumnConfigSidebar';
@@ -58,6 +59,7 @@ const EmployeeListBoard: React.FC<EmployeeListProps> = ({ onSelectEmployee }) =>
   const [isColumnConfigOpen, setIsColumnConfigOpen] = useState<boolean>(false);
   const [isPaginationEnabled, setIsPaginationEnabled] = useState<boolean>(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState<boolean>(false);
   const [isBulkAddModalOpen, setIsBulkAddModalOpen] = useState<boolean>(false);
   const [isBasicInfoExportOpen, setIsBasicInfoExportOpen] = useState<boolean>(false);
   const [isExportingBasicInfo, setIsExportingBasicInfo] = useState<boolean>(false);
@@ -197,6 +199,7 @@ const EmployeeListBoard: React.FC<EmployeeListProps> = ({ onSelectEmployee }) =>
       <ExportPageToolbar
         onAddEmployee={() => setIsAddModalOpen(true)}
         onAddBulkEmployee={() => setIsBulkAddModalOpen(true)}
+        onInviteEmployee={() => setIsInviteModalOpen(true)}
         onOpenBasicInfoExport={() => setIsBasicInfoExportOpen(true)}
       />
 
@@ -262,6 +265,14 @@ const EmployeeListBoard: React.FC<EmployeeListProps> = ({ onSelectEmployee }) =>
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={() => {
           void fetchEmployees();
+        }}
+      />
+
+      <InviteEmployeeModal
+        isOpen={isInviteModalOpen}
+        onClose={() => setIsInviteModalOpen(false)}
+        onSuccess={() => {
+          // No refresh needed for invitations as no employee record is created yet
         }}
       />
 

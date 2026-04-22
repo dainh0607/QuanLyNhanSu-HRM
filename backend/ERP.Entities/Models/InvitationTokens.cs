@@ -24,8 +24,25 @@ namespace ERP.Entities.Models
         [Column("employee_id")]
         public int? EmployeeId { get; set; }
 
+        [Required]
+        [StringLength(255)]
+        [Column("full_name")]
+        public string FullName { get; set; } = string.Empty;
+
+        [Column("department_id")]
+        public int? DepartmentId { get; set; }
+
+        [Column("job_title_id")]
+        public int? JobTitleId { get; set; }
+
         [ForeignKey("EmployeeId")]
         public virtual Employees Employee { get; set; }
+
+        [ForeignKey("DepartmentId")]
+        public virtual Departments Department { get; set; }
+
+        [ForeignKey("JobTitleId")]
+        public virtual JobTitles JobTitle { get; set; }
 
         [Column("expires_at")]
         public DateTime ExpiresAt { get; set; }

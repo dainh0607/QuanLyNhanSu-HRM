@@ -26,80 +26,7 @@ const RUNTIME_SHIFT_TEMPLATES_STORAGE_KEY =
 const RUNTIME_DELETED_SHIFT_TEMPLATES_STORAGE_KEY =
   "shift-scheduling.runtime-shift-templates.deleted.v1";
 
-const baseRuntimeShiftTemplates: RuntimeShiftTemplate[] = [
-  {
-    id: 701,
-    shiftId: 701,
-    code: "CA_SANG_CHUAN",
-    name: "Ca sang chuan",
-    startTime: "08:00",
-    endTime: "17:00",
-    branchIds: ["1"],
-    departmentIds: ["21"],
-    jobTitleIds: ["11"],
-    repeatDays: ["mon", "tue", "wed", "thu", "fri", "sat"],
-    breakDurationMinutes: "60",
-    allowedLateCheckInMinutes: "15",
-    allowedEarlyCheckOutMinutes: "10",
-    displayOrder: 1,
-    isActive: true,
-    note: "Ca tieu chuan cho nhom thu ngan.",
-  },
-  {
-    id: 702,
-    shiftId: 702,
-    code: "CA_GIUA_NGAY",
-    name: "Ca giữa ngày",
-    startTime: "10:00",
-    endTime: "19:00",
-    branchIds: ["1"],
-    departmentIds: ["22"],
-    jobTitleIds: ["12"],
-    repeatDays: ["mon", "tue", "wed", "thu", "fri"],
-    breakDurationMinutes: "45",
-    allowedLateCheckInMinutes: "10",
-    allowedEarlyCheckOutMinutes: "10",
-    displayOrder: 2,
-    isActive: true,
-    note: "Ca hỗ trợ khung giờ đông khách.",
-  },
-  {
-    id: 703,
-    shiftId: 703,
-    code: "CA_CHIEU_TOI",
-    name: "Ca chieu toi",
-    startTime: "14:00",
-    endTime: "22:00",
-    branchIds: ["2"],
-    departmentIds: ["23"],
-    jobTitleIds: ["13", "14"],
-    repeatDays: ["mon", "tue", "wed", "thu", "fri", "sat"],
-    breakDurationMinutes: "30",
-    allowedLateCheckInMinutes: "10",
-    allowedEarlyCheckOutMinutes: "15",
-    displayOrder: 3,
-    isActive: true,
-    note: "Ca linh hoat cho nhom van hanh.",
-  },
-  {
-    id: 704,
-    shiftId: 704,
-    code: "CA_CUOI_TUAN",
-    name: "Ca cuối tuần",
-    startTime: "12:00",
-    endTime: "20:00",
-    branchIds: ["3"],
-    departmentIds: ["24"],
-    jobTitleIds: ["15"],
-    repeatDays: ["sat", "sun"],
-    breakDurationMinutes: "45",
-    allowedLateCheckInMinutes: "15",
-    allowedEarlyCheckOutMinutes: "15",
-    displayOrder: 4,
-    isActive: false,
-    note: "Ca mở rộng cho cao điểm cuối tuần.",
-  },
-];
+const baseRuntimeShiftTemplates: RuntimeShiftTemplate[] = [];
 
 const canUseStorage = (): boolean =>
   typeof window !== "undefined" && typeof window.localStorage !== "undefined";
@@ -157,19 +84,87 @@ const sanitizeRuntimeShiftTemplate = (value: unknown): RuntimeShiftTemplate | nu
 };
 
 const loadStoredRuntimeShiftTemplates = (): RuntimeShiftTemplate[] => {
-  return [];
+  if (!canUseStorage()) {
+    return [...baseRuntimeShiftTemplates];
+  }
+
+  try {
+    const raw = localStorage.getItem(RUNTIME_SHIFT_TEMPLATES_STORAGE_KEY);
+    if (!raw) {
+      return [...baseRuntimeShiftTemplates];
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return [...baseRuntimeShiftTemplates];
+    }
+
+    const sanitized = parsed
+      .map((item) => sanitizeRuntimeShiftTemplate(item))
+      .filter((item): item is RuntimeShiftTemplate => Boolean(item));
+
+    return sanitized.length > 0 ? sanitized : [...baseRuntimeShiftTemplates];
+  } catch (error) {
+    console.warn("Failed to load runtime shift templates from storage.", error);
+    return [...baseRuntimeShiftTemplates];
+  }
 };
 
 const loadDeletedRuntimeShiftTemplateIds = (): Set<number> => {
-  return new Set<number>();
+  if (!canUseStorage()) {
+    return new Set<number>();
+  }
+
+  try {
+    const raw = localStorage.getItem(RUNTIME_DELETED_SHIFT_TEMPLATES_STORAGE_KEY);
+    if (!raw) {
+      return new Set<number>();
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return new Set<number>();
+    }
+
+    return new Set(
+      parsed
+        .map((item) => Number(item))
+        .filter((item) => Number.isFinite(item)),
+    );
+  } catch (error) {
+    console.warn("Failed to load deleted runtime shift template IDs from storage.", error);
+    return new Set<number>();
+  }
 };
 
 const persistRuntimeShiftTemplates = (): void => {
-  return;
+  if (!canUseStorage()) {
+    return;
+  }
+
+  try {
+    localStorage.setItem(
+      RUNTIME_SHIFT_TEMPLATES_STORAGE_KEY,
+      JSON.stringify(runtimeShiftTemplates),
+    );
+  } catch (error) {
+    console.warn("Failed to persist runtime shift templates to storage.", error);
+  }
 };
 
 const persistDeletedRuntimeShiftTemplateIds = (): void => {
-  return;
+  if (!canUseStorage()) {
+    return;
+  }
+
+  try {
+    localStorage.setItem(
+      RUNTIME_DELETED_SHIFT_TEMPLATES_STORAGE_KEY,
+      JSON.stringify(Array.from(deletedRuntimeShiftTemplateIds)),
+    );
+  } catch (error) {
+    console.warn("Failed to persist deleted runtime shift template IDs to storage.", error);
+  }
 };
 
 let runtimeShiftTemplates: RuntimeShiftTemplate[] = loadStoredRuntimeShiftTemplates();
