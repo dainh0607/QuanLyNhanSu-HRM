@@ -15,7 +15,7 @@ import {
   ContractsManagementPage,
   SigningPortalPage,
 } from "./features/employees-contracts";
-import { ShiftSchedulingPage } from "./features/shift-scheduling";
+import { ShiftSchedulingPage, WeeklyShiftSchedulePage } from "./features/shift-scheduling";
 import { ShiftTemplateManagementPage } from "./features/shift-scheduling/shift-template-management/ShiftTemplateManagementPage";
 import { EmployeeDetail } from "./features/employee-detail/EmployeeDetailViewIntegrated";
 import type { PersonalTabKey } from "./features/employee-detail/edit-modal/types";
@@ -625,7 +625,7 @@ const WeeklyShiftSchedulingRoute = ({
   return (
     <div className="min-h-screen bg-[#f8fafc]">
       <Header user={user} onLogout={onLogout} onOpenSettings={onOpenSettings} />
-      <ShiftSchedulingPage />
+      <WeeklyShiftSchedulePage />
     </div>
   );
 };
