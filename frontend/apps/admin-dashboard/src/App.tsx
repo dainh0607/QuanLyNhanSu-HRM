@@ -15,7 +15,7 @@ import {
   ContractsManagementPage,
   SigningPortalPage,
 } from "./features/employees-contracts";
-import { WeeklyShiftSchedulePage } from "./features/shift-scheduling";
+import { ShiftSchedulingPage } from "./features/shift-scheduling";
 import { ShiftTemplateManagementPage } from "./features/shift-scheduling/shift-template-management/ShiftTemplateManagementPage";
 import { EmployeeDetail } from "./features/employee-detail/EmployeeDetailViewIntegrated";
 import type { PersonalTabKey } from "./features/employee-detail/edit-modal/types";
@@ -24,6 +24,8 @@ import { authService, hasPermission } from "./services/authService";
 import type { User } from "./services/authService";
 import { employeeService } from "./services/employeeService";
 import { SignatureManagementPage } from "./features/signature-management/SignatureListPage";
+import { SettingsProvider } from "./config/SettingsContext";
+import EnterpriseSettingsModal from "./features/enterprise-settings/EnterpriseSettingsModal";
 import { PayrollListPage } from "./features/payroll/PayrollListPage";
 import "./index.css";
 
@@ -51,7 +53,10 @@ const getDefaultAuthorizedRoute = (user: User | null) => {
   return "/account/signatures";
 };
 
-const canAccessAuthenticatedRoute = (user: User | null, path?: string | null) => {
+const canAccessAuthenticatedRoute = (
+  user: User | null,
+  path?: string | null,
+) => {
   if (!path) return false;
 
   if (path.startsWith("/personnel/employees")) {
@@ -76,9 +81,11 @@ const canAccessAuthenticatedRoute = (user: User | null, path?: string | null) =>
 const Header = ({
   user,
   onLogout,
+  onOpenSettings,
 }: {
   user: User | null;
-  onLogout: () => void;
+  onLogout: () => void | Promise<void>;
+  onOpenSettings: () => void;
 }) => {
   const displayUser = user;
   if (!displayUser) return null;
@@ -132,8 +139,14 @@ const Header = ({
       to: "/payroll",
       visible: true,
     },
-    { name: "Thêm", active: false, hasDropdown: true, menuKey: "more", visible: true },
-  ].filter(item => item.visible);
+    {
+      name: "Thêm",
+      active: false,
+      hasDropdown: true,
+      menuKey: "more",
+      visible: true,
+    },
+  ].filter((item) => item.visible);
 
   const moreMenuItems = [
     { label: "Tuyển dụng", icon: "person_search", note: "Sắp mở" },
@@ -303,7 +316,11 @@ const Header = ({
                     key={item.label}
                     onClick={() => {
                       setIsProfileOpen(false);
-                      if (item.to) navigate(item.to);
+                      if (item.label === "Cài đặt") {
+                        onOpenSettings();
+                      } else if (item.to) {
+                        navigate(item.to);
+                      }
                     }}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#475569] hover:bg-[#f1f5f9] hover:text-[#1e293b] transition-colors text-sm font-medium"
                   >
@@ -356,10 +373,12 @@ const AccessDenied = () => {
             shield_lock
           </span>
         </div>
-        <h1 className="text-2xl font-bold text-slate-900 mb-3">Truy cập bị từ chối</h1>
+        <h1 className="text-2xl font-bold text-slate-900 mb-3">
+          Truy cập bị từ chối
+        </h1>
         <p className="text-slate-500 mb-8 leading-relaxed">
-          Tài khoản của bạn không có quyền hạn để truy cập vào phân hệ này. 
-          Vui lòng liên hệ quản trị viên nếu bạn tin rằng đây là một sự nhầm lẫn.
+          Tài khoản của bạn không có quyền hạn để truy cập vào phân hệ này. Vui
+          lòng liên hệ quản trị viên nếu bạn tin rằng đây là một sự nhầm lẫn.
         </p>
         <button
           onClick={() => navigate("/login")}
@@ -401,9 +420,11 @@ const LoadingScreen = ({ message }: { message: string }) => (
 const EmployeeListRoute = ({
   user,
   onLogout,
+  onOpenSettings,
 }: {
   user: User | null;
   onLogout: () => Promise<void>;
+  onOpenSettings: () => void;
 }) => {
   const navigate = useNavigate();
 
@@ -415,12 +436,7 @@ const EmployeeListRoute = ({
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
-      <Header
-        user={user}
-        onLogout={() => {
-          void onLogout();
-        }}
-      />
+      <Header user={user} onLogout={onLogout} onOpenSettings={onOpenSettings} />
       <EmployeeList onSelectEmployee={handleSelectEmployee} />
     </div>
   );
@@ -497,7 +513,7 @@ const EmployeeDetailRoute = () => {
         console.error(`Failed to load employee ${parsedEmployeeId}:`, error);
         if (isMounted) {
           setEmployee(null);
-          setLoadError("Khong the tai thong tin nhan su. Vui long thu lai.");
+          setLoadError("Không thể tải thông tin nhân sự. Vui lòng thử lại.");
         }
       } finally {
         if (isMounted) {
@@ -523,7 +539,7 @@ const EmployeeDetailRoute = () => {
   }
 
   if (isLoading) {
-    return <LoadingScreen message="Dang tai ho so nhan su..." />;
+    return <LoadingScreen message="Đang tải hồ sơ nhân sự..." />;
   }
 
   if (!employee) {
@@ -538,14 +554,14 @@ const EmployeeDetailRoute = () => {
             <span className="material-symbols-outlined text-[18px]">
               arrow_back
             </span>
-            Quay lai danh sach
+            Quay lại danh sách
           </button>
 
           <h1 className="text-xl font-semibold text-slate-900">
-            Khong mo duoc ho so nhan su
+            Không mở được hồ sơ nhân sự
           </h1>
           <p className="mt-3 text-sm leading-6 text-slate-600">
-            {loadError ?? "Khong the tai du lieu cho trang chi tiet nay."}
+            {loadError ?? "Không thể tải dữ liệu cho trang chi tiết này."}
           </p>
 
           <div className="mt-6 flex gap-3">
@@ -554,14 +570,14 @@ const EmployeeDetailRoute = () => {
               onClick={() => setReloadToken((prev) => prev + 1)}
               className="rounded-lg bg-[#134BBA] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0f3f9f]"
             >
-              Thu lai
+              Thử lại
             </button>
             <button
               type="button"
               onClick={() => navigate(returnPath)}
               className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
             >
-              Ve danh sach
+              Về danh sách
             </button>
           </div>
         </div>
@@ -583,18 +599,15 @@ const EmployeeDetailRoute = () => {
 const ContractsRoute = ({
   user,
   onLogout,
+  onOpenSettings,
 }: {
   user: User | null;
   onLogout: () => Promise<void>;
+  onOpenSettings: () => void;
 }) => {
   return (
     <div className="min-h-screen bg-[#f8fafc]">
-      <Header
-        user={user}
-        onLogout={() => {
-          void onLogout();
-        }}
-      />
+      <Header user={user} onLogout={onLogout} onOpenSettings={onOpenSettings} />
       <ContractsManagementPage />
     </div>
   );
@@ -603,19 +616,16 @@ const ContractsRoute = ({
 const WeeklyShiftSchedulingRoute = ({
   user,
   onLogout,
+  onOpenSettings,
 }: {
   user: User | null;
   onLogout: () => Promise<void>;
+  onOpenSettings: () => void;
 }) => {
   return (
     <div className="min-h-screen bg-[#f8fafc]">
-      <Header
-        user={user}
-        onLogout={() => {
-          void onLogout();
-        }}
-      />
-      <WeeklyShiftSchedulePage />
+      <Header user={user} onLogout={onLogout} onOpenSettings={onOpenSettings} />
+      <ShiftSchedulingPage />
     </div>
   );
 };
@@ -623,18 +633,15 @@ const WeeklyShiftSchedulingRoute = ({
 const ShiftTemplateManagementRoute = ({
   user,
   onLogout,
+  onOpenSettings,
 }: {
   user: User | null;
   onLogout: () => Promise<void>;
+  onOpenSettings: () => void;
 }) => {
   return (
     <div className="min-h-screen bg-[#f8fafc]">
-      <Header
-        user={user}
-        onLogout={() => {
-          void onLogout();
-        }}
-      />
+      <Header user={user} onLogout={onLogout} onOpenSettings={onOpenSettings} />
       <ShiftTemplateManagementPage />
     </div>
   );
@@ -646,6 +653,7 @@ function RoutedApp() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [user, setUser] = useState<User | null>(null);
   const [isInitializing, setIsInitializing] = useState<boolean>(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -715,187 +723,201 @@ function RoutedApp() {
   const loginRedirectPath = `${location.pathname}${location.search}${location.hash}`;
 
   return (
-    <div id="app-root-container">
-      <Routes>
-        <Route path="/" element={<Navigate to={defaultRoute} replace />} />
-        <Route
-          path="/login"
-          element={
-            isAuthenticated ? (
-              <Navigate to="/personnel/employees" replace />
-            ) : (
-              <LoginPage
-                onNavigateToActivation={() =>
-                  navigate("/activate-workspace-owner")
-                }
-                onLoginSuccess={handleLoginSuccess}
-              />
-            )
-          }
-        />
-        <Route
-          path="/activate-workspace-owner"
-          element={
-            isAuthenticated ? (
-              <Navigate to="/personnel/employees" replace />
-            ) : (
-              <WorkspaceOwnerActivationPage
-                onNavigateToLogin={() => navigate("/login")}
-                onActivationSuccess={handleActivationSuccess}
-              />
-            )
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            isAuthenticated ? (
-              <Navigate to={defaultRoute} replace />
-            ) : (
-              <InviteRegistrationPage
-                onNavigateToLogin={() => navigate("/login")}
-                onRegistrationSuccess={handleRegistrationSuccess}
-              />
-            )
-          }
-        />
-        <Route
-          path="/invite/:token"
-          element={
-            isAuthenticated ? (
-              <Navigate to={defaultRoute} replace />
-            ) : (
-              <InviteRegistrationPage
-                onNavigateToLogin={() => navigate("/login")}
-                onRegistrationSuccess={handleRegistrationSuccess}
-              />
-            )
-          }
-        />
-        <Route
-          path="/personnel/employees"
-          element={
-            isAuthenticated ? (
-              <PermissionRoute user={user} resource="employee" action="read">
-                <EmployeeListRoute user={user} onLogout={handleLogout} />
-              </PermissionRoute>
-            ) : (
-              <Navigate
-                to="/login"
-                replace
-                state={{ from: loginRedirectPath }}
-              />
-            )
-          }
-        />
-        <Route
-          path="/personnel/contracts"
-          element={
-            isAuthenticated ? (
-              <PermissionRoute user={user} resource="contracts" action="read">
-                <ContractsRoute user={user} onLogout={handleLogout} />
-              </PermissionRoute>
-            ) : (
-              <Navigate
-                to="/login"
-                replace
-                state={{ from: loginRedirectPath }}
-              />
-            )
-          }
-        />
-        <Route
-          path="/working-day/timekeeping"
-          element={
-            isAuthenticated ? (
-              <PermissionRoute user={user} resource="shifts" action="read">
-                <WeeklyShiftSchedulingRoute user={user} onLogout={handleLogout} />
-              </PermissionRoute>
-            ) : (
-              <Navigate
-                to="/login"
-                replace
-                state={{ from: loginRedirectPath }}
-              />
-            )
-          }
-        />
-        <Route
-          path="/working-day/timekeeping/shift-templates"
-          element={
-            isAuthenticated ? (
-              <PermissionRoute user={user} resource="shifts" action="read">
-                <ShiftTemplateManagementRoute user={user} onLogout={handleLogout} />
-              </PermissionRoute>
-            ) : (
-              <Navigate
-                to="/login"
-                replace
-                state={{ from: loginRedirectPath }}
-              />
-            )
-          }
-        />
-        <Route
-          path="/personnel/employees/:employeeId"
-          element={
-            isAuthenticated ? (
-              <PermissionRoute user={user} resource="employee" action="read">
-                <EmployeeDetailRoute />
-              </PermissionRoute>
-            ) : (
-              <Navigate
-                to="/login"
-                replace
-                state={{ from: loginRedirectPath }}
-              />
-            )
-          }
-        />
-        <Route
-          path="/account/signatures"
-          element={
-            isAuthenticated ? (
-              <div className="min-h-screen bg-[#f8fafc] flex flex-col">
-                <Header user={user} onLogout={handleLogout} />
-                <SignatureManagementPage />
-              </div>
-            ) : (
-              <Navigate
-                to="/login"
-                replace
-                state={{ from: loginRedirectPath }}
-              />
-            )
-          }
-        />
-        <Route
-          path="/contracts/signing/:token"
-          element={<SigningPortalPage />}
-        />
-        <Route path="/sign" element={<SigningPortalPage />} />
-        <Route
-          path="/payroll"
-          element={
-            isAuthenticated ? (
-              <PermissionRoute user={user} resource="payroll" action="read">
+    <SettingsProvider>
+      <div id="app-root-container">
+        <Routes>
+          <Route path="/" element={<Navigate to={defaultRoute} replace />} />
+          <Route
+            path="/login"
+            element={
+              isAuthenticated ? (
+                <Navigate to="/personnel/employees" replace />
+              ) : (
+                <LoginPage
+                  onNavigateToActivation={() =>
+                    navigate("/activate-workspace-owner")
+                  }
+                  onLoginSuccess={handleLoginSuccess}
+                />
+              )
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              isAuthenticated ? (
+                <Navigate to="/personnel/employees" replace />
+              ) : (
+                <InviteRegistrationPage
+                  onNavigateToLogin={() => navigate("/login")}
+                  onRegistrationSuccess={handleRegistrationSuccess}
+                />
+              )
+            }
+          />
+          <Route
+            path="/activate-workspace-owner"
+            element={
+              isAuthenticated ? (
+                <Navigate to="/personnel/employees" replace />
+              ) : (
+                <WorkspaceOwnerActivationPage
+                  onNavigateToLogin={() => navigate("/login")}
+                  onActivationSuccess={handleActivationSuccess}
+                />
+              )
+            }
+          />
+          <Route
+            path="/personnel/employees"
+            element={
+              isAuthenticated ? (
+                <PermissionRoute user={user} resource="employee" action="read">
+                  <EmployeeListRoute
+                    user={user}
+                    onLogout={handleLogout}
+                    onOpenSettings={() => setIsSettingsOpen(true)}
+                  />
+                </PermissionRoute>
+              ) : (
+                <Navigate
+                  to="/login"
+                  replace
+                  state={{ from: loginRedirectPath }}
+                />
+              )
+            }
+          />
+          <Route
+            path="/personnel/contracts"
+            element={
+              isAuthenticated ? (
+                <PermissionRoute user={user} resource="contracts" action="read">
+                  <ContractsRoute
+                    user={user}
+                    onLogout={handleLogout}
+                    onOpenSettings={() => setIsSettingsOpen(true)}
+                  />
+                </PermissionRoute>
+              ) : (
+                <Navigate
+                  to="/login"
+                  replace
+                  state={{ from: loginRedirectPath }}
+                />
+              )
+            }
+          />
+          <Route
+            path="/working-day/timekeeping"
+            element={
+              isAuthenticated ? (
+                <PermissionRoute user={user} resource="shifts" action="read">
+                  <WeeklyShiftSchedulingRoute
+                    user={user}
+                    onLogout={handleLogout}
+                    onOpenSettings={() => setIsSettingsOpen(true)}
+                  />
+                </PermissionRoute>
+              ) : (
+                <Navigate
+                  to="/login"
+                  replace
+                  state={{ from: loginRedirectPath }}
+                />
+              )
+            }
+          />
+          <Route
+            path="/working-day/timekeeping/shift-templates"
+            element={
+              isAuthenticated ? (
+                <PermissionRoute user={user} resource="shifts" action="read">
+                  <ShiftTemplateManagementRoute
+                    user={user}
+                    onLogout={handleLogout}
+                    onOpenSettings={() => setIsSettingsOpen(true)}
+                  />
+                </PermissionRoute>
+              ) : (
+                <Navigate
+                  to="/login"
+                  replace
+                  state={{ from: loginRedirectPath }}
+                />
+              )
+            }
+          />
+          <Route
+            path="/personnel/employees/:employeeId"
+            element={
+              isAuthenticated ? (
+                <PermissionRoute user={user} resource="employee" action="read">
+                  <EmployeeDetailRoute />
+                </PermissionRoute>
+              ) : (
+                <Navigate
+                  to="/login"
+                  replace
+                  state={{ from: loginRedirectPath }}
+                />
+              )
+            }
+          />
+          <Route
+            path="/account/signatures"
+            element={
+              isAuthenticated ? (
                 <div className="min-h-screen bg-[#f8fafc] flex flex-col">
-                  <Header user={user} onLogout={handleLogout} />
-                  <PayrollListPage />
+                  <Header
+                    user={user}
+                    onLogout={handleLogout}
+                    onOpenSettings={() => setIsSettingsOpen(true)}
+                  />
+                  <SignatureManagementPage />
                 </div>
-              </PermissionRoute>
-            ) : (
-              <Navigate
-                to="/login"
-                replace
-                state={{ from: loginRedirectPath }}
-              />
-            )
-          }
+              ) : (
+                <Navigate
+                  to="/login"
+                  replace
+                  state={{ from: loginRedirectPath }}
+                />
+              )
+            }
+          />
+          <Route
+            path="/contracts/signing/:token"
+            element={<SigningPortalPage />}
+          />
+          <Route path="/sign" element={<SigningPortalPage />} />
+          <Route
+            path="/payroll"
+            element={
+              isAuthenticated ? (
+                <PermissionRoute user={user} resource="payroll" action="read">
+                  <div className="min-h-screen bg-[#f8fafc] flex flex-col">
+                    <Header user={user} onLogout={handleLogout} />
+                    <PayrollListPage />
+                  </div>
+                </PermissionRoute>
+              ) : (
+                <Navigate
+                  to="/login"
+                  replace
+                  state={{ from: loginRedirectPath }}
+                />
+              )
+            }
+          />
+          <Route path="*" element={<Navigate to={defaultRoute} replace />} />
+        </Routes>
+
+        <EnterpriseSettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
         />
-        <Route path="*" element={<Navigate to={defaultRoute} replace />} />
-      </Routes>
-    </div>
+      </div>
+    </SettingsProvider>
   );
 }
 

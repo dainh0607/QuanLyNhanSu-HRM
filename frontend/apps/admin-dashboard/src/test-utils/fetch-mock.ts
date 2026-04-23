@@ -20,7 +20,7 @@ export const clearMocks = () => {
 };
 
 // Global fetch mock
-global.fetch = vi.fn(async (url: string, options?: RequestInit) => {
+(globalThis as any).fetch = vi.fn(async (url: string, options?: RequestInit) => {
   const method = options?.method || 'GET';
   const urlPath = typeof url === 'string' ? new URL(url, 'http://localhost').pathname : '';
   

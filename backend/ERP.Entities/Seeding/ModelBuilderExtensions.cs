@@ -12,13 +12,14 @@ namespace ERP.Entities.Seeding
 
             // 1. Roles
             modelBuilder.Entity<Roles>().HasData(
-                new Roles { Id = 1, name = "Admin", description = "System Administrator", is_active = true, is_system_role = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new Roles { Id = 1, name = "SuperAdmin", description = "Platform Level Administrator", is_active = true, is_system_role = true, CreatedAt = seedDate, UpdatedAt = seedDate },
                 new Roles { Id = 2, name = "Manager", description = "Executive Board / Manager", is_active = true, is_system_role = true, CreatedAt = seedDate, UpdatedAt = seedDate },
                 new Roles { Id = 3, name = "Regional Manager", description = "Regional Manager", is_active = true, is_system_role = true, CreatedAt = seedDate, UpdatedAt = seedDate },
                 new Roles { Id = 4, name = "Branch Manager", description = "Branch Manager", is_active = true, is_system_role = true, CreatedAt = seedDate, UpdatedAt = seedDate },
                 new Roles { Id = 5, name = "Department Head", description = "Department/Unit Head", is_active = true, is_system_role = true, CreatedAt = seedDate, UpdatedAt = seedDate },
                 new Roles { Id = 6, name = "Module Admin", description = "Module Specialist Admin", is_active = true, is_system_role = true, CreatedAt = seedDate, UpdatedAt = seedDate },
-                new Roles { Id = 7, name = "Staff", description = "Regular Employee Staff", is_active = true, is_system_role = true, CreatedAt = seedDate, UpdatedAt = seedDate }
+                new Roles { Id = 7, name = "Staff", description = "Regular Employee Staff", is_active = true, is_system_role = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new Roles { Id = 8, name = "Admin", description = "Workspace Administrator", is_active = true, is_system_role = true, CreatedAt = seedDate, UpdatedAt = seedDate }
             );
 
             // 2. Genders
