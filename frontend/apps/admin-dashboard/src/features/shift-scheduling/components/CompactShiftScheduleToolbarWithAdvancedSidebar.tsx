@@ -88,10 +88,10 @@ export const CompactShiftScheduleToolbarWithAdvancedSidebar = ({
 
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
-  const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
+  const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);
   const importDropdownRef = useRef<HTMLDivElement>(null);
   const exportDropdownRef = useRef<HTMLDivElement>(null);
-  const settingsDropdownRef = useRef<HTMLDivElement>(null);
+  const viewDropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -109,29 +109,29 @@ export const CompactShiftScheduleToolbarWithAdvancedSidebar = ({
         setIsExportOpen(false);
       }
       if (
-        settingsDropdownRef.current &&
-        !settingsDropdownRef.current.contains(event.target as Node)
+        viewDropdownRef.current &&
+        !viewDropdownRef.current.contains(event.target as Node)
       ) {
-        setIsSettingsMenuOpen(false);
+        setIsViewDropdownOpen(false);
       }
     };
 
-    if (isImportOpen || isExportOpen || isSettingsMenuOpen) {
+    if (isImportOpen || isExportOpen || isViewDropdownOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isImportOpen, isExportOpen, isSettingsMenuOpen]);
+  }, [isImportOpen, isExportOpen, isViewDropdownOpen]);
 
   return (
     <section className="space-y-3">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="min-w-0">
-          <h1 className="truncate text-[30px] font-bold tracking-tight text-slate-900">
+          <h1 className="truncate text-2xl font-bold tracking-tight text-slate-900">
             Xếp ca và Chấm công
           </h1>
-          <p className="mt-1 text-sm text-slate-500">{weekLabel}</p>
+          <p className="mt-0.5 text-xs text-slate-500">{weekLabel}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -294,7 +294,7 @@ export const CompactShiftScheduleToolbarWithAdvancedSidebar = ({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 rounded-md border border-slate-200 bg-white p-2">
+      <div className="flex flex-wrap items-center gap-2 rounded-md border border-slate-200 bg-white p-1.5">
         <button
           type="button"
           onClick={onToggleAdvancedFilter}
@@ -343,6 +343,53 @@ export const CompactShiftScheduleToolbarWithAdvancedSidebar = ({
           >
             <span className="material-symbols-outlined text-[18px]">chevron_right</span>
           </button>
+        </div>
+
+        <div ref={viewDropdownRef} className="relative inline-block text-left min-w-[148px]">
+            <button
+                type="button"
+                onClick={() => setIsViewDropdownOpen(!isViewDropdownOpen)}
+                className="flex h-9 w-full items-center justify-between rounded-lg border border-gray-300 bg-white pl-3 pr-2 text-[13px] font-medium text-slate-700 outline-none transition hover:border-[#192841]"
+            >
+                <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[18px] text-slate-400">
+                        {filters.timeMode === 'day' ? 'calendar_view_day' : filters.timeMode === 'week' ? 'calendar_view_week' : 'calendar_month'}
+                    </span>
+                    {filters.timeMode === 'day' ? 'Ngày' : filters.timeMode === 'week' ? 'Tuần' : 'Tháng'}
+                </div>
+                <span className={`material-symbols-outlined text-[18px] text-slate-400 transition-transform duration-200 ${isViewDropdownOpen ? 'rotate-180' : ''}`}>
+                    expand_more
+                </span>
+            </button>
+
+            <div className={`absolute left-0 top-full z-50 animate-[fadeSlideDown_0.2s_ease-out] pt-1.5 ${isViewDropdownOpen ? 'block' : 'hidden'}`}>
+                <div className="w-48 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
+                    <button
+                        type="button"
+                        onClick={() => { onFilterChange("timeMode", "day"); setIsViewDropdownOpen(false); }}
+                        className={`flex w-full items-center gap-3 px-4 py-2 text-left text-xs transition-colors hover:bg-slate-50 ${filters.timeMode === 'day' ? 'font-bold text-[#134BBA] bg-blue-50/50' : 'text-gray-700'}`}
+                    >
+                        <span className="material-symbols-outlined text-[18px]">calendar_view_day</span>
+                        Xem theo ngày
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => { onFilterChange("timeMode", "week"); setIsViewDropdownOpen(false); }}
+                        className={`flex w-full items-center gap-3 px-4 py-2 text-left text-xs transition-colors hover:bg-slate-50 ${filters.timeMode === 'week' ? 'font-bold text-[#134BBA] bg-blue-50/50' : 'text-gray-700'}`}
+                    >
+                        <span className="material-symbols-outlined text-[18px]">calendar_view_week</span>
+                        Xem theo tuần
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => { onFilterChange("timeMode", "month"); setIsViewDropdownOpen(false); }}
+                        className={`flex w-full items-center gap-3 px-4 py-2 text-left text-xs transition-colors hover:bg-slate-50 ${filters.timeMode === 'month' ? 'font-bold text-[#134BBA] bg-blue-50/50' : 'text-gray-700'}`}
+                    >
+                        <span className="material-symbols-outlined text-[18px]">calendar_month</span>
+                        Xem theo tháng
+                    </button>
+                </div>
+            </div>
         </div>
 
         <FilterSelect

@@ -14,7 +14,7 @@ import type {
   ShiftScheduleSettings,
   SelectOption,
 } from "../types";
-import { getCurrentWeekStartDate } from "../utils/week";
+import { getCurrentWeekStartDate, addDays, parseIsoDate, toIsoDate } from "../utils/week";
 
 interface UseWeeklyShiftScheduleResult {
   filters: ShiftScheduleFilters;
@@ -37,23 +37,29 @@ interface UseWeeklyShiftScheduleResult {
   employeeStatusOptions: SelectOption[];
 }
 
-const createDefaultFilters = (): ShiftScheduleFilters => ({
-  viewMode: "branch",
-  weekStartDate: getCurrentWeekStartDate(),
-  regionId: "",
-  branchId: "",
-  departmentId: "",
-  projectId: "",
-  jobTitleId: "",
-  accessGroupId: "",
-  genderCode: "",
-  workingHoursBucket: "",
-  workingDaysBucket: "",
-  workedHoursBucket: "",
-  attendanceStatus: "untracked",
-  employeeStatus: "active",
-  searchTerm: "",
-});
+const createDefaultFilters = (): ShiftScheduleFilters => {
+  const weekStart = getCurrentWeekStartDate();
+  return {
+    viewMode: "branch",
+    timeMode: "week",
+    weekStartDate: weekStart,
+    startDate: weekStart,
+    endDate: toIsoDate(addDays(parseIsoDate(weekStart), 6)),
+    regionId: "",
+    branchId: "",
+    departmentId: "",
+    projectId: "",
+    jobTitleId: "",
+    accessGroupId: "",
+    genderCode: "",
+    workingHoursBucket: "",
+    workingDaysBucket: "",
+    workedHoursBucket: "",
+    attendanceStatus: "untracked",
+    employeeStatus: "active",
+    searchTerm: "",
+  };
+};
 
 const emptyLookups: ShiftScheduleLookups = {
   branches: [{ value: "", label: "Tất cả chi nhánh" }],

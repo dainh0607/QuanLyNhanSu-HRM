@@ -21,9 +21,27 @@ export const toIsoDate = (value: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
+export const startOfMonth = (value: Date): Date => {
+  const date = new Date(value);
+  date.setDate(1);
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
+export const endOfMonth = (value: Date): Date => {
+  const date = new Date(value);
+  date.setMonth(date.getMonth() + 1);
+  date.setDate(0);
+  date.setHours(23, 59, 59, 999);
+  return date;
+};
+
 export const parseIsoDate = (value: string): Date => {
-  const [year, month, day] = value.split("-").map(Number);
-  return new Date(year, (month || 1) - 1, day || 1);
+  if (!value) return new Date();
+  const parts = value.split("-").map(Number);
+  if (parts.length < 3 || parts.some(isNaN)) return new Date();
+  const [year, month, day] = parts;
+  return new Date(year, month - 1, day);
 };
 
 export const getCurrentWeekStartDate = (): string => toIsoDate(startOfWeek(new Date()));
@@ -90,6 +108,18 @@ export const parseIsoWeekInputValue = (value: string): string => {
 export const getWeekLabel = (weekStartDate: string): string => {
   const weekStart = parseIsoDate(weekStartDate);
   return `Tuần ${getIsoWeekNumber(weekStart)} - ${weekStart.getFullYear()}`;
+};
+
+export const getMonthLabel = (dateStr: string): string => {
+  const date = parseIsoDate(dateStr);
+  const month = date.getMonth() + 1;
+  const year = date.getFullYear();
+  return `Tháng ${month} - ${year}`;
+};
+
+export const getDayLabel = (dateStr: string): string => {
+  const date = parseIsoDate(dateStr);
+  return `Ngày ${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
 };
 
 export const formatTime = (value?: string | null): string => {
