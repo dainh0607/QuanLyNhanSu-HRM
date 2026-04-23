@@ -67,7 +67,7 @@ export const PayrollListPage: React.FC = () => {
           </button>
           
           <button 
-            className="h-11 px-6 bg-[#10b981] text-white rounded-xl font-bold text-sm shadow-lg shadow-green-100 hover:bg-[#0da673] hover:-translate-y-0.5 transition-all flex items-center gap-2"
+            className="h-11 px-6 bg-[#134BBA] text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-100 hover:bg-[#0f3f9f] hover:-translate-y-0.5 active:scale-95 transition-all flex items-center gap-2"
           >
             <span className="material-symbols-outlined text-[20px]">add</span>
             Tạo bảng lương

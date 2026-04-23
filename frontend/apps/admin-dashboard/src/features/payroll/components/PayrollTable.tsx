@@ -75,73 +75,88 @@ export const PayrollTable: React.FC<PayrollTableProps> = ({ groups, onDelete, is
                   className="bg-slate-50/80 cursor-pointer hover:bg-slate-100 transition-colors border-b border-slate-200"
                   onClick={() => toggleGroup(group.monthYear)}
                 >
-                  <td colSpan={6} className="px-6 py-3">
-                    <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-slate-400 text-[20px]">
-                        {expandedGroups[group.monthYear] ? 'remove_circle_outline' : 'add_circle_outline'}
-                      </span>
-                      <span className="text-sm font-bold text-slate-900">{group.monthYear}</span>
-                      <span className="text-xs text-slate-500 font-medium bg-slate-200/50 px-2 py-0.5 rounded-full">
-                        {group.items.length} bảng lương
-                      </span>
+                  <td colSpan={6} className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${expandedGroups[group.monthYear] ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
+                        <span className="material-symbols-outlined text-[22px] transition-transform duration-200">
+                          {expandedGroups[group.monthYear] ? 'expand_more' : 'chevron_right'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[15px] font-bold text-slate-900">{group.monthYear}</span>
+                        <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
+                          {group.items.length} bản ghi
+                        </span>
+                      </div>
+                      <div className="flex-1 h-px bg-slate-100 ml-4"></div>
                     </div>
                   </td>
                 </tr>
 
                 {/* Group Items */}
                 {expandedGroups[group.monthYear] && group.items.map((item) => (
-                  <tr key={item.id} className="group hover:bg-slate-50/50 transition-colors border-b border-slate-100 last:border-b-0">
-                    <td className="px-6 py-4">
+                  <tr key={item.id} className="group hover:bg-blue-50/30 transition-all border-b border-slate-50 last:border-b-0">
+                    <td className="px-6 py-4 pl-16">
                       <div className="flex flex-col">
-                        <span className="text-sm font-semibold text-slate-900 truncate" title={item.name}>
+                        <span className="text-sm font-bold text-slate-800 group-hover:text-blue-700 transition-colors truncate" title={item.name}>
                           {item.name}
                         </span>
-                        <div className={`mt-1.5 self-start px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-md border ${getStatusColor(item.status)}`}>
+                        <div className={`mt-2 self-start px-2.5 py-1 text-[10px] font-black uppercase tracking-widest rounded-md border shadow-sm ${getStatusColor(item.status)}`}>
                           {getStatusLabel(item.status)}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span 
-                        className="text-sm text-slate-600 truncate block max-w-[200px]" 
-                        title={item.departments || 'Tất cả phòng ban'}
-                      >
-                        {item.departments || 'Tất cả phòng ban'}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-slate-400 text-[18px]">apartment</span>
+                        <span 
+                          className="text-sm text-slate-600 font-medium truncate block max-w-[200px]" 
+                          title={item.departments || 'Tất cả phòng ban'}
+                        >
+                          {item.departments || 'Tất cả phòng ban'}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span 
-                        className="text-sm text-slate-600 truncate block max-w-[180px]" 
-                        title={item.positions || 'Tất cả vị trí'}
-                      >
-                        {item.positions || 'Tất cả vị trí'}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-slate-400 text-[18px]">work</span>
+                        <span 
+                          className="text-sm text-slate-600 font-medium truncate block max-w-[180px]" 
+                          title={item.positions || 'Tất cả vị trí'}
+                        >
+                          {item.positions || 'Tất cả vị trí'}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <span className="text-sm font-medium text-slate-700 bg-slate-100 px-3 py-1 rounded-full">
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-50 border border-slate-100 text-slate-700 rounded-lg text-sm font-bold shadow-sm">
+                        <span className="material-symbols-outlined text-[16px]">groups</span>
                         {item.employeeCount}
-                      </span>
+                      </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-sm text-slate-500">
-                        {new Date(item.createdAt).toLocaleDateString('vi-VN')}
-                      </span>
+                      <div className="flex flex-col">
+                        <span className="text-xs text-slate-400 uppercase font-bold tracking-tighter">Ngày tạo</span>
+                        <span className="text-sm text-slate-600 font-medium">
+                          {new Date(item.createdAt).toLocaleDateString('vi-VN')}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
                         <button 
-                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                          className="h-9 w-9 flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:shadow-md rounded-xl transition-all"
                           title="Xem chi tiết"
                         >
-                          <span className="material-symbols-outlined text-[20px]">visibility</span>
+                          <span className="material-symbols-outlined text-[18px]">visibility</span>
                         </button>
                         <button 
-                          onClick={() => onDelete(item.id)}
-                          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                          onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
+                          className="h-9 w-9 flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-200 hover:shadow-md rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                           title="Xóa"
                           disabled={item.status?.toLowerCase() !== 'draft'}
                         >
-                          <span className="material-symbols-outlined text-[20px]">delete</span>
+                          <span className="material-symbols-outlined text-[18px]">delete</span>
                         </button>
                       </div>
                     </td>
