@@ -8,9 +8,14 @@ interface PayrollTableProps {
 }
 
 export const PayrollTable: React.FC<PayrollTableProps> = ({ groups, onDelete, isLoading }) => {
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
-    groups.reduce((acc, group) => ({ ...acc, [group.monthYear]: true }), {})
-  );
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+
+  React.useEffect(() => {
+    if (groups.length > 0 && Object.keys(expandedGroups).length === 0) {
+      // Expand only the first (newest) group by default
+      setExpandedGroups({ [groups[0].monthYear]: true });
+    }
+  }, [groups]);
 
   const toggleGroup = (monthYear: string) => {
     setExpandedGroups(prev => ({

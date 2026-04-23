@@ -46,12 +46,13 @@ namespace ERP.Services.Payroll
 
             var grouped = periods
                 .GroupBy(p => new { p.Month, p.Year })
+                .OrderByDescending(g => g.Key.Year)
+                .ThenByDescending(g => g.Key.Month)
                 .Select(g => new PayrollGroupDto
                 {
                     MonthYear = $"Tháng {g.Key.Month}/{g.Key.Year}",
                     Items = g.ToList()
                 })
-                .OrderByDescending(g => g.MonthYear) // This might not be perfect for sorting dates as strings, but since we sorted periods DESC first, it should be okay. Actually, better to re-calculate sort.
                 .ToList();
 
             return new PayrollPagedResponseDto
