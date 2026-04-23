@@ -12,6 +12,12 @@ export const PayrollListPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const loadPayrolls = useCallback(async () => {
     setIsLoading(true);
@@ -37,10 +43,12 @@ export const PayrollListPage: React.FC = () => {
       await payrollService.deletePayroll(deleteId);
       setDeleteId(null);
       void loadPayrolls();
-      // In a real app, I'd trigger a Toast here.
-    } catch (error) {
+      showToast('Xóa bảng lương thành công', 'success');
+    } catch (error: any) {
       console.error('Failed to delete payroll:', error);
-      alert('Không thể xóa bảng lương. Có lỗi xảy ra.');
+      const errorMsg = error.response?.data?.Message || error.message || 'Không thể xóa bảng lương. Có lỗi xảy ra.';
+      showToast(errorMsg, 'error');
+      setDeleteId(null);
     }
   };
 
@@ -154,6 +162,18 @@ export const PayrollListPage: React.FC = () => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed bottom-6 right-6 z-[2000] px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-5 duration-300 ${
+          toast.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
+        }`}>
+          <span className="material-symbols-outlined text-[24px]">
+            {toast.type === 'success' ? 'check_circle' : 'error'}
+          </span>
+          <span className="font-bold">{toast.message}</span>
         </div>
       )}
     </div>
