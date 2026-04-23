@@ -269,36 +269,36 @@ namespace ERP.Services.Auth
         {
             try
             {
-                var normalizedEmail = dto.Email?.Trim();
-                var firebaseResult = await _firebaseService.SignInWithPasswordAsync(normalizedEmail ?? string.Empty, dto.Password);
-                if (!firebaseResult.Success)
-                {
-                    return new AuthResponseDto { Success = false, Message = firebaseResult.Message ?? "Dang nhap that bai" };
-                }
+            var normalizedEmail = dto.Email?.Trim();
+            var firebaseResult = await _firebaseService.SignInWithPasswordAsync(normalizedEmail ?? string.Empty, dto.Password);
+            if (!firebaseResult.Success)
+            {
+                return new AuthResponseDto { Success = false, Message = firebaseResult.Message ?? "Dang nhap that bai" };
+            }
 
-                var allowAutoProvisionEmployee =
-                    !string.IsNullOrWhiteSpace(firebaseResult.LocalId) &&
-                    !firebaseResult.LocalId.StartsWith("bypass:", StringComparison.OrdinalIgnoreCase);
+            var allowAutoProvisionEmployee =
+                !string.IsNullOrWhiteSpace(firebaseResult.LocalId) &&
+                !firebaseResult.LocalId.StartsWith("bypass:", StringComparison.OrdinalIgnoreCase);
 
-                var localUser = await EnsureLocalUserForLoginAsync(
-                    firebaseResult.LocalId,
-                    firebaseResult.Email ?? normalizedEmail,
-                    allowAutoProvisionEmployee,
-                    sessionContext.ResolvedTenantId
-                );
-                if (localUser == null)
+            var localUser = await EnsureLocalUserForLoginAsync(
+                firebaseResult.LocalId,
+                firebaseResult.Email ?? normalizedEmail,
+                allowAutoProvisionEmployee,
+                sessionContext.ResolvedTenantId
+            );
+            if (localUser == null)
+            {
+                return new AuthResponseDto
                 {
-                    return new AuthResponseDto
-                    {
-                        Success = false,
-                        Message = "Tai khoan chua duoc dong bo vao he thong. Vui long lien he quan tri vien."
-                    };
-                }
+                    Success = false,
+                    Message = "Tai khoan chua duoc dong bo vao he thong. Vui long lien he quan tri vien."
+                };
+            }
 
                 var userInfo = await BuildUserInfoAsync(localUser);
                 if (userInfo == null)
                 {
-                    return new AuthResponseDto { Success = false, Message = "Khong the tai thong tin nguoi dung" };
+                    throw new AuthenticationSystemException("Khong the tai thong tin nguoi dung sau khi xac thuc dang nhap.");
                 }
 
                 var workspaceMismatch = ValidateResolvedWorkspace(userInfo, sessionContext, "login");
@@ -341,11 +341,7 @@ namespace ERP.Services.Auth
             catch (Exception ex)
             {
                 _logger.LogError(ex, "🔴 CRITICAL ERROR in LoginAsync for user {Email}: {Message}", dto?.Email, ex.Message);
-                return new AuthResponseDto 
-                { 
-                    Success = false, 
-                    Message = $"Loi he thong: {ex.Message}" // Show actual message for debugging
-                };
+                throw;
             }
         }
 
@@ -1027,6 +1023,28 @@ namespace ERP.Services.Auth
                 
                 // ✅ CRITICAL FIX: Ensure role names are always ENGLISH for code consistency
                 // Many places check role.name against AuthSecurityConstants (English), so we need consistency
+                var adminRoleId = await _context.Roles
+                    .IgnoreQueryFilters()
+                    .Where(r => r.is_active && r.name == AuthSecurityConstants.RoleAdmin)
+                    .Select(r => r.Id)
+                    .FirstOrDefaultAsync();
+
+                if (adminRoleId == 0)
+                {
+                    adminRoleId = AuthSecurityConstants.RoleAdminId;
+                }
+
+                var employeeRoleId = await _context.Roles
+                    .IgnoreQueryFilters()
+                    .Where(r => r.is_active && r.name == AuthSecurityConstants.RoleEmployee)
+                    .Select(r => r.Id)
+                    .FirstOrDefaultAsync();
+
+                if (employeeRoleId == 0)
+                {
+                    employeeRoleId = AuthSecurityConstants.RoleEmployeeId;
+                }
+
                 await SyncRoleNamesToEnglishAsync();
 
                 // 3. Logic assigning default role for new users & fixing broken roles
@@ -1044,11 +1062,11 @@ namespace ERP.Services.Auth
                     .AnyAsync(inv => inv.OwnerEmail.ToLower() == email.ToLower() && inv.Status == "activated");
                 
                 var isAdminEligible = isMasterEmail || isWorkspaceOwner;
-                var defaultRoleId = isAdminEligible ? AuthSecurityConstants.RoleAdminId : AuthSecurityConstants.RoleEmployeeId;
+                var defaultRoleId = isAdminEligible ? adminRoleId : employeeRoleId;
 
                 // ✅ NEW: Check if user has only negative/invalid roleIds (e.g., Staff role for admin)
                 // If workspace owner/master email but only has Staff role, promote to Admin
-                if (isAdminEligible && activeRoleIds.Count > 0 && !activeRoleIds.Contains(AuthSecurityConstants.RoleAdminId))
+                if (isAdminEligible && activeRoleIds.Count > 0 && !activeRoleIds.Contains(adminRoleId))
                 {
                     // Admin-eligible user but no Admin role - this is incorrect, need to add Admin role
                     _logger.LogWarning(
@@ -1058,7 +1076,7 @@ namespace ERP.Services.Auth
                     _context.UserRoles.Add(new UserRoles
                     {
                         user_id = userId,
-                        role_id = AuthSecurityConstants.RoleAdminId,
+                        role_id = adminRoleId,
                         assignment_reason = isWorkspaceOwner 
                             ? "Workspace Owner Auto-Promotion (LOGIN)" 
                             : "Master Email Auto-Promotion (OLD ACCOUNT)",
@@ -1087,12 +1105,12 @@ namespace ERP.Services.Auth
                     return;
                 }
 
-                if (isMasterEmail && !activeRoleIds.Contains(AuthSecurityConstants.RoleAdminId))
+                if (isMasterEmail && !activeRoleIds.Contains(adminRoleId))
                 {
                     _context.UserRoles.Add(new UserRoles
                     {
                         user_id = userId,
-                        role_id = AuthSecurityConstants.RoleAdminId,
+                        role_id = adminRoleId,
                         assignment_reason = "Master Email Promotion",
                         is_active = true,
                         CreatedAt = DateTime.UtcNow,

@@ -182,12 +182,19 @@ namespace ERP.Services.Authorization
                 return false;
 
             var roleIds = userRoles.Select(r => r.Id).ToList();
+            var roleNames = userRoles
+                .Select(r => r.name)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .ToList();
 
             // [CRITICAL FIX] Admin/Director bypass - full access to all resources within their scope
             // Prevents 403 when ActionPermissions table hasn't been seeded for new tenants
             if (roleIds.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleSuperAdminId) || 
                 roleIds.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleAdminId) ||
-                roleIds.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleDirectorId))
+                roleIds.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleDirectorId) ||
+                roleNames.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleSuperAdmin, StringComparer.OrdinalIgnoreCase) ||
+                roleNames.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleAdmin, StringComparer.OrdinalIgnoreCase) ||
+                roleNames.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleDirector, StringComparer.OrdinalIgnoreCase))
             {
                 return true;
             }

@@ -368,6 +368,8 @@ if (!app.Environment.IsDevelopment())
 }
 app.UseCors("AllowFrontend");
 
+app.UseLoginErrorLogging();
+app.UseGlobalExceptionHandling();
 app.UseSubdomainResolution();
 app.UseAuthentication();
 app.UseRlsSessionContext();

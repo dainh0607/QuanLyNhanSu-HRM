@@ -410,7 +410,10 @@ namespace ERP.Services.Employees
                 throw new Exception($"Nhóm truy cập ID {dto.AccessGroupId} không tồn tại hoặc đã ngừng hoạt động.");
 
             // Constraint: Only Admin can create Admin
-            if (dto.AccessGroupId.Value == AuthSecurityConstants.RoleAdminId)
+            var isAdminAccessGroup = dto.AccessGroupId.Value == AuthSecurityConstants.RoleAdminId ||
+                string.Equals(accessGroup.name, AuthSecurityConstants.RoleAdmin, StringComparison.OrdinalIgnoreCase);
+
+            if (isAdminAccessGroup)
             {
                 var isAdmin = await _authService.CanPerformAction(currentUserId, "Manage", "System");
                 

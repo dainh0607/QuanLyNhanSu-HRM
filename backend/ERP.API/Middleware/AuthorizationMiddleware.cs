@@ -38,31 +38,21 @@ namespace ERP.API.Middleware
                 return;
             }
 
-            try
+            // Get user ID from claims
+            var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdClaim?.Value, out var userId))
             {
-                // Get user ID from claims
-                var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier);
-                if (!int.TryParse(userIdClaim?.Value, out var userId))
-                {
-                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    await context.Response.WriteAsJsonAsync(new { error = "Invalid user ID in token" });
-                    return;
-                }
-
-                // Get user scope info and store in HttpContext for use in controllers
-                var scopeInfo = await authService.GetUserScopeInfo(userId);
-                context.Items["UserScope"] = scopeInfo;
-                context.Items["UserId"] = userId;
-
-                _logger.LogDebug($"[AUTH] User {userId} scope: TenantId={scopeInfo.TenantId}, RegionId={scopeInfo.RegionId}, BranchId={scopeInfo.BranchId}, DeptId={scopeInfo.DepartmentId}");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[AUTH] Error in authorization middleware");
-                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                await context.Response.WriteAsJsonAsync(new { error = "Authorization check failed" });
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await context.Response.WriteAsJsonAsync(new { error = "Invalid user ID in token" });
                 return;
             }
+
+            // Let unexpected exceptions bubble to the global exception middleware.
+            var scopeInfo = await authService.GetUserScopeInfo(userId);
+            context.Items["UserScope"] = scopeInfo;
+            context.Items["UserId"] = userId;
+
+            _logger.LogDebug($"[AUTH] User {userId} scope: TenantId={scopeInfo.TenantId}, RegionId={scopeInfo.RegionId}, BranchId={scopeInfo.BranchId}, DeptId={scopeInfo.DepartmentId}");
 
             await _next(context);
         }

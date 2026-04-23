@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ERP.Services\ERP.Services.csproj" />
+    <ProjectReference Include="..\ERP.API\ERP.API.csproj" />
   </ItemGroup>
 
 </Project>

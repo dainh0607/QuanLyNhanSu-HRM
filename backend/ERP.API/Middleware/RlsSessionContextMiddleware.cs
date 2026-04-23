@@ -33,63 +33,50 @@ namespace ERP.API.Middleware
                 return;
             }
 
-            try
+            var tokenType = context.User.FindFirst(AuthSecurityConstants.TokenTypeClaimType)?.Value;
+            if (string.Equals(tokenType, AuthSecurityConstants.SignerTokenType, StringComparison.OrdinalIgnoreCase))
             {
-                var tokenType = context.User.FindFirst(AuthSecurityConstants.TokenTypeClaimType)?.Value;
-                if (string.Equals(tokenType, AuthSecurityConstants.SignerTokenType, StringComparison.OrdinalIgnoreCase))
-                {
-                    await _next(context);
-                    return;
-                }
-
-                // Extract claims from JWT.
-                var tenantIdStr = context.User.FindFirst("tenant_id")?.Value;
-                var userIdStr = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                var employeeIdStr = context.User.FindFirst("EmployeeId")?.Value;
-                var scopeLevel = context.User.FindFirst("scope_level")?.Value ?? "PERSONAL";
-                var regionIdStr = context.User.FindFirst("region_id")?.Value;
-                var branchIdStr = context.User.FindFirst("branch_id")?.Value;
-                var departmentIdStr = context.User.FindFirst("department_id")?.Value;
-                var isSystemAdminStr = context.User.FindFirst("is_system_admin")?.Value;
-
-                if (!int.TryParse(tenantIdStr, out var tenantId) || !int.TryParse(userIdStr, out var userId))
-                {
-                    await _next(context);
-                    return;
-                }
-
-                if (!await ValidateResolvedWorkspaceAsync(context, db, tenantId, userId))
-                {
-                    return;
-                }
-
-                int? employeeId = int.TryParse(employeeIdStr, out var empId) ? empId : null;
-                int? regionId = int.TryParse(regionIdStr, out var regId) ? regId : null;
-                int? branchId = int.TryParse(branchIdStr, out var brId) ? brId : null;
-                int? departmentId = int.TryParse(departmentIdStr, out var deptId) ? deptId : null;
-                var isSystemAdmin = string.Equals(isSystemAdminStr, "true", StringComparison.OrdinalIgnoreCase);
-
-                await rlsService.SetRlsContextAsync(
-                    tenantId,
-                    userId,
-                    employeeId,
-                    scopeLevel,
-                    regionId,
-                    branchId,
-                    departmentId,
-                    isSystemAdmin,
-                    context.Connection.RemoteIpAddress?.ToString());
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[RLS] Failed to establish tenant session context for {Path}", context.Request.Path);
-                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                await context.Response.WriteAsJsonAsync(new
-                {
-                    error = "Failed to establish workspace security context"
-                });
+                await _next(context);
                 return;
             }
+
+            // Extract claims from JWT.
+            var tenantIdStr = context.User.FindFirst("tenant_id")?.Value;
+            var userIdStr = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var employeeIdStr = context.User.FindFirst("EmployeeId")?.Value;
+            var scopeLevel = context.User.FindFirst("scope_level")?.Value ?? "PERSONAL";
+            var regionIdStr = context.User.FindFirst("region_id")?.Value;
+            var branchIdStr = context.User.FindFirst("branch_id")?.Value;
+            var departmentIdStr = context.User.FindFirst("department_id")?.Value;
+            var isSystemAdminStr = context.User.FindFirst("is_system_admin")?.Value;
+
+            if (!int.TryParse(tenantIdStr, out var tenantId) || !int.TryParse(userIdStr, out var userId))
+            {
+                await _next(context);
+                return;
+            }
+
+            if (!await ValidateResolvedWorkspaceAsync(context, db, tenantId, userId))
+            {
+                return;
+            }
+
+            int? employeeId = int.TryParse(employeeIdStr, out var empId) ? empId : null;
+            int? regionId = int.TryParse(regionIdStr, out var regId) ? regId : null;
+            int? branchId = int.TryParse(branchIdStr, out var brId) ? brId : null;
+            int? departmentId = int.TryParse(departmentIdStr, out var deptId) ? deptId : null;
+            var isSystemAdmin = string.Equals(isSystemAdminStr, "true", StringComparison.OrdinalIgnoreCase);
+
+            await rlsService.SetRlsContextAsync(
+                tenantId,
+                userId,
+                employeeId,
+                scopeLevel,
+                regionId,
+                branchId,
+                departmentId,
+                isSystemAdmin,
+                context.Connection.RemoteIpAddress?.ToString());
 
             await _next(context);
         }

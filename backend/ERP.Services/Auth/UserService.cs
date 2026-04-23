@@ -301,9 +301,11 @@ namespace ERP.Services.Auth
 
         private async Task AssignRoleInternalAsync(int userId, int roleId, int? tenantId = null, string? assignmentReason = null, int? branchId = null, int? regionId = null, int? departmentId = null)
         {
+            var resolvedRoleId = await ResolveRoleIdForAssignmentAsync(roleId);
+
             var existingRole = await _context.UserRoles
                 .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(ur => ur.user_id == userId && ur.role_id == roleId);
+                .FirstOrDefaultAsync(ur => ur.user_id == userId && ur.role_id == resolvedRoleId);
 
             if (existingRole != null)
             {
@@ -325,7 +327,7 @@ namespace ERP.Services.Auth
             var userRole = new UserRoles
             {
                 user_id = userId,
-                role_id = roleId,
+                role_id = resolvedRoleId,
                 tenant_id = tenantId,
                 assignment_reason = assignmentReason ?? "System Assignment",
                 is_active = true,
@@ -337,6 +339,288 @@ namespace ERP.Services.Auth
             };
             _context.UserRoles.Add(userRole);
             await _context.SaveChangesAsync();
+        }
+
+        private async Task<int> ResolveRoleIdForAssignmentAsync(int requestedRoleId)
+        {
+            var exactRole = await _context.Roles
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(r => r.Id == requestedRoleId);
+
+            if (exactRole != null)
+            {
+                await EnsureRoleMetadataAsync(exactRole, requestedRoleId);
+                return exactRole.Id;
+            }
+
+            var fallbackNames = GetFallbackRoleNames(requestedRoleId);
+            if (fallbackNames.Count > 0)
+            {
+                var normalizedNames = fallbackNames
+                    .Select(name => name.ToLowerInvariant())
+                    .ToList();
+
+                var fallbackRole = await _context.Roles
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(r => r.name != null && normalizedNames.Contains(r.name.ToLower()));
+
+                if (fallbackRole != null)
+                {
+                    await EnsureRoleMetadataAsync(fallbackRole, requestedRoleId);
+
+                    _logger.LogWarning(
+                        "Requested role ID {RequestedRoleId} was not found. Falling back to existing role {ResolvedRoleId} ({RoleName}).",
+                        requestedRoleId,
+                        fallbackRole.Id,
+                        fallbackRole.name);
+
+                    return fallbackRole.Id;
+                }
+
+                var createdRole = await CreateCanonicalRoleAsync(requestedRoleId);
+                await EnsureRoleScopeAsync(createdRole.Id, requestedRoleId);
+                return createdRole.Id;
+            }
+
+            throw new InvalidOperationException(
+                $"Role ID {requestedRoleId} does not exist in Roles table. Insert was blocked before hitting FK_UserRoles_Roles_role_id.");
+        }
+
+        private async Task EnsureRoleMetadataAsync(Roles role, int requestedRoleId)
+        {
+            var needsSave = false;
+
+            if (!role.is_active)
+            {
+                role.is_active = true;
+                role.UpdatedAt = DateTime.UtcNow;
+                needsSave = true;
+            }
+
+            if (needsSave)
+            {
+                await _context.SaveChangesAsync();
+            }
+
+            await EnsureRoleScopeAsync(role.Id, requestedRoleId);
+        }
+
+        private async Task<Roles> CreateCanonicalRoleAsync(int requestedRoleId)
+        {
+            var roleName = GetCanonicalRoleName(requestedRoleId)
+                ?? throw new InvalidOperationException($"Role ID {requestedRoleId} does not exist in Roles table.");
+            var description = GetCanonicalRoleDescription(requestedRoleId);
+            var now = DateTime.UtcNow;
+
+            try
+            {
+                if (string.Equals(_context.Database.ProviderName, "Microsoft.EntityFrameworkCore.SqlServer", StringComparison.OrdinalIgnoreCase))
+                {
+                    await _context.Database.ExecuteSqlInterpolatedAsync($@"
+SET IDENTITY_INSERT [Roles] ON;
+INSERT INTO [Roles] ([id], [tenant_id], [is_system_role], [name], [description], [is_active], [created_at], [updated_at])
+VALUES ({requestedRoleId}, {(int?)null}, {true}, {roleName}, {description}, {true}, {now}, {now});
+SET IDENTITY_INSERT [Roles] OFF;");
+                }
+                else
+                {
+                    _context.Roles.Add(new Roles
+                    {
+                        Id = requestedRoleId,
+                        tenant_id = null,
+                        is_system_role = true,
+                        name = roleName,
+                        description = description,
+                        is_active = true,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    });
+
+                    await _context.SaveChangesAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Failed to create canonical role {RoleName} with requested ID {RoleId}. Trying to recover via name lookup.",
+                    roleName,
+                    requestedRoleId);
+            }
+
+            var createdRole = await _context.Roles
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(r => r.Id == requestedRoleId || r.name == roleName);
+
+            if (createdRole == null)
+            {
+                throw new InvalidOperationException(
+                    $"Unable to create or resolve role {roleName} for requested ID {requestedRoleId}.");
+            }
+
+            if (!createdRole.is_active)
+            {
+                createdRole.is_active = true;
+                createdRole.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+            }
+
+            return createdRole;
+        }
+
+        private async Task EnsureRoleScopeAsync(int actualRoleId, int requestedRoleId)
+        {
+            if (!TryGetRoleScopeDefinition(requestedRoleId, out var scopeLevel, out var isHierarchical, out var crossRegionModules))
+            {
+                return;
+            }
+
+            var existingScope = await _context.RoleScopes
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(rs => rs.role_id == actualRoleId);
+
+            if (existingScope != null)
+            {
+                var needsSave = false;
+
+                if (!existingScope.is_active)
+                {
+                    existingScope.is_active = true;
+                    needsSave = true;
+                }
+
+                if (!string.Equals(existingScope.scope_level, scopeLevel, StringComparison.OrdinalIgnoreCase))
+                {
+                    existingScope.scope_level = scopeLevel;
+                    needsSave = true;
+                }
+
+                if (existingScope.is_hierarchical != isHierarchical)
+                {
+                    existingScope.is_hierarchical = isHierarchical;
+                    needsSave = true;
+                }
+
+                if (existingScope.cross_region_modules != crossRegionModules)
+                {
+                    existingScope.cross_region_modules = crossRegionModules;
+                    needsSave = true;
+                }
+
+                if (needsSave)
+                {
+                    existingScope.updated_at = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                }
+
+                return;
+            }
+
+            _context.RoleScopes.Add(new RoleScopes
+            {
+                role_id = actualRoleId,
+                scope_level = scopeLevel,
+                is_hierarchical = isHierarchical,
+                cross_region_modules = crossRegionModules,
+                is_active = true,
+                created_at = DateTime.UtcNow,
+                updated_at = DateTime.UtcNow
+            });
+
+            await _context.SaveChangesAsync();
+        }
+
+        private static IReadOnlyList<string> GetFallbackRoleNames(int requestedRoleId)
+        {
+            var canonicalName = GetCanonicalRoleName(requestedRoleId);
+            if (canonicalName == null)
+            {
+                return Array.Empty<string>();
+            }
+
+            return requestedRoleId switch
+            {
+                AuthSecurityConstants.RoleSuperAdminId => new[] { AuthSecurityConstants.RoleSuperAdmin, AuthSecurityConstants.RoleAdmin },
+                AuthSecurityConstants.RoleEmployeeId => new[] { AuthSecurityConstants.RoleEmployee, "User", "Employee" },
+                AuthSecurityConstants.RoleAdminId => new[] { AuthSecurityConstants.RoleAdmin, "System Administrator" },
+                _ => new[] { canonicalName }
+            };
+        }
+
+        private static string? GetCanonicalRoleName(int requestedRoleId)
+        {
+            return requestedRoleId switch
+            {
+                AuthSecurityConstants.RoleSuperAdminId => AuthSecurityConstants.RoleSuperAdmin,
+                AuthSecurityConstants.RoleDirectorId => AuthSecurityConstants.RoleDirector,
+                AuthSecurityConstants.RoleRegionManagerId => AuthSecurityConstants.RoleRegionManager,
+                AuthSecurityConstants.RoleBranchManagerId => AuthSecurityConstants.RoleBranchManager,
+                AuthSecurityConstants.RoleDeptManagerId => AuthSecurityConstants.RoleDeptManager,
+                AuthSecurityConstants.RoleModuleAdminId => AuthSecurityConstants.RoleModuleAdmin,
+                AuthSecurityConstants.RoleEmployeeId => AuthSecurityConstants.RoleEmployee,
+                AuthSecurityConstants.RoleAdminId => AuthSecurityConstants.RoleAdmin,
+                _ => null
+            };
+        }
+
+        private static string GetCanonicalRoleDescription(int requestedRoleId)
+        {
+            return requestedRoleId switch
+            {
+                AuthSecurityConstants.RoleSuperAdminId => "Platform Level Administrator",
+                AuthSecurityConstants.RoleDirectorId => "Executive Board / Manager",
+                AuthSecurityConstants.RoleRegionManagerId => "Regional Manager",
+                AuthSecurityConstants.RoleBranchManagerId => "Branch Manager",
+                AuthSecurityConstants.RoleDeptManagerId => "Department/Unit Head",
+                AuthSecurityConstants.RoleModuleAdminId => "Module Specialist Admin",
+                AuthSecurityConstants.RoleEmployeeId => "Regular Employee Staff",
+                AuthSecurityConstants.RoleAdminId => "Workspace Administrator",
+                _ => "System Role"
+            };
+        }
+
+        private static bool TryGetRoleScopeDefinition(
+            int requestedRoleId,
+            out string scopeLevel,
+            out bool isHierarchical,
+            out string? crossRegionModules)
+        {
+            crossRegionModules = null;
+
+            switch (requestedRoleId)
+            {
+                case AuthSecurityConstants.RoleSuperAdminId:
+                case AuthSecurityConstants.RoleDirectorId:
+                case AuthSecurityConstants.RoleAdminId:
+                    scopeLevel = "TENANT";
+                    isHierarchical = true;
+                    return true;
+                case AuthSecurityConstants.RoleRegionManagerId:
+                    scopeLevel = "REGION";
+                    isHierarchical = true;
+                    return true;
+                case AuthSecurityConstants.RoleBranchManagerId:
+                    scopeLevel = "BRANCH";
+                    isHierarchical = true;
+                    return true;
+                case AuthSecurityConstants.RoleDeptManagerId:
+                    scopeLevel = "DEPARTMENT";
+                    isHierarchical = true;
+                    return true;
+                case AuthSecurityConstants.RoleModuleAdminId:
+                    scopeLevel = "CROSS_REGION";
+                    isHierarchical = false;
+                    crossRegionModules = "Payroll,Attendance";
+                    return true;
+                case AuthSecurityConstants.RoleEmployeeId:
+                    scopeLevel = "PERSONAL";
+                    isHierarchical = false;
+                    return true;
+                default:
+                    scopeLevel = string.Empty;
+                    isHierarchical = false;
+                    return false;
+            }
         }
 
         private async Task<List<string>> GetUserRolesAsync(int userId)
