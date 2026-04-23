@@ -697,7 +697,7 @@ export const authService = {
       }
 
       return {
-        inviteId: "",
+        token: "",
         inviteLink: "",
         email: data.email,
         expiresAt: "",
@@ -706,7 +706,7 @@ export const authService = {
       };
     } catch {
       return {
-        inviteId: "",
+        token: "",
         inviteLink: "",
         email: data.email,
         expiresAt: "",

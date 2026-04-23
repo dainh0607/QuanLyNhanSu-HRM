@@ -24,6 +24,7 @@ import { authService, hasPermission } from "./services/authService";
 import type { User } from "./services/authService";
 import { employeeService } from "./services/employeeService";
 import { SignatureManagementPage } from "./features/signature-management/SignatureListPage";
+import { PayrollListPage } from "./features/payroll/PayrollListPage";
 import "./index.css";
 
 const getInitials = (fullName: string | undefined) => {
@@ -125,7 +126,12 @@ const Header = ({
       visible: canReadShifts,
     },
     { name: "Yêu cầu", active: false, visible: true },
-    { name: "Tiền lương", active: false, visible: true },
+    {
+      name: "Tiền lương",
+      active: location.pathname.startsWith("/payroll"),
+      to: "/payroll",
+      visible: true,
+    },
     { name: "Thêm", active: false, hasDropdown: true, menuKey: "more", visible: true },
   ].filter(item => item.visible);
 
@@ -868,6 +874,25 @@ function RoutedApp() {
           element={<SigningPortalPage />}
         />
         <Route path="/sign" element={<SigningPortalPage />} />
+        <Route
+          path="/payroll"
+          element={
+            isAuthenticated ? (
+              <PermissionRoute user={user} resource="payroll" action="read">
+                <div className="min-h-screen bg-[#f8fafc] flex flex-col">
+                  <Header user={user} onLogout={handleLogout} />
+                  <PayrollListPage />
+                </div>
+              </PermissionRoute>
+            ) : (
+              <Navigate
+                to="/login"
+                replace
+                state={{ from: loginRedirectPath }}
+              />
+            )
+          }
+        />
         <Route path="*" element={<Navigate to={defaultRoute} replace />} />
       </Routes>
     </div>

@@ -211,6 +211,10 @@ namespace ERP.Entities
             // Seed Master Data via Extension Method
             modelBuilder.SeedMasterData();
 
+            // FIX: Inform EF Core about triggers on these tables to avoid OUTPUT clause errors with SQL Server
+            modelBuilder.Entity<Users>().ToTable(tb => tb.HasTrigger("tr_Users_Audit"));
+            modelBuilder.Entity<Employees>().ToTable(tb => tb.HasTrigger("tr_Employees_Audit"));
+
             // Disable cascade delete globally to avoid SQL Server multiple cascade path errors
             foreach (var relationship in modelBuilder.Model.GetEntityTypes()
                 .SelectMany(e => e.GetForeignKeys()))
@@ -223,19 +227,22 @@ namespace ERP.Entities
             {
                 if (typeof(ITenantEntity).IsAssignableFrom(entityType.ClrType))
                 {
-                    modelBuilder.Entity(entityType.ClrType).HasQueryFilter(
-                        GenerateTenantQueryFilter(entityType.ClrType)
-                    );
+                    // Use a more robust way to set query filter that EF Core can optimize and make dynamic
+                    var parameter = System.Linq.Expressions.Expression.Parameter(entityType.ClrType, "e");
+                    var body = GenerateTenantQueryFilterBody(entityType.ClrType, parameter);
+                    var lambda = System.Linq.Expressions.Expression.Lambda(body, parameter);
+
+                    modelBuilder.Entity(entityType.ClrType).HasQueryFilter(lambda);
                 }
             }
         }
 
-        private System.Linq.Expressions.LambdaExpression GenerateTenantQueryFilter(System.Type type)
+        private System.Linq.Expressions.Expression GenerateTenantQueryFilterBody(System.Type type, System.Linq.Expressions.ParameterExpression parameter)
         {
-            var parameter = System.Linq.Expressions.Expression.Parameter(type, "e");
             var tenantIdProperty = System.Linq.Expressions.Expression.Property(parameter, "tenant_id");
             
-            // Fix #1: Use a member access on the context to make it dynamic
+            // Reference the properties on the context instance (this)
+            // EF Core will replace 'this' with the current context instance at runtime
             var currentTenantId = System.Linq.Expressions.Expression.Property(
                 System.Linq.Expressions.Expression.Constant(this),
                 nameof(CurrentTenantId)
@@ -246,15 +253,19 @@ namespace ERP.Entities
                 nameof(IsSystemAdmin)
             );
 
-            // e => isSystemAdmin || e.tenant_id == this.CurrentTenantId || e.tenant_id == null
-            var body = System.Linq.Expressions.Expression.OrElse(
+            // Filter: (isSystemAdmin && currentTenantId == null) || (e.tenant_id == currentTenantId)
+            // This ensures that Tenant Admins (isSystemAdmin=true but currentTenantId is NOT null)
+            // are still restricted to their own tenant data.
+            // Only true Super Admins (isSystemAdmin=true AND currentTenantId is NULL) can see all data.
+            
+            var isSuperAdmin = System.Linq.Expressions.Expression.AndAlso(
                 isSystemAdmin,
-                System.Linq.Expressions.Expression.OrElse(
-                    System.Linq.Expressions.Expression.Equal(tenantIdProperty, currentTenantId),
-                    System.Linq.Expressions.Expression.Equal(tenantIdProperty, System.Linq.Expressions.Expression.Constant(null, typeof(int?)))
-                )
+                System.Linq.Expressions.Expression.Equal(currentTenantId, System.Linq.Expressions.Expression.Constant(null, typeof(int?)))
             );
-            return System.Linq.Expressions.Expression.Lambda(body, parameter);
+
+            var compareTenant = System.Linq.Expressions.Expression.Equal(tenantIdProperty, currentTenantId);
+            
+            return System.Linq.Expressions.Expression.OrElse(isSuperAdmin, compareTenant);
         }
 
         public override async Task<int> SaveChangesAsync(System.Threading.CancellationToken cancellationToken = default)

@@ -8,7 +8,7 @@ namespace ERP.API.Controllers
 {
     [Authorize]
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     public class PayrollsController : ControllerBase
     {
         private readonly IPayrollService _payrollService;
@@ -19,6 +19,14 @@ namespace ERP.API.Controllers
         }
 
         [HttpGet]
+        [HasPermission("payroll", "read")]
+        public async Task<IActionResult> GetPayrollTables([FromQuery] int skip = 0, [FromQuery] int take = 10)
+        {
+            var data = await _payrollService.GetPayrollTablesAsync(skip, take);
+            return Ok(data);
+        }
+
+        [HttpGet("by-period")]
         [HasPermission("payroll", "read")]
         public async Task<IActionResult> GetPayrolls([FromQuery] int month, [FromQuery] int year, [FromQuery] int skip = 0, [FromQuery] int take = 10)
         {
@@ -50,6 +58,22 @@ namespace ERP.API.Controllers
             var userId = 1; // Temporary mock user ID, in production get from Token claims
             var result = await _payrollService.ApprovePayrollAsync(id, userId);
             return Ok(new { Success = result });
+        }
+
+        [HttpDelete("{id}")]
+        [HasPermission("payroll", "delete")]
+        public async Task<IActionResult> DeletePayroll(int id)
+        {
+            try
+            {
+                var success = await _payrollService.DeletePayrollTableAsync(id);
+                if (!success) return NotFound();
+                return Ok(new { Message = "Xóa bảng lương thành công." });
+            }
+            catch (System.InvalidOperationException ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
         }
     }
 }

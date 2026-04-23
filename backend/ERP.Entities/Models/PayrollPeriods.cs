@@ -24,6 +24,12 @@ namespace ERP.Entities.Models
         [StringLength(20)]
         public string status { get; set; }
 
+        [Column("applicable_departments")]
+        public string applicable_departments { get; set; }
+
+        [Column("applicable_job_titles")]
+        public string applicable_job_titles { get; set; }
+
         public virtual ICollection<Payrolls> Payrolls { get; set; } = new HashSet<Payrolls>();
     }
 }

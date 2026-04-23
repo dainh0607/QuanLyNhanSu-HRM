@@ -49,7 +49,7 @@ namespace ERP.API.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var result = await _authService.SignUpAsync(dto);
+            var result = await _authService.SignUpAsync(dto, BuildSessionContext());
             if (!result.Success)
                 return BadRequest(result);
 

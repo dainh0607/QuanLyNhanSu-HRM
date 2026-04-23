@@ -47,7 +47,7 @@ namespace ERP.Services.Auth
             _httpClientFactory = httpClientFactory;
         }
 
-        public async Task<AuthResponseDto> SignUpAsync(SignUpDto dto)
+        public async Task<AuthResponseDto> SignUpAsync(SignUpDto dto, AuthSessionContextDto sessionContext)
         {
             IDbContextTransaction? transaction = null;
 

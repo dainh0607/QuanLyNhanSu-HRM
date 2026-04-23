@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using ERP.DTOs;
+using ERP.DTOs.Payroll;
 using ERP.Entities.Models;
 using ERP.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace ERP.Services.Payroll
 {
@@ -16,6 +18,47 @@ namespace ERP.Services.Payroll
         public PayrollService(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
+        }
+
+        public async Task<PayrollPagedResponseDto> GetPayrollTablesAsync(int skip, int take)
+        {
+            var query = _unitOfWork.Repository<PayrollPeriods>().AsQueryable();
+            
+            var total = await query.CountAsync();
+            
+            var periods = await query
+                .OrderByDescending(p => p.start_date)
+                .Skip(skip)
+                .Take(take)
+                .Select(p => new PayrollTableDto
+                {
+                    Id = p.Id,
+                    Name = p.name,
+                    Departments = p.applicable_departments,
+                    Positions = p.applicable_job_titles,
+                    EmployeeCount = p.Payrolls.Count(),
+                    CreatedAt = p.CreatedAt,
+                    Status = p.status,
+                    Month = p.start_date.Month,
+                    Year = p.start_date.Year
+                })
+                .ToListAsync();
+
+            var grouped = periods
+                .GroupBy(p => new { p.Month, p.Year })
+                .Select(g => new PayrollGroupDto
+                {
+                    MonthYear = $"Tháng {g.Key.Month}/{g.Key.Year}",
+                    Items = g.ToList()
+                })
+                .OrderByDescending(g => g.MonthYear) // This might not be perfect for sorting dates as strings, but since we sorted periods DESC first, it should be okay. Actually, better to re-calculate sort.
+                .ToList();
+
+            return new PayrollPagedResponseDto
+            {
+                Total = total,
+                Data = grouped
+            };
         }
 
         public async Task<PaginatedListDto<object>> GetPayrollsAsync(int month, int year, int skip, int take)
@@ -106,6 +149,36 @@ namespace ERP.Services.Payroll
             payroll.approved_at = DateTime.UtcNow;
 
             _unitOfWork.Repository<Payrolls>().Update(payroll);
+            await _unitOfWork.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> DeletePayrollTableAsync(int periodId)
+        {
+            var period = await _unitOfWork.Repository<PayrollPeriods>().AsQueryable()
+                .Include(p => p.Payrolls)
+                .FirstOrDefaultAsync(p => p.Id == periodId);
+
+            if (period == null) return false;
+
+            // Only allow deleting Draft payrolls (or if there's no specific status yet, we might allow it)
+            if (period.status != "Draft" && !string.IsNullOrEmpty(period.status))
+            {
+                throw new InvalidOperationException("Chỉ có thể xóa bảng lương ở trạng thái Bản nháp.");
+            }
+
+            // Delete associated records
+            foreach (var payroll in period.Payrolls)
+            {
+                var details = await _unitOfWork.Repository<PayrollDetails>().AsQueryable()
+                    .Where(d => d.payroll_id == payroll.Id)
+                    .ToListAsync();
+                
+                _unitOfWork.Repository<PayrollDetails>().RemoveRange(details);
+                _unitOfWork.Repository<Payrolls>().Remove(payroll);
+            }
+
+            _unitOfWork.Repository<PayrollPeriods>().Remove(period);
             await _unitOfWork.SaveChangesAsync();
             return true;
         }

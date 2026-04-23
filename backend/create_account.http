@@ -1,0 +1,15 @@
+@baseUrl = http://localhost:5122/api
+
+### Đăng ký tài khoản Tenant mới (Tạo Workspace mới)
+POST {{baseUrl}}/auth/sign-up
+Content-Type: application/json
+
+{
+  "email": "kfrog1233@gmail.com",
+  "password": "trihung123",
+  "confirmPassword": "trihung123",
+  "fullName": "Chủ sở hữu công ty",
+  "companyName": "Công ty TNHH Test Dự án",
+  "phoneNumber": "+84987654321",
+  "employeeCode": "ADMIN-001"
+}
