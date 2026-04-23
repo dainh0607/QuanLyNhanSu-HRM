@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -11,11 +11,6 @@ namespace ERP.Entities.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<int>(
-                name: "secondary_job_title_id",
-                table: "Employees",
-                type: "int",
-                nullable: true);
 
             migrationBuilder.CreateTable(
                 name: "EmploymentHistoryLogs",
@@ -72,10 +67,6 @@ namespace ERP.Entities.Migrations
                         onDelete: ReferentialAction.Restrict);
                 });
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Employees_secondary_job_title_id",
-                table: "Employees",
-                column: "secondary_job_title_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_EmploymentHistoryLogs_contract_type_id",
@@ -102,32 +93,16 @@ namespace ERP.Entities.Migrations
                 table: "EmploymentHistoryLogs",
                 column: "province_id");
 
-            migrationBuilder.AddForeignKey(
-                name: "FK_Employees_JobTitles_secondary_job_title_id",
-                table: "Employees",
-                column: "secondary_job_title_id",
-                principalTable: "JobTitles",
-                principalColumn: "id",
-                onDelete: ReferentialAction.Restrict);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_Employees_JobTitles_secondary_job_title_id",
-                table: "Employees");
 
             migrationBuilder.DropTable(
                 name: "EmploymentHistoryLogs");
 
-            migrationBuilder.DropIndex(
-                name: "IX_Employees_secondary_job_title_id",
-                table: "Employees");
 
-            migrationBuilder.DropColumn(
-                name: "secondary_job_title_id",
-                table: "Employees");
         }
     }
 }

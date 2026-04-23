@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using ERP.DTOs.ControlPlane;
+using ERP.DTOs;
 
 namespace ERP.Services.ControlPlane
 {
@@ -14,6 +15,10 @@ namespace ERP.Services.ControlPlane
         Task<List<SubscriptionPlanDto>> GetPlansCatalogAsync(string? search, string? status);
         Task<BillingListPageDto> GetBillingCatalogAsync(string? search, string? status, int page, int pageSize);
         Task<List<SupportGrantDto>> GetSupportTicketsAsync(string? search, string? status);
+        
+        // Tenant Monitoring Dashboard
+        Task<PaginatedListDto<TenantMasterDto>> GetTenantMonitoringListAsync(string? search, string? status, int page, int pageSize);
+        Task<TenantDetailDto?> GetTenantMonitoringDetailAsync(int tenantId);
 
         Task<PortalMutationResultDto<WorkspaceOwnerProvisioningDto>> CreateWorkspaceOwnerAsync(WorkspaceOwnerCreateInputDto input);
         Task<PortalMutationResultDto<WorkspaceOwnerProvisioningDto>> ResendWorkspaceOwnerInviteAsync(string ownerId);
@@ -22,6 +27,8 @@ namespace ERP.Services.ControlPlane
         Task<PortalMutationResultDto<SubscriptionPlanDto>> CreateSubscriptionPlanAsync(SubscriptionPlanInputDto input);
         Task<PortalMutationResultDto<SubscriptionPlanDto>> UpdateSubscriptionPlanAsync(string planId, SubscriptionPlanInputDto input);
         Task<PortalMutationResultDto<SubscriptionPlanDto>> DeleteSubscriptionPlanAsync(string planId);
+        Task<SubscriptionPlanDto?> GetSubscriptionPlanAsync(string planId);
+        Task<List<string>> GetAvailableModulesAsync();
 
         Task<PortalMutationResultDto<InvoiceMetadataDto>> MarkInvoicePaidAsync(string invoiceId, ManualPaymentInputDto input);
         Task<PortalMutationResultDto<InvoiceMetadataDto>> SendInvoiceReminderAsync(string invoiceId);

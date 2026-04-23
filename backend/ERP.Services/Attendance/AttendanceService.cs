@@ -36,6 +36,57 @@ namespace ERP.Services.Attendance
             var user = await _unitOfWork.Repository<Users>().GetByIdAsync(userId);
             if (user == null) throw new Exception("Không tìm thấy thông tin người dùng.");
 
+            var settings = await _unitOfWork.Repository<AttendanceSettings>()
+                .AsQueryable()
+                .FirstOrDefaultAsync(s => s.employee_id == user.employee_id);
+
+            // 1. Kiểm tra cấu hình "Không cần chấm công"
+            if (settings?.no_attendance == true)
+            {
+                _logger.LogInformation($"Nhân viên {user.employee_id} được cấu hình không cần chấm công.");
+            }
+
+            // 2. Kiểm tra GPS nếu bắt buộc
+            if (settings?.track_location == true && (!dto.Latitude.HasValue || !dto.Longitude.HasValue))
+            {
+                throw new Exception("Vị trí GPS là bắt buộc để chấm công.");
+            }
+
+            // 3. Kiểm tra thiết bị nếu không cho phép đăng nhập nhiều thiết bị
+            if (settings?.multi_device_login == false)
+            {
+                if (string.IsNullOrEmpty(dto.DeviceInfo))
+                {
+                    throw new Exception("Thông tin thiết bị là bắt buộc.");
+                }
+
+                var registeredDevice = await _unitOfWork.Repository<Devices>()
+                    .AsQueryable()
+                    .FirstOrDefaultAsync(d => d.employee_id == user.employee_id);
+
+                if (registeredDevice != null)
+                {
+                    if (registeredDevice.imei != dto.DeviceInfo)
+                    {
+                        throw new Exception("Thiết bị này không khớp với thiết bị đã đăng ký của bạn.");
+                    }
+                }
+                else
+                {
+                    // Đăng ký thiết bị đầu tiên
+                    var newDevice = new Devices
+                    {
+                        employee_id = user.employee_id,
+                        imei = dto.DeviceInfo,
+                        device_name = "Thiết bị đăng ký lần đầu",
+                        tenant_id = _userContext.TenantId,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+                    await _unitOfWork.Repository<Devices>().AddAsync(newDevice);
+                }
+            }
+
             var record = new AttendanceRecords
             {
                 employee_id = user.employee_id,
@@ -46,6 +97,7 @@ namespace ERP.Services.Attendance
                 note = dto.Note ?? "Check-in từ Web/Mobile",
                 source = "Web",
                 verified = true,
+                tenant_id = _userContext.TenantId,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -59,6 +111,28 @@ namespace ERP.Services.Attendance
             var user = await _unitOfWork.Repository<Users>().GetByIdAsync(userId);
             if (user == null) throw new Exception("Không tìm thấy thông tin người dùng.");
 
+            var settings = await _unitOfWork.Repository<AttendanceSettings>()
+                .AsQueryable()
+                .FirstOrDefaultAsync(s => s.employee_id == user.employee_id);
+
+            // Tương tự logic check-in cho phần thiết bị và vị trí
+            if (settings?.track_location == true && (!dto.Latitude.HasValue || !dto.Longitude.HasValue))
+            {
+                throw new Exception("Vị trí GPS là bắt buộc để chấm công.");
+            }
+
+            if (settings?.multi_device_login == false && !string.IsNullOrEmpty(dto.DeviceInfo))
+            {
+                var registeredDevice = await _unitOfWork.Repository<Devices>()
+                    .AsQueryable()
+                    .FirstOrDefaultAsync(d => d.employee_id == user.employee_id);
+
+                if (registeredDevice != null && registeredDevice.imei != dto.DeviceInfo)
+                {
+                    throw new Exception("Thiết bị này không khớp với thiết bị đã đăng ký của bạn.");
+                }
+            }
+
             var record = new AttendanceRecords
             {
                 employee_id = user.employee_id,
@@ -69,6 +143,7 @@ namespace ERP.Services.Attendance
                 note = dto.Note ?? "Check-out từ Web/Mobile",
                 source = "Web",
                 verified = true,
+                tenant_id = _userContext.TenantId,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -172,26 +247,90 @@ namespace ERP.Services.Attendance
             var startDate = new DateTime(year, month, 1);
             var endDate = startDate.AddMonths(1);
 
+            var settings = await _unitOfWork.Repository<AttendanceSettings>()
+                .AsQueryable()
+                .FirstOrDefaultAsync(s => s.employee_id == employeeId);
+
+            if (settings?.no_attendance == true)
+            {
+                return new AttendanceSummaryDto
+                {
+                    EmployeeId = employeeId,
+                    Month = month,
+                    Year = year,
+                    TotalDays = DateTime.DaysInMonth(year, month),
+                    PresentDays = DateTime.DaysInMonth(year, month), // Coi như đi đủ
+                    AbsentDays = 0,
+                    LateCount = 0,
+                    EarlyCount = 0
+                };
+            }
+
             var records = await _unitOfWork.Repository<AttendanceRecords>()
                 .AsQueryable()
                 .Where(r => r.employee_id == employeeId && r.record_time >= startDate && r.record_time < endDate)
                 .ToListAsync();
 
-            // Logic đơn giản để tính toán summary
-            // Trong thực tế sẽ cần so khớp với ca làm việc để tính Late/Early
-            var presentDays = records.Select(r => r.record_time.Date).Distinct().Count();
-            var totalDaysInMonth = DateTime.DaysInMonth(year, month);
+            var assignments = await _unitOfWork.Repository<ShiftAssignments>()
+                .AsQueryable()
+                .Include(a => a.Shift)
+                .Where(a => a.employee_id == employeeId && a.assignment_date >= startDate && a.assignment_date < endDate && a.status == "published")
+                .ToListAsync();
+
+            int lateCount = 0;
+            int earlyCount = 0;
+            int presentDays = records.Select(r => r.record_time.Date).Distinct().Count();
+
+            foreach (var assignment in assignments)
+            {
+                var shift = assignment.Shift;
+                var date = assignment.assignment_date.Date;
+
+                // Kiểm tra đi muộn
+                var firstIn = records
+                    .Where(r => r.record_time.Date == date && r.record_type == "IN")
+                    .OrderBy(r => r.record_time)
+                    .FirstOrDefault();
+
+                if (firstIn != null)
+                {
+                    var actualInTime = firstIn.record_time.TimeOfDay;
+                    var allowedInTime = shift.start_time.Add(TimeSpan.FromMinutes(shift.grace_period_in));
+                    
+                    if (actualInTime > allowedInTime && settings?.allow_late_in_out != true)
+                    {
+                        lateCount++;
+                    }
+                }
+
+                // Kiểm tra về sớm
+                var lastOut = records
+                    .Where(r => r.record_time.Date == date && r.record_type == "OUT")
+                    .OrderByDescending(r => r.record_time)
+                    .FirstOrDefault();
+
+                if (lastOut != null)
+                {
+                    var actualOutTime = lastOut.record_time.TimeOfDay;
+                    var requiredOutTime = shift.end_time.Subtract(TimeSpan.FromMinutes(shift.grace_period_out));
+
+                    if (actualOutTime < requiredOutTime && settings?.allow_early_in_out != true)
+                    {
+                        earlyCount++;
+                    }
+                }
+            }
 
             return new AttendanceSummaryDto
             {
                 EmployeeId = employeeId,
                 Month = month,
                 Year = year,
-                TotalDays = totalDaysInMonth,
+                TotalDays = assignments.Count > 0 ? assignments.Count : DateTime.DaysInMonth(year, month),
                 PresentDays = presentDays,
-                AbsentDays = totalDaysInMonth - presentDays, // Giả định đơn giản
-                LateCount = 0, // Placeholder
-                EarlyCount = 0 // Placeholder
+                AbsentDays = Math.Max(0, assignments.Count - presentDays),
+                LateCount = lateCount,
+                EarlyCount = earlyCount
             };
         }
 

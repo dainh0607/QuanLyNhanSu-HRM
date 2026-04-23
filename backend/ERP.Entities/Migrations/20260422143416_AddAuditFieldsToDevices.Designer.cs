@@ -4,6 +4,7 @@ using ERP.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ERP.Entities.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260422143416_AddAuditFieldsToDevices")]
+    partial class AddAuditFieldsToDevices
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2394,72 +2397,6 @@ namespace ERP.Entities.Migrations
                     b.HasIndex("TenantId");
 
                     b.ToTable("Sys_SupportAccessGrants");
-                });
-
-            modelBuilder.Entity("ERP.Entities.Models.ControlPlane.TenantMetadata", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("updated_at");
-
-                    b.Property<string>("last_invoice_code")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("last_invoice_code");
-
-                    b.Property<DateTime>("last_sync_at")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("last_sync_at");
-
-                    b.Property<long>("max_storage_quota_bytes")
-                        .HasColumnType("bigint")
-                        .HasColumnName("max_storage_quota_bytes");
-
-                    b.Property<string>("rental_status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasColumnName("rental_status");
-
-                    b.Property<long>("storage_usage_bytes")
-                        .HasColumnType("bigint")
-                        .HasColumnName("storage_usage_bytes");
-
-                    b.Property<string>("subscription_plan_name")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("subscription_plan_name");
-
-                    b.Property<string>("support_access_status")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("support_access_status");
-
-                    b.Property<int>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<int>("total_employees")
-                        .HasColumnType("int")
-                        .HasColumnName("total_employees");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("tenant_id");
-
-                    b.ToTable("TenantMetadata");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.ControlPlane.TenantSubscription", b =>
@@ -9345,17 +9282,6 @@ namespace ERP.Entities.Migrations
                     b.HasOne("ERP.Entities.Models.Tenants", "Tenant")
                         .WithMany()
                         .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Tenant");
-                });
-
-            modelBuilder.Entity("ERP.Entities.Models.ControlPlane.TenantMetadata", b =>
-                {
-                    b.HasOne("ERP.Entities.Models.Tenants", "Tenant")
-                        .WithMany()
-                        .HasForeignKey("tenant_id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 

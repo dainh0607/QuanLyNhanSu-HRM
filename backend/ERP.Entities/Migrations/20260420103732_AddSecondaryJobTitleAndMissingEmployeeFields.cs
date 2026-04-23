@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -154,11 +154,12 @@ namespace ERP.Entities.Migrations
                 oldType: "nvarchar(500)",
                 oldMaxLength: 500);
 
-            migrationBuilder.AddColumn<int>(
-                name: "secondary_job_title_id",
-                table: "Employees",
-                type: "int",
-                nullable: true);
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Employees]') AND name = 'secondary_job_title_id')
+                BEGIN
+                    ALTER TABLE [Employees] ADD [secondary_job_title_id] int NULL;
+                END
+            ");
 
             migrationBuilder.AlterColumn<string>(
                 name: "note",
@@ -614,34 +615,44 @@ namespace ERP.Entities.Migrations
                 oldType: "nvarchar(100)",
                 oldMaxLength: 100);
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Employees_secondary_job_title_id",
-                table: "Employees",
-                column: "secondary_job_title_id");
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE object_id = OBJECT_ID(N'[Employees]') AND name = 'IX_Employees_secondary_job_title_id')
+                BEGIN
+                    CREATE INDEX [IX_Employees_secondary_job_title_id] ON [Employees] ([secondary_job_title_id]);
+                END
+            ");
 
-            migrationBuilder.AddForeignKey(
-                name: "FK_Employees_JobTitles_secondary_job_title_id",
-                table: "Employees",
-                column: "secondary_job_title_id",
-                principalTable: "JobTitles",
-                principalColumn: "id",
-                onDelete: ReferentialAction.Restrict);
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (SELECT * FROM sys.foreign_keys WHERE object_id = OBJECT_ID(N'FK_Employees_JobTitles_secondary_job_title_id') AND parent_object_id = OBJECT_ID(N'[Employees]'))
+                BEGIN
+                    ALTER TABLE [Employees] ADD CONSTRAINT [FK_Employees_JobTitles_secondary_job_title_id] FOREIGN KEY ([secondary_job_title_id]) REFERENCES [JobTitles] ([id]) ON DELETE NO ACTION;
+                END
+            ");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_Employees_JobTitles_secondary_job_title_id",
-                table: "Employees");
+            migrationBuilder.Sql(@"
+                IF EXISTS (SELECT * FROM sys.foreign_keys WHERE object_id = OBJECT_ID(N'FK_Employees_JobTitles_secondary_job_title_id') AND parent_object_id = OBJECT_ID(N'[Employees]'))
+                BEGIN
+                    ALTER TABLE [Employees] DROP CONSTRAINT [FK_Employees_JobTitles_secondary_job_title_id];
+                END
+            ");
 
-            migrationBuilder.DropIndex(
-                name: "IX_Employees_secondary_job_title_id",
-                table: "Employees");
+            migrationBuilder.Sql(@"
+                IF EXISTS (SELECT * FROM sys.indexes WHERE object_id = OBJECT_ID(N'[Employees]') AND name = 'IX_Employees_secondary_job_title_id')
+                BEGIN
+                    DROP INDEX [IX_Employees_secondary_job_title_id] ON [Employees];
+                END
+            ");
 
-            migrationBuilder.DropColumn(
-                name: "secondary_job_title_id",
-                table: "Employees");
+            migrationBuilder.Sql(@"
+                IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Employees]') AND name = 'secondary_job_title_id')
+                BEGIN
+                    ALTER TABLE [Employees] DROP COLUMN [secondary_job_title_id];
+                END
+            ");
 
             migrationBuilder.AlterColumn<string>(
                 name: "assignment_reason",
