@@ -22,6 +22,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="**\*.old\**" />
+    <Compile Remove="**\*.bak" />
+    <Compile Remove="**\*.temp" />
+    <Compile Remove="**\*.bak\**" />
+    <Compile Remove="Integration.old\**" />
+    <Compile Remove="Controllers.old\**" />
+    <Compile Remove="Services\Auth.old\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\ERP.Services\ERP.Services.csproj" />
     <ProjectReference Include="..\ERP.API\ERP.API.csproj" />
   </ItemGroup>

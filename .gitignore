@@ -142,3 +142,18 @@ Desktop.ini
 /backend/check_columns.sql
 /backend/check_tables.sql
 /frontend/apps/admin-dashboard/PROJECT_DOCUMENTATION.md
+/Nghiệp vụ ca làm thực tế đối đối với công ty thuộc lĩnh vực sản xuất.pdf
+/backend/ERP.API/Program.cs.broken
+/backend/ERP.Tests/COMPREHENSIVE_TEST_DOCUMENTATION.md
+/backend/ERP.Tests/Controllers/EmployeesControllerTests.cs.bak
+/backend/ERP.Tests/Controllers/PayrollsControllerTests.cs
+/backend/ERP.Tests/Controllers/TenantProfilesControllerTests.cs
+/backend/ERP.Tests/Integration/EmployeeLifecycleWorkflowTests.cs
+/backend/ERP.Tests/QUICK_REFERENCE.md
+/backend/ERP.Tests/Repositories/GenericRepositoryTests.cs.bak
+/backend/ERP.Tests/Services/Authorization/AuthorizationServiceTests.cs.bak
+/backend/ERP.Tests/Services/EdgeCaseAndValidationTests.cs
+/backend/ERP.Tests/Services/Payroll/PayrollServiceTests.cs.bak
+/backend/ERP.Tests/Services/Payroll/PayrollServiceTests.cs_temp
+/backend/ERP.Tests/Services/Tenant/TenantProfileServiceTests.cs
+/backend/full_script.sql

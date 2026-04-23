@@ -63,7 +63,7 @@ namespace ERP.Services.Organization
             }
 
             var count = await query.CountAsync();
-            var items = await query.OrderByDescending(b => b.CreatedAt)
+            var items = await query.OrderBy(b => b.display_order).ThenByDescending(b => b.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .Select(b => new BranchDto
@@ -73,7 +73,16 @@ namespace ERP.Services.Organization
                     Code = b.code,
                     RegionId = b.region_id,
                     RegionName = b.Region != null ? b.Region.name : null,
+                    ParentId = b.parent_id,
+                    ParentName = b.ParentBranch != null ? b.ParentBranch.name : null,
+                    CountryCode = b.country_code,
+                    ProvinceCode = b.province_code,
+                    DistrictCode = b.district_code,
                     Address = b.address,
+                    PhoneCountryPrefix = b.phone_country_prefix,
+                    PhoneNumber = b.phone_number,
+                    ColorCode = b.color_code,
+                    DisplayOrder = b.display_order,
                     Note = b.note,
                     CreatedAt = b.CreatedAt
                 })
@@ -95,7 +104,11 @@ namespace ERP.Services.Organization
 
         public async Task<BranchDto?> GetBranchByIdAsync(int id)
         {
-            var b = await _context.Branches.Include(b => b.Region).FirstOrDefaultAsync(b => b.Id == id);
+            var b = await _context.Branches
+                .Include(x => x.Region)
+                .Include(x => x.ParentBranch)
+                .FirstOrDefaultAsync(b => b.Id == id);
+            
             return b == null ? null : new BranchDto
             {
                 Id = b.Id,
@@ -103,7 +116,16 @@ namespace ERP.Services.Organization
                 Code = b.code,
                 RegionId = b.region_id,
                 RegionName = b.Region?.name,
+                ParentId = b.parent_id,
+                ParentName = b.ParentBranch?.name,
+                CountryCode = b.country_code,
+                ProvinceCode = b.province_code,
+                DistrictCode = b.district_code,
                 Address = b.address,
+                PhoneCountryPrefix = b.phone_country_prefix,
+                PhoneNumber = b.phone_number,
+                ColorCode = b.color_code,
+                DisplayOrder = b.display_order,
                 Note = b.note,
                 CreatedAt = b.CreatedAt
             };
@@ -117,7 +139,15 @@ namespace ERP.Services.Organization
                 name = dto.Name,
                 code = dto.Code,
                 region_id = dto.RegionId,
+                parent_id = dto.ParentId,
+                country_code = dto.CountryCode,
+                province_code = dto.ProvinceCode,
+                district_code = dto.DistrictCode,
                 address = dto.Address,
+                phone_country_prefix = dto.PhoneCountryPrefix,
+                phone_number = dto.PhoneNumber,
+                color_code = dto.ColorCode,
+                display_order = dto.DisplayOrder,
                 note = dto.Note
             };
             _context.Branches.Add(b);
@@ -131,13 +161,44 @@ namespace ERP.Services.Organization
             var b = await _context.Branches.FindAsync(id);
             if (b == null) return false;
 
+            // Circular dependency check
+            if (dto.ParentId.HasValue)
+            {
+                await CheckBranchCircularDependency(id, dto.ParentId);
+            }
+
             b.name = dto.Name;
             b.code = dto.Code;
             b.region_id = dto.RegionId;
+            b.parent_id = dto.ParentId;
+            b.country_code = dto.CountryCode;
+            b.province_code = dto.ProvinceCode;
+            b.district_code = dto.DistrictCode;
             b.address = dto.Address;
+            b.phone_country_prefix = dto.PhoneCountryPrefix;
+            b.phone_number = dto.PhoneNumber;
+            b.color_code = dto.ColorCode;
+            b.display_order = dto.DisplayOrder;
             b.note = dto.Note;
 
             return await _context.SaveChangesAsync() > 0;
+        }
+
+        private async Task CheckBranchCircularDependency(int branchId, int? parentId)
+        {
+            if (!parentId.HasValue) return;
+            if (branchId == parentId.Value)
+                throw new InvalidOperationException("Chi nhánh không thể là cha của chính nó.");
+
+            var currentParentId = parentId;
+            while (currentParentId.HasValue)
+            {
+                var parent = await _context.Branches.AsNoTracking().FirstOrDefaultAsync(x => x.Id == currentParentId.Value);
+                if (parent == null) break;
+                if (parent.parent_id == branchId)
+                    throw new InvalidOperationException("Không thể thiết lập quan hệ cha-con vì sẽ gây ra vòng lặp vô tận.");
+                currentParentId = parent.parent_id;
+            }
         }
 
         public async Task<bool> DeleteBranchAsync(int id)
@@ -151,10 +212,16 @@ namespace ERP.Services.Organization
                 throw new InvalidOperationException($"Không thể xóa chi nhánh '{b.name}' vì đang có nhân viên thuộc chi nhánh này.");
             }
             
-            // Also check if any department is linked to this branch
+            // Check if any department is linked to this branch
             if (await _context.Departments.AnyAsync(d => d.branch_id == id))
             {
-                throw new InvalidOperationException($"Không thể xóa chi nhánh '{b.name}' vì đang có phòng ban thuộc chi nhánh này.");
+                throw new InvalidOperationException($"Không thể xóa chi nhánh '{b.name}' vì đang có phòng ban trực thuộc.");
+            }
+
+            // Check if any sub-branch is linked to this branch
+            if (await _context.Branches.AnyAsync(sub => sub.parent_id == id))
+            {
+                throw new InvalidOperationException($"Không thể xóa chi nhánh '{b.name}' vì đang có các chi nhánh con trực thuộc.");
             }
 
             _context.Branches.Remove(b);
