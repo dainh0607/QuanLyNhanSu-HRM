@@ -1635,8 +1635,8 @@ namespace ERP.Services.Auth
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new(AuthSecurityConstants.SessionIdClaimType, sessionId),
                 new(AuthSecurityConstants.TokenTypeClaimType, AuthSecurityConstants.AccessTokenType),
-                // FIX: Ensure tenant_id is always set to a valid number (0 as fallback for null)
-                new("tenant_id", user.TenantId?.ToString() ?? "0"),
+                // FIX: tenant_id should be NULL for SuperAdmin, never "0" which causes ambiguous lookups
+                new("tenant_id", user.TenantId?.ToString() ?? string.Empty),
                 new("EmployeeId", user.EmployeeId.ToString()),
                 new("EmployeeCode", user.EmployeeCode ?? string.Empty),
                 new("scope_level", user.ScopeLevel ?? "PERSONAL"),

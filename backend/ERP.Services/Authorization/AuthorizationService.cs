@@ -183,10 +183,11 @@ namespace ERP.Services.Authorization
 
             var roleIds = userRoles.Select(r => r.Id).ToList();
 
-            // [CRITICAL FIX] Admin (SuperAdmin ID 1 or Workspace Admin ID 8) bypass - full access to all resources
+            // [CRITICAL FIX] Admin/Director bypass - full access to all resources within their scope
             // Prevents 403 when ActionPermissions table hasn't been seeded for new tenants
             if (roleIds.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleSuperAdminId) || 
-                roleIds.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleAdminId))
+                roleIds.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleAdminId) ||
+                roleIds.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleDirectorId))
             {
                 return true;
             }

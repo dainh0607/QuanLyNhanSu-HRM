@@ -137,6 +137,7 @@ namespace ERP.Services.Authorization
 
             // Get user's employee association
             var user = await _context.Users
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Id == userId);
 
@@ -147,6 +148,7 @@ namespace ERP.Services.Authorization
 
             // Get user's active roles with their scope constraints
             var userRoles = await _context.UserRoles
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Where(ur => ur.user_id == userId && 
                        (ur.tenant_id == tenantId || ur.tenant_id == null) &&
@@ -161,6 +163,7 @@ namespace ERP.Services.Authorization
             // Get role scopes to determine overall scope level
             var roleIds = userRoles.Select(ur => ur.role_id).Distinct().ToList();
             var roleScopes = await _context.RoleScopes
+                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Where(rs => roleIds.Contains(rs.role_id))
                 .ToListAsync();
