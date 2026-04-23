@@ -44,6 +44,24 @@ namespace ERP.API.Controllers
             return Ok(plans);
         }
 
+        [HttpGet("plans/{id}")]
+        public async Task<IActionResult> GetPlanDetail(string id)
+        {
+            var plan = await _portalService.GetSubscriptionPlanAsync(id);
+            if (plan == null)
+            {
+                return NotFound(new { message = "Subscription plan not found." });
+            }
+            return Ok(plan);
+        }
+
+        [HttpGet("available-modules")]
+        public async Task<IActionResult> GetAvailableModules()
+        {
+            var modules = await _portalService.GetAvailableModulesAsync();
+            return Ok(modules);
+        }
+
         [HttpPost("plans")]
         public async Task<IActionResult> CreatePlan([FromBody] SubscriptionPlanInputDto input)
         {
@@ -246,6 +264,27 @@ namespace ERP.API.Controllers
                 return BadRequest(result);
             }
 
+            return Ok(result);
+        }
+        [HttpGet("tenants-monitoring")]
+        public async Task<IActionResult> GetTenantsMonitoring(
+            [FromQuery] string? search,
+            [FromQuery] string? status,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            var result = await _portalService.GetTenantMonitoringListAsync(search, status, page, pageSize);
+            return Ok(result);
+        }
+
+        [HttpGet("tenants-monitoring/{id}")]
+        public async Task<IActionResult> GetTenantMonitoringDetail(int id)
+        {
+            var result = await _portalService.GetTenantMonitoringDetailAsync(id);
+            if (result == null)
+            {
+                return NotFound(new { message = "Tenant metadata not found." });
+            }
             return Ok(result);
         }
     }

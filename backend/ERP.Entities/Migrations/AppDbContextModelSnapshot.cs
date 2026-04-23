@@ -1470,6 +1470,91 @@ namespace ERP.Entities.Migrations
                     b.ToTable("AttendanceSettings", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.AuditLogs", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("action")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("action");
+
+                    b.Property<string>("content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("content");
+
+                    b.Property<string>("device")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("device");
+
+                    b.Property<int?>("employee_id")
+                        .HasColumnType("int")
+                        .HasColumnName("employee_id");
+
+                    b.Property<int?>("entity_id")
+                        .HasColumnType("int")
+                        .HasColumnName("entity_id");
+
+                    b.Property<string>("entity_type")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("entity_type");
+
+                    b.Property<string>("ip_address")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("ip_address");
+
+                    b.Property<string>("mac_address")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("mac_address");
+
+                    b.Property<string>("os")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("os");
+
+                    b.Property<string>("request_url")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("request_url");
+
+                    b.Property<int?>("status_code")
+                        .HasColumnType("int")
+                        .HasColumnName("status_code");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime>("timestamp")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("timestamp");
+
+                    b.Property<int?>("user_id")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("employee_id");
+
+                    b.ToTable("AuditLogs");
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.AuthSessions", b =>
                 {
                     b.Property<int>("Id")
@@ -2311,6 +2396,72 @@ namespace ERP.Entities.Migrations
                     b.ToTable("Sys_SupportAccessGrants");
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.ControlPlane.TenantMetadata", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("last_invoice_code")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("last_invoice_code");
+
+                    b.Property<DateTime>("last_sync_at")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("last_sync_at");
+
+                    b.Property<long>("max_storage_quota_bytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("max_storage_quota_bytes");
+
+                    b.Property<string>("rental_status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("rental_status");
+
+                    b.Property<long>("storage_usage_bytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("storage_usage_bytes");
+
+                    b.Property<string>("subscription_plan_name")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("subscription_plan_name");
+
+                    b.Property<string>("support_access_status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("support_access_status");
+
+                    b.Property<int>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<int>("total_employees")
+                        .HasColumnType("int")
+                        .HasColumnName("total_employees");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("tenant_id");
+
+                    b.ToTable("TenantMetadata");
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.ControlPlane.TenantSubscription", b =>
                 {
                     b.Property<int>("Id")
@@ -2891,6 +3042,14 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("id");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
 
                     b.Property<string>("device_name")
                         .IsRequired()
@@ -4323,6 +4482,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("int")
                         .HasColumnName("created_by");
 
+                    b.Property<int?>("DepartmentId")
+                        .HasColumnType("int")
+                        .HasColumnName("department_id");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -4337,9 +4500,19 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("expires_at");
 
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("full_name");
+
                     b.Property<bool>("IsUsed")
                         .HasColumnType("bit")
                         .HasColumnName("is_used");
+
+                    b.Property<int?>("JobTitleId")
+                        .HasColumnType("int")
+                        .HasColumnName("job_title_id");
 
                     b.Property<string>("Token")
                         .IsRequired()
@@ -4363,7 +4536,11 @@ namespace ERP.Entities.Migrations
 
                     b.HasIndex("CreatedBy");
 
+                    b.HasIndex("DepartmentId");
+
                     b.HasIndex("EmployeeId");
+
+                    b.HasIndex("JobTitleId");
 
                     b.ToTable("InvitationTokens");
                 });
@@ -4623,31 +4800,31 @@ namespace ERP.Entities.Migrations
                         {
                             Id = 1,
                             is_paid = true,
-                            name = "Nghỉ phép năm"
+                            name = "Nghị phép năm"
                         },
                         new
                         {
                             Id = 2,
                             is_paid = true,
-                            name = "Nghỉ ốm"
+                            name = "Nghị ốm"
                         },
                         new
                         {
                             Id = 3,
                             is_paid = false,
-                            name = "Nghỉ không lương"
+                            name = "Nghị không lương"
                         },
                         new
                         {
                             Id = 4,
                             is_paid = true,
-                            name = "Nghỉ thai sản"
+                            name = "Nghị thai sản"
                         },
                         new
                         {
                             Id = 5,
                             is_paid = true,
-                            name = "Nghỉ hiếu hỉ"
+                            name = "Nghị hiếu hỷ"
                         });
                 });
 
@@ -5018,7 +5195,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("job_title_id");
 
                     b.Property<string>("note")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("note");
 
@@ -9046,6 +9222,16 @@ namespace ERP.Entities.Migrations
                     b.Navigation("Policy");
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.AuditLogs", b =>
+                {
+                    b.HasOne("ERP.Entities.Models.Employees", "Employee")
+                        .WithMany()
+                        .HasForeignKey("employee_id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Employee");
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.AuthSessions", b =>
                 {
                     b.HasOne("ERP.Entities.Models.Users", "User")
@@ -9159,6 +9345,17 @@ namespace ERP.Entities.Migrations
                     b.HasOne("ERP.Entities.Models.Tenants", "Tenant")
                         .WithMany()
                         .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("ERP.Entities.Models.ControlPlane.TenantMetadata", b =>
+                {
+                    b.HasOne("ERP.Entities.Models.Tenants", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("tenant_id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -9603,14 +9800,28 @@ namespace ERP.Entities.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ERP.Entities.Models.Departments", "Department")
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ERP.Entities.Models.Employees", "Employee")
                         .WithMany()
                         .HasForeignKey("EmployeeId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("ERP.Entities.Models.JobTitles", "JobTitle")
+                        .WithMany()
+                        .HasForeignKey("JobTitleId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Creator");
 
+                    b.Navigation("Department");
+
                     b.Navigation("Employee");
+
+                    b.Navigation("JobTitle");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.JobTitles", b =>

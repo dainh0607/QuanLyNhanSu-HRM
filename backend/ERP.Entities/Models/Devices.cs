@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ERP.Entities.Models
 {
     [Table("Devices")]
-    public class Devices : BaseEntity, ERP.Entities.Interfaces.ITenantEntity
+    public class Devices : AuditableEntity, ERP.Entities.Interfaces.ITenantEntity
     {
         [Column("tenant_id")]
         public int? tenant_id { get; set; }

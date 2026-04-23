@@ -208,6 +208,9 @@ builder.Services.AddScoped<IDocxService, DocxService>();
 builder.Services.AddScoped<IRlsSessionContextService, RlsSessionContextService>();
 builder.Services.AddScoped<IEmploymentHistoryService, EmploymentHistoryService>();
 builder.Services.AddHostedService<EmployeeStatusWorker>();
+builder.Services.AddHostedService<AttendanceAutomationWorker>();
+builder.Services.AddHostedService<TenantMetadataSyncWorker>();
+builder.Services.AddHostedService<BillingAutomationWorker>();
 
 // FIX #1-15: Register RBAC Authorization Services
 builder.Services.AddScoped<ISuperAdminPortalService, SuperAdminPortalService>();
