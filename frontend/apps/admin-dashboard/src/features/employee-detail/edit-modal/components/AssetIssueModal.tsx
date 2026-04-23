@@ -14,6 +14,24 @@ interface AssetIssueModalProps {
   employeeName: string;
 }
 
+const neutralSelectChevronStyle = {
+  backgroundImage: `url("data:image/svg+xml,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="#94a3b8"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>`
+  )}")`,
+  backgroundSize: '20px',
+  backgroundPosition: 'right 20px center',
+  backgroundRepeat: 'no-repeat',
+} as const;
+
+const accentSelectChevronStyle = {
+  backgroundImage: `url("data:image/svg+xml,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="#10b981"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>`
+  )}")`,
+  backgroundSize: '20px',
+  backgroundPosition: 'right 20px center',
+  backgroundRepeat: 'no-repeat',
+} as const;
+
 const AssetIssueModal: React.FC<AssetIssueModalProps> = ({ 
   isOpen, 
   onClose, 
@@ -188,7 +206,8 @@ const AssetIssueModal: React.FC<AssetIssueModalProps> = ({
                 <select
                   value={formData.assetId}
                   onChange={(e) => handleAssetChange(e.target.value)}
-                  className="w-full h-14 px-6 bg-[#f8fafc] rounded-[20px] text-[15px] font-medium text-slate-700 outline-none appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22m19%209-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:20px] bg-[right_20px_center] bg-no-repeat"
+                  className="w-full h-14 px-6 bg-[#f8fafc] rounded-[20px] text-[15px] font-medium text-slate-700 outline-none appearance-none"
+                  style={neutralSelectChevronStyle}
                 >
                   <option value="">Chọn tài sản...</option>
                   {assets.map(a => (
@@ -203,7 +222,8 @@ const AssetIssueModal: React.FC<AssetIssueModalProps> = ({
                 <select
                   value={formData.assetLocationId}
                   onChange={(e) => setFormData(prev => ({ ...prev, assetLocationId: e.target.value }))}
-                  className="w-full h-14 px-6 bg-white border border-[#10b981]/20 rounded-[24px] text-[15px] font-medium text-slate-700 outline-none appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2310b981%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22m19%209-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:20px] bg-[right_20px_center] bg-no-repeat shadow-[0_8px_20px_rgba(16,185,129,0.05)]"
+                  className="w-full h-14 px-6 bg-white border border-[#10b981]/20 rounded-[24px] text-[15px] font-medium text-slate-700 outline-none appearance-none shadow-[0_8px_20px_rgba(16,185,129,0.05)]"
+                  style={accentSelectChevronStyle}
                 >
                   <option value="">Chọn vị trí...</option>
                   {locations.map(l => (

@@ -9,6 +9,15 @@ interface AddFileModalProps {
   initialFolderId?: string;
 }
 
+const selectChevronStyle = {
+  backgroundImage: `url("data:image/svg+xml,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="#94a3b8"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>`
+  )}")`,
+  backgroundSize: '22px',
+  backgroundPosition: 'right 24px center',
+  backgroundRepeat: 'no-repeat',
+} as const;
+
 const AddFileModal: React.FC<AddFileModalProps> = ({ isOpen, onClose, onUpload, folders, initialFolderId }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedFolderId, setSelectedFolderId] = useState<string>(initialFolderId || '');
@@ -126,7 +135,8 @@ const AddFileModal: React.FC<AddFileModalProps> = ({ isOpen, onClose, onUpload, 
                 value={selectedFolderId}
                 onChange={(e) => setSelectedFolderId(e.target.value)}
                 disabled={!!initialFolderId}
-                className="w-full h-14 px-6 bg-transparent border-none rounded-[20px] text-[15px] font-medium text-slate-700 outline-none appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22m19%209-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:22px] bg-[right_24px_center] bg-no-repeat disabled:cursor-not-allowed"
+                className="w-full h-14 px-6 bg-transparent border-none rounded-[20px] text-[15px] font-medium text-slate-700 outline-none appearance-none disabled:cursor-not-allowed"
+                style={selectChevronStyle}
               >
                 <option value="">Chọn thư mục...</option>
                 {folders.map(f => (

@@ -14,6 +14,15 @@ interface OrgFormModalProps {
   jobTitles?: any[];
 }
 
+const selectChevronStyle = {
+  backgroundImage: `url("data:image/svg+xml,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="#94a3b8"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>`
+  )}")`,
+  backgroundSize: "1.25rem 1.25rem",
+  backgroundPosition: "right 1rem center",
+  backgroundRepeat: "no-repeat",
+} as const;
+
 const OrgFormModal: React.FC<OrgFormModalProps> = ({
   type,
   initialData,
@@ -178,7 +187,7 @@ const OrgFormModal: React.FC<OrgFormModalProps> = ({
 
   const labelClassName = "block text-[13px] font-bold text-slate-600 mb-1.5 ml-1";
   const inputClassName = "w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition-all focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-50 placeholder:text-slate-300 disabled:bg-slate-50";
-  const selectClassName = "w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition-all focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2020%2020'%20fill%3D'none'%3E%3Cpath%20d%3D'M5%207l5%205%205-5'%20stroke%3D'%2394a3b8'%20stroke-width%3D'2'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_1rem_center] bg-no-repeat";
+  const selectClassName = "w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition-all focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-50 appearance-none";
 
   return (
     <div className="fixed inset-0 z-[2000] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
@@ -245,6 +254,7 @@ const OrgFormModal: React.FC<OrgFormModalProps> = ({
                       value={formData.regionId}
                       onChange={(e) => handleInputChange("regionId", Number(e.target.value))}
                       className={`${selectClassName} ${errors.regionId ? 'border-rose-300' : ''}`}
+                      style={selectChevronStyle}
                     >
                       <option value="">-- Chọn vùng --</option>
                       {regions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
@@ -257,6 +267,7 @@ const OrgFormModal: React.FC<OrgFormModalProps> = ({
                       value={formData.parentId}
                       onChange={(e) => handleInputChange("parentId", e.target.value ? Number(e.target.value) : undefined)}
                       className={selectClassName}
+                      style={selectChevronStyle}
                     >
                       <option value="">Cấp cao nhất (Gốc)</option>
                       {availableParentBranches.map(b => (
@@ -275,6 +286,7 @@ const OrgFormModal: React.FC<OrgFormModalProps> = ({
                       value={formData.branchId}
                       onChange={(e) => handleInputChange("branchId", Number(e.target.value))}
                       className={`${selectClassName} ${errors.branchId ? 'border-rose-300' : ''}`}
+                      style={selectChevronStyle}
                     >
                       <option value="">-- Chọn chi nhánh --</option>
                       {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -306,6 +318,7 @@ const OrgFormModal: React.FC<OrgFormModalProps> = ({
                         onChange={(e) => handleInputChange("parentId", e.target.value ? Number(e.target.value) : undefined)}
                         className={selectClassName}
                         disabled={formData.isTopLevel}
+                        style={selectChevronStyle}
                       >
                         <option value="">-- Chọn phòng ban cha --</option>
                         {availableParentDepts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -343,6 +356,7 @@ const OrgFormModal: React.FC<OrgFormModalProps> = ({
                            setFormData({ ...formData, branchId: bId, departmentId: undefined });
                         }}
                         className={selectClassName}
+                        style={selectChevronStyle}
                       >
                         <option value="">-- Toàn công ty --</option>
                         {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -355,6 +369,7 @@ const OrgFormModal: React.FC<OrgFormModalProps> = ({
                         value={formData.departmentId}
                         onChange={(e) => handleInputChange("departmentId", e.target.value ? Number(e.target.value) : undefined)}
                         className={selectClassName}
+                        style={selectChevronStyle}
                       >
                         <option value="">-- Chọn phòng ban --</option>
                         {filteredDepts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -367,6 +382,7 @@ const OrgFormModal: React.FC<OrgFormModalProps> = ({
                         value={formData.parentId}
                         onChange={(e) => handleInputChange("parentId", e.target.value ? Number(e.target.value) : undefined)}
                         className={selectClassName}
+                        style={selectChevronStyle}
                       >
                         <option value="">-- Cấp cao nhất --</option>
                         {availableParentJobTitles.map(jt => <option key={jt.id} value={jt.id}>{jt.name}</option>)}
@@ -386,6 +402,7 @@ const OrgFormModal: React.FC<OrgFormModalProps> = ({
                         value={formData.qualification}
                         onChange={(e) => handleInputChange("qualification", e.target.value)}
                         className={selectClassName}
+                        style={selectChevronStyle}
                       >
                         {QUALIFICATIONS.map(q => <option key={q} value={q}>{q}</option>)}
                       </select>
@@ -430,6 +447,7 @@ const OrgFormModal: React.FC<OrgFormModalProps> = ({
                         className={`${selectClassName} h-[46px] text-[12px] px-3`}
                         value={formData.phoneCountryCode || "VN (+84)"}
                         onChange={(e) => handleInputChange("phoneCountryCode", e.target.value)}
+                        style={selectChevronStyle}
                       >
                         <option value="VN (+84)">VN (+84)</option>
                         <option value="US (+1)">US (+1)</option>

@@ -896,7 +896,11 @@ function RoutedApp() {
               isAuthenticated ? (
                 <PermissionRoute user={user} resource="payroll" action="read">
                   <div className="min-h-screen bg-[#f8fafc] flex flex-col">
-                    <Header user={user} onLogout={handleLogout} />
+                    <Header 
+                      user={user} 
+                      onLogout={handleLogout} 
+                      onOpenSettings={() => setIsSettingsOpen(true)}
+                    />
                     <PayrollListPage />
                   </div>
                 </PermissionRoute>

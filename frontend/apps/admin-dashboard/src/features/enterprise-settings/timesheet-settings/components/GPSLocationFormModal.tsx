@@ -58,7 +58,7 @@ const GPSLocationFormModal: React.FC<GPSLocationFormModalProps> = ({
         }));
         showToast("Đã lấy vị trí hiện tại thành công", "success");
       },
-      (error) => {
+      (_error) => {
         showToast("Không thể lấy vị trí. Vui lòng cấp quyền truy cập.", "error");
       }
     );

@@ -340,8 +340,12 @@ namespace ERP.Services.Auth
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in LoginAsync");
-                return new AuthResponseDto { Success = false, Message = "Loi xay ra trong qua trinh dang nhap" };
+                _logger.LogError(ex, "🔴 CRITICAL ERROR in LoginAsync for user {Email}: {Message}", dto?.Email, ex.Message);
+                return new AuthResponseDto 
+                { 
+                    Success = false, 
+                    Message = $"Loi he thong: {ex.Message}" // Show actual message for debugging
+                };
             }
         }
 
@@ -1262,7 +1266,6 @@ namespace ERP.Services.Auth
         {
             return _configuration["AdminSettings:MasterEmail"]?.Trim();
         }
-
         private bool IsMasterEmail(string? email)
         {
             var masterEmail = GetMasterEmail();
@@ -1323,43 +1326,44 @@ namespace ERP.Services.Auth
                 primaryEmail = localUser.Employee?.work_email ?? string.Empty;
             }
 
+            // Master Email should always have SuperAdmin role
             if (IsMasterEmail(primaryEmail) &&
-                !roles.Contains(AuthSecurityConstants.RoleAdmin, StringComparer.OrdinalIgnoreCase))
+                !roles.Contains(AuthSecurityConstants.RoleSuperAdmin, StringComparer.OrdinalIgnoreCase))
             {
-                roles.Insert(0, AuthSecurityConstants.RoleAdmin);
-                if (!roleIds.Contains(AuthSecurityConstants.RoleAdminId))
+                roles.Insert(0, AuthSecurityConstants.RoleSuperAdmin);
+                if (!roleIds.Contains(AuthSecurityConstants.RoleSuperAdminId))
                 {
-                    roleIds.Add(AuthSecurityConstants.RoleAdminId);
+                    roleIds.Add(AuthSecurityConstants.RoleSuperAdminId);
                 }
             }
 
             // Calculate Scope Level and SystemAdmin status.
-            // RoleScopes is the primary RBAC source. Hardcoded role-name fallback is only for legacy data.
             var scopeLevel = roleScopeLevels.Any()
                 ? DetermineHighestScopeLevel(roleScopeLevels)
                 : ResolveLegacyScopeLevel(roleIds, roles);
             bool isSystemAdmin = false;
 
             // [OWNERSHIP AUTO-DETECTION] (FINAL DEFENSIVE LAYER)
-            // If the user's email matches an activated Workspace Owner Invitation, they ARE system admin for their tenant.
             if (!string.IsNullOrWhiteSpace(primaryEmail))
             {
                 var isOwner = await _context.WorkspaceOwnerInvitations
                     .IgnoreQueryFilters()
                     .AnyAsync(inv => inv.OwnerEmail.ToLower() == primaryEmail.ToLower() && inv.Status == "activated");
-
                 if (isOwner) 
                 {
                     isSystemAdmin = true;
-                    scopeLevel = "TENANT";
+                    if (scopeLevel == "PERSONAL") scopeLevel = "TENANT";
                 }
             }
 
-            if (roleIds.Contains(AuthSecurityConstants.RoleAdminId) || 
+            // SuperAdmin (ID 1) or Workspace Admin (ID 8) check
+            if (roleIds.Contains(AuthSecurityConstants.RoleSuperAdminId) || 
+                roleIds.Contains(AuthSecurityConstants.RoleAdminId) ||
+                roles.Contains(AuthSecurityConstants.RoleSuperAdmin, StringComparer.OrdinalIgnoreCase) ||
                 roles.Contains(AuthSecurityConstants.RoleAdmin, StringComparer.OrdinalIgnoreCase))
             {
-                scopeLevel = "TENANT";
                 isSystemAdmin = true;
+                if (scopeLevel == "PERSONAL") scopeLevel = "TENANT";
             }
 
             // [FINAL FIX] Dynamic & Fallback Permissions based on user roles
@@ -1370,9 +1374,10 @@ namespace ERP.Services.Auth
                 .Distinct()
                 .ToListAsync();
 
-            // [ULTRASONIC SAFETY NET] God-mode for Admin/Owner
-            // If they have Role ID 1 (Admin), we FORCE-ADD all essential permissions to prevent UI lockouts.
-            if (isSystemAdmin || roleIds.Contains(AuthSecurityConstants.RoleAdminId))
+            // [ULTRASONIC SAFETY NET] God-mode for Admin/Owner/SuperAdmin
+            if (isSystemAdmin || 
+                roleIds.Contains(AuthSecurityConstants.RoleSuperAdminId) || 
+                roleIds.Contains(AuthSecurityConstants.RoleAdminId))
             {
                 var godModePermissions = new List<string> 
                 { 
@@ -1388,7 +1393,6 @@ namespace ERP.Services.Auth
                     if (!permissions.Contains(p)) permissions.Add(p);
                 }
                 
-                // Ensure isSystemAdmin is consistently true for ID 1
                 isSystemAdmin = true;
             }
 
@@ -1403,7 +1407,7 @@ namespace ERP.Services.Auth
                 PhoneNumber = localUser.Employee?.phone ?? string.Empty,
                 IsActive = localUser.is_active,
                 Roles = roles,
-                Permissions = permissions, // [NEW] Populate permissions for frontend routing
+                Permissions = permissions,
                 ScopeLevel = scopeLevel,
                 RegionId = localUser.Employee?.region_id,
                 BranchId = localUser.Employee?.branch_id,
