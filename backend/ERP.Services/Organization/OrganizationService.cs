@@ -250,7 +250,7 @@ namespace ERP.Services.Organization
             }
 
             var count = await query.CountAsync();
-            var items = await query.OrderByDescending(d => d.CreatedAt)
+            var items = await query.OrderBy(d => d.display_order).ThenByDescending(d => d.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .Select(d => new DepartmentDto
@@ -261,6 +261,9 @@ namespace ERP.Services.Organization
                     BranchId = d.branch_id,
                     BranchName = d.Branch != null ? d.Branch.name : null,
                     ParentId = d.parent_id,
+                    ParentName = d.ParentDepartment != null ? d.ParentDepartment.name : null,
+                    IsHeadDepartment = d.is_head_department,
+                    DisplayOrder = d.display_order,
                     Note = d.note,
                     CreatedAt = d.CreatedAt
                 })
@@ -282,7 +285,11 @@ namespace ERP.Services.Organization
 
         public async Task<DepartmentDto?> GetDepartmentByIdAsync(int id)
         {
-            var d = await _context.Departments.Include(d => d.Branch).FirstOrDefaultAsync(d => d.Id == id);
+            var d = await _context.Departments
+                .Include(d => d.Branch)
+                .Include(d => d.ParentDepartment)
+                .FirstOrDefaultAsync(x => x.Id == id);
+                
             return d == null ? null : new DepartmentDto
             {
                 Id = d.Id,
@@ -291,6 +298,9 @@ namespace ERP.Services.Organization
                 BranchId = d.branch_id,
                 BranchName = d.Branch?.name,
                 ParentId = d.parent_id,
+                ParentName = d.ParentDepartment?.name,
+                IsHeadDepartment = d.is_head_department,
+                DisplayOrder = d.display_order,
                 Note = d.note,
                 CreatedAt = d.CreatedAt
             };
@@ -304,7 +314,9 @@ namespace ERP.Services.Organization
                 name = dto.Name,
                 code = dto.Code,
                 branch_id = dto.BranchId,
-                parent_id = dto.ParentId,
+                parent_id = dto.IsHeadDepartment ? null : dto.ParentId,
+                is_head_department = dto.IsHeadDepartment,
+                display_order = dto.DisplayOrder,
                 note = dto.Note
             };
             _context.Departments.Add(d);
@@ -318,13 +330,38 @@ namespace ERP.Services.Organization
             var d = await _context.Departments.FindAsync(id);
             if (d == null) return false;
 
+            // Circular dependency check
+            if (!dto.IsHeadDepartment && dto.ParentId.HasValue)
+            {
+                await CheckDepartmentCircularDependency(id, dto.ParentId);
+            }
+
             d.name = dto.Name;
             d.code = dto.Code;
             d.branch_id = dto.BranchId;
-            d.parent_id = dto.ParentId;
+            d.parent_id = dto.IsHeadDepartment ? null : dto.ParentId;
+            d.is_head_department = dto.IsHeadDepartment;
+            d.display_order = dto.DisplayOrder;
             d.note = dto.Note;
 
             return await _context.SaveChangesAsync() > 0;
+        }
+
+        private async Task CheckDepartmentCircularDependency(int deptId, int? parentId)
+        {
+            if (!parentId.HasValue) return;
+            if (deptId == parentId.Value)
+                throw new InvalidOperationException("Phòng ban không thể là cha của chính nó.");
+
+            var currentParentId = parentId;
+            while (currentParentId.HasValue)
+            {
+                var parent = await _context.Departments.AsNoTracking().FirstOrDefaultAsync(x => x.Id == currentParentId.Value);
+                if (parent == null) break;
+                if (parent.parent_id == deptId)
+                    throw new InvalidOperationException("Không thể thiết lập quan hệ cha-con vì sẽ gây ra vòng lặp vô tận.");
+                currentParentId = parent.parent_id;
+            }
         }
 
         public async Task<bool> DeleteDepartmentAsync(int id)
@@ -335,13 +372,13 @@ namespace ERP.Services.Organization
             // Constraint check: Check if any employee is linked to this department
             if (await _context.Employees.AnyAsync(e => e.department_id == id || e.secondary_department_id == id))
             {
-                throw new InvalidOperationException($"Không thể xóa phòng ban '{d.name}' vì đang có nhân viên thuộc phòng ban này.");
+                throw new InvalidOperationException($"Không thể xóa phòng ban '{d.name}' vì đang có nhân viên trực thuộc.");
             }
 
             // Check if any sub-departments exist
             if (await _context.Departments.AnyAsync(dept => dept.parent_id == id))
             {
-                throw new InvalidOperationException($"Không thể xóa phòng ban '{d.name}' vì đang có phòng ban cấp con.");
+                throw new InvalidOperationException($"Không thể xóa phòng ban '{d.name}' vì đang có phòng ban cấp con trực thuộc.");
             }
 
             _context.Departments.Remove(d);

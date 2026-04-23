@@ -11,6 +11,8 @@ namespace ERP.DTOs.Departments
         public string? BranchName { get; set; }
         public int? ParentId { get; set; }
         public string? ParentName { get; set; }
+        public bool IsHeadDepartment { get; set; }
+        public int DisplayOrder { get; set; }
         public string? Note { get; set; }
         public DateTime CreatedAt { get; set; }
     }
@@ -21,6 +23,8 @@ namespace ERP.DTOs.Departments
         public string Code { get; set; } = string.Empty;
         public int? BranchId { get; set; }
         public int? ParentId { get; set; }
+        public bool IsHeadDepartment { get; set; }
+        public int DisplayOrder { get; set; }
         public string? Note { get; set; }
     }
 

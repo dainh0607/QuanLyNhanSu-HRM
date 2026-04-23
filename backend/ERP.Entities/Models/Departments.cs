@@ -24,16 +24,26 @@ namespace ERP.Entities.Models
         [Column("parent_id")]
         public int? parent_id { get; set; }
 
+        [ForeignKey("parent_id")]
+        public virtual Departments? ParentDepartment { get; set; }
+
         [Column("branch_id")]
         public int? branch_id { get; set; }
 
         [ForeignKey("branch_id")]
         public virtual Branches? Branch { get; set; }
 
+        [Column("is_head_department")]
+        public bool is_head_department { get; set; }
+
+        [Column("display_order")]
+        public int display_order { get; set; } = 0;
+
         [Column("note")]
         [StringLength(500)]
         public string? note { get; set; }
 
+        public virtual ICollection<Departments> SubDepartments { get; set; } = new HashSet<Departments>();
         public virtual ICollection<Employees> Employees { get; set; } = new HashSet<Employees>();
         public virtual ICollection<Employees> SecondaryEmployees { get; set; } = new HashSet<Employees>();
     }
