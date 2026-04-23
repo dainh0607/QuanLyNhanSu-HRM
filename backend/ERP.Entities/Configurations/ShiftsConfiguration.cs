@@ -9,7 +9,7 @@ namespace ERP.Entities.Configurations
         public void Configure(EntityTypeBuilder<Shifts> builder)
         {
             builder.ToTable("Shifts");
-            // Fluent API configurations go here
+            builder.HasIndex(s => s.keyword).IsUnique();
         }
     }
 }

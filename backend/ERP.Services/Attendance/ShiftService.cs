@@ -309,6 +309,15 @@ namespace ERP.Services.Attendance
             await _unitOfWork.BeginTransactionAsync();
             try
             {
+                // Format keyword: UPPERCASE, no accents, joined by _
+                var formattedKeyword = dto.Keyword.Trim().ToUpper()
+                    .Replace(" ", "_"); // Simple formatting for now
+
+                // Validate unique keyword
+                var existingKeyword = await _unitOfWork.Repository<Shifts>().AsQueryable()
+                    .AnyAsync(s => s.keyword == formattedKeyword);
+                if (existingKeyword) throw new Exception($"Từ khóa {formattedKeyword} đã tồn tại trong hệ thống.");
+
                 // 1. Create Shift Template
                 var shift = new Shifts
                 {
@@ -328,7 +337,29 @@ namespace ERP.Services.Attendance
                     note = dto.Note,
                     default_branch_ids = dto.BranchIds != null ? string.Join(",", dto.BranchIds) : null,
                     default_department_ids = dto.DepartmentIds != null ? string.Join(",", dto.DepartmentIds) : null,
-                    default_job_title_ids = dto.JobTitleIds != null ? string.Join(",", dto.JobTitleIds) : null
+                    default_job_title_ids = dto.JobTitleIds != null ? string.Join(",", dto.JobTitleIds) : null,
+
+                    // New fields (AC1, AC2, AC3)
+                    keyword = formattedKeyword,
+                    standard_effort = dto.StandardEffort,
+                    symbol = dto.Symbol,
+                    checkin_window_start = dto.CheckinWindowStart,
+                    checkin_window_end = dto.CheckinWindowEnd,
+                    checkout_window_start = dto.CheckoutWindowStart,
+                    checkout_window_end = dto.CheckoutWindowEnd,
+                    allowed_late_mins = dto.AllowedLateMins,
+                    allowed_early_mins = dto.AllowedEarlyMins,
+                    max_late_mins = dto.MaxLateMins,
+                    max_early_mins = dto.MaxEarlyMins,
+                    checkin_requirement = dto.CheckinRequirement,
+                    checkout_requirement = dto.CheckoutRequirement,
+                    timezone = dto.Timezone ?? "Asia/Saigon",
+                    start_date = dto.StartDate,
+                    end_date = dto.EndDate,
+                    min_working_hours = dto.MinWorkingHours,
+                    meal_type_id = dto.MealTypeId,
+                    meal_count = dto.MealCount,
+                    is_overtime_shift = dto.IsOvertimeShift
                 };
 
                 await _unitOfWork.Repository<Shifts>().AddAsync(shift);
@@ -705,6 +736,12 @@ namespace ERP.Services.Attendance
             
             if (existingCode != null) throw new Exception($"Mã ca {dto.shift_code} đã tồn tại trong hệ thống.");
 
+            // Format and validate keyword
+            var formattedKeyword = dto.keyword.Trim().ToUpper().Replace(" ", "_");
+            var existingKeyword = await _unitOfWork.Repository<Shifts>().AsQueryable()
+                .AnyAsync(s => s.keyword == formattedKeyword && s.Id != id);
+            if (existingKeyword) throw new Exception($"Từ khóa {formattedKeyword} đã tồn tại trong hệ thống.");
+
             shift.shift_name = dto.shift_name;
             shift.shift_code = dto.shift_code;
             shift.start_time = TimeSpan.Parse(dto.start_time);
@@ -719,6 +756,28 @@ namespace ERP.Services.Attendance
             shift.shift_type_id = dto.shift_type_id;
             shift.is_active = dto.is_active;
             shift.note = dto.note;
+
+            // New fields
+            shift.keyword = formattedKeyword;
+            shift.standard_effort = dto.standard_effort;
+            shift.symbol = dto.symbol;
+            shift.checkin_window_start = string.IsNullOrEmpty(dto.checkin_window_start) ? null : TimeSpan.Parse(dto.checkin_window_start);
+            shift.checkin_window_end = string.IsNullOrEmpty(dto.checkin_window_end) ? null : TimeSpan.Parse(dto.checkin_window_end);
+            shift.checkout_window_start = string.IsNullOrEmpty(dto.checkout_window_start) ? null : TimeSpan.Parse(dto.checkout_window_start);
+            shift.checkout_window_end = string.IsNullOrEmpty(dto.checkout_window_end) ? null : TimeSpan.Parse(dto.checkout_window_end);
+            shift.allowed_late_mins = dto.allowed_late_mins;
+            shift.allowed_early_mins = dto.allowed_early_mins;
+            shift.max_late_mins = dto.max_late_mins;
+            shift.max_early_mins = dto.max_early_mins;
+            shift.checkin_requirement = dto.checkin_requirement;
+            shift.checkout_requirement = dto.checkout_requirement;
+            shift.timezone = dto.timezone ?? "Asia/Saigon";
+            shift.start_date = dto.start_date;
+            shift.end_date = dto.end_date;
+            shift.min_working_hours = dto.min_working_hours;
+            shift.meal_type_id = dto.meal_type_id;
+            shift.meal_count = dto.meal_count;
+            shift.is_overtime_shift = dto.is_overtime_shift;
 
             _unitOfWork.Repository<Shifts>().Update(shift);
             return await _unitOfWork.SaveChangesAsync() > 0;

@@ -32,5 +32,38 @@ namespace ERP.DTOs.Attendance
         public bool is_active { get; set; } = true;
         
         public string? note { get; set; }
+
+        [Required(ErrorMessage = "Từ khóa là bắt buộc")]
+        public string keyword { get; set; } = string.Empty;
+
+        public float standard_effort { get; set; } = 1.0f;
+
+        [Required(ErrorMessage = "Ký hiệu là bắt buộc")]
+        public string symbol { get; set; } = string.Empty;
+
+        public string? checkin_window_start { get; set; }
+        public string? checkin_window_end { get; set; }
+        public string? checkout_window_start { get; set; }
+        public string? checkout_window_end { get; set; }
+
+        public int allowed_late_mins { get; set; }
+        public int allowed_early_mins { get; set; }
+        public int? max_late_mins { get; set; }
+        public int? max_early_mins { get; set; }
+
+        public string? checkin_requirement { get; set; }
+        public string? checkout_requirement { get; set; }
+
+        public string timezone { get; set; } = "Asia/Saigon";
+
+        public DateTime? start_date { get; set; }
+        public DateTime? end_date { get; set; }
+
+        public float min_working_hours { get; set; }
+
+        public int? meal_type_id { get; set; }
+        public int meal_count { get; set; }
+
+        public bool is_overtime_shift { get; set; }
     }
 }

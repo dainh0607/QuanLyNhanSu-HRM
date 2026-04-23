@@ -36,9 +36,33 @@ namespace ERP.Services.Attendance
             var user = await _unitOfWork.Repository<Users>().GetByIdAsync(userId);
             if (user == null) throw new Exception("Không tìm thấy thông tin người dùng.");
 
+            // Find shift assignment for today (T760)
+            var today = DateTime.UtcNow.Date;
+            var assignment = await _unitOfWork.Repository<ShiftAssignments>()
+                .AsQueryable()
+                .Include(a => a.Shift)
+                .FirstOrDefaultAsync(a => a.employee_id == user.employee_id && a.assignment_date == today);
+
             var settings = await _unitOfWork.Repository<AttendanceSettings>()
                 .AsQueryable()
                 .FirstOrDefaultAsync(s => s.employee_id == user.employee_id);
+
+            // AC 2.1 & T760: Check-in Window Validation
+            if (assignment != null)
+            {
+                var shift = assignment.Shift;
+                var tz = TimeZoneInfo.FindSystemTimeZoneById(shift.timezone ?? "Asia/Saigon");
+                var localNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
+                var currentTime = localNow.TimeOfDay;
+
+                if (shift.checkin_window_start.HasValue && shift.checkin_window_end.HasValue)
+                {
+                    if (currentTime < shift.checkin_window_start.Value || currentTime > shift.checkin_window_end.Value)
+                    {
+                        throw new Exception($"Ngoài khung giờ cho phép Check-in ({shift.checkin_window_start.Value:hh\\:mm} - {shift.checkin_window_end.Value:hh\\:mm}).");
+                    }
+                }
+            }
 
             // 1. Kiểm tra cấu hình "Không cần chấm công"
             if (settings?.no_attendance == true)
@@ -111,9 +135,33 @@ namespace ERP.Services.Attendance
             var user = await _unitOfWork.Repository<Users>().GetByIdAsync(userId);
             if (user == null) throw new Exception("Không tìm thấy thông tin người dùng.");
 
+            // Find shift assignment for today (T760)
+            var today = DateTime.UtcNow.Date;
+            var assignment = await _unitOfWork.Repository<ShiftAssignments>()
+                .AsQueryable()
+                .Include(a => a.Shift)
+                .FirstOrDefaultAsync(a => a.employee_id == user.employee_id && a.assignment_date == today);
+
             var settings = await _unitOfWork.Repository<AttendanceSettings>()
                 .AsQueryable()
                 .FirstOrDefaultAsync(s => s.employee_id == user.employee_id);
+
+            // AC 2.1: Check-out Window Validation
+            if (assignment != null)
+            {
+                var shift = assignment.Shift;
+                var tz = TimeZoneInfo.FindSystemTimeZoneById(shift.timezone ?? "Asia/Saigon");
+                var localNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
+                var currentTime = localNow.TimeOfDay;
+
+                if (shift.checkout_window_start.HasValue && shift.checkout_window_end.HasValue)
+                {
+                    if (currentTime < shift.checkout_window_start.Value || currentTime > shift.checkout_window_end.Value)
+                    {
+                        throw new Exception($"Ngoài khung giờ cho phép Check-out ({shift.checkout_window_start.Value:hh\\:mm} - {shift.checkout_window_end.Value:hh\\:mm}).");
+                    }
+                }
+            }
 
             // Tương tự logic check-in cho phần thiết bị và vị trí
             if (settings?.track_location == true && (!dto.Latitude.HasValue || !dto.Longitude.HasValue))
@@ -285,8 +333,9 @@ namespace ERP.Services.Attendance
             {
                 var shift = assignment.Shift;
                 var date = assignment.assignment_date.Date;
+                var tz = TimeZoneInfo.FindSystemTimeZoneById(shift.timezone ?? "Asia/Saigon");
 
-                // Kiểm tra đi muộn
+                // Kiểm tra đi muộn (AC 2.2)
                 var firstIn = records
                     .Where(r => r.record_time.Date == date && r.record_type == "IN")
                     .OrderBy(r => r.record_time)
@@ -294,8 +343,12 @@ namespace ERP.Services.Attendance
 
                 if (firstIn != null)
                 {
-                    var actualInTime = firstIn.record_time.TimeOfDay;
-                    var allowedInTime = shift.start_time.Add(TimeSpan.FromMinutes(shift.grace_period_in));
+                    var localRecordTime = TimeZoneInfo.ConvertTimeFromUtc(firstIn.record_time, tz);
+                    var actualInTime = localRecordTime.TimeOfDay;
+                    
+                    // Prioritize allowed_late_mins (AC 2.2) over legacy grace_period_in
+                    var allowedLate = shift.allowed_late_mins > 0 ? shift.allowed_late_mins : shift.grace_period_in;
+                    var allowedInTime = shift.start_time.Add(TimeSpan.FromMinutes(allowedLate));
                     
                     if (actualInTime > allowedInTime && settings?.allow_late_in_out != true)
                     {
@@ -303,7 +356,7 @@ namespace ERP.Services.Attendance
                     }
                 }
 
-                // Kiểm tra về sớm
+                // Kiểm tra về sớm (AC 2.2)
                 var lastOut = records
                     .Where(r => r.record_time.Date == date && r.record_type == "OUT")
                     .OrderByDescending(r => r.record_time)
@@ -311,8 +364,12 @@ namespace ERP.Services.Attendance
 
                 if (lastOut != null)
                 {
-                    var actualOutTime = lastOut.record_time.TimeOfDay;
-                    var requiredOutTime = shift.end_time.Subtract(TimeSpan.FromMinutes(shift.grace_period_out));
+                    var localRecordTime = TimeZoneInfo.ConvertTimeFromUtc(lastOut.record_time, tz);
+                    var actualOutTime = localRecordTime.TimeOfDay;
+                    
+                    // Prioritize allowed_early_mins (AC 2.2) over legacy grace_period_out
+                    var allowedEarly = shift.allowed_early_mins > 0 ? shift.allowed_early_mins : shift.grace_period_out;
+                    var requiredOutTime = shift.end_time.Subtract(TimeSpan.FromMinutes(allowedEarly));
 
                     if (actualOutTime < requiredOutTime && settings?.allow_early_in_out != true)
                     {

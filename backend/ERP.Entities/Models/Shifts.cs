@@ -66,5 +66,73 @@ namespace ERP.Entities.Models
 
         [Column("note")]
         public string? note { get; set; }
+
+        [Column("keyword")]
+        [StringLength(50)]
+        public string keyword { get; set; }
+
+        [Column("standard_effort")]
+        public float standard_effort { get; set; }
+
+        [Column("symbol")]
+        [StringLength(10)]
+        public string symbol { get; set; }
+
+        [Column("checkin_window_start")]
+        public TimeSpan? checkin_window_start { get; set; }
+
+        [Column("checkin_window_end")]
+        public TimeSpan? checkin_window_end { get; set; }
+
+        [Column("checkout_window_start")]
+        public TimeSpan? checkout_window_start { get; set; }
+
+        [Column("checkout_window_end")]
+        public TimeSpan? checkout_window_end { get; set; }
+
+        [Column("allowed_late_mins")]
+        public int allowed_late_mins { get; set; }
+
+        [Column("allowed_early_mins")]
+        public int allowed_early_mins { get; set; }
+
+        [Column("max_late_mins")]
+        public int? max_late_mins { get; set; }
+
+        [Column("max_early_mins")]
+        public int? max_early_mins { get; set; }
+
+        [Column("checkin_requirement")]
+        [StringLength(50)]
+        public string? checkin_requirement { get; set; }
+
+        [Column("checkout_requirement")]
+        [StringLength(50)]
+        public string? checkout_requirement { get; set; }
+
+        [Column("timezone")]
+        [StringLength(50)]
+        public string timezone { get; set; } = "Asia/Saigon";
+
+        [Column("start_date")]
+        public DateTime? start_date { get; set; }
+
+        [Column("end_date")]
+        public DateTime? end_date { get; set; }
+
+        [Column("min_working_hours")]
+        public float min_working_hours { get; set; }
+
+        [Column("meal_type_id")]
+        public int? meal_type_id { get; set; }
+
+        [ForeignKey("meal_type_id")]
+        public virtual MealTypes MealType { get; set; }
+
+        [Column("meal_count")]
+        public int meal_count { get; set; }
+
+        [Column("is_overtime_shift")]
+        public bool is_overtime_shift { get; set; }
     }
 }
