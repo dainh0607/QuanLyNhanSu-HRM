@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
+using ERP.Services.Email;
+
 namespace ERP.API.Controllers
 {
     [ApiController]
@@ -20,6 +22,7 @@ namespace ERP.API.Controllers
         private readonly ILogger<AuthController> _logger;
         private readonly IConfiguration _configuration;
         private readonly IWebHostEnvironment _environment;
+        private readonly IEmailService _emailService;
 
         public AuthController(
             IAuthService authService,
@@ -27,7 +30,8 @@ namespace ERP.API.Controllers
             IFirebaseService firebaseService,
             ILogger<AuthController> logger,
             IConfiguration configuration,
-            IWebHostEnvironment environment)
+            IWebHostEnvironment environment,
+            IEmailService emailService)
         {
             _authService = authService;
             _userService = userService;
@@ -35,6 +39,7 @@ namespace ERP.API.Controllers
             _logger = logger;
             _configuration = configuration;
             _environment = environment;
+            _emailService = emailService;
         }
 
         [HttpPost("sign-up")]
@@ -233,6 +238,10 @@ namespace ERP.API.Controllers
                 return BadRequest(result);
             }
 
+            // Note: PreRegisterStaff doesn't currently return an invitation link in its DTO
+            // If the user wants to use the new flow with email, they should use the /invite endpoint.
+            // For now, we'll just return Ok for legacy support.
+
             return Ok(result);
         }
 
@@ -312,6 +321,17 @@ namespace ERP.API.Controllers
             var result = await _authService.GenerateInvitationAsync(dto, userId);
             if (!result.Success)
                 return BadRequest(result);
+
+            // Send invitation email
+            try
+            {
+                await _emailService.SendInvitationEmailAsync(dto.Email, dto.FullName, result.InvitationLink);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send invitation email to {Email}", dto.Email);
+                result.Message += " Tuy nhiên, không thể gửi email tự động. Vui lòng gửi link mời thủ công.";
+            }
 
             return Ok(result);
         }

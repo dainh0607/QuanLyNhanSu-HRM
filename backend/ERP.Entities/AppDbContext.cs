@@ -158,6 +158,8 @@ namespace ERP.Entities
         public DbSet<WorkspaceOwnerInvitation> WorkspaceOwnerInvitations { get; set; }
         public DbSet<SupportAccessGrant> SupportAccessGrants { get; set; }
         public DbSet<InvoiceMetadata> InvoiceMetadata { get; set; }
+        public DbSet<TenantMetadata> TenantMetadata { get; set; }
+        public DbSet<Transaction> Transactions { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {

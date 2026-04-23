@@ -18,6 +18,16 @@ namespace ERP.DTOs.Auth
         public int? DepartmentId { get; set; }
 
         public int? JobTitleId { get; set; }
+
+        public int? RoleId { get; set; }
+
+        public string? ScopeLevel { get; set; }
+
+        public int? BranchId { get; set; }
+
+        public int? RegionId { get; set; }
+
+        public string? Message { get; set; }
         
         public int ExpirationDays { get; set; } = 7;
     }
@@ -38,6 +48,11 @@ namespace ERP.DTOs.Auth
         public string FullName { get; set; } = string.Empty;
         public int? DepartmentId { get; set; }
         public int? JobTitleId { get; set; }
-        public string Message { get; set; } = string.Empty;
+        public int? RoleId { get; set; }
+        public string? ScopeLevel { get; set; }
+        public int? BranchId { get; set; }
+        public int? RegionId { get; set; }
+        public string? Message { get; set; }
+        public string InvitationMessage { get; set; } = string.Empty;
     }
 }

@@ -13,6 +13,12 @@ using ERP.Entities.Models;
 using ERP.Entities.Models.ControlPlane;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using ERP.DTOs;
+using iText.Kernel.Pdf;
+using iText.Layout;
+using iText.Layout.Element;
+using iText.Layout.Properties;
+using System.IO;
 
 namespace ERP.Services.ControlPlane
 {
@@ -578,6 +584,35 @@ namespace ERP.Services.ControlPlane
                 Message = $"Đã xóa vĩnh viễn gói dịch vụ {plan.Code} khỏi danh mục Control Plane.",
                 Snapshot = snapshot,
                 Record = MapPlanDto(plan)
+            };
+        }
+
+        public async Task<SubscriptionPlanDto?> GetSubscriptionPlanAsync(string planId)
+        {
+            if (!TryParseIntegerId(planId, out var numericPlanId))
+            {
+                return null;
+            }
+
+            var plan = await _context.SubscriptionPlans
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(item => item.Id == numericPlanId);
+
+            return plan != null ? MapPlanDto(plan) : null;
+        }
+
+        public async Task<List<string>> GetAvailableModulesAsync()
+        {
+            return new List<string>
+            {
+                "Nhân sự",
+                "Chấm công",
+                "Lương",
+                "Hợp đồng",
+                "Phê duyệt",
+                "Audit Log",
+                "SSO",
+                "Tuyển dụng"
             };
         }
 
@@ -1509,6 +1544,18 @@ namespace ERP.Services.ControlPlane
             invoice.GraceEndsAt = invoice.DueAt.AddDays(GetGracePeriodDays(invoice));
             invoice.UpdatedAt = DateTime.UtcNow;
 
+            var transaction = new Transaction
+            {
+                InvoiceId = invoice.Id,
+                TenantId = invoice.TenantId,
+                AmountVnd = invoice.AmountVnd,
+                PaymentSource = paymentSource,
+                ExternalReference = paymentGatewayRef,
+                ProcessedAt = receivedAt,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _context.Transactions.AddAsync(transaction);
             await SyncTenantAfterInvoiceMutationAsync(invoice, "paid");
             await _context.SaveChangesAsync();
         }
@@ -1995,68 +2042,143 @@ namespace ERP.Services.ControlPlane
 
         private static byte[] BuildInvoicePdf(InvoiceMetadataDto invoice)
         {
-            var content = string.Join(
-                "\n",
-                new[]
-                {
-                    "BT",
-                    "/F1 18 Tf",
-                    "50 790 Td",
-                    $"({EscapePdfText(invoice.InvoiceCode)}) Tj",
-                    "0 -28 Td",
-                    "/F1 12 Tf",
-                    $"({EscapePdfText($"{invoice.CompanyName} - {invoice.WorkspaceCode}")}) Tj",
-                    "0 -22 Td",
-                    $"({EscapePdfText($"Amount: {invoice.AmountVnd.ToString(CultureInfo.InvariantCulture)} VND")}) Tj",
-                    "0 -22 Td",
-                    $"({EscapePdfText($"Status: {invoice.Status}")}) Tj",
-                    "0 -22 Td",
-                    $"({EscapePdfText($"Period: {invoice.BillingPeriodLabel}")}) Tj",
-                    "0 -22 Td",
-                    $"({EscapePdfText($"Issued: {invoice.IssuedAt:o}")}) Tj",
-                    "0 -22 Td",
-                    $"({EscapePdfText($"Due: {invoice.DueAt:o}")}) Tj",
-                    "ET"
-                });
-
-            var objects = new[]
+            using (var ms = new MemoryStream())
             {
-                "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj",
-                "2 0 obj << /Type /Pages /Count 1 /Kids [3 0 R] >> endobj",
-                "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >> endobj",
-                $"4 0 obj << /Length {content.Length} >> stream\n{content}\nendstream\nendobj",
-                "5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj"
-            };
+                var writer = new PdfWriter(ms);
+                var pdf = new PdfDocument(writer);
+                var document = new Document(pdf);
 
-            var pdfBuilder = new StringBuilder("%PDF-1.4\n");
-            var offsets = new List<int> { 0 };
+                // Title
+                document.Add(new Paragraph("HOÁ ĐƠN DỊCH VỤ / SERVICE INVOICE")
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetFontSize(18)
+                    .SetBold());
 
-            foreach (var pdfObject in objects)
-            {
-                offsets.Add(pdfBuilder.Length);
-                pdfBuilder.Append(pdfObject).Append('\n');
+                document.Add(new Paragraph("\n"));
+
+                // Table for Basic Info
+                var table = new Table(UnitValue.CreatePercentArray(new float[] { 30, 70 })).UseAllAvailableWidth();
+                
+                table.AddCell(new Cell().Add(new Paragraph("Mã hóa đơn:")).SetBold());
+                table.AddCell(new Cell().Add(new Paragraph(invoice.InvoiceCode)));
+
+                table.AddCell(new Cell().Add(new Paragraph("Khách hàng:")).SetBold());
+                table.AddCell(new Cell().Add(new Paragraph($"{invoice.CompanyName} ({invoice.WorkspaceCode})")));
+
+                table.AddCell(new Cell().Add(new Paragraph("Kỳ thanh toán:")).SetBold());
+                table.AddCell(new Cell().Add(new Paragraph(invoice.BillingPeriodLabel)));
+
+                table.AddCell(new Cell().Add(new Paragraph("Ngày phát hành:")).SetBold());
+                table.AddCell(new Cell().Add(new Paragraph(invoice.IssuedAt.ToString("dd/MM/yyyy"))));
+
+                table.AddCell(new Cell().Add(new Paragraph("Hạn thanh toán:")).SetBold());
+                table.AddCell(new Cell().Add(new Paragraph(invoice.DueAt.ToString("dd/MM/yyyy"))));
+
+                table.AddCell(new Cell().Add(new Paragraph("Trạng thái:")).SetBold());
+                table.AddCell(new Cell().Add(new Paragraph(invoice.Status.ToUpper())));
+
+                document.Add(table);
+                document.Add(new Paragraph("\n"));
+
+                // Amount Section
+                var amountPara = new Paragraph($"TỔNG TIỀN THANH TOÁN: {invoice.AmountVnd:N0} VND")
+                    .SetTextAlignment(TextAlignment.RIGHT)
+                    .SetFontSize(14)
+                    .SetBold()
+                    .SetBackgroundColor(iText.Kernel.Colors.ColorConstants.LIGHT_GRAY)
+                    .SetPadding(10);
+                
+                document.Add(amountPara);
+
+                document.Add(new Paragraph("\n\n"));
+                document.Add(new Paragraph("Cảm ơn quý khách đã sử dụng dịch vụ của NexaHR!")
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetItalic());
+
+                document.Close();
+                return ms.ToArray();
             }
-
-            var xrefStart = pdfBuilder.Length;
-            pdfBuilder.Append("xref\n0 ").Append(objects.Length + 1).Append('\n');
-            pdfBuilder.Append("0000000000 65535 f \n");
-
-            foreach (var offset in offsets.Skip(1))
-            {
-                pdfBuilder.Append(offset.ToString().PadLeft(10, '0')).Append(" 00000 n \n");
-            }
-
-            pdfBuilder.Append("trailer << /Size ")
-                .Append(objects.Length + 1)
-                .Append(" /Root 1 0 R >>\n");
-            pdfBuilder.Append("startxref\n").Append(xrefStart).Append("\n%%EOF");
-
-            return Encoding.ASCII.GetBytes(pdfBuilder.ToString());
         }
 
-        private static string EscapePdfText(string value)
+        public async Task<PaginatedListDto<TenantMasterDto>> GetTenantMonitoringListAsync(string? search, string? status, int page, int pageSize)
         {
-            return value.Replace("\\", "\\\\").Replace("(", "\\(").Replace(")", "\\)");
+            var query = _context.TenantMetadata
+                .Include(m => m.Tenant)
+                .IgnoreQueryFilters() // Super Admin sees all
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var normalizedSearch = search.Trim().ToLower();
+                query = query.Where(m => 
+                    m.Tenant.name.ToLower().Contains(normalizedSearch) ||
+                    m.Tenant.code.ToLower().Contains(normalizedSearch) ||
+                    (m.last_invoice_code != null && m.last_invoice_code.ToLower().Contains(normalizedSearch)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(status) && status != "ALL")
+            {
+                query = query.Where(m => m.rental_status == status.ToUpper());
+            }
+
+            var total = await query.CountAsync();
+            var items = await query
+                .OrderByDescending(m => m.last_sync_at)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(m => new TenantMasterDto
+                {
+                    Id = m.tenant_id,
+                    Name = m.Tenant.name,
+                    Code = m.Tenant.code,
+                    Subdomain = m.Tenant.subdomain,
+                    RentalStatus = m.rental_status,
+                    PlanName = m.subscription_plan_name,
+                    TotalEmployees = m.total_employees,
+                    StorageUsagePercentage = m.max_storage_quota_bytes > 0 
+                        ? (double)m.storage_usage_bytes * 100 / m.max_storage_quota_bytes 
+                        : 0,
+                    SupportAccessStatus = m.support_access_status
+                })
+                .ToListAsync();
+
+            return new PaginatedListDto<TenantMasterDto>(items, total, page, pageSize);
+        }
+
+        public async Task<TenantDetailDto?> GetTenantMonitoringDetailAsync(int tenantId)
+        {
+            var metadata = await _context.TenantMetadata
+                .Include(m => m.Tenant)
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(m => m.tenant_id == tenantId);
+
+            if (metadata == null) return null;
+
+            var subscription = await _context.TenantSubscriptions
+                .Include(s => s.Plan)
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(s => s.TenantId == tenantId);
+
+            return new TenantDetailDto
+            {
+                Id = metadata.tenant_id,
+                Name = metadata.Tenant.name,
+                Code = metadata.Tenant.code,
+                Subdomain = metadata.Tenant.subdomain,
+                RentalStatus = metadata.rental_status,
+                PlanName = metadata.subscription_plan_name,
+                PlanCode = subscription?.Plan?.Code,
+                OnboardingStatus = subscription?.OnboardingStatus,
+                ExpiryDate = metadata.Tenant.subscription_expiry,
+                TotalEmployees = metadata.total_employees,
+                StorageUsedGb = (double)metadata.storage_usage_bytes / (1024 * 1024 * 1024),
+                StorageLimitGb = (double)metadata.max_storage_quota_bytes / (1024 * 1024 * 1024),
+                StorageUsagePercentage = metadata.max_storage_quota_bytes > 0 
+                    ? (double)metadata.storage_usage_bytes * 100 / metadata.max_storage_quota_bytes 
+                    : 0,
+                SupportAccessStatus = metadata.support_access_status,
+                LastInvoiceCode = metadata.last_invoice_code
+            };
         }
     }
 }
