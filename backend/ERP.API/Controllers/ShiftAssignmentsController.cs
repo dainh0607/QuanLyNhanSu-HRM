@@ -52,6 +52,40 @@ namespace ERP.API.Controllers
             }
         }
 
+        [HttpGet("range")]
+        public async Task<IActionResult> GetRangeSchedule(
+            [FromQuery] DateTime startDate,
+            [FromQuery] DateTime endDate,
+            [FromQuery] int? branchId = null,
+            [FromQuery] int? departmentId = null,
+            [FromQuery] string? searchTerm = null,
+            [FromQuery] int? regionId = null,
+            [FromQuery] int? jobTitleId = null,
+            [FromQuery] int? accessGroupId = null,
+            [FromQuery] string? genderCode = null,
+            [FromQuery] string? employeeStatus = "active")
+        {
+            try
+            {
+                var result = await _assignmentService.GetScheduleRangeAsync(
+                    startDate,
+                    endDate,
+                    branchId,
+                    departmentId,
+                    searchTerm,
+                    regionId,
+                    jobTitleId,
+                    accessGroupId,
+                    genderCode,
+                    employeeStatus);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
         // Modal Shift Tabs Management
         [HttpGet("shift-tabs")]
         public async Task<IActionResult> GetShiftTabs([FromQuery] int branchId)

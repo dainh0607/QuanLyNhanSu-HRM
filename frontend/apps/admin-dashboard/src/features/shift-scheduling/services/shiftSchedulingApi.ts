@@ -208,9 +208,21 @@ const toRepeatDayList = (values: string[]): number[] =>
   );
 
 const buildWeeklyScheduleUrl = (filters: ShiftScheduleFilters): string => {
-  // The weekly grid needs the employee-inclusive assignment endpoint.
-  const url = new URL(`${API_URL}/shift-assignments/weekly`);
-  url.searchParams.set("weekStartDate", filters.weekStartDate);
+  // Use range endpoint if not in week mode
+  const isRange = filters.timeMode !== "week";
+  const baseUrl = isRange 
+    ? `${API_URL}/shift-assignments/range`
+    : `${API_URL}/shift-assignments/weekly`;
+
+  const url = new URL(baseUrl);
+  
+  if (isRange) {
+    url.searchParams.set("startDate", filters.startDate);
+    url.searchParams.set("endDate", filters.endDate);
+  } else {
+    url.searchParams.set("weekStartDate", filters.weekStartDate);
+  }
+
   url.searchParams.set("viewMode", filters.viewMode);
   url.searchParams.set("employeeStatus", filters.employeeStatus);
   appendIfValue(url, "regionId", filters.regionId);
@@ -230,6 +242,14 @@ const buildWeeklyScheduleUrl = (filters: ShiftScheduleFilters): string => {
 
 export const shiftSchedulingApi = {
   getWeeklySchedule(filters: ShiftScheduleFilters): Promise<WeeklyScheduleApiResponse> {
+    return requestJson<WeeklyScheduleApiResponse>(
+      buildWeeklyScheduleUrl(filters),
+      { method: "GET" },
+      "Không thể tải bảng xếp ca",
+    );
+  },
+
+  getScheduleRange(filters: ShiftScheduleFilters): Promise<WeeklyScheduleApiResponse> {
     return requestJson<WeeklyScheduleApiResponse>(
       buildWeeklyScheduleUrl(filters),
       { method: "GET" },

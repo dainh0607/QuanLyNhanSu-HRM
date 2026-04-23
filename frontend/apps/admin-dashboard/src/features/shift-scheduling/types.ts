@@ -7,6 +7,8 @@ export type ScheduleViewMode =
   | "workingDays"
   | "workedHours";
 
+export type ScheduleTimeMode = "day" | "week" | "month";
+
 export type AttendanceStatus =
   | "untracked"
   | "upcoming"
@@ -22,20 +24,6 @@ export type AttendanceStatusFilter = AttendanceStatus | "all";
 export type EmployeeStatusFilter = "active" | "all";
 export type ShiftAssignmentStatus = "draft" | "published" | "approved";
 
-export interface SelectOption {
-  value: string;
-  label: string;
-  description?: string;
-}
-
-export interface ShiftScheduleFilters {
-  viewMode: ScheduleViewMode;
-  weekStartDate: string;
-  regionId: string;
-  branchId: string;
-  departmentId: string;
-  projectId: string;
-  jobTitleId: string;
   accessGroupId: string;
   genderCode: string;
   workingHoursBucket: string;

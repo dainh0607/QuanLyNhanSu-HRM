@@ -25,13 +25,19 @@ import type {
 } from "../types";
 import { addDays, getWeekDates, parseIsoDate, toIsoDate } from "../utils/week";
 
-const buildEmptyCellMap = (weekStartDate: string): Record<string, WeeklyScheduleCell> =>
-  Object.fromEntries(
-    getWeekDates(weekStartDate).map((date) => {
-      const isoDate = toIsoDate(date);
-      return [isoDate, { date: isoDate, shifts: [] }];
-    }),
-  );
+const buildEmptyCellMap = (startDate: string, endDate: string): Record<string, WeeklyScheduleCell> => {
+  const start = parseIsoDate(startDate);
+  const end = parseIsoDate(endDate);
+  const diffDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+  
+  const cells: Record<string, WeeklyScheduleCell> = {};
+  for (let i = 0; i <= diffDays; i++) {
+    const date = addDays(start, i);
+    const isoDate = toIsoDate(date);
+    cells[isoDate] = { date: isoDate, shifts: [] };
+  }
+  return cells;
+};
 
 const getVal = <T>(
   obj: object | null | undefined,
@@ -206,40 +212,22 @@ const transformApiResponse = (
   response: WeeklyScheduleApiResponse,
   filters: ShiftScheduleFilters,
 ): WeeklyScheduleGridData => {
-  const weekStartDate = getVal<string>(response, "week_start_date", "weekStartDate") || filters.weekStartDate;
+  const isRange = filters.timeMode !== "week";
+  const startDate = isRange ? filters.startDate : filters.weekStartDate;
+  const endDate = isRange ? filters.endDate : toIsoDate(addDays(parseIsoDate(filters.weekStartDate), 6));
   
   const employeesFromResponse = (getVal<WeeklyScheduleApiEmployee[]>(response, "employees", "employees") ?? [])
     .map(normalizeEmployee);
   
   const assignments = getVal<WeeklyScheduleApiAssignment[]>(response, "assignments", "assignments") ?? [];
 
-  const employeesFromAssignments = Array.from(
-    new Map(
-      assignments.filter(a => {
-        const id = getVal<number>(a, "employee_id", "employeeId");
-        return id !== undefined && id > 0;
-      }).map(a => {
-        const id = getVal<number>(a, "employee_id", "employeeId")!;
-        const emp: WeeklyScheduleApiEmployee = {
-          id,
-          full_name: getVal<string>(a, "employee_name", "employeeName"),
-          employee_code: getVal<string>(a, "employee_code", "employeeCode"),
-          branch_id: getVal<number>(a, "branch_id", "branchId"),
-          job_title_id: getVal<number>(a, "job_title_id", "jobTitleId"),
-          job_title_name: getVal<string>(a, "job_title_name", "jobTitleName"),
-        };
-        return [id, normalizeEmployee(emp)];
-      })
-    ).values()
-  );
-
   const uniqueEmployees = Array.from(
-    new Map([...employeesFromResponse, ...employeesFromAssignments].map(e => [e.id, e])).values()
+    new Map(employeesFromResponse.map(e => [e.id, e])).values()
   ).sort((l, r) => (l.fullName || "").localeCompare(r.fullName || "", "vi"));
 
   const rows = uniqueEmployees.map<WeeklyScheduleRow>(employee => ({
     employee,
-    cells: buildEmptyCellMap(weekStartDate)
+    cells: buildEmptyCellMap(startDate, endDate)
   }));
 
   const rowsByEmp = new Map(rows.map(r => [r.employee.id, r]));
@@ -251,7 +239,7 @@ const transformApiResponse = (
     if (date && row.cells[date]) row.cells[date].shifts.push(createShiftFromAssignment(a));
   }
 
-  const openShiftCells = buildEmptyCellMap(weekStartDate);
+  const openShiftCells = buildEmptyCellMap(startDate, endDate);
   const openShifts = getVal<WeeklyScheduleApiOpenShift[]>(response, "open_shifts", "openShifts") ?? [];
   for (const o of openShifts) {
     const date = getVal<string>(o, "open_date", "openDate");
@@ -259,7 +247,7 @@ const transformApiResponse = (
   }
 
   return applyClientFilters({
-    weekStartDate,
+    weekStartDate: startDate,
     employees: uniqueEmployees,
     rows,
     openShiftCells,
@@ -273,9 +261,25 @@ const transformApiResponse = (
 };
 
 const getWeeklySchedule = async (filters: ShiftScheduleFilters): Promise<WeeklyScheduleGridData> => {
-  const response = await shiftSchedulingApi.getWeeklySchedule(filters);
-  const openShifts = await shiftSchedulingApi.getOpenShifts({ weekStartDate: filters.weekStartDate, endDate: toIsoDate(addDays(parseIsoDate(filters.weekStartDate), 6)), branchId: filters.branchId });
-  const counters = await shiftSchedulingApi.getShiftCounters({ startDate: filters.weekStartDate, endDate: toIsoDate(addDays(parseIsoDate(filters.weekStartDate), 6)), branchId: filters.branchId });
+  const isRange = filters.timeMode !== "week";
+  const startDate = isRange ? filters.startDate : filters.weekStartDate;
+  const endDate = isRange ? filters.endDate : toIsoDate(addDays(parseIsoDate(filters.weekStartDate), 6));
+
+  const response = isRange 
+    ? await shiftSchedulingApi.getScheduleRange(filters)
+    : await shiftSchedulingApi.getWeeklySchedule(filters);
+
+  const openShifts = await shiftSchedulingApi.getOpenShifts({ 
+    weekStartDate: startDate, 
+    endDate: endDate, 
+    branchId: filters.branchId 
+  });
+
+  const counters = await shiftSchedulingApi.getShiftCounters({ 
+    startDate: startDate, 
+    endDate: endDate, 
+    branchId: filters.branchId 
+  });
 
   return transformApiResponse({
       ...response,

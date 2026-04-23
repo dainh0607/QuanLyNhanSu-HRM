@@ -75,7 +75,24 @@ namespace ERP.Services.Attendance
                 throw new Exception("Ngày bắt đầu tuần không hợp lệ.");
 
             var endDate = startDate.AddDays(7);
+            
+            var result = await GetScheduleRangeAsync(startDate, endDate, branchId, departmentId, searchTerm, regionId, jobTitleId, accessGroupId, genderCode, employeeStatus);
+            result.WeekStartDate = weekStartDate;
+            return result;
+        }
 
+        public async Task<WeeklyScheduleApiResponseDto> GetScheduleRangeAsync(
+            DateTime startDate,
+            DateTime endDate,
+            int? branchId = null,
+            int? departmentId = null,
+            string? searchTerm = null,
+            int? regionId = null,
+            int? jobTitleId = null,
+            int? accessGroupId = null,
+            string? genderCode = null,
+            string? employeeStatus = "active")
+        {
             // 1. Fetch Employees
             IQueryable<Entities.Models.Employees> employeeQuery = _unitOfWork.Repository<Entities.Models.Employees>()
                 .AsQueryable()
@@ -185,7 +202,7 @@ namespace ERP.Services.Attendance
 
             return new WeeklyScheduleApiResponseDto
             {
-                WeekStartDate = weekStartDate,
+                WeekStartDate = startDate.ToString("yyyy-MM-dd"),
                 Employees = employees.Select(e => new WeeklyScheduleApiEmployeeDto
                 {
                     Id = e.Id,

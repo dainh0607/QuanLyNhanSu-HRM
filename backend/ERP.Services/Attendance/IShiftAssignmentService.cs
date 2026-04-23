@@ -7,6 +7,19 @@ namespace ERP.Services.Attendance
 {
     public interface IShiftAssignmentService
     {
+        Task<WeeklyScheduleApiResponseDto> GetScheduleRangeAsync(
+            DateTime startDate,
+            DateTime endDate,
+            int? branchId = null, 
+            int? departmentId = null, 
+            string? searchTerm = null,
+            int? regionId = null,
+            int? jobTitleId = null,
+            int? accessGroupId = null,
+            string? genderCode = null,
+            string? employeeStatus = "active");
+        
+        [Obsolete("Use GetScheduleRangeAsync instead.")]
         Task<WeeklyScheduleApiResponseDto> GetWeeklyScheduleAsync(
             string weekStartDate, 
             int? branchId = null, 

@@ -16,6 +16,8 @@ import QuickAddEmployeesModal from "./quick-add-employees/QuickAddEmployeesModal
 import ShiftCopyModal from "./shift-copy/ShiftCopyModal";
 import ShiftTabAssignModal from "./shift-tab-assign/ShiftTabAssignModal";
 import ShiftTemplateModal from "./shift-template/ShiftTemplateModal";
+import DailyTimelineGrid from "./components/DailyTimelineGrid";
+import MonthlyShiftScheduleGrid from "./components/MonthlyShiftScheduleGrid";
 import { shiftTemplateService } from "./shift-template/services/shiftTemplateService";
 import type { ShiftTemplateSubmitPayload } from "./shift-template/types";
 import type {
@@ -27,8 +29,12 @@ import type {
 import {
   addDays,
   getWeekLabel,
+  getMonthLabel,
+  getDayLabel,
   parseIsoDate,
   startOfWeek,
+  startOfMonth,
+  endOfMonth,
   toIsoDate,
 } from "./utils/week";
 import DeleteUnconfirmedModal from "./components/DeleteUnconfirmedModal";
@@ -166,7 +172,11 @@ export const WeeklyShiftSchedulePage = () => {
     [data, settings.showOnlyPublished],
   );
 
-  const weekLabel = getWeekLabel(filters.weekStartDate);
+  const label = useMemo(() => {
+    if (filters.timeMode === "day") return getDayLabel(filters.startDate);
+    if (filters.timeMode === "month") return getMonthLabel(filters.startDate);
+    return getWeekLabel(filters.weekStartDate);
+  }, [filters.timeMode, filters.startDate, filters.weekStartDate]);
 
   const handleViewModeChange = (value: string) => {
     const nextViewMode = value as ScheduleViewMode;
@@ -189,19 +199,63 @@ export const WeeklyShiftSchedulePage = () => {
     }));
   };
 
-  const handleWeekChange = (value: string) => {
-    if (!value) {
-      return;
-    }
-
-    updateFilter("weekStartDate", toIsoDate(startOfWeek(parseIsoDate(value))));
-  };
-
   const handleFilterChange = <Key extends keyof ShiftScheduleFilters>(
     key: Key,
     value: ShiftScheduleFilters[Key],
   ) => {
-    updateFilter(key, value);
+    if (key === "timeMode") {
+        const nextTimeMode = value as ShiftScheduleFilters["timeMode"];
+        setFilters(current => {
+            const baseDate = parseIsoDate(current.startDate);
+            let nextStartDate = current.startDate;
+            let nextEndDate = current.endDate;
+
+            if (nextTimeMode === "day") {
+                nextEndDate = nextStartDate;
+            } else if (nextTimeMode === "week") {
+                const weekStart = toIsoDate(startOfWeek(baseDate));
+                nextStartDate = weekStart;
+                nextEndDate = toIsoDate(addDays(parseIsoDate(weekStart), 6));
+            } else if (nextTimeMode === "month") {
+                nextStartDate = toIsoDate(startOfMonth(baseDate));
+                nextEndDate = toIsoDate(endOfMonth(baseDate));
+            }
+
+            return {
+                ...current,
+                timeMode: nextTimeMode,
+                startDate: nextStartDate,
+                endDate: nextEndDate,
+                weekStartDate: nextTimeMode === "week" ? nextStartDate : nextStartDate
+            };
+        });
+    } else if (key === "weekStartDate") {
+        const nextWeekStart = value as string;
+        updateFilter("weekStartDate", nextWeekStart);
+        updateFilter("startDate", nextWeekStart);
+        updateFilter("endDate", toIsoDate(addDays(parseIsoDate(nextWeekStart), 6)));
+    } else {
+        updateFilter(key, value);
+    }
+  };
+
+  const handleWeekChange = (value: string) => {
+    if (!value) return;
+    const date = parseIsoDate(value);
+    
+    if (filters.timeMode === "day") {
+        updateFilter("startDate", value);
+        updateFilter("endDate", value);
+    } else if (filters.timeMode === "week") {
+        const weekStart = toIsoDate(startOfWeek(date));
+        updateFilter("weekStartDate", weekStart);
+        updateFilter("startDate", weekStart);
+        updateFilter("endDate", toIsoDate(addDays(parseIsoDate(weekStart), 6)));
+    } else if (filters.timeMode === "month") {
+        const monthStart = toIsoDate(startOfMonth(date));
+        updateFilter("startDate", monthStart);
+        updateFilter("endDate", toIsoDate(endOfMonth(date)));
+    }
   };
 
   const handleSaveSettings = (nextSettings: ShiftScheduleSettings) => {
@@ -239,7 +293,7 @@ export const WeeklyShiftSchedulePage = () => {
   return (
     <>
       <main
-        className="relative flex h-[calc(100vh-64px)] w-full flex-col overflow-hidden px-[30px] py-6"
+        className="relative flex h-[calc(100vh-64px)] w-full flex-col overflow-hidden px-4 py-3"
         id="main-content-container"
       >
         <div className="relative flex min-h-0 flex-1 gap-6 overflow-hidden">
@@ -251,32 +305,30 @@ export const WeeklyShiftSchedulePage = () => {
             initialFilters={advancedSidebarFilters}
           />
 
-          <div className="flex min-w-0 flex-1 flex-col gap-3">
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
             <CompactShiftScheduleToolbarWithAdvancedSidebar
               filters={filters}
               lookups={lookups}
               attendanceStatusOptions={attendanceStatusOptions}
               employeeStatusOptions={employeeStatusOptions}
-              weekLabel={weekLabel}
+              weekLabel={label}
               isRefreshing={isRefreshing}
               onViewModeChange={handleViewModeChange}
               onFilterChange={handleFilterChange}
-              onPreviousWeek={() =>
-                handleWeekChange(
-                  toIsoDate(addDays(parseIsoDate(filters.weekStartDate), -7)),
-                )
-              }
-              onNextWeek={() =>
-                handleWeekChange(
-                  toIsoDate(addDays(parseIsoDate(filters.weekStartDate), 7)),
-                )
-              }
+              onPreviousWeek={() => {
+                const step = filters.timeMode === 'month' ? -30 : (filters.timeMode === 'day' ? -1 : -7);
+                handleWeekChange(toIsoDate(addDays(parseIsoDate(filters.startDate), step)));
+              }}
+              onNextWeek={() => {
+                const step = filters.timeMode === 'month' ? 30 : (filters.timeMode === 'day' ? 1 : 7);
+                handleWeekChange(toIsoDate(addDays(parseIsoDate(filters.startDate), step)));
+              }}
               onWeekChange={handleWeekChange}
               onRefresh={() => {
                 void reload();
               }}
               onExport={() =>
-                notify(`Đã sẵn sàng xuất file cho ${weekLabel}.`, "info")
+                notify(`Đã sẵn sàng xuất file cho ${label}.`, "info")
               }
               onImport={() => setIsTemplateModalOpen(true)}
               onOpenShiftTemplateList={() =>
@@ -309,7 +361,7 @@ export const WeeklyShiftSchedulePage = () => {
                 setIsBulkProcessing(true);
                 try {
                   const result = await shiftBulkActionsService.publishAll(
-                    filters.weekStartDate,
+                    filters.startDate,
                   );
                   notify(
                     result.message || "Đã công bố ca làm việc thành công.",
@@ -326,7 +378,7 @@ export const WeeklyShiftSchedulePage = () => {
                 setIsBulkProcessing(true);
                 try {
                   const result = await shiftBulkActionsService.approveAll(
-                    filters.weekStartDate,
+                    filters.startDate,
                   );
                   notify(
                     result.message || "Đã chấp thuận ca làm việc thành công.",
@@ -344,7 +396,7 @@ export const WeeklyShiftSchedulePage = () => {
                 try {
                   const result =
                     await shiftBulkActionsService.publishAndApproveAll(
-                      filters.weekStartDate,
+                      filters.startDate,
                     );
                   notify(
                     result.message ||
@@ -361,33 +413,56 @@ export const WeeklyShiftSchedulePage = () => {
               onDeleteUnconfirmed={() => setIsDeleteModalOpen(true)}
             />
 
-            <div className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
               {isLoading && !visibleData ? (
                 <div className="flex min-h-[360px] flex-1 items-center justify-center">
                   <div className="text-center">
                     <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-[#BFDBFE] border-t-[#134BBA]" />
                     <p className="mt-4 text-sm font-medium text-slate-500">
-                      Đang tải bảng xếp ca tuần...
+                      Đang tải bảng xếp ca...
                     </p>
                   </div>
                 </div>
               ) : visibleData ? (
                 <>
-                  <CompactShiftScheduleGrid
-                    weekStartDate={visibleData.weekStartDate}
-                    rows={visibleData.rows}
-                    openShiftCells={visibleData.openShiftCells}
-                    searchTerm={filters.searchTerm}
-                    onSearchChange={(value) =>
-                      updateFilter("searchTerm", value)
-                    }
-                    onAddEmployee={() => setIsQuickAddEmployeesOpen(true)}
-                    onCreateOpenShift={(date) => setSelectedOpenShiftDate(date)}
-                    highlightShortage={settings.highlightShortage}
-                    quickActionHandlers={
-                      assignedShiftQuickActions.quickActionHandlers
-                    }
-                  />
+                  {filters.timeMode === "day" && (
+                    <DailyTimelineGrid
+                      date={filters.startDate}
+                      rows={visibleData.rows}
+                      searchTerm={filters.searchTerm}
+                      onSearchChange={(value) => updateFilter("searchTerm", value)}
+                      onAddEmployee={() => setIsQuickAddEmployeesOpen(true)}
+                      quickActionHandlers={assignedShiftQuickActions.quickActionHandlers}
+                    />
+                  )}
+                  {filters.timeMode === "week" && (
+                    <CompactShiftScheduleGrid
+                        weekStartDate={visibleData.weekStartDate}
+                        rows={visibleData.rows}
+                        openShiftCells={visibleData.openShiftCells}
+                        searchTerm={filters.searchTerm}
+                        onSearchChange={(value) =>
+                        updateFilter("searchTerm", value)
+                        }
+                        onAddEmployee={() => setIsQuickAddEmployeesOpen(true)}
+                        onCreateOpenShift={(date) => setSelectedOpenShiftDate(date)}
+                        highlightShortage={settings.highlightShortage}
+                        quickActionHandlers={
+                        assignedShiftQuickActions.quickActionHandlers
+                        }
+                    />
+                  )}
+                  {filters.timeMode === "month" && (
+                    <MonthlyShiftScheduleGrid
+                        startDate={filters.startDate}
+                        endDate={filters.endDate}
+                        rows={visibleData.rows}
+                        searchTerm={filters.searchTerm}
+                        onSearchChange={(value) => updateFilter("searchTerm", value)}
+                        onAddEmployee={() => setIsQuickAddEmployeesOpen(true)}
+                        quickActionHandlers={assignedShiftQuickActions.quickActionHandlers}
+                    />
+                  )}
                   <ShiftLegend />
                 </>
               ) : (
@@ -501,7 +576,7 @@ export const WeeklyShiftSchedulePage = () => {
           setIsBulkProcessing(true);
           try {
             const result = await shiftBulkActionsService.deleteUnconfirmed(
-              filters.weekStartDate,
+              filters.startDate,
             );
             notify(
               result.message || "Da xoa ca chua xac nhan thanh cong.",
