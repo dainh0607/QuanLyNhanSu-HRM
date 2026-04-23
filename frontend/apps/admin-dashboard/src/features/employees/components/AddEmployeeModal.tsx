@@ -56,49 +56,48 @@ interface MetadataLoadingState {
   accessGroups: boolean;
 }
 
-const DEFAULT_ACCESS_GROUP_KEYS = ['nhan vien', 'nhân viên', 'employee', 'user', 'staff', 'member'] as const;
 const ACCESS_GROUP_PRESETS = [
   {
     key: 'admin',
-    label: 'Quản trị',
+    label: 'Quản trị hệ thống',
     order: 0,
-    aliases: ['quan tri', 'quản trị', 'admin', 'administrator', 'system admin'],
+    aliases: ['admin', 'quản trị hệ thống', 'quan tri he thong', 'quản trị', 'quan tri'],
   },
   {
     key: 'director',
     label: 'Ban giám đốc',
     order: 1,
-    aliases: ['ban giam doc', 'ban giám đốc', 'director', 'board of director', 'bod'],
+    aliases: ['ban giám đốc', 'ban giam doc', 'director', 'manager', 'board of director', 'bod'],
   },
   {
     key: 'regionalManager',
     label: 'Quản lý vùng',
     order: 2,
-    aliases: ['quan ly vung', 'regional manager', 'regionalmanager', 'region manager'],
+    aliases: ['quản lý vùng', 'quan ly vung', 'regional manager', 'regionalmanager', 'region manager'],
   },
   {
     key: 'branchManager',
     label: 'Quản lý chi nhánh',
     order: 3,
-    aliases: ['quan ly chi nhanh', 'branch manager', 'branchmanager', 'manager branch'],
+    aliases: ['quản lý chi nhánh', 'quan ly chi nhanh', 'branch manager', 'branchmanager', 'manager branch'],
   },
   {
     key: 'deptManager',
     label: 'Quản lý bộ phận',
     order: 4,
-    aliases: ['quan ly bo phan', 'department manager', 'dept manager', 'manager dept'],
+    aliases: ['quản lý bộ phận', 'quan ly bo phan', 'department manager', 'dept manager', 'manager dept', 'department head', 'dept head'],
   },
   {
     key: 'moduleAdmin',
     label: 'Quản trị phân hệ',
     order: 5,
-    aliases: ['quan tri phan he', 'module admin', 'moduleadmin'],
+    aliases: ['quản trị phân hệ', 'quan tri phan he', 'module admin', 'moduleadmin'],
   },
   {
     key: 'employee',
     label: 'Nhân viên',
     order: 6,
-    aliases: [...DEFAULT_ACCESS_GROUP_KEYS],
+    aliases: ['nhân viên', 'nhan vien', 'employee', 'staff', 'member', 'user'],
   },
 ] as const;
 
@@ -207,13 +206,27 @@ const normalizeSearchText = (value: string) =>
     .toLowerCase();
 
 const resolveAccessGroupPreset = (
-  accessGroupName: string,
+  item: MetadataOption,
 ): (typeof ACCESS_GROUP_PRESETS)[number] | undefined => {
-  const normalizedName = normalizeSearchText(accessGroupName);
+  const normalizedName = normalizeSearchText(item.name);
+  const normalizedCode = item.code ? normalizeSearchText(item.code) : '';
+
+  // Ưu tiên khớp theo ID nếu có thể (dựa trên AuthSecurityConstants)
+  // Bỏ ID 1 (SuperAdmin) theo yêu cầu
+  if (item.id === 8) return ACCESS_GROUP_PRESETS.find(p => p.key === 'admin');
+  if (item.id === 2) return ACCESS_GROUP_PRESETS.find(p => p.key === 'director');
+  if (item.id === 3) return ACCESS_GROUP_PRESETS.find(p => p.key === 'regionalManager');
+  if (item.id === 4) return ACCESS_GROUP_PRESETS.find(p => p.key === 'branchManager');
+  if (item.id === 5) return ACCESS_GROUP_PRESETS.find(p => p.key === 'deptManager');
+  if (item.id === 6) return ACCESS_GROUP_PRESETS.find(p => p.key === 'moduleAdmin');
+  if (item.id === 7) return ACCESS_GROUP_PRESETS.find(p => p.key === 'employee');
 
   return ACCESS_GROUP_PRESETS.find((preset) =>
     preset.aliases.some(
-      (alias) => normalizedName === alias || normalizedName.includes(alias),
+      (alias) => 
+        normalizedName === alias || 
+        normalizedName.includes(alias) ||
+        (normalizedCode && (normalizedCode === alias || normalizedCode.includes(alias)))
     ),
   );
 };
@@ -225,8 +238,8 @@ const normalizeAccessGroupOptions = (items: unknown[]): MetadataOption[] => {
   >();
 
   normalizeMetadataOptions(items).forEach((item) => {
-    const matchedPreset = resolveAccessGroupPreset(item.name);
-    if (!matchedPreset || matchedGroups.has(matchedPreset.key)) {
+    const matchedPreset = resolveAccessGroupPreset(item);
+    if (!matchedPreset) {
       return;
     }
 
@@ -247,7 +260,7 @@ const normalizeAccessGroupOptions = (items: unknown[]): MetadataOption[] => {
 };
 
 const resolveDefaultAccessGroupId = (accessGroups: MetadataOption[]): string =>
-  accessGroups.find((group) => resolveAccessGroupPreset(group.name)?.key === 'employee')?.id?.toString() ??
+  accessGroups.find((group) => resolveAccessGroupPreset(group)?.key === 'employee')?.id?.toString() ??
   '';
 
 const getPhoneMaxLength = (countryCode: string) =>
@@ -752,15 +765,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
                     className={`w-full h-11 px-4 border rounded-xl text-sm appearance-none bg-white focus:outline-none focus:ring-4 transition-all pr-10 cursor-pointer disabled:bg-gray-50/50 disabled:text-gray-400 disabled:cursor-not-allowed ${errors.accessGroupId ? 'border-red-400 bg-red-50/30 ring-red-100' : 'border-gray-200 focus:border-[#192841] focus:ring-[#192841]/5'}`}
                   >
                     <option value="">{loading || metadataLoading.accessGroups ? 'Đang tải...' : 'Chọn nhóm truy cập'}</option>
-                    {metadata.accessGroups
-                      .filter(g => {
-                        // Ràng buộc: Chỉ Quản trị mới được tạo Quản trị (ID 1)
-                        if (g.id === 1) {
-                          return currentUser?.role === 'admin';
-                        }
-                        return true;
-                      })
-                      .map(g => (
+                    {metadata.accessGroups.map(g => (
                         <option key={g.id} value={String(g.id)}>{g.name}</option>
                       ))}
                   </select>

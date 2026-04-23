@@ -200,9 +200,11 @@ const InviteEmployeeModal: React.FC<InviteEmployeeModalProps> = ({ isOpen, onClo
                     onChange={(e) => setFormData({ ...formData, roleId: e.target.value })}
                   >
                     <option value="">Chọn vai trò</option>
-                    {roles.map((r) => (
-                      <option key={r.id} value={r.id}>{r.name}</option>
-                    ))}
+                    {roles
+                      .filter((r) => String(r.id) !== '1')
+                      .map((r) => (
+                        <option key={r.id} value={r.id}>{r.name}</option>
+                      ))}
                   </select>
                   {errors.roleId && <p className="text-[11px] text-red-500 font-medium pl-1">{errors.roleId}</p>}
                 </div>

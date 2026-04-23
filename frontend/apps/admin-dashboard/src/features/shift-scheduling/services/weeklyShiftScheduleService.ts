@@ -23,7 +23,7 @@ import type {
   WeeklyScheduleRow,
   WeeklyScheduleShift,
 } from "../types";
-import { addDays, getWeekDates, parseIsoDate, toIsoDate } from "../utils/week";
+import { addDays, parseIsoDate, toIsoDate } from "../utils/week";
 
 const buildEmptyCellMap = (startDate: string, endDate: string): Record<string, WeeklyScheduleCell> => {
   const start = parseIsoDate(startDate);

@@ -16,6 +16,10 @@ const EMPTY_FORM_DATA: OpenShiftFormData = {
     branches: [],
     departments: [],
     jobTitles: [],
+    mealTypes: [],
+    timeZones: [],
+    deviceRequirements: [],
+    existingIdentifiers: [],
   },
   shiftTemplates: [],
 };
@@ -44,6 +48,10 @@ const createEmptyFormData = (): OpenShiftFormData => ({
     branches: [],
     departments: [],
     jobTitles: [],
+    mealTypes: [],
+    timeZones: [],
+    deviceRequirements: [],
+    existingIdentifiers: [],
   },
   shiftTemplates: [],
 });

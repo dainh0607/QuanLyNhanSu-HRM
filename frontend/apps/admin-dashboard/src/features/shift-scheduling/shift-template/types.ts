@@ -1,9 +1,48 @@
-import type { SelectOption } from "../types";
+export interface ShiftTemplateSelectOption {
+  value: string;
+  label: string;
+  description?: string;
+  branchIds?: string[];
+}
+
+export type ShiftDeviceRequirement =
+  | "default"
+  | "wifi"
+  | "gps"
+  | "wifi_gps";
+
+export type ShiftGraceMode = "grace" | "maximum";
+
+export interface ShiftTemplateIdentifierRecord {
+  shiftId?: number | null;
+  identifier: string;
+}
 
 export interface ShiftTemplateAdvancedSettings {
+  identifier: string;
+  workUnits: string;
+  symbol: string;
+  breakStartTime: string;
+  breakEndTime: string;
   breakDurationMinutes: string;
+  checkInWindowStart: string;
+  checkInWindowEnd: string;
+  checkOutWindowStart: string;
+  checkOutWindowEnd: string;
+  graceMode: ShiftGraceMode;
   allowedLateCheckInMinutes: string;
   allowedEarlyCheckOutMinutes: string;
+  maximumLateCheckInMinutes: string;
+  maximumEarlyCheckOutMinutes: string;
+  entryDeviceRequirement: ShiftDeviceRequirement;
+  exitDeviceRequirement: ShiftDeviceRequirement;
+  timeZone: string;
+  effectiveStartDate: string;
+  effectiveEndDate: string;
+  minimumWorkingHours: string;
+  mealTypeId: string;
+  mealCount: string;
+  isOvertimeShift: boolean;
 }
 
 export interface ShiftTemplateFormValues extends ShiftTemplateAdvancedSettings {
@@ -24,14 +63,16 @@ export interface ShiftTemplateAssignmentContext {
   branchId?: string;
 }
 
-export interface ShiftTemplateTargetOption extends SelectOption {
-  branchIds?: string[];
-}
+export interface ShiftTemplateTargetOption extends ShiftTemplateSelectOption {}
 
 export interface ShiftTemplateCatalogData {
   branches: ShiftTemplateTargetOption[];
   departments: ShiftTemplateTargetOption[];
   jobTitles: ShiftTemplateTargetOption[];
+  mealTypes: ShiftTemplateSelectOption[];
+  timeZones: ShiftTemplateSelectOption[];
+  deviceRequirements: ShiftTemplateSelectOption[];
+  existingIdentifiers: ShiftTemplateIdentifierRecord[];
 }
 
 export interface ShiftTemplateSubmitPayload extends ShiftTemplateAdvancedSettings {
@@ -47,7 +88,8 @@ export interface ShiftTemplateSubmitPayload extends ShiftTemplateAdvancedSetting
   assignDate?: string;
 }
 
-export interface ShiftTemplateInitialData extends Partial<ShiftTemplateSubmitPayload> {
+export interface ShiftTemplateInitialData
+  extends Partial<ShiftTemplateSubmitPayload> {
   id: string | number;
   code?: string;
   displayOrder?: number;

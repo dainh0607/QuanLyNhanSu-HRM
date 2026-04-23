@@ -1,6 +1,7 @@
 import { authService } from "../../../../services/authService";
 import { API_URL, requestJson } from "../../../../services/employee/core";
 import { shiftSchedulingApi } from "../../services/shiftSchedulingApi";
+import { shiftTemplateExtendedConfigApi } from "../../shift-template/services/shiftTemplateExtendedConfigApi";
 import { formatTime, getHoursBetween, parseIsoDate } from "../../utils/week";
 import {
   getLeaveTimeRange,
@@ -115,16 +116,6 @@ interface LeaveDependentDataApiResponse {
   LeaveTypes?: LeaveTypeApiItem[];
 }
 
-const normalizeShiftCode = (value: string): string =>
-  value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .replace(/_{2,}/g, "_")
-    .toUpperCase()
-    .slice(0, 20) || "SHIFT_TEMPLATE";
-
 const toTimeSpanValue = (value: string): string =>
   /^\d{2}:\d{2}:\d{2}$/.test(value) ? value : `${value}:00`;
 
@@ -164,7 +155,7 @@ const getPrimaryBranchId = (
 const buildShiftCreatePayload = (
   payload: DirectShiftTemplatePayload,
 ): Record<string, unknown> => ({
-  ShiftCode: normalizeShiftCode(`${payload.name}_${payload.startTime}_${payload.endTime}`),
+  ShiftCode: payload.identifier,
   ShiftName: payload.name,
   StartTime: toTimeSpanValue(payload.startTime),
   EndTime: toTimeSpanValue(payload.endTime),
@@ -454,6 +445,11 @@ export const assignedShiftActionsService = {
     if (!createdShiftId) {
       throw new Error("Không nhận được mã ca làm mới.");
     }
+
+    await shiftTemplateExtendedConfigApi.saveExtendedConfig(
+      Number(createdShiftId),
+      payload,
+    );
 
     // Backend handle bulk assignment if payload contains assignDate and filters
     // So we don't need second call if bulk assignment already covers the employee

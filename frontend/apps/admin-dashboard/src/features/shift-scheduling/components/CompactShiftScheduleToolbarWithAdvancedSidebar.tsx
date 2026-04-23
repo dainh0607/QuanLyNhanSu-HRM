@@ -89,9 +89,11 @@ export const CompactShiftScheduleToolbarWithAdvancedSidebar = ({
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);
+  const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
   const importDropdownRef = useRef<HTMLDivElement>(null);
   const exportDropdownRef = useRef<HTMLDivElement>(null);
   const viewDropdownRef = useRef<HTMLDivElement>(null);
+  const settingsDropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -114,15 +116,21 @@ export const CompactShiftScheduleToolbarWithAdvancedSidebar = ({
       ) {
         setIsViewDropdownOpen(false);
       }
+      if (
+        settingsDropdownRef.current &&
+        !settingsDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsSettingsMenuOpen(false);
+      }
     };
 
-    if (isImportOpen || isExportOpen || isViewDropdownOpen) {
+    if (isImportOpen || isExportOpen || isViewDropdownOpen || isSettingsMenuOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isImportOpen, isExportOpen, isViewDropdownOpen]);
+  }, [isImportOpen, isExportOpen, isSettingsMenuOpen, isViewDropdownOpen]);
 
   return (
     <section className="space-y-3">

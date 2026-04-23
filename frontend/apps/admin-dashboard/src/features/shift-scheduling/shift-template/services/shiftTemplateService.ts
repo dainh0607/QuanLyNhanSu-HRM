@@ -1,38 +1,61 @@
 import { employeeService } from "../../../../services/employeeService";
 import { shiftSchedulingApi } from "../../services/shiftSchedulingApi";
+import { normalizeShiftIdentifier } from "../shiftTemplateFormUtils";
 import type {
   ShiftTemplateCatalogData,
+  ShiftTemplateIdentifierRecord,
   ShiftTemplateSubmitPayload,
   ShiftTemplateTargetOption,
 } from "../types";
+import { shiftTemplateExtendedConfigApi } from "./shiftTemplateExtendedConfigApi";
 
 const sortOptions = <T extends { label: string }>(options: T[]): T[] =>
   [...options].sort((left, right) => left.label.localeCompare(right.label, "vi"));
 
 const toShiftTargetOption = (
-  item: any,
+  item: unknown,
   branchIds?: Set<string>,
 ): ShiftTemplateTargetOption | null => {
-  const value = item.id ?? item.Id ?? item.value ?? item.Value;
-  const label = item.name ?? item.Name ?? item.label ?? item.Label ?? item.fullName ?? item.FullName;
+  if (!item || typeof item !== "object") {
+    return null;
+  }
 
-  if (value === undefined || value === null || !label?.trim()) {
+  const record = item as Record<string, unknown>;
+  const value =
+    record.id ?? record.Id ?? record.value ?? record.Value;
+  const label =
+    record.name ??
+    record.Name ??
+    record.label ??
+    record.Label ??
+    record.fullName ??
+    record.FullName;
+
+  if (value === undefined || value === null || !String(label ?? "").trim()) {
     return null;
   }
 
   const stringValue = String(value).trim();
-  if (!stringValue || stringValue === "undefined" || stringValue === "null" || stringValue === "NaN") {
+  if (
+    !stringValue ||
+    stringValue === "undefined" ||
+    stringValue === "null" ||
+    stringValue === "NaN"
+  ) {
     return null;
   }
 
   return {
     value: stringValue,
-    label: label.trim(),
+    label: String(label).trim(),
     branchIds: branchIds ? Array.from(branchIds) : [],
   };
 };
 
-const buildBranchRelations = async (): Promise<ShiftTemplateCatalogData> => {
+const buildBranchRelations = async (): Promise<Pick<
+  ShiftTemplateCatalogData,
+  "branches" | "departments" | "jobTitles"
+>> => {
   const [branches, departments, jobTitles, employeesResponse] = await Promise.all([
     employeeService.getBranchesMetadata(),
     employeeService.getDepartmentsMetadata(),
@@ -42,34 +65,43 @@ const buildBranchRelations = async (): Promise<ShiftTemplateCatalogData> => {
 
   const departmentBranchMap = new Map<string, Set<string>>();
   const jobTitleBranchMap = new Map<string, Set<string>>();
+  const employeeItems = Array.isArray(employeesResponse)
+    ? employeesResponse
+    : (employeesResponse as { items?: unknown[] } | null)?.items ?? [];
 
-  // Extract employees array safely
-  const employeeItems = Array.isArray(employeesResponse) 
-    ? employeesResponse 
-    : (employeesResponse as any)?.items || [];
+  employeeItems.forEach((employee) => {
+    if (!employee || typeof employee !== "object") {
+      return;
+    }
 
-  (employeeItems as any[]).forEach((employee) => {
-    const branchId = employee.branchId ?? employee.BranchId ?? employee.branch_id;
+    const record = employee as Record<string, unknown>;
+    const branchId =
+      record.branchId ?? record.BranchId ?? record.branch_id;
     if (branchId === undefined || branchId === null) {
       return;
     }
 
-    const branchIdStr = String(branchId);
-
-    const deptId = employee.departmentId ?? employee.DepartmentId ?? employee.department_id;
-    if (deptId !== undefined && deptId !== null) {
-      const key = String(deptId);
-      const entry = departmentBranchMap.get(key) ?? new Set<string>();
-      entry.add(branchIdStr);
-      departmentBranchMap.set(key, entry);
+    const branchIdValue = String(branchId);
+    const departmentId =
+      record.departmentId ?? record.DepartmentId ?? record.department_id;
+    if (departmentId !== undefined && departmentId !== null) {
+      const key = String(departmentId);
+      const nextSet = departmentBranchMap.get(key) ?? new Set<string>();
+      nextSet.add(branchIdValue);
+      departmentBranchMap.set(key, nextSet);
     }
 
-    const titleId = employee.jobTitleId ?? employee.JobTitleId ?? employee.job_title_id ?? employee.positionId ?? employee.PositionId;
-    if (titleId !== undefined && titleId !== null) {
-      const key = String(titleId);
-      const entry = jobTitleBranchMap.get(key) ?? new Set<string>();
-      entry.add(branchIdStr);
-      jobTitleBranchMap.set(key, entry);
+    const jobTitleId =
+      record.jobTitleId ??
+      record.JobTitleId ??
+      record.job_title_id ??
+      record.positionId ??
+      record.PositionId;
+    if (jobTitleId !== undefined && jobTitleId !== null) {
+      const key = String(jobTitleId);
+      const nextSet = jobTitleBranchMap.get(key) ?? new Set<string>();
+      nextSet.add(branchIdValue);
+      jobTitleBranchMap.set(key, nextSet);
     }
   });
 
@@ -82,34 +114,153 @@ const buildBranchRelations = async (): Promise<ShiftTemplateCatalogData> => {
     departments: sortOptions(
       (Array.isArray(departments) ? departments : [])
         .map((item) => {
-          const id = item.id;
-          return toShiftTargetOption(item, id ? departmentBranchMap.get(String(id)) : undefined);
+          if (!item || typeof item !== "object") {
+            return null;
+          }
+
+          const departmentId = (item as { id?: unknown }).id;
+          return toShiftTargetOption(
+            item,
+            departmentId
+              ? departmentBranchMap.get(String(departmentId))
+              : undefined,
+          );
         })
         .filter((item): item is ShiftTemplateTargetOption => Boolean(item)),
     ),
     jobTitles: sortOptions(
       (Array.isArray(jobTitles) ? jobTitles : [])
         .map((item) => {
-          const id = item.id;
-          return toShiftTargetOption(item, id ? jobTitleBranchMap.get(String(id)) : undefined);
+          if (!item || typeof item !== "object") {
+            return null;
+          }
+
+          const jobTitleId = (item as { id?: unknown }).id;
+          return toShiftTargetOption(
+            item,
+            jobTitleId ? jobTitleBranchMap.get(String(jobTitleId)) : undefined,
+          );
         })
         .filter((item): item is ShiftTemplateTargetOption => Boolean(item)),
     ),
   };
 };
 
+const dedupeIdentifierRecords = (
+  items: ShiftTemplateIdentifierRecord[],
+): ShiftTemplateIdentifierRecord[] => {
+  const seen = new Set<string>();
+
+  return items.filter((item) => {
+    const normalizedIdentifier = normalizeShiftIdentifier(item.identifier);
+    if (!normalizedIdentifier) {
+      return false;
+    }
+
+    const key = item.shiftId
+      ? `shift:${item.shiftId}`
+      : `identifier:${normalizedIdentifier}`;
+    if (seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
+};
+
+const buildExistingIdentifiers = async (): Promise<
+  ShiftTemplateIdentifierRecord[]
+> => {
+  const [shiftListResponse, storedConfigs] = await Promise.all([
+    shiftSchedulingApi
+      .getShiftList({ skip: 0, take: 5000 })
+      .catch(() => ({ items: [], totalCount: 0 })),
+    shiftTemplateExtendedConfigApi.fetchAllExtendedConfigs(),
+  ]);
+
+  const apiIdentifiers = (Array.isArray(shiftListResponse.items)
+    ? shiftListResponse.items
+    : []
+  )
+    .map((item) => {
+      const record = item as Record<string, unknown>;
+      const shiftId = Number(
+        record.id ?? record.Id ?? record.shiftId ?? record.ShiftId,
+      );
+      const identifier =
+        record.shiftCode ?? record.ShiftCode ?? record.code ?? record.Code;
+
+      if (!identifier || !String(identifier).trim()) {
+        return null;
+      }
+
+      return {
+        shiftId: Number.isFinite(shiftId) ? shiftId : null,
+        identifier: String(identifier).trim(),
+      } as ShiftTemplateIdentifierRecord;
+    })
+    .filter(Boolean) as ShiftTemplateIdentifierRecord[];
+
+  const storedIdentifiers = storedConfigs.map((item) => ({
+    shiftId: item.shiftId,
+    identifier: item.identifier,
+  })) as ShiftTemplateIdentifierRecord[];
+
+  return dedupeIdentifierRecords([...storedIdentifiers, ...apiIdentifiers]);
+};
+
+const buildCreateShiftDto = (payload: ShiftTemplateSubmitPayload) => ({
+  shiftCode: payload.identifier,
+  shiftName: payload.name,
+  startTime:
+    payload.startTime.includes(":") && payload.startTime.split(":").length === 2
+      ? `${payload.startTime}:00`
+      : payload.startTime,
+  endTime:
+    payload.endTime.includes(":") && payload.endTime.split(":").length === 2
+      ? `${payload.endTime}:00`
+      : payload.endTime,
+  isOvernight: payload.isCrossNight,
+  gracePeriodIn: Number(payload.allowedLateCheckInMinutes || 0),
+  gracePeriodOut: Number(payload.allowedEarlyCheckOutMinutes || 0),
+  note: payload.note,
+  branchIds: payload.branchIds.map(Number),
+  departmentIds: payload.departmentIds.map(Number),
+  jobTitleIds: payload.jobTitleIds.map(Number),
+  isPublished: true,
+  assignDate: payload.assignDate,
+  repeatDays: payload.repeatDays,
+});
+
 export const shiftTemplateService = {
   async getCatalogData(): Promise<ShiftTemplateCatalogData> {
     try {
-      return await buildBranchRelations();
+      const [targets, referenceData, existingIdentifiers] = await Promise.all([
+        buildBranchRelations(),
+        shiftTemplateExtendedConfigApi.fetchReferenceData(),
+        buildExistingIdentifiers(),
+      ]);
+
+      return {
+        ...targets,
+        ...referenceData,
+        existingIdentifiers,
+      };
     } catch (error) {
       console.error("Failed to load shift template catalog data.", error);
 
-      const [branches, departments, jobTitles] = await Promise.all([
-        employeeService.getBranchesMetadata().catch(() => []),
-        employeeService.getDepartmentsMetadata().catch(() => []),
-        employeeService.getJobTitlesMetadata().catch(() => []),
-      ]);
+      const [branches, departments, jobTitles, referenceData] =
+        await Promise.all([
+          employeeService.getBranchesMetadata().catch(() => []),
+          employeeService.getDepartmentsMetadata().catch(() => []),
+          employeeService.getJobTitlesMetadata().catch(() => []),
+          shiftTemplateExtendedConfigApi.fetchReferenceData().catch(() => ({
+            mealTypes: [],
+            timeZones: [{ value: "Asia/Saigon", label: "Asia/Saigon" }],
+            deviceRequirements: [{ value: "default", label: "Theo mac dinh" }],
+          })),
+        ]);
 
       return {
         branches: sortOptions(
@@ -127,6 +278,10 @@ export const shiftTemplateService = {
             .map((item) => toShiftTargetOption(item))
             .filter((item): item is ShiftTemplateTargetOption => Boolean(item)),
         ),
+        mealTypes: referenceData.mealTypes,
+        timeZones: referenceData.timeZones,
+        deviceRequirements: referenceData.deviceRequirements,
+        existingIdentifiers: [],
       };
     }
   },
@@ -134,24 +289,15 @@ export const shiftTemplateService = {
   async createShiftTemplate(
     payload: ShiftTemplateSubmitPayload,
   ): Promise<void> {
-    // Standardize to create Shifts record (Master Data)
-    const dto = {
-      shiftCode: payload.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "_").toUpperCase().slice(0, 20),
-      shiftName: payload.name,
-      startTime: payload.startTime.includes(":") && payload.startTime.split(":").length === 2 ? `${payload.startTime}:00` : payload.startTime,
-      endTime: payload.endTime.includes(":") && payload.endTime.split(":").length === 2 ? `${payload.endTime}:00` : payload.endTime,
-      isOvernight: payload.isCrossNight,
-      gracePeriodIn: Number(payload.allowedLateCheckInMinutes || 0),
-      gracePeriodOut: Number(payload.allowedEarlyCheckOutMinutes || 0),
-      note: payload.note,
-      branchIds: payload.branchIds.map(Number),
-      departmentIds: payload.departmentIds.map(Number),
-      jobTitleIds: payload.jobTitleIds.map(Number),
-      isPublished: true,
-      assignDate: payload.assignDate,
-      repeatDays: payload.repeatDays,
-    };
-    await shiftSchedulingApi.createShift(dto);
+    const result = await shiftSchedulingApi.createShift(
+      buildCreateShiftDto(payload),
+    );
+
+    const shiftId =
+      result.shiftId ?? result.ShiftId ?? result.id ?? result.Id ?? null;
+    if (typeof shiftId === "number") {
+      await shiftTemplateExtendedConfigApi.saveExtendedConfig(shiftId, payload);
+    }
   },
 };
 

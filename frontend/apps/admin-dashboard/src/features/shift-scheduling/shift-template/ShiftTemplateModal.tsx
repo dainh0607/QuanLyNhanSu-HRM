@@ -1,128 +1,112 @@
 import { useEffect, useMemo, useState } from "react";
+import DatePickerInput from "../../../components/common/DatePickerInput";
 import QuickTargetingModal from "./QuickTargetingModal";
 import SearchableMultiSelect from "./SearchableMultiSelect";
-import { shiftTemplateService } from "./services/shiftTemplateService";
 import TimeSelectField from "./TimeSelectField";
+import ShiftCheckboxField from "./components/ShiftCheckboxField";
+import ShiftFieldLabel from "./components/ShiftFieldLabel";
+import ShiftFieldTooltip from "./components/ShiftFieldTooltip";
+import ShiftNumericInputField from "./components/ShiftNumericInputField";
+import ShiftSectionCard from "./components/ShiftSectionCard";
+import ShiftSegmentedControl from "./components/ShiftSegmentedControl";
+import ShiftSelectField from "./components/ShiftSelectField";
+import ShiftTextInputField from "./components/ShiftTextInputField";
+import ShiftTimeRangeField from "./components/ShiftTimeRangeField";
+import { validateShiftTemplateForm } from "./shiftTemplateFormSchema";
+import {
+  WEEKDAYS,
+  buildShiftTemplateSubmitPayload,
+  combineTime,
+  createShiftTemplateFormValues,
+  DEFAULT_SHIFT_TEMPLATE_FORM_VALUES,
+  getRangeDurationMinutes,
+  isCrossNightShift,
+  normalizeShiftIdentifier,
+  sanitizeDecimalInput,
+  sanitizeIntegerInput,
+} from "./shiftTemplateFormUtils";
+import { shiftTemplateService } from "./services/shiftTemplateService";
 import type {
   ShiftTemplateCatalogData,
   ShiftTemplateFormValues,
   ShiftTemplateInitialData,
   ShiftTemplateModalMode,
   ShiftTemplateModalProps,
-  ShiftTemplateSubmitPayload,
 } from "./types";
-
-const WEEKDAYS = [
-  { id: "mon", label: "T2" },
-  { id: "tue", label: "T3" },
-  { id: "wed", label: "T4" },
-  { id: "thu", label: "T5" },
-  { id: "fri", label: "T6" },
-  { id: "sat", label: "T7" },
-  { id: "sun", label: "CN" },
-];
 
 const EMPTY_CATALOG: ShiftTemplateCatalogData = {
   branches: [],
   departments: [],
   jobTitles: [],
+  mealTypes: [],
+  timeZones: [{ value: "Asia/Saigon", label: "Asia/Saigon" }],
+  deviceRequirements: [{ value: "default", label: "Theo mac dinh" }],
+  existingIdentifiers: [],
 };
 
-const DEFAULT_FORM_VALUES: ShiftTemplateFormValues = {
-  name: "",
-  startHour: "",
-  startMinute: "",
-  endHour: "17",
-  endMinute: "00",
-  branchIds: [],
-  departmentIds: [],
-  jobTitleIds: [],
-  repeatDays: ["mon", "tue", "wed", "thu", "fri", "sat"],
-  breakDurationMinutes: "60",
-  allowedLateCheckInMinutes: "15",
-  allowedEarlyCheckOutMinutes: "10",
-};
+const ADVANCED_ERROR_KEYS = new Set([
+  "identifier",
+  "workUnits",
+  "symbol",
+  "breakWindow",
+  "checkInWindow",
+  "checkOutWindow",
+  "allowedLateCheckInMinutes",
+  "allowedEarlyCheckOutMinutes",
+  "maximumLateCheckInMinutes",
+  "maximumEarlyCheckOutMinutes",
+  "entryDeviceRequirement",
+  "exitDeviceRequirement",
+  "timeZone",
+  "effectiveStartDate",
+  "effectiveEndDate",
+  "effectiveDateRange",
+  "minimumWorkingHours",
+  "mealTypeId",
+  "mealCount",
+  "isOvertimeShift",
+]);
 
-const combineTime = (hour: string, minute: string): string =>
-  hour && minute ? `${hour}:${minute}` : "";
-
-const splitTime = (value?: string): { hour: string; minute: string } => {
-  if (!value) {
-    return { hour: "", minute: "" };
-  }
-
-  const [hour = "", minute = ""] = value.split(":");
-  return { hour, minute };
-};
-
-const isCrossNightShift = (startTime: string, endTime: string): boolean =>
-  Boolean(startTime && endTime && endTime < startTime);
-
-const toNumberInput = (value: string): string => value.replace(/[^\d]/g, "");
+const GRACE_MODE_OPTIONS = [
+  {
+    value: "grace" as const,
+    label: "Di muon / Ve som",
+    description:
+      "Cho phep vao tre hoac ra som trong muc dung sai ma khong bi phat.",
+  },
+  {
+    value: "maximum" as const,
+    label: "Di muon / Ve som toi da",
+    description:
+      "Khai bao nguong toi da de he thong canh bao hoac tu choi cham cong.",
+  },
+];
 
 const getDefaultTitle = (mode: ShiftTemplateModalMode): string => {
   switch (mode) {
     case "edit":
-      return "Chỉnh sửa ca";
+      return "Chinh sua ca";
     case "directAssign":
-      return "Tạo ca làm mới";
+      return "Tao ca lam moi";
     case "create":
     case "template":
     default:
-      return "Tạo ca làm việc mới";
+      return "Tao ca lam viec moi";
   }
 };
 
 const getDefaultSubmitLabel = (mode: ShiftTemplateModalMode): string =>
-  mode === "edit" ? "Cập nhật" : "Tạo mới";
+  mode === "edit" ? "Cap nhat" : "Tao moi";
 
 const getDescription = (mode: ShiftTemplateModalMode): string =>
   mode === "edit"
-    ? "Điều chỉnh mẫu ca làm hiện có để đồng bộ lại thời gian và đối tượng áp dụng."
-    : "Tạo mẫu ca làm tiêu chuẩn để tái sử dụng nhanh khi xếp ca cho nhân viên.";
+    ? "Cap nhat thong tin ca lam, dung sai cham cong va cac tham so tinh cong de dong bo voi nghiep vu C&B."
+    : "Khoi tao mau ca lam co day du quy tac cham cong, cong chuan va phu cap de su dung lai khi xep lich.";
 
 const shouldShowPreviewButton = (
   mode: ShiftTemplateModalMode,
   initialData: ShiftTemplateInitialData | null | undefined,
 ): boolean => mode === "edit" && Boolean(initialData);
-
-const createFormValues = (
-  initialData?: ShiftTemplateInitialData | null,
-  assignmentBranchId?: string,
-): ShiftTemplateFormValues => {
-  const start = splitTime(initialData?.startTime);
-  const end = splitTime(initialData?.endTime);
-  const branchIds =
-    initialData?.branchIds && initialData.branchIds.length > 0
-      ? initialData.branchIds
-      : assignmentBranchId
-        ? [assignmentBranchId]
-        : [];
-
-  return {
-    ...DEFAULT_FORM_VALUES,
-    name: initialData?.name ?? "",
-    startHour: start.hour,
-    startMinute: start.minute,
-    endHour: end.hour || DEFAULT_FORM_VALUES.endHour,
-    endMinute: end.minute || DEFAULT_FORM_VALUES.endMinute,
-    branchIds,
-    departmentIds: initialData?.departmentIds ?? [],
-    jobTitleIds: initialData?.jobTitleIds ?? [],
-    repeatDays:
-      initialData?.repeatDays && initialData.repeatDays.length > 0
-        ? initialData.repeatDays
-        : DEFAULT_FORM_VALUES.repeatDays,
-    breakDurationMinutes:
-      initialData?.breakDurationMinutes ?? DEFAULT_FORM_VALUES.breakDurationMinutes,
-    allowedLateCheckInMinutes:
-      initialData?.allowedLateCheckInMinutes ??
-      DEFAULT_FORM_VALUES.allowedLateCheckInMinutes,
-    allowedEarlyCheckOutMinutes:
-      initialData?.allowedEarlyCheckOutMinutes ??
-      DEFAULT_FORM_VALUES.allowedEarlyCheckOutMinutes,
-  };
-};
 
 export const ShiftTemplateModal = ({
   isOpen,
@@ -140,12 +124,15 @@ export const ShiftTemplateModal = ({
 }: ShiftTemplateModalProps) => {
   const [catalog, setCatalog] = useState<ShiftTemplateCatalogData>(EMPTY_CATALOG);
   const [isLoadingCatalog, setIsLoadingCatalog] = useState(false);
-  const [formValues, setFormValues] = useState<ShiftTemplateFormValues>(DEFAULT_FORM_VALUES);
+  const [formValues, setFormValues] = useState<ShiftTemplateFormValues>(
+    DEFAULT_SHIFT_TEMPLATE_FORM_VALUES,
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState("");
   const [isSubmittingInternal, setIsSubmittingInternal] = useState(false);
   const [isAdvancedExpanded, setIsAdvancedExpanded] = useState(false);
   const [isQuickSelectOpen, setIsQuickSelectOpen] = useState(false);
+  const [isIdentifierTouched, setIsIdentifierTouched] = useState(false);
 
   const resolvedTitle = title ?? getDefaultTitle(mode);
   const resolvedSubmitLabel = submitLabel ?? getDefaultSubmitLabel(mode);
@@ -154,23 +141,25 @@ export const ShiftTemplateModal = ({
   useEffect(() => {
     if (!isOpen) {
       setCatalog(EMPTY_CATALOG);
-      setFormValues(DEFAULT_FORM_VALUES);
+      setFormValues(DEFAULT_SHIFT_TEMPLATE_FORM_VALUES);
       setErrors({});
       setSubmitError("");
       setIsAdvancedExpanded(false);
       setIsQuickSelectOpen(false);
       setIsSubmittingInternal(false);
       setIsLoadingCatalog(false);
+      setIsIdentifierTouched(false);
       return;
     }
 
-    setFormValues(createFormValues(initialData, assignmentContext?.branchId));
+    setFormValues(createShiftTemplateFormValues(initialData, assignmentContext));
     setErrors({});
     setSubmitError("");
     setIsAdvancedExpanded(false);
     setIsQuickSelectOpen(false);
     setIsSubmittingInternal(false);
-  }, [assignmentContext?.branchId, initialData, isOpen]);
+    setIsIdentifierTouched(Boolean(initialData?.identifier ?? initialData?.code));
+  }, [assignmentContext, initialData, isOpen]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -183,11 +172,9 @@ export const ShiftTemplateModal = ({
     void shiftTemplateService
       .getCatalogData()
       .then((response) => {
-        if (!isMounted) {
-          return;
+        if (isMounted) {
+          setCatalog(response);
         }
-
-        setCatalog(response);
       })
       .catch((error) => {
         console.error("Failed to load shift template catalog.", error);
@@ -249,18 +236,92 @@ export const ShiftTemplateModal = ({
   const startTime = combineTime(formValues.startHour, formValues.startMinute);
   const endTime = combineTime(formValues.endHour, formValues.endMinute);
   const isCrossNight = isCrossNightShift(startTime, endTime);
+  const breakDurationPreview =
+    formValues.breakStartTime && formValues.breakEndTime
+      ? getRangeDurationMinutes(formValues.breakStartTime, formValues.breakEndTime)
+      : 0;
+  const graceLateField =
+    formValues.graceMode === "grace"
+      ? "allowedLateCheckInMinutes"
+      : "maximumLateCheckInMinutes";
+  const graceEarlyField =
+    formValues.graceMode === "grace"
+      ? "allowedEarlyCheckOutMinutes"
+      : "maximumEarlyCheckOutMinutes";
+
+  const clearRelatedErrors = (fieldName: keyof ShiftTemplateFormValues): void => {
+    setErrors((current) => {
+      const nextErrors = { ...current };
+      nextErrors[fieldName] = "";
+
+      if (fieldName === "startHour" || fieldName === "startMinute") {
+        nextErrors.startTime = "";
+      }
+
+      if (fieldName === "endHour" || fieldName === "endMinute") {
+        nextErrors.endTime = "";
+      }
+
+      if (fieldName === "breakStartTime" || fieldName === "breakEndTime") {
+        nextErrors.breakWindow = "";
+      }
+
+      if (fieldName === "checkInWindowStart" || fieldName === "checkInWindowEnd") {
+        nextErrors.checkInWindow = "";
+      }
+
+      if (
+        fieldName === "checkOutWindowStart" ||
+        fieldName === "checkOutWindowEnd"
+      ) {
+        nextErrors.checkOutWindow = "";
+      }
+
+      if (
+        fieldName === "effectiveStartDate" ||
+        fieldName === "effectiveEndDate"
+      ) {
+        nextErrors.effectiveDateRange = "";
+      }
+
+      if (fieldName === "branchIds") {
+        nextErrors.branchIds = "";
+      }
+
+      return nextErrors;
+    });
+  };
 
   const updateForm = <Key extends keyof ShiftTemplateFormValues>(
     key: Key,
     value: ShiftTemplateFormValues[Key],
   ) => {
     setFormValues((current) => ({ ...current, [key]: value }));
+    clearRelatedErrors(key);
+  };
+
+  const handleNameChange = (value: string) => {
+    const nextIdentifier = isIdentifierTouched
+      ? formValues.identifier
+      : normalizeShiftIdentifier(value);
+
+    setFormValues((current) => {
+      return {
+        ...current,
+        name: value,
+        identifier: nextIdentifier,
+      };
+    });
     setErrors((current) => ({
       ...current,
-      [key]: "",
-      startTime:
-        key === "startHour" || key === "startMinute" ? "" : current.startTime,
+      name: "",
+      identifier: isIdentifierTouched ? current.identifier : "",
     }));
+  };
+
+  const handleIdentifierChange = (value: string) => {
+    setIsIdentifierTouched(true);
+    updateForm("identifier", normalizeShiftIdentifier(value));
   };
 
   const toggleRepeatDay = (dayId: string) => {
@@ -273,21 +334,21 @@ export const ShiftTemplateModal = ({
   };
 
   const validate = (): boolean => {
-    const nextErrors: Record<string, string> = {};
+    const nextErrors = validateShiftTemplateForm(formValues, {
+      currentShiftId: initialData?.id,
+      existingIdentifiers: catalog.existingIdentifiers,
+    });
 
-    if (!formValues.name.trim()) {
-      nextErrors.name = "Tên ca làm không được để trống.";
+    setErrors(
+      Object.fromEntries(
+        Object.entries(nextErrors).filter(([, value]) => Boolean(value)),
+      ),
+    );
+
+    if (Object.keys(nextErrors).some((key) => ADVANCED_ERROR_KEYS.has(key))) {
+      setIsAdvancedExpanded(true);
     }
 
-    if (!formValues.startHour || !formValues.startMinute) {
-      nextErrors.startTime = "Vui lòng chọn đầy đủ giờ và phút bắt đầu.";
-    }
-
-    if (!formValues.branchIds.length) {
-      nextErrors.branchIds = "Vui lòng chọn ít nhất 1 chi nhánh áp dụng.";
-    }
-
-    setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
 
@@ -297,20 +358,7 @@ export const ShiftTemplateModal = ({
       return;
     }
 
-    const payload: ShiftTemplateSubmitPayload = {
-      name: formValues.name.trim(),
-      startTime,
-      endTime,
-      isCrossNight,
-      branchIds: formValues.branchIds,
-      departmentIds: formValues.departmentIds,
-      jobTitleIds: formValues.jobTitleIds,
-      repeatDays: formValues.repeatDays,
-      breakDurationMinutes: formValues.breakDurationMinutes,
-      allowedLateCheckInMinutes: formValues.allowedLateCheckInMinutes,
-      allowedEarlyCheckOutMinutes: formValues.allowedEarlyCheckOutMinutes,
-      assignDate: assignmentContext?.assignmentDate,
-    };
+    const payload = buildShiftTemplateSubmitPayload(formValues, assignmentContext);
 
     setSubmitError("");
     setIsSubmittingInternal(true);
@@ -330,7 +378,7 @@ export const ShiftTemplateModal = ({
       setSubmitError(
         error instanceof Error
           ? error.message
-          : "Không thể lưu ca làm. Vui lòng thử lại.",
+          : "Khong the luu ca lam. Vui long thu lai.",
       );
     } finally {
       setIsSubmittingInternal(false);
@@ -344,9 +392,9 @@ export const ShiftTemplateModal = ({
   return (
     <>
       <div className="fixed inset-0 z-[580] flex items-center justify-center bg-slate-900/45 p-4 backdrop-blur-sm antialiased">
-        <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+        <div className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
           <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
-            <div>
+            <div className="min-w-0 flex-1">
               <h2 className="text-xl font-semibold text-slate-900">{resolvedTitle}</h2>
               <p className="mt-1 text-sm text-slate-500">{getDescription(mode)}</p>
             </div>
@@ -355,7 +403,7 @@ export const ShiftTemplateModal = ({
               type="button"
               onClick={onClose}
               className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-              aria-label="Đóng modal tạo ca làm"
+              aria-label="Dong modal tao ca lam"
             >
               <span className="material-symbols-outlined text-[20px]">close</span>
             </button>
@@ -363,8 +411,8 @@ export const ShiftTemplateModal = ({
 
           {mode === "directAssign" && assignmentContext ? (
             <div className="border-b border-slate-100 bg-[#EFF6FF] px-6 py-3 text-sm text-[#134BBA]">
-              Sau khi tạo mới, ca làm sẽ được gán trực tiếp cho{" "}
-              <span className="font-semibold">{assignmentContext.employeeName}</span> vào ngày{" "}
+              Sau khi tao moi, ca lam se duoc gan truc tiep cho{" "}
+              <span className="font-semibold">{assignmentContext.employeeName}</span> vao ngay{" "}
               <span className="font-semibold">{assignmentContext.assignmentDate}</span>.
             </div>
           ) : null}
@@ -386,24 +434,25 @@ export const ShiftTemplateModal = ({
               </div>
             ) : (
               <div className="space-y-6">
-                <section className="grid gap-5 lg:grid-cols-[1.2fr_1fr]">
+                <section className="grid gap-5 xl:grid-cols-[1.3fr_0.9fr]">
                   <div className="rounded-3xl border border-slate-200 bg-white p-5">
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start justify-between gap-4">
                       <div>
                         <h3 className="text-sm font-semibold text-slate-900">
-                          Thông tin ca làm
+                          Thong tin ca lam
                         </h3>
                         <p className="mt-1 text-sm text-slate-500">
-                          Khai báo thời gian chuẩn và các cấu hình mở rộng cho ca làm.
+                          Khai bao ten ca, khung gio chuan va mo rong them quy tac
+                          cham cong chi tiet khi can.
                         </p>
                       </div>
 
                       <button
                         type="button"
                         onClick={() => setIsAdvancedExpanded((current) => !current)}
-                        className="text-sm font-semibold text-[#134BBA] hover:underline"
+                        className="shrink-0 text-sm font-semibold text-[#134BBA] hover:underline"
                       >
-                        {isAdvancedExpanded ? "Thu gọn" : "Mở rộng"}
+                        {isAdvancedExpanded ? "Thu gon" : "Mo rong"}
                       </button>
                     </div>
 
@@ -411,7 +460,7 @@ export const ShiftTemplateModal = ({
                       <label className="block">
                         <div className="mb-2 flex items-center justify-between gap-3">
                           <span className="text-sm font-semibold text-slate-700">
-                            Tên ca làm <span className="text-rose-500">*</span>
+                            Ten ca lam <span className="text-rose-500">*</span>
                           </span>
                           {shouldShowPreviewButton(mode, initialData) && onPreview ? (
                             <button
@@ -430,12 +479,12 @@ export const ShiftTemplateModal = ({
                         <input
                           type="text"
                           value={formValues.name}
-                          onChange={(event) => updateForm("name", event.target.value)}
-                          placeholder="VD: Ca hành chính cố định"
+                          onChange={(event) => handleNameChange(event.target.value)}
+                          placeholder="VD: Ca hanh chinh co dinh"
                           className={`h-11 w-full rounded-xl border bg-white px-3 text-sm outline-none transition ${
                             errors.name
                               ? "border-rose-400 focus:border-rose-500 focus:ring-1 focus:ring-rose-200"
-                              : "border-slate-200 focus:border-[#134BBA] focus:ring-1 focus:ring-[#134BBA]"
+                              : "border-slate-200 focus:border-[#134BBA] focus:ring-1 focus:ring-[#BFDBFE]"
                           }`}
                         />
                         {errors.name ? (
@@ -447,7 +496,7 @@ export const ShiftTemplateModal = ({
 
                       <div className="grid gap-4 md:grid-cols-2">
                         <TimeSelectField
-                          label="Bắt đầu"
+                          label="Bat dau"
                           required
                           hour={formValues.startHour}
                           minute={formValues.startMinute}
@@ -457,75 +506,15 @@ export const ShiftTemplateModal = ({
                         />
 
                         <TimeSelectField
-                          label="Kết thúc"
+                          label="Ket thuc"
+                          required
                           hour={formValues.endHour}
                           minute={formValues.endMinute}
                           onHourChange={(value) => updateForm("endHour", value)}
                           onMinuteChange={(value) => updateForm("endMinute", value)}
-                          badge={isCrossNight ? "Ca qua đêm" : null}
+                          error={errors.endTime}
+                          badge={isCrossNight ? "Ca qua dem" : null}
                         />
-                      </div>
-
-                      <div
-                        className={`overflow-hidden transition-all duration-300 ${
-                          isAdvancedExpanded ? "max-h-[320px] opacity-100" : "max-h-0 opacity-0"
-                        }`}
-                      >
-                        <div className="grid gap-4 rounded-2xl border border-sky-100 bg-sky-50/60 p-4 md:grid-cols-3">
-                          <label className="block">
-                            <span className="mb-2 block text-sm font-medium text-slate-700">
-                              Nghỉ giữa ca (phút)
-                            </span>
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              value={formValues.breakDurationMinutes}
-                              onChange={(event) =>
-                                updateForm(
-                                  "breakDurationMinutes",
-                                  toNumberInput(event.target.value),
-                                )
-                              }
-                              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-[#134BBA] focus:ring-1 focus:ring-[#134BBA]"
-                            />
-                          </label>
-
-                          <label className="block">
-                            <span className="mb-2 block text-sm font-medium text-slate-700">
-                              Cho phép trễ check-in
-                            </span>
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              value={formValues.allowedLateCheckInMinutes}
-                              onChange={(event) =>
-                                updateForm(
-                                  "allowedLateCheckInMinutes",
-                                  toNumberInput(event.target.value),
-                                )
-                              }
-                              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-[#134BBA] focus:ring-1 focus:ring-[#134BBA]"
-                            />
-                          </label>
-
-                          <label className="block">
-                            <span className="mb-2 block text-sm font-medium text-slate-700">
-                              Cho phép sớm check-out
-                            </span>
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              value={formValues.allowedEarlyCheckOutMinutes}
-                              onChange={(event) =>
-                                updateForm(
-                                  "allowedEarlyCheckOutMinutes",
-                                  toNumberInput(event.target.value),
-                                )
-                              }
-                              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-[#134BBA] focus:ring-1 focus:ring-[#134BBA]"
-                            />
-                          </label>
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -533,20 +522,13 @@ export const ShiftTemplateModal = ({
                   <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-semibold text-slate-900">
-                        Lặp lại hằng tuần
+                        Lap lai hang tuan
                       </h3>
-                      <div className="group relative flex items-center justify-center">
-                        <span className="material-symbols-outlined cursor-help text-[16px] text-slate-400">
-                          help
-                        </span>
-                        <div className="pointer-events-none absolute bottom-[130%] left-1/2 z-10 w-60 -translate-x-1/2 rounded-xl bg-slate-900 px-3 py-2 text-[11px] font-medium text-white opacity-0 shadow-xl transition group-hover:opacity-100">
-                          Ca làm này sẽ mặc định được hiển thị để xếp lịch vào các ngày được chọn.
-                        </div>
-                      </div>
+                      <ShiftFieldTooltip content="Ca lam nay se mac dinh hien thi de xep lich vao cac ngay duoc chon." />
                     </div>
 
                     <p className="mt-1 text-sm text-slate-500">
-                      Tick hoặc bỏ tick linh hoạt theo quy định vận hành của công ty.
+                      Chon linh hoat theo ngay van hanh cua doanh nghiep.
                     </p>
 
                     <div className="mt-4 grid grid-cols-4 gap-2">
@@ -575,28 +557,315 @@ export const ShiftTemplateModal = ({
 
                     <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
                       <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">
-                        Tóm tắt nhanh
+                        Tom tat nhanh
                       </p>
                       <p className="mt-2 text-sm font-medium text-slate-700">
                         {startTime || "--:--"} - {endTime || "--:--"}
                       </p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {isCrossNight
-                          ? "Ca qua đêm sẽ tự động được hiểu là kết thúc sang ngày kế tiếp."
-                          : "Ca trong ngày tiêu chuẩn."}
-                      </p>
+                      <div className="mt-3 space-y-1 text-sm text-slate-500">
+                        <p>
+                          Tu khoa:{" "}
+                          <span className="font-semibold text-slate-700">
+                            {formValues.identifier || "--"}
+                          </span>
+                        </p>
+                        <p>
+                          So cong:{" "}
+                          <span className="font-semibold text-slate-700">
+                            {formValues.workUnits || "1"}
+                          </span>
+                        </p>
+                        <p>
+                          Trang thai:{" "}
+                          <span className="font-semibold text-slate-700">
+                            {formValues.isOvertimeShift
+                              ? "Ca tang ca"
+                              : isCrossNight
+                                ? "Ca qua dem"
+                                : "Ca trong ngay"}
+                          </span>
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </section>
+
+                {isAdvancedExpanded ? (
+                  <>
+                    <ShiftSectionCard
+                      title="Dinh danh & Cong chuan"
+                      description="Khai bao tu khoa map luong, trong so cong va ky hieu hien thi tren luoi xep ca."
+                    >
+                      <div className="grid gap-4 lg:grid-cols-2">
+                        <ShiftTextInputField
+                          label="Tu khoa"
+                          required
+                          value={formValues.identifier}
+                          onChange={handleIdentifierChange}
+                          placeholder="VD: CA_HANH_CHINH"
+                          tooltip="Ma dinh danh duy nhat de map vao cong thuc luong. Frontend tu dong bo dau, viet hoa va noi bang dau gach duoi."
+                          helperText={`Gia tri luu: ${formValues.identifier || "CHUA_KHAI_BAO"}`}
+                          error={errors.identifier}
+                        />
+
+                        <ShiftNumericInputField
+                          label="So cong"
+                          required
+                          value={formValues.workUnits}
+                          onChange={(value) =>
+                            updateForm("workUnits", sanitizeDecimalInput(value))
+                          }
+                          placeholder="VD: 1.0"
+                          inputMode="decimal"
+                          tooltip="Trong so cong cua ca. Gia tri nay duoc dung trong tinh cong va bang luong."
+                          error={errors.workUnits}
+                        />
+                      </div>
+
+                      <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
+                        <ShiftTextInputField
+                          label="Ky hieu"
+                          value={formValues.symbol}
+                          onChange={(value) => updateForm("symbol", value.toUpperCase())}
+                          placeholder="VD: HC, CA1"
+                          tooltip="Ky hieu ngan de hien thi rut gon tren luoi xep ca thang."
+                          maxLength={8}
+                        />
+
+                        <ShiftTimeRangeField
+                          label="Nghi giua gio"
+                          startTime={formValues.breakStartTime}
+                          endTime={formValues.breakEndTime}
+                          onStartChange={(value) => updateForm("breakStartTime", value)}
+                          onEndChange={(value) => updateForm("breakEndTime", value)}
+                          tooltip="He thong se tru khoang thoi gian nay khoi tong gio lam viec thuc te trong ngay."
+                          helperText={
+                            breakDurationPreview > 0
+                              ? `Dang quy doi ${breakDurationPreview} phut nghi giua gio.`
+                              : "Co the de trong neu ca khong co nghi giua gio."
+                          }
+                          error={errors.breakWindow}
+                        />
+                      </div>
+                    </ShiftSectionCard>
+
+                    <ShiftSectionCard
+                      title="Ghi nhan ra/vao"
+                      description="Cau hinh khung gio hop le, dung sai di muon/ve som va yeu cau phuong thuc cham cong."
+                    >
+                      <div className="grid gap-4 xl:grid-cols-2">
+                        <ShiftTimeRangeField
+                          label="Khung gio vao"
+                          startTime={formValues.checkInWindowStart}
+                          endTime={formValues.checkInWindowEnd}
+                          onStartChange={(value) => updateForm("checkInWindowStart", value)}
+                          onEndChange={(value) => updateForm("checkInWindowEnd", value)}
+                          tooltip="Nhan vien chi duoc phep check-in trong khoang thoi gian nay."
+                          helperText="Neu de trong, FE se chua ap quy tac kiem soat check-in."
+                          error={errors.checkInWindow}
+                        />
+
+                        <ShiftTimeRangeField
+                          label="Khung gio ra"
+                          startTime={formValues.checkOutWindowStart}
+                          endTime={formValues.checkOutWindowEnd}
+                          onStartChange={(value) => updateForm("checkOutWindowStart", value)}
+                          onEndChange={(value) => updateForm("checkOutWindowEnd", value)}
+                          tooltip="Nhan vien chi duoc phep check-out trong khoang thoi gian nay."
+                          helperText="Validation se chan khung gio khong hop ly voi ca khong qua dem."
+                          error={errors.checkOutWindow}
+                        />
+                      </div>
+
+                      <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+                        <div>
+                          <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                            <span>Dung sai som / tre</span>
+                            <ShiftFieldTooltip content="Chuyen giua 2 che do cau hinh dung sai khong bi phat va nguong toi da cho phep." />
+                          </div>
+                          <ShiftSegmentedControl
+                            value={formValues.graceMode}
+                            options={GRACE_MODE_OPTIONS}
+                            onChange={(value) => updateForm("graceMode", value)}
+                          />
+                        </div>
+
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <ShiftNumericInputField
+                            label={
+                              formValues.graceMode === "grace"
+                                ? "Di muon (phut)"
+                                : "Di muon toi da (phut)"
+                            }
+                            value={formValues[graceLateField]}
+                            onChange={(value) =>
+                              updateForm(graceLateField, sanitizeIntegerInput(value))
+                            }
+                            placeholder="0"
+                            tooltip={
+                              formValues.graceMode === "grace"
+                                ? "So phut cho phep vao tre ma van duoc tinh dung gio."
+                                : "Nguong vao tre lon nhat cho phep truoc khi he thong canh bao hoac tu choi."
+                            }
+                            suffix="phut"
+                            error={errors[graceLateField]}
+                          />
+
+                          <ShiftNumericInputField
+                            label={
+                              formValues.graceMode === "grace"
+                                ? "Ve som (phut)"
+                                : "Ve som toi da (phut)"
+                            }
+                            value={formValues[graceEarlyField]}
+                            onChange={(value) =>
+                              updateForm(graceEarlyField, sanitizeIntegerInput(value))
+                            }
+                            placeholder="0"
+                            tooltip={
+                              formValues.graceMode === "grace"
+                                ? "So phut cho phep ra som ma khong bi phat."
+                                : "Nguong ra som lon nhat cho phep truoc khi he thong danh dau vi pham."
+                            }
+                            suffix="phut"
+                            error={errors[graceEarlyField]}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <ShiftSelectField
+                          label="Yeu cau vao ca"
+                          value={formValues.entryDeviceRequirement}
+                          options={catalog.deviceRequirements}
+                          onChange={(value) =>
+                            updateForm("entryDeviceRequirement", value as ShiftTemplateFormValues["entryDeviceRequirement"])
+                          }
+                          tooltip="Rang buoc phuong thuc cham cong khi bat dau ca."
+                        />
+
+                        <ShiftSelectField
+                          label="Yeu cau ra ca"
+                          value={formValues.exitDeviceRequirement}
+                          options={catalog.deviceRequirements}
+                          onChange={(value) =>
+                            updateForm("exitDeviceRequirement", value as ShiftTemplateFormValues["exitDeviceRequirement"])
+                          }
+                          tooltip="Rang buoc phuong thuc cham cong khi ket thuc ca."
+                        />
+                      </div>
+                    </ShiftSectionCard>
+
+                    <ShiftSectionCard
+                      title="Cau hinh nang cao"
+                      description="Quan ly hieu luc su dung ca, nguong ghi nhan cong va cau hinh phu cap suat an."
+                    >
+                      <div className="grid gap-4 xl:grid-cols-3">
+                        <ShiftSelectField
+                          label="Mui gio su kien"
+                          value={formValues.timeZone}
+                          options={catalog.timeZones}
+                          onChange={(value) => updateForm("timeZone", value)}
+                          tooltip="Rat quan trong voi doanh nghiep da chi nhanh, giup xu ly check-in/check-out theo dung mui gio."
+                        />
+
+                        <label className="block">
+                          <ShiftFieldLabel
+                            label="Ngay bat dau"
+                            tooltip="Tu ngay nay tro di, ca lam moi duoc phep hien thi de xep lich."
+                          />
+                          <DatePickerInput
+                            value={formValues.effectiveStartDate}
+                            onChange={(value) =>
+                              updateForm("effectiveStartDate", value)
+                            }
+                            ariaLabel="ngay bat dau"
+                            hasError={Boolean(errors.effectiveDateRange)}
+                          />
+                        </label>
+
+                        <label className="block">
+                          <ShiftFieldLabel
+                            label="Ngay ket thuc"
+                            tooltip="Sau ngay ket thuc, ca lam se bi an hoac disable khoi danh sach xep ca."
+                          />
+                          <DatePickerInput
+                            value={formValues.effectiveEndDate}
+                            onChange={(value) =>
+                              updateForm("effectiveEndDate", value)
+                            }
+                            ariaLabel="ngay ket thuc"
+                            hasError={Boolean(errors.effectiveDateRange)}
+                            min={formValues.effectiveStartDate || undefined}
+                          />
+                        </label>
+                      </div>
+
+                      {errors.effectiveDateRange ? (
+                        <p className="text-[11px] font-medium text-rose-500">
+                          {errors.effectiveDateRange}
+                        </p>
+                      ) : null}
+
+                      <div className="grid gap-4 xl:grid-cols-3">
+                        <ShiftNumericInputField
+                          label="Lam toi thieu"
+                          value={formValues.minimumWorkingHours}
+                          onChange={(value) =>
+                            updateForm(
+                              "minimumWorkingHours",
+                              sanitizeDecimalInput(value),
+                            )
+                          }
+                          placeholder="VD: 4.0"
+                          inputMode="decimal"
+                          suffix="gio"
+                          tooltip="So gio co mat toi thieu de he thong ghi nhan cong cho ca nay."
+                          error={errors.minimumWorkingHours}
+                        />
+
+                        <ShiftSelectField
+                          label="Loai suat an"
+                          value={formValues.mealTypeId}
+                          options={catalog.mealTypes}
+                          onChange={(value) => updateForm("mealTypeId", value)}
+                          placeholder="Chon suat an"
+                          tooltip="Dung de xuat bao cao dat com va tinh phu cap an ca."
+                        />
+
+                        <ShiftNumericInputField
+                          label="So suat an"
+                          value={formValues.mealCount}
+                          onChange={(value) =>
+                            updateForm("mealCount", sanitizeIntegerInput(value))
+                          }
+                          placeholder="0"
+                          suffix="suat"
+                          tooltip="So suat an tuong ung duoc cap cho moi ca."
+                          error={errors.mealCount}
+                        />
+                      </div>
+
+                      <ShiftCheckboxField
+                        label="Ca tang ca"
+                        description="Bat co nay de he thong xu ly theo he so OT thay vi cong chuan thong thuong."
+                        checked={formValues.isOvertimeShift}
+                        onChange={(checked) => updateForm("isOvertimeShift", checked)}
+                        tooltip="Mac dinh la false. Khi bat, ca lam duoc phan loai la overtime."
+                      />
+                    </ShiftSectionCard>
+                  </>
+                ) : null}
 
                 <section className="rounded-3xl border border-slate-200 bg-white p-5">
                   <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                     <div>
                       <h3 className="text-sm font-semibold text-slate-900">
-                        Phân bổ đối tượng áp dụng
+                        Phan bo doi tuong ap dung
                       </h3>
                       <p className="mt-1 text-sm text-slate-500">
-                        Hỗ trợ chọn nhiều chi nhánh, phòng ban và chức danh, đồng thời lọc phụ thuộc theo chi nhánh đã chọn.
+                        Ho tro chon nhieu chi nhanh, phong ban va chuc danh, dong
+                        thoi loc phu thuoc theo chi nhanh da chon.
                       </p>
                     </div>
 
@@ -606,15 +875,15 @@ export const ShiftTemplateModal = ({
                       className="inline-flex items-center gap-2 rounded-xl bg-[#EFF6FF] px-3 py-2 text-sm font-semibold text-[#134BBA] transition hover:bg-[#DBEAFE]"
                     >
                       <span className="material-symbols-outlined text-[16px]">account_tree</span>
-                      Chọn nhanh
+                      Chon nhanh
                     </button>
                   </div>
 
                   <div className="mt-5 grid gap-4 lg:grid-cols-3">
                     <SearchableMultiSelect
-                      label="Chi nhánh"
+                      label="Chi nhanh"
                       required
-                      placeholder="Chọn chi nhánh áp dụng"
+                      placeholder="Chon chi nhanh ap dung"
                       options={catalog.branches}
                       selectedValues={formValues.branchIds}
                       onChange={(values) => updateForm("branchIds", values)}
@@ -622,12 +891,12 @@ export const ShiftTemplateModal = ({
                     />
 
                     <SearchableMultiSelect
-                      label="Phòng ban"
-                      placeholder="Chọn phòng ban"
+                      label="Phong ban"
+                      placeholder="Chon phong ban"
                       helperText={
                         formValues.branchIds.length
-                          ? "Đang lọc theo chi nhánh đã chọn."
-                          : "Chọn chi nhánh để thu gọn danh sách phòng ban."
+                          ? "Dang loc theo chi nhanh da chon."
+                          : "Chon chi nhanh de thu gon danh sach phong ban."
                       }
                       options={filteredDepartments}
                       selectedValues={formValues.departmentIds}
@@ -636,12 +905,12 @@ export const ShiftTemplateModal = ({
                     />
 
                     <SearchableMultiSelect
-                      label="Chức danh"
-                      placeholder="Chọn chức danh"
+                      label="Chuc danh"
+                      placeholder="Chon chuc danh"
                       helperText={
                         formValues.branchIds.length
-                          ? "Đang lọc theo chi nhánh đã chọn."
-                          : "Chọn chi nhánh để thu gọn danh sách chức danh."
+                          ? "Dang loc theo chi nhanh da chon."
+                          : "Chon chi nhanh de thu gon danh sach chuc danh."
                       }
                       options={filteredJobTitles}
                       selectedValues={formValues.jobTitleIds}
@@ -660,7 +929,7 @@ export const ShiftTemplateModal = ({
               onClick={onClose}
               className="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-200"
             >
-              Hủy
+              Huy
             </button>
             <button
               type="submit"

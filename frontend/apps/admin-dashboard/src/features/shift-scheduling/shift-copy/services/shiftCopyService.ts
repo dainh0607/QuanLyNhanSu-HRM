@@ -17,8 +17,11 @@ const sortOptions = <T extends { label: string }>(options: T[]): T[] =>
   [...options].sort((left, right) => left.label.localeCompare(right.label, "vi"));
 
 const createDefaultScheduleFilters = (weekStartDate: string): ShiftScheduleFilters => ({
+  timeMode: "week",
   viewMode: "branch",
   weekStartDate,
+  startDate: weekStartDate,
+  endDate: weekStartDate,
   regionId: "",
   branchId: "",
   departmentId: "",

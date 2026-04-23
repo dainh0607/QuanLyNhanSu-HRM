@@ -1,6 +1,5 @@
 import React, { useMemo } from "react";
 import type { WeeklyScheduleRow, WeeklyScheduleShift } from "../types";
-import { ATTENDANCE_STATUS_META } from "../data/constants";
 
 interface DailyTimelineGridProps {
   date: string;
