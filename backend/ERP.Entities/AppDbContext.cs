@@ -3,6 +3,9 @@ using ERP.Entities.Models;
 using ERP.Entities.Seeding;
 using ERP.Entities.Interfaces;
 using ERP.Entities.Models.ControlPlane;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace ERP.Entities
 {
@@ -142,6 +145,7 @@ namespace ERP.Entities
         public DbSet<EmploymentHistoryLog> EmploymentHistoryLogs { get; set; }
         public DbSet<MobilePermissionManifest> MobilePermissionManifest { get; set; }
         public DbSet<EmployeeMobilePermissions> EmployeeMobilePermissions { get; set; }
+        public DbSet<TenantProfiles> TenantProfiles { get; set; }
 
         // NEW: RBAC Authorization Tables (FIX)
         public DbSet<RoleScopes> RoleScopes { get; set; }
@@ -160,6 +164,7 @@ namespace ERP.Entities
         public DbSet<InvoiceMetadata> InvoiceMetadata { get; set; }
         public DbSet<TenantMetadata> TenantMetadata { get; set; }
         public DbSet<Transaction> Transactions { get; set; }
+        public DbSet<TenantUpgradeRequest> TenantUpgradeRequests { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -214,6 +219,15 @@ namespace ERP.Entities
             // FIX: Inform EF Core about triggers on these tables to avoid OUTPUT clause errors with SQL Server
             modelBuilder.Entity<Users>().ToTable(tb => tb.HasTrigger("tr_Users_Audit"));
             modelBuilder.Entity<Employees>().ToTable(tb => tb.HasTrigger("tr_Employees_Audit"));
+
+            modelBuilder.Entity<TenantProfiles>(entity =>
+            {
+                entity.HasIndex(e => e.tenant_id).IsUnique();
+                entity.HasOne(d => d.Tenant)
+                    .WithOne()
+                    .HasForeignKey<TenantProfiles>(d => d.tenant_id)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
 
             // Disable cascade delete globally to avoid SQL Server multiple cascade path errors
             foreach (var relationship in modelBuilder.Model.GetEntityTypes()

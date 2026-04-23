@@ -4,6 +4,7 @@ using ERP.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ERP.Entities.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260423163648_UpdateTenantProfileColumns")]
+    partial class UpdateTenantProfileColumns
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1698,14 +1701,6 @@ namespace ERP.Entities.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("updated_at");
-
                     b.Property<string>("address")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)")
@@ -1722,11 +1717,6 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)")
                         .HasColumnName("name");
-
-                    b.Property<string>("note")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("note");
 
                     b.Property<int?>("region_id")
                         .HasColumnType("int")
@@ -1746,7 +1736,6 @@ namespace ERP.Entities.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             address = "Hà Nội",
                             code = "HO",
                             name = "Trụ sở chính",
@@ -2540,47 +2529,6 @@ namespace ERP.Entities.Migrations
                     b.ToTable("Sys_TenantSubscriptions");
                 });
 
-            modelBuilder.Entity("ERP.Entities.Models.ControlPlane.TenantUpgradeRequest", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("Note")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<string>("TargetPlanCode")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int>("TenantId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId");
-
-                    b.ToTable("Sys_TenantUpgradeRequests");
-                });
-
             modelBuilder.Entity("ERP.Entities.Models.ControlPlane.Transaction", b =>
                 {
                     b.Property<int>("Id")
@@ -3007,22 +2955,14 @@ namespace ERP.Entities.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("updated_at");
-
                     b.Property<int?>("branch_id")
                         .HasColumnType("int")
                         .HasColumnName("branch_id");
 
                     b.Property<string>("code")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
                         .HasColumnName("code");
 
                     b.Property<string>("name")
@@ -3030,11 +2970,6 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("name");
-
-                    b.Property<string>("note")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("note");
 
                     b.Property<int?>("parent_id")
                         .HasColumnType("int")
@@ -3054,28 +2989,24 @@ namespace ERP.Entities.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             code = "HR",
                             name = "Phòng Hành chính Nhân sự"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             code = "IT",
                             name = "Phòng Công nghệ"
                         },
                         new
                         {
                             Id = 3,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             code = "SALES",
                             name = "Phòng Kinh doanh"
                         },
                         new
                         {
                             Id = 4,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             code = "ACC",
                             name = "Phòng Kế toán"
                         });
@@ -4703,13 +4634,9 @@ namespace ERP.Entities.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("updated_at");
+                    b.Property<int?>("branch_id")
+                        .HasColumnType("int")
+                        .HasColumnName("branch_id");
 
                     b.Property<string>("code")
                         .IsRequired()
@@ -4723,16 +4650,13 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(200)")
                         .HasColumnName("name");
 
-                    b.Property<string>("note")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("note");
-
                     b.Property<int?>("tenant_id")
                         .HasColumnType("int")
                         .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("branch_id");
 
                     b.ToTable("JobTitles", (string)null);
 
@@ -4740,28 +4664,24 @@ namespace ERP.Entities.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             code = "STAFF",
                             name = "Nhân viên"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             code = "TEAMLEAD",
                             name = "Trưởng nhóm"
                         },
                         new
                         {
                             Id = 3,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             code = "HEAD",
                             name = "Trưởng phòng"
                         },
                         new
                         {
                             Id = 4,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             code = "DIRECTOR",
                             name = "Giám đốc"
                         });
@@ -6051,14 +5971,6 @@ namespace ERP.Entities.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("updated_at");
-
                     b.Property<string>("code")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -6070,11 +5982,6 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("name");
-
-                    b.Property<string>("note")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("note");
 
                     b.Property<int?>("tenant_id")
                         .HasColumnType("int")
@@ -6088,21 +5995,18 @@ namespace ERP.Entities.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             code = "NORTH",
                             name = "Miền Bắc"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             code = "CENTRAL",
                             name = "Miền Trung"
                         },
                         new
                         {
                             Id = 3,
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             code = "SOUTH",
                             name = "Miền Nam"
                         });
@@ -9650,7 +9554,7 @@ namespace ERP.Entities.Migrations
             modelBuilder.Entity("ERP.Entities.Models.Branches", b =>
                 {
                     b.HasOne("ERP.Entities.Models.Regions", "Region")
-                        .WithMany("Branches")
+                        .WithMany()
                         .HasForeignKey("region_id")
                         .OnDelete(DeleteBehavior.Restrict);
 
@@ -9774,17 +9678,6 @@ namespace ERP.Entities.Migrations
                     b.Navigation("Tenant");
                 });
 
-            modelBuilder.Entity("ERP.Entities.Models.ControlPlane.TenantUpgradeRequest", b =>
-                {
-                    b.HasOne("ERP.Entities.Models.Tenants", "Tenant")
-                        .WithMany()
-                        .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Tenant");
-                });
-
             modelBuilder.Entity("ERP.Entities.Models.ControlPlane.Transaction", b =>
                 {
                     b.HasOne("ERP.Entities.Models.ControlPlane.InvoiceMetadata", "Invoice")
@@ -9832,7 +9725,7 @@ namespace ERP.Entities.Migrations
             modelBuilder.Entity("ERP.Entities.Models.Departments", b =>
                 {
                     b.HasOne("ERP.Entities.Models.Branches", "Branch")
-                        .WithMany("Departments")
+                        .WithMany()
                         .HasForeignKey("branch_id")
                         .OnDelete(DeleteBehavior.Restrict);
 
@@ -10266,6 +10159,16 @@ namespace ERP.Entities.Migrations
                     b.Navigation("Region");
 
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("ERP.Entities.Models.JobTitles", b =>
+                {
+                    b.HasOne("ERP.Entities.Models.Branches", "Branch")
+                        .WithMany()
+                        .HasForeignKey("branch_id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Branch");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.LeaveRequests", b =>
@@ -11194,8 +11097,6 @@ namespace ERP.Entities.Migrations
 
             modelBuilder.Entity("ERP.Entities.Models.Branches", b =>
                 {
-                    b.Navigation("Departments");
-
                     b.Navigation("Employees");
 
                     b.Navigation("SecondaryEmployees");
@@ -11260,8 +11161,6 @@ namespace ERP.Entities.Migrations
 
             modelBuilder.Entity("ERP.Entities.Models.Regions", b =>
                 {
-                    b.Navigation("Branches");
-
                     b.Navigation("Employees");
                 });
 

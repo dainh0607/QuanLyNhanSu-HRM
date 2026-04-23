@@ -45,7 +45,6 @@ namespace ERP.API.Controllers
         {
             var query = _unitOfWork.Repository<Departments>().AsQueryable();
             
-            // Handle both branchId (singular from frontend) and branch_ids (list)
             var targetBranchIds = new List<int>();
             if (branchId.HasValue) targetBranchIds.Add(branchId.Value);
             if (branch_ids != null) targetBranchIds.AddRange(branch_ids);
@@ -60,22 +59,10 @@ namespace ERP.API.Controllers
         }
 
         [HttpGet("job-titles")]
-        public async Task<IActionResult> GetJobTitles([FromQuery] List<int>? branch_ids, [FromQuery] int? branchId)
+        public async Task<IActionResult> GetJobTitles()
         {
-            var query = _unitOfWork.Repository<JobTitles>().AsQueryable();
-
-            // Handle both branchId (singular) and branch_ids (list)
-            var targetBranchIds = new List<int>();
-            if (branchId.HasValue) targetBranchIds.Add(branchId.Value);
-            if (branch_ids != null) targetBranchIds.AddRange(branch_ids);
-
-            if (targetBranchIds.Any())
-            {
-                query = query.Where(j => j.branch_id.HasValue && targetBranchIds.Contains(j.branch_id.Value));
-            }
-
-            var data = await query.ToListAsync();
-            return Ok(data.Select(j => new { j.Id, j.name, j.code, branchId = j.branch_id }));
+            var data = await _unitOfWork.Repository<JobTitles>().GetAllAsync();
+            return Ok(data.Select(j => new { j.Id, j.name, j.code }));
         }
 
         [HttpGet("access-groups")]

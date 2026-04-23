@@ -120,13 +120,8 @@ namespace ERP.Services.Lookup
 
         public async Task<IEnumerable<LookupDto>> GetJobTitlesLookupAsync(List<int>? branchIds = null)
         {
+            // JobTitles are now independent of branches per latest requirements
             var query = _unitOfWork.Repository<JobTitles>().AsQueryable();
-
-            if (branchIds != null && branchIds.Any())
-            {
-                query = query.Where(x => !x.branch_id.HasValue || branchIds.Contains(x.branch_id.Value));
-            }
-
             var data = await query.ToListAsync();
             return data.Select(x => new LookupDto { Code = x.Id.ToString(), Name = x.name });
         }

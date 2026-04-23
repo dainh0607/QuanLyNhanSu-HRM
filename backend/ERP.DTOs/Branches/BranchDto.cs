@@ -1,36 +1,27 @@
-using System.ComponentModel.DataAnnotations;
+using System;
 
 namespace ERP.DTOs.Branches
 {
     public class BranchDto
     {
         public int Id { get; set; }
-        public string Name { get; set; }
-        public string Code { get; set; }
-        public string Address { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Code { get; set; } = string.Empty;
+        public int? RegionId { get; set; }
+        public string? RegionName { get; set; }
+        public string? Address { get; set; }
+        public string? Note { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 
     public class BranchCreateDto
     {
-        [Required]
-        [StringLength(200)]
-        public string Name { get; set; }
-
-        [Required]
-        [StringLength(50)]
-        public string Code { get; set; }
-
-        [StringLength(255)]
-        public string Address { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Code { get; set; } = string.Empty;
+        public int? RegionId { get; set; }
+        public string? Address { get; set; }
+        public string? Note { get; set; }
     }
 
-    public class BranchUpdateDto
-    {
-        [Required]
-        [StringLength(200)]
-        public string Name { get; set; }
-
-        [StringLength(255)]
-        public string Address { get; set; }
-    }
+    public class BranchUpdateDto : BranchCreateDto { }
 }

@@ -1,11 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ERP.Entities.Models
 {
     [Table("Branches")]
-    public class Branches : BaseEntity, ERP.Entities.Interfaces.ITenantEntity
+    public class Branches : AuditableEntity, ERP.Entities.Interfaces.ITenantEntity
     {
         [Column("tenant_id")]
         public int? tenant_id { get; set; }
@@ -28,8 +29,12 @@ namespace ERP.Entities.Models
         [StringLength(255)]
         public string? address { get; set; }
 
-        public virtual ICollection<Employees> Employees { get; set; } = new HashSet<Employees>();
+        [Column("note")]
+        [StringLength(500)]
+        public string? note { get; set; }
 
+        public virtual ICollection<Employees> Employees { get; set; } = new HashSet<Employees>();
         public virtual ICollection<Employees> SecondaryEmployees { get; set; } = new HashSet<Employees>();
+        public virtual ICollection<Departments> Departments { get; set; } = new HashSet<Departments>();
     }
 }

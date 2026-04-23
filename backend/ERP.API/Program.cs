@@ -93,14 +93,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 var sessionId = principal?.FindFirst(AuthSecurityConstants.SessionIdClaimType)?.Value;
                 var userIdValue = principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-                // Handle Signer Token
                 if (string.Equals(tokenType, AuthSecurityConstants.SignerTokenType, StringComparison.Ordinal))
                 {
-                    // Signer tokens don't have sessions or users in the DB
                     return;
                 }
 
-                // Handle Regular Access Token
                 var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
                 if (!string.Equals(tokenType, AuthSecurityConstants.AccessTokenType, StringComparison.Ordinal) ||
                     string.IsNullOrWhiteSpace(sessionId) ||
@@ -135,9 +132,7 @@ builder.Services.AddAuthorization(options =>
     });
 });
 
-// Add services to the container.
 builder.Services.AddHttpClient();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -168,7 +163,6 @@ builder.Services.AddScoped<IClaimsTransformation, FirebaseClaimsTransformation>(
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddHttpContextAccessor();
 
-// RBAC Authorization Services
 builder.Services.AddScoped<ERP.Entities.Interfaces.ICurrentUserContext, CurrentUserContext>();
 builder.Services.AddScoped<ERP.Services.Authorization.IAuthorizationService, ERP.Services.Authorization.AuthorizationService>();
 builder.Services.AddScoped<ERP.Services.Authorization.IAuthorizationManagementService, ERP.Services.Authorization.AuthorizationManagementService>();
@@ -215,7 +209,6 @@ builder.Services.AddHostedService<AttendanceAutomationWorker>();
 builder.Services.AddHostedService<TenantMetadataSyncWorker>();
 builder.Services.AddHostedService<BillingAutomationWorker>();
 
-// FIX #1-15: Register RBAC Authorization Services
 builder.Services.AddScoped<ISuperAdminPortalService, SuperAdminPortalService>();
 builder.Services.AddScoped<IAuthorizationManagementService, AuthorizationManagementService>();
 builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
@@ -223,16 +216,16 @@ builder.Services.AddScoped<IPermissionAuditLogService, PermissionAuditLogService
 builder.Services.AddScoped<IBreakGlassService, BreakGlassService>();
 builder.Services.AddScoped<ILoginAttemptService, LoginAttemptService>();
 
-// Audit Log & Workspace Activation
 builder.Services.AddScoped<ERP.Services.AuditLog.IAuditLogService, ERP.Services.AuditLog.AuditLogService>();
 builder.Services.AddScoped<ERP.Services.ControlPlane.IWorkspaceActivationService, ERP.Services.ControlPlane.WorkspaceActivationService>();
+builder.Services.AddScoped<ERP.Services.Tenant.ITenantProfileService, ERP.Services.Tenant.TenantProfileService>();
+builder.Services.AddScoped<ERP.Services.Tenant.ITenantSubscriptionService, ERP.Services.Tenant.TenantSubscriptionService>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
 
-// Database initialization and seeding (Development only)
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -241,7 +234,6 @@ using (var scope = app.Services.CreateScope())
 
     try
     {
-        // 0. CLI Handling for Super Admin Seed
         if (args.Contains("--seed-superadmin"))
         {
             var email = args.SkipWhile(a => a != "--email").Skip(1).FirstOrDefault();
@@ -249,114 +241,29 @@ using (var scope = app.Services.CreateScope())
 
             if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
             {
-                Console.WriteLine("\n [ERROR] Missing arguments.");
-                Console.WriteLine(" Usage: dotnet run -- --seed-superadmin --email <email> --password <password>");
-                Console.WriteLine(" Note: In dotnet run, use '--' before custom arguments.\n");
                 return;
             }
 
-            Console.WriteLine($"\n [CLI] Initializing Super Admin: {email}...");
-            db.Database.Migrate(); // Ensure DB is ready
-
+            db.Database.Migrate();
             var authService = services.GetRequiredService<IAuthService>();
-            var result = await authService.InitializeSuperAdminInternalAsync(email, password);
-
-            if (result.Success)
-            {
-                Console.WriteLine($" [SUCCESS] {result.Message}\n");
-            }
-            else
-            {
-                Console.WriteLine($" [FAILED] {result.Message}\n");
-            }
+            await authService.InitializeSuperAdminInternalAsync(email, password);
             return;
         }
 
         if (app.Environment.IsDevelopment())
         {
-            logger.LogInformation("[STARTUP] Ensuring database is migrated and seeded...");
             db.Database.Migrate();
             await AuthSessionSchemaInitializer.EnsureCreatedAsync(db);
             await RlsSchemaInitializer.EnsureUpdatedAsync(db, app.Environment.ContentRootPath, logger);
-
-            // 1. Apply Sample Data from SQL file
             await DataSeeder.ApplySampleDataAsync(app.Services);
-
-            // Sync with Firebase (DISABLED: Manual sync only to avoid tenant leakage)
-            // var userService = services.GetRequiredService<IUserService>();
-            // await userService.SyncWithFirebaseAsync();
-
-            // Seed User Elevation
-            var testEmails = new[] { "kfrog1233@gmail.com", "dainh123@gmail.com" };
-            foreach (var email in testEmails)
-            {
-                var user = db.Users.Include(u => u.Employee).FirstOrDefault(u => u.Employee.email == email);
-                if (user != null)
-                {
-                    var isDainh = email == "dainh123@gmail.com";
-                    var targetRoleId = isDainh ? 1 : 2; // Admin for dainh, Manager for kfrog
-                    var targetRoleName = isDainh ? "Admin" : "Manager";
-
-                    var hasRole = db.UserRoles.Any(ur => ur.user_id == user.Id && (ur.role_id == 1 || ur.role_id == 2));
-                    if (!hasRole)
-                    {
-                        db.UserRoles.Add(new ERP.Entities.Models.UserRoles
-                        {
-                            user_id = user.Id,
-                            role_id = targetRoleId,
-                            is_active = true,
-                            CreatedAt = DateTime.UtcNow,
-                            UpdatedAt = DateTime.UtcNow
-                        });
-                        db.SaveChanges();
-                        logger.LogInformation("[SEED] Elevated {Email} to {Role} role.", email, targetRoleName);
-                    }
-                }
-            }
-
-            // 2. Seed Contract Types
-            if (!db.ContractTypes.Any())
-            {
-                db.ContractTypes.Add(new ERP.Entities.Models.ContractTypes {
-                    name = "Hợp đồng thử việc"
-                });
-                db.SaveChanges();
-                logger.LogInformation("[SEED] Default ContractType created.");
-            }
-
-            // 3. Seed Contract Templates
-            if (!db.ContractTemplates.Any())
-            {
-                db.ContractTemplates.Add(new ERP.Entities.Models.ContractTemplates {
-                    name = "Mẫu hợp đồng thử việc chuẩn",
-                    content = @"<div style='text-align: center;'><h2>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</h2><h3>Độc lập - Tự do - Hạnh phúc</h3></div><br/><p>Chào ông/bà: <b>{{FullName}}</b> (Mã NV: <b>{{EmployeeCode}}</b>),</p><p>Chào mừng bạn gia nhập NexaHRM. Dưới đây là các điều khoản thử việc...</p><p>Ngày ký: {{SignDate}}</p><br/><br/><div style='display: flex; justify-content: space-between;'><div>Đại diện công ty</div><div>Người lao động</div></div>",
-                    category = "Electronic", // Added required field
-                    is_active = true,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                });
-                db.SaveChanges();
-                logger.LogInformation("[SEED] Default ContractTemplate created.");
-            }
         }
     }
     catch (Exception ex)
     {
         logger.LogError(ex, "An error occurred during startup initialization.");
-
-        try
-        {
-            await AuthSessionSchemaInitializer.EnsureCreatedAsync(db);
-            logger.LogWarning("[STARTUP] Applied fallback AuthSessions schema initialization after startup failure.");
-        }
-        catch (Exception schemaEx)
-        {
-            logger.LogError(schemaEx, "Fallback AuthSessions schema initialization failed.");
-        }
     }
 }
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -367,7 +274,6 @@ if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 app.UseCors("AllowFrontend");
-
 app.UseLoginErrorLogging();
 app.UseGlobalExceptionHandling();
 app.UseSubdomainResolution();
@@ -375,11 +281,8 @@ app.UseAuthentication();
 app.UseRlsSessionContext();
 app.UseMiddleware<CsrfProtectionMiddleware>();
 app.UseMiddleware<ERP.API.Middleware.BreakGlassMiddleware>();
-app.UseMiddleware<AuthorizationMiddleware>(); // FIX #1-15: RBAC Authorization middleware
+app.UseMiddleware<AuthorizationMiddleware>();
 app.UseAuthorization();
 app.UseMiddleware<AuditLoggingMiddleware>();
-
 app.MapControllers();
-
-
 app.Run();

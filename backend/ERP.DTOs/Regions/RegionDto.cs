@@ -1,29 +1,22 @@
-using System.ComponentModel.DataAnnotations;
+using System;
 
 namespace ERP.DTOs.Regions
 {
     public class RegionDto
     {
         public int Id { get; set; }
-        public string Name { get; set; }
-        public string Code { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Code { get; set; } = string.Empty;
+        public string? Note { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 
     public class RegionCreateDto
     {
-        [Required]
-        [StringLength(200)]
-        public string Name { get; set; }
-
-        [Required]
-        [StringLength(50)]
-        public string Code { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Code { get; set; } = string.Empty;
+        public string? Note { get; set; }
     }
 
-    public class RegionUpdateDto
-    {
-        [Required]
-        [StringLength(200)]
-        public string Name { get; set; }
-    }
+    public class RegionUpdateDto : RegionCreateDto { }
 }
