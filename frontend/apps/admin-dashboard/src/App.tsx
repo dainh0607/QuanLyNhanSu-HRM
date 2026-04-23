@@ -500,7 +500,7 @@ const EmployeeDetailRoute = () => {
         console.error(`Failed to load employee ${parsedEmployeeId}:`, error);
         if (isMounted) {
           setEmployee(null);
-          setLoadError("Khong the tai thong tin nhan su. Vui long thu lai.");
+          setLoadError("Không thể tải thông tin nhân sự. Vui lòng thử lại.");
         }
       } finally {
         if (isMounted) {
@@ -526,7 +526,7 @@ const EmployeeDetailRoute = () => {
   }
 
   if (isLoading) {
-    return <LoadingScreen message="Dang tai ho so nhan su..." />;
+    return <LoadingScreen message="Đang tải hồ sơ nhân sự..." />;
   }
 
   if (!employee) {
@@ -541,14 +541,14 @@ const EmployeeDetailRoute = () => {
             <span className="material-symbols-outlined text-[18px]">
               arrow_back
             </span>
-            Quay lai danh sach
+            Quay lại danh sách
           </button>
 
           <h1 className="text-xl font-semibold text-slate-900">
-            Khong mo duoc ho so nhan su
+            Không mở được hồ sơ nhân sự
           </h1>
           <p className="mt-3 text-sm leading-6 text-slate-600">
-            {loadError ?? "Khong the tai du lieu cho trang chi tiet nay."}
+            {loadError ?? "Không thể tải dữ liệu cho trang chi tiết này."}
           </p>
 
           <div className="mt-6 flex gap-3">
@@ -557,14 +557,14 @@ const EmployeeDetailRoute = () => {
               onClick={() => setReloadToken((prev) => prev + 1)}
               className="rounded-lg bg-[#134BBA] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0f3f9f]"
             >
-              Thu lai
+              Thử lại
             </button>
             <button
               type="button"
               onClick={() => navigate(returnPath)}
               className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
             >
-              Ve danh sach
+              Về danh sách
             </button>
           </div>
         </div>
@@ -722,7 +722,8 @@ function RoutedApp() {
   const loginRedirectPath = `${location.pathname}${location.search}${location.hash}`;
 
   return (
-    <div id="app-root-container">
+    <SettingsProvider>
+      <div id="app-root-container">
       <Routes>
         <Route path="/" element={<Navigate to={defaultRoute} replace />} />
         <Route
@@ -736,6 +737,19 @@ function RoutedApp() {
                   navigate("/activate-workspace-owner")
                 }
                 onLoginSuccess={handleLoginSuccess}
+              />
+            )
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/personnel/employees" replace />
+            ) : (
+              <InviteRegistrationPage
+                onNavigateToLogin={() => navigate("/login")}
+                onRegistrationSuccess={handleRegistrationSuccess}
               />
             )
           }
@@ -758,7 +772,11 @@ function RoutedApp() {
           element={
             isAuthenticated ? (
               <PermissionRoute user={user} resource="employee" action="read">
-                <EmployeeListRoute user={user} onLogout={handleLogout} />
+                <EmployeeListRoute 
+                  user={user} 
+                  onLogout={handleLogout} 
+                  onOpenSettings={() => setIsSettingsOpen(true)}
+                />
               </PermissionRoute>
             ) : (
               <Navigate
@@ -774,7 +792,11 @@ function RoutedApp() {
           element={
             isAuthenticated ? (
               <PermissionRoute user={user} resource="contracts" action="read">
-                <ContractsRoute user={user} onLogout={handleLogout} />
+                <ContractsRoute 
+                  user={user} 
+                  onLogout={handleLogout} 
+                  onOpenSettings={() => setIsSettingsOpen(true)}
+                />
               </PermissionRoute>
             ) : (
               <Navigate
@@ -790,7 +812,11 @@ function RoutedApp() {
           element={
             isAuthenticated ? (
               <PermissionRoute user={user} resource="shifts" action="read">
-                <WeeklyShiftSchedulingRoute user={user} onLogout={handleLogout} />
+                <WeeklyShiftSchedulingRoute 
+                  user={user} 
+                  onLogout={handleLogout} 
+                  onOpenSettings={() => setIsSettingsOpen(true)}
+                />
               </PermissionRoute>
             ) : (
               <Navigate
@@ -806,7 +832,11 @@ function RoutedApp() {
           element={
             isAuthenticated ? (
               <PermissionRoute user={user} resource="shifts" action="read">
-                <ShiftTemplateManagementRoute user={user} onLogout={handleLogout} />
+                <ShiftTemplateManagementRoute 
+                  user={user} 
+                  onLogout={handleLogout} 
+                  onOpenSettings={() => setIsSettingsOpen(true)}
+                />
               </PermissionRoute>
             ) : (
               <Navigate
@@ -838,7 +868,11 @@ function RoutedApp() {
           element={
             isAuthenticated ? (
               <div className="min-h-screen bg-[#f8fafc] flex flex-col">
-                <Header user={user} onLogout={handleLogout} />
+                <Header 
+                  user={user} 
+                  onLogout={handleLogout} 
+                  onOpenSettings={() => setIsSettingsOpen(true)}
+                />
                 <SignatureManagementPage />
               </div>
             ) : (
@@ -857,7 +891,13 @@ function RoutedApp() {
         <Route path="/sign" element={<SigningPortalPage />} />
         <Route path="*" element={<Navigate to={defaultRoute} replace />} />
       </Routes>
+
+      <EnterpriseSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
     </div>
+    </SettingsProvider>
   );
 }
 
