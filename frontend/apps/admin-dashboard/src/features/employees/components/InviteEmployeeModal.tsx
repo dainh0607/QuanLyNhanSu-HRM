@@ -23,6 +23,15 @@ interface Option {
   name: string;
 }
 
+const selectChevronStyle = {
+  backgroundImage: `url("data:image/svg+xml,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="#6B7280"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>`
+  )}")`,
+  backgroundSize: '1.25rem 1.25rem',
+  backgroundPosition: 'right 0.75rem center',
+  backgroundRepeat: 'no-repeat',
+} as const;
+
 const InviteEmployeeModal: React.FC<InviteEmployeeModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -183,9 +192,10 @@ const InviteEmployeeModal: React.FC<InviteEmployeeModalProps> = ({ isOpen, onClo
                     Vai trò *
                   </label>
                   <select
-                    className={`w-full h-11 px-4 border rounded-xl text-sm transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%20stroke%3D%22%236B7280%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.75rem_center] bg-no-repeat ${
+                    className={`w-full h-11 px-4 border rounded-xl text-sm transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none appearance-none ${
                       errors.roleId ? 'border-red-300 bg-red-50/30' : 'border-gray-200'
                     }`}
+                    style={selectChevronStyle}
                     value={formData.roleId}
                     onChange={(e) => setFormData({ ...formData, roleId: e.target.value })}
                   >
@@ -202,7 +212,8 @@ const InviteEmployeeModal: React.FC<InviteEmployeeModalProps> = ({ isOpen, onClo
                     Phạm vi quản lý *
                   </label>
                   <select
-                    className="w-full h-11 px-4 border border-gray-200 rounded-xl text-sm transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%20stroke%3D%22%236B7280%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.75rem_center] bg-no-repeat"
+                    className="w-full h-11 px-4 border border-gray-200 rounded-xl text-sm transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none appearance-none"
+                    style={selectChevronStyle}
                     value={formData.scopeLevel}
                     onChange={(e) => setFormData({ ...formData, scopeLevel: e.target.value as any })}
                   >
@@ -221,9 +232,10 @@ const InviteEmployeeModal: React.FC<InviteEmployeeModalProps> = ({ isOpen, onClo
                     Chi nhánh cụ thể *
                   </label>
                   <select
-                    className={`w-full h-11 px-4 border rounded-xl text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%20stroke%3D%22%236B7280%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.75rem_center] bg-no-repeat ${
+                    className={`w-full h-11 px-4 border rounded-xl text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none appearance-none ${
                       errors.branchId ? 'border-red-300 bg-red-50/30' : 'border-gray-200'
                     }`}
+                    style={selectChevronStyle}
                     value={formData.branchId || ''}
                     onChange={(e) => setFormData({ ...formData, branchId: e.target.value })}
                   >
@@ -243,9 +255,10 @@ const InviteEmployeeModal: React.FC<InviteEmployeeModalProps> = ({ isOpen, onClo
                     Phòng ban cụ thể *
                   </label>
                   <select
-                    className={`w-full h-11 px-4 border rounded-xl text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%20stroke%3D%22%236B7280%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.75rem_center] bg-no-repeat ${
+                    className={`w-full h-11 px-4 border rounded-xl text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none appearance-none ${
                       errors.departmentId ? 'border-red-300 bg-red-50/30' : 'border-gray-200'
                     }`}
+                    style={selectChevronStyle}
                     value={formData.departmentId || ''}
                     onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
                   >

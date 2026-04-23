@@ -40,11 +40,20 @@ namespace ERP.Services.Attendance
         {
             var exemptEmployeeIds = await _context.UserRoles
                 .IgnoreQueryFilters()
-                .Where(ur => ExemptRoleIds.Contains(ur.role_id) && ur.is_active)
+                .Where(ur => ur.is_active)
+                .Join(_context.Roles.IgnoreQueryFilters(),
+                    ur => ur.role_id,
+                    role => role.Id,
+                    (ur, role) => new { UserRole = ur, RoleName = role.name })
+                .Where(x =>
+                    ExemptRoleIds.Contains(x.UserRole.role_id) ||
+                    x.RoleName == AuthSecurityConstants.RoleAdmin ||
+                    x.RoleName == AuthSecurityConstants.RoleDirector ||
+                    x.RoleName == AuthSecurityConstants.RoleRegionManager)
                 .Join(_context.Users.IgnoreQueryFilters().Where(u => u.is_active),
-                    ur => ur.user_id,
+                    x => x.UserRole.user_id,
                     u => u.Id,
-                    (ur, u) => u.employee_id)
+                    (_, u) => u.employee_id)
                 .Distinct()
                 .ToListAsync();
 

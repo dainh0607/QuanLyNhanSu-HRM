@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -147,7 +148,7 @@ namespace ERP.Services.Auth
                 var apiKey = _configuration["Firebase:apiKey"];
                 if (string.IsNullOrEmpty(apiKey))
                 {
-                    return (false, null, null, null, null, null, "Firebase API Key is missing");
+                    throw new AuthenticationSystemException("Firebase:apiKey is missing for login.");
                 }
 
                 var client = _httpClientFactory.CreateClient();
@@ -165,11 +166,18 @@ namespace ERP.Services.Auth
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    _logger.LogWarning($"Firebase login failed for {normalizedEmail}: {content}");
-                    return (false, null, null, null, null, normalizedEmail, "Firebase authentication failed");
+                    return HandleFailedLoginResponse(response.StatusCode, content, normalizedEmail);
                 }
 
                 var firebaseResponse = JsonSerializer.Deserialize<FirebaseLoginResponse>(content);
+                if (firebaseResponse == null ||
+                    string.IsNullOrWhiteSpace(firebaseResponse.idToken) ||
+                    string.IsNullOrWhiteSpace(firebaseResponse.refreshToken) ||
+                    string.IsNullOrWhiteSpace(firebaseResponse.localId))
+                {
+                    throw new AuthenticationSystemException("Firebase login response is missing required authentication fields.");
+                }
+
                 int.TryParse(firebaseResponse?.expiresIn ?? "3600", out int expiresIn);
 
                 return (
@@ -182,11 +190,103 @@ namespace ERP.Services.Auth
                     "Login successful"
                 );
             }
+            catch (AuthenticationSystemException)
+            {
+                throw;
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, "Network error during Firebase REST login for {Email}", normalizedEmail);
+                throw new AuthenticationSystemException("Khong the ket noi den Firebase de xu ly dang nhap.", ex);
+            }
+            catch (TaskCanceledException ex)
+            {
+                _logger.LogError(ex, "Timeout during Firebase REST login for {Email}", normalizedEmail);
+                throw new AuthenticationSystemException("Yeu cau dang nhap toi Firebase bi qua thoi gian cho.", ex);
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "Invalid Firebase login response for {Email}", normalizedEmail);
+                throw new AuthenticationSystemException("Phan hoi dang nhap tu Firebase khong hop le.", ex);
+            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error during Firebase REST login for {normalizedEmail}");
-                return (false, null, null, null, null, normalizedEmail, ex.Message);
+                _logger.LogError(ex, "Unexpected error during Firebase REST login for {Email}", normalizedEmail);
+                throw new AuthenticationSystemException("Loi he thong xay ra trong qua trinh dang nhap voi Firebase.", ex);
             }
+        }
+
+        private (bool Success, string? IdToken, string? RefreshToken, int? ExpiresIn, string? LocalId, string? Email, string? Message) HandleFailedLoginResponse(
+            HttpStatusCode statusCode,
+            string content,
+            string? normalizedEmail)
+        {
+            var errorCode = TryGetFirebaseErrorCode(content);
+            if (TryMapExpectedLoginFailure(errorCode, out var mappedMessage))
+            {
+                _logger.LogWarning(
+                    "Firebase login rejected for {Email}. StatusCode={StatusCode}, FirebaseCode={FirebaseCode}",
+                    normalizedEmail,
+                    (int)statusCode,
+                    errorCode ?? "(unknown)");
+
+                return (false, null, null, null, null, normalizedEmail, mappedMessage);
+            }
+
+            if ((int)statusCode >= 500)
+            {
+                throw new AuthenticationSystemException(
+                    $"Firebase login service returned status {(int)statusCode}. FirebaseCode={errorCode ?? "(unknown)"}.");
+            }
+
+            throw new AuthenticationSystemException(
+                $"Firebase login failed with unexpected response {(int)statusCode}. FirebaseCode={errorCode ?? "(unknown)"}. RawResponse={content}");
+        }
+
+        private static bool TryMapExpectedLoginFailure(string? errorCode, out string message)
+        {
+            message = errorCode switch
+            {
+                "INVALID_LOGIN_CREDENTIALS" => "Sai email hoac mat khau.",
+                "EMAIL_NOT_FOUND" => "Sai email hoac mat khau.",
+                "INVALID_PASSWORD" => "Sai email hoac mat khau.",
+                "INVALID_EMAIL" => "Email khong hop le.",
+                "MISSING_EMAIL" => "Email la bat buoc.",
+                "MISSING_PASSWORD" => "Mat khau la bat buoc.",
+                "USER_DISABLED" => "Tai khoan da bi vo hieu hoa.",
+                "TOO_MANY_ATTEMPTS_TRY_LATER" => "Tai khoan tam thoi bi khoa do dang nhap sai qua nhieu lan.",
+                _ => string.Empty
+            };
+
+            return !string.IsNullOrWhiteSpace(message);
+        }
+
+        private static string? TryGetFirebaseErrorCode(string content)
+        {
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                return null;
+            }
+
+            try
+            {
+                using var document = JsonDocument.Parse(content);
+                if (!document.RootElement.TryGetProperty("error", out var errorElement))
+                {
+                    return null;
+                }
+
+                if (errorElement.TryGetProperty("message", out var messageElement))
+                {
+                    return messageElement.GetString();
+                }
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
+
+            return null;
         }
 
         public async Task UpdateUserPasswordAsync(string uid, string newPassword)

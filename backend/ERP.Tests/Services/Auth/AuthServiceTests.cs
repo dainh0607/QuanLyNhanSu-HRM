@@ -192,5 +192,27 @@ namespace ERP.Tests.Services.Auth
             Assert.False(result.Success, $"Expected failure but got success with user: {result.User?.Email}");
             Assert.Contains("dong bo", result.Message);
         }
+
+        [Fact]
+        public async Task LoginAsync_WhenFirebaseThrowsSystemError_PropagatesAuthenticationSystemException()
+        {
+            // Arrange
+            var context = await GetDbContextWithRolesAsync();
+            SetupConfig();
+
+            var email = "system-error@example.com";
+            _mockFirebase.Setup(f => f.SignInWithPasswordAsync(email, "password123"))
+                .ThrowsAsync(new AuthenticationSystemException("Firebase login service is unavailable."));
+
+            var authService = new AuthService(context, _mockLogger.Object, _mockConfig.Object, _mockFirebase.Object, _mockUserService.Object, _mockHttpClientFactory.Object);
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<AuthenticationSystemException>(() =>
+                authService.LoginAsync(
+                    new LoginDto { Email = email, Password = "password123" },
+                    new AuthSessionContextDto()));
+
+            Assert.Contains("Firebase login service is unavailable.", exception.Message);
+        }
     }
 }
