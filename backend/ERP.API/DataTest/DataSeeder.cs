@@ -14,7 +14,7 @@ namespace ERP.API.DataTest
         {
             using var scope = serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var logger = scope.ServiceProvider.GetRequiredService<ILogger<DataSeeder>>();
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<AppDbContext>>();
 
             try
             {
@@ -36,9 +36,11 @@ namespace ERP.API.DataTest
                 
                 string sql = await File.ReadAllTextAsync(sqlFilePath);
                 
-                // Split by GO if necessary, but EF Core's ExecuteSqlRawAsync doesn't support GO
-                // We'll split the script into blocks or ensure it's compatible
-                var commands = sql.Split(new[] { "GO", "go", "Go" }, StringSplitOptions.RemoveEmptyEntries);
+                // Properly split by 'GO' on a line by itself
+                var commands = System.Text.RegularExpressions.Regex.Split(
+                    sql, 
+                    @"^\s*GO\s*$", 
+                    System.Text.RegularExpressions.RegexOptions.Multiline | System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
                 foreach (var command in commands)
                 {
