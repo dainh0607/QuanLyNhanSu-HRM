@@ -397,15 +397,13 @@ const refreshSessionInternal = async (): Promise<boolean> => {
     );
 
     if (!response.ok) {
-      clearAuthSession();
-      rememberAuthCheck(null);
+      await authService.logout();
       return false;
     }
 
     const data = await readJsonSafely<AuthResponse>(response);
     if (!data?.success) {
-      clearAuthSession();
-      rememberAuthCheck(null);
+      await authService.logout();
       return false;
     }
 

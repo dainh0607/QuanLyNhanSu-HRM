@@ -46,6 +46,9 @@ namespace ERP.API.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> SignUp([FromBody] SignUpDto dto)
         {
+            // Clear any stale cookies before processing new sign-up
+            ClearSessionCookies();
+
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
@@ -60,6 +63,9 @@ namespace ERP.API.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
+            // Clear any stale cookies before processing new login to prevent session overlap
+            ClearSessionCookies();
+
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
