@@ -10,6 +10,8 @@ import CompactShiftScheduleGrid from "./components/CompactShiftScheduleGrid";
 import CompactShiftScheduleToolbarWithAdvancedSidebar from "./components/CompactShiftScheduleToolbarWithAdvancedSidebar";
 import ShiftLegend from "./components/ShiftLegend";
 import ShiftSettingsModal from "./components/ShiftSettingsModal";
+import ShiftSchedulingConfigView from "./ShiftSchedulingConfigView";
+import ShiftTaskListView from "./components/ShiftTaskListView";
 import { useWeeklyShiftSchedule } from "./hooks/useWeeklyShiftSchedule";
 import OpenShiftModal from "./open-shift/OpenShiftModal";
 import QuickAddEmployeesModal from "./quick-add-employees/QuickAddEmployeesModal";
@@ -97,6 +99,8 @@ export const WeeklyShiftSchedulePage = () => {
   const [isShiftCopyOpen, setIsShiftCopyOpen] = useState<boolean>(false);
   const [isBulkProcessing, setIsBulkProcessing] = useState<boolean>(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState<boolean>(false);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState<boolean>(false);
 
   const assignedShiftQuickActions = useAssignedShiftQuickActions({
     notify,
@@ -239,7 +243,7 @@ export const WeeklyShiftSchedulePage = () => {
   return (
     <>
       <main
-        className="relative flex h-[calc(100vh-64px)] w-full flex-col overflow-hidden px-[30px] py-6"
+        className="relative flex h-full w-full flex-col overflow-hidden px-[30px] py-6"
         id="main-content-container"
       >
         <div className="relative flex min-h-0 flex-1 gap-6 overflow-hidden">
@@ -297,6 +301,8 @@ export const WeeklyShiftSchedulePage = () => {
                 )
               }
               onOpenSettings={() => setIsSettingsOpen(true)}
+              onOpenConfig={() => setIsConfigModalOpen(true)}
+              onOpenTasks={() => setIsTaskModalOpen(true)}
               isAdvancedFilterOpen={isAdvancedFilterOpen}
               activeAdvancedFilterCount={activeAdvancedFilterCount}
               onToggleAdvancedFilter={() =>
@@ -515,6 +521,16 @@ export const WeeklyShiftSchedulePage = () => {
             setIsBulkProcessing(false);
           }
         }}
+      />
+
+      <ShiftSchedulingConfigView 
+        isOpen={isConfigModalOpen}
+        onClose={() => setIsConfigModalOpen(false)}
+      />
+
+      <ShiftTaskListView 
+        isOpen={isTaskModalOpen}
+        onClose={() => setIsTaskModalOpen(false)}
       />
 
       {ToastComponent}
