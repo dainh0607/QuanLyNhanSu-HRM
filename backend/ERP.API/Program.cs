@@ -32,6 +32,7 @@ using System.Text.Unicode;
 using System.Security.Claims;
 using ERP.DTOs.Auth;
 using ERP.API.Workers;
+using ERP.API.DataTest;
 
 var builder = WebApplication.CreateBuilder(args);
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
@@ -277,6 +278,9 @@ using (var scope = app.Services.CreateScope())
             db.Database.Migrate();
             await AuthSessionSchemaInitializer.EnsureCreatedAsync(db);
             await RlsSchemaInitializer.EnsureUpdatedAsync(db, app.Environment.ContentRootPath, logger);
+
+            // 1. Apply Sample Data from SQL file
+            await DataSeeder.ApplySampleDataAsync(app.Services);
 
             // Sync with Firebase (DISABLED: Manual sync only to avoid tenant leakage)
             // var userService = services.GetRequiredService<IUserService>();

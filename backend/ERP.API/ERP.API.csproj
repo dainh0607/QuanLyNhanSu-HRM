@@ -26,4 +26,10 @@
     <ProjectReference Include="..\ERP.DTOs\ERP.DTOs.csproj" SkipGetTargetFrameworkProperties="true" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="DataTest\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
