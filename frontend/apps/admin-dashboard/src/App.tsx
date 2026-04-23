@@ -14,7 +14,7 @@ import {
   ContractsManagementPage,
   SigningPortalPage,
 } from "./features/employees-contracts";
-import { WeeklyShiftSchedulePage } from "./features/shift-scheduling";
+import { ShiftSchedulingPage } from "./features/shift-scheduling";
 import { ShiftTemplateManagementPage } from "./features/shift-scheduling/shift-template-management/ShiftTemplateManagementPage";
 import { EmployeeDetail } from "./features/employee-detail/EmployeeDetailViewIntegrated";
 import type { PersonalTabKey } from "./features/employee-detail/edit-modal/types";
@@ -23,6 +23,8 @@ import { authService, hasPermission } from "./services/authService";
 import type { User } from "./services/authService";
 import { employeeService } from "./services/employeeService";
 import { SignatureManagementPage } from "./features/signature-management/SignatureListPage";
+import { SettingsProvider } from "./config/SettingsContext";
+import EnterpriseSettingsModal from "./features/enterprise-settings/EnterpriseSettingsModal";
 import "./index.css";
 
 const getInitials = (fullName: string | undefined) => {
@@ -74,9 +76,11 @@ const canAccessAuthenticatedRoute = (user: User | null, path?: string | null) =>
 const Header = ({
   user,
   onLogout,
+  onOpenSettings,
 }: {
   user: User | null;
-  onLogout: () => void;
+  onLogout: () => void | Promise<void>;
+  onOpenSettings: () => void;
 }) => {
   const displayUser = user;
   if (!displayUser) return null;
@@ -296,7 +300,11 @@ const Header = ({
                     key={item.label}
                     onClick={() => {
                       setIsProfileOpen(false);
-                      if (item.to) navigate(item.to);
+                      if (item.label === "Cài đặt") {
+                        onOpenSettings();
+                      } else if (item.to) {
+                        navigate(item.to);
+                      }
                     }}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#475569] hover:bg-[#f1f5f9] hover:text-[#1e293b] transition-colors text-sm font-medium"
                   >
@@ -394,9 +402,11 @@ const LoadingScreen = ({ message }: { message: string }) => (
 const EmployeeListRoute = ({
   user,
   onLogout,
+  onOpenSettings,
 }: {
   user: User | null;
   onLogout: () => Promise<void>;
+  onOpenSettings: () => void;
 }) => {
   const navigate = useNavigate();
 
@@ -410,9 +420,8 @@ const EmployeeListRoute = ({
     <div className="min-h-screen bg-[#f8fafc]">
       <Header
         user={user}
-        onLogout={() => {
-          void onLogout();
-        }}
+        onLogout={onLogout}
+        onOpenSettings={onOpenSettings}
       />
       <EmployeeList onSelectEmployee={handleSelectEmployee} />
     </div>
@@ -576,17 +585,18 @@ const EmployeeDetailRoute = () => {
 const ContractsRoute = ({
   user,
   onLogout,
+  onOpenSettings,
 }: {
   user: User | null;
   onLogout: () => Promise<void>;
+  onOpenSettings: () => void;
 }) => {
   return (
     <div className="min-h-screen bg-[#f8fafc]">
       <Header
         user={user}
-        onLogout={() => {
-          void onLogout();
-        }}
+        onLogout={onLogout}
+        onOpenSettings={onOpenSettings}
       />
       <ContractsManagementPage />
     </div>
@@ -596,19 +606,20 @@ const ContractsRoute = ({
 const WeeklyShiftSchedulingRoute = ({
   user,
   onLogout,
+  onOpenSettings,
 }: {
   user: User | null;
   onLogout: () => Promise<void>;
+  onOpenSettings: () => void;
 }) => {
   return (
     <div className="min-h-screen bg-[#f8fafc]">
       <Header
         user={user}
-        onLogout={() => {
-          void onLogout();
-        }}
+        onLogout={onLogout}
+        onOpenSettings={onOpenSettings}
       />
-      <WeeklyShiftSchedulePage />
+      <ShiftSchedulingPage />
     </div>
   );
 };
@@ -616,17 +627,18 @@ const WeeklyShiftSchedulingRoute = ({
 const ShiftTemplateManagementRoute = ({
   user,
   onLogout,
+  onOpenSettings,
 }: {
   user: User | null;
   onLogout: () => Promise<void>;
+  onOpenSettings: () => void;
 }) => {
   return (
     <div className="min-h-screen bg-[#f8fafc]">
       <Header
         user={user}
-        onLogout={() => {
-          void onLogout();
-        }}
+        onLogout={onLogout}
+        onOpenSettings={onOpenSettings}
       />
       <ShiftTemplateManagementPage />
     </div>
@@ -639,6 +651,7 @@ function RoutedApp() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [user, setUser] = useState<User | null>(null);
   const [isInitializing, setIsInitializing] = useState<boolean>(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -701,142 +714,169 @@ function RoutedApp() {
   const loginRedirectPath = `${location.pathname}${location.search}${location.hash}`;
 
   return (
-    <div id="app-root-container">
-      <Routes>
-        <Route path="/" element={<Navigate to={defaultRoute} replace />} />
-        <Route
-          path="/login"
-          element={
-            isAuthenticated ? (
-              <Navigate to="/personnel/employees" replace />
-            ) : (
-              <LoginPage
-                onNavigateToActivation={() =>
-                  navigate("/activate-workspace-owner")
-                }
-                onLoginSuccess={handleLoginSuccess}
-              />
-            )
-          }
+    <SettingsProvider>
+      <div id="app-root-container">
+        <Routes>
+          <Route path="/" element={<Navigate to={defaultRoute} replace />} />
+          <Route
+            path="/login"
+            element={
+              isAuthenticated ? (
+                <Navigate to="/personnel/employees" replace />
+              ) : (
+                <LoginPage
+                  onNavigateToActivation={() =>
+                    navigate("/activate-workspace-owner")
+                  }
+                  onLoginSuccess={handleLoginSuccess}
+                />
+              )
+            }
+          />
+          <Route
+            path="/activate-workspace-owner"
+            element={
+              isAuthenticated ? (
+                <Navigate to="/personnel/employees" replace />
+              ) : (
+                <WorkspaceOwnerActivationPage
+                  onNavigateToLogin={() => navigate("/login")}
+                  onActivationSuccess={handleActivationSuccess}
+                />
+              )
+            }
+          />
+          <Route
+            path="/personnel/employees"
+            element={
+              isAuthenticated ? (
+                <PermissionRoute user={user} resource="employee" action="read">
+                  <EmployeeListRoute 
+                    user={user} 
+                    onLogout={handleLogout} 
+                    onOpenSettings={() => setIsSettingsOpen(true)}
+                  />
+                </PermissionRoute>
+              ) : (
+                <Navigate
+                  to="/login"
+                  replace
+                  state={{ from: loginRedirectPath }}
+                />
+              )
+            }
+          />
+          <Route
+            path="/personnel/contracts"
+            element={
+              isAuthenticated ? (
+                <PermissionRoute user={user} resource="contracts" action="read">
+                  <ContractsRoute 
+                    user={user} 
+                    onLogout={handleLogout} 
+                    onOpenSettings={() => setIsSettingsOpen(true)}
+                  />
+                </PermissionRoute>
+              ) : (
+                <Navigate
+                  to="/login"
+                  replace
+                  state={{ from: loginRedirectPath }}
+                />
+              )
+            }
+          />
+          <Route
+            path="/working-day/timekeeping"
+            element={
+              isAuthenticated ? (
+                <PermissionRoute user={user} resource="shifts" action="read">
+                  <WeeklyShiftSchedulingRoute 
+                    user={user} 
+                    onLogout={handleLogout} 
+                    onOpenSettings={() => setIsSettingsOpen(true)}
+                  />
+                </PermissionRoute>
+              ) : (
+                <Navigate
+                  to="/login"
+                  replace
+                  state={{ from: loginRedirectPath }}
+                />
+              )
+            }
+          />
+          <Route
+            path="/working-day/timekeeping/shift-templates"
+            element={
+              isAuthenticated ? (
+                <PermissionRoute user={user} resource="shifts" action="read">
+                  <ShiftTemplateManagementRoute 
+                    user={user} 
+                    onLogout={handleLogout} 
+                    onOpenSettings={() => setIsSettingsOpen(true)}
+                  />
+                </PermissionRoute>
+              ) : (
+                <Navigate
+                  to="/login"
+                  replace
+                  state={{ from: loginRedirectPath }}
+                />
+              )
+            }
+          />
+          <Route
+            path="/personnel/employees/:employeeId"
+            element={
+              isAuthenticated ? (
+                <PermissionRoute user={user} resource="employee" action="read">
+                  <EmployeeDetailRoute />
+                </PermissionRoute>
+              ) : (
+                <Navigate
+                  to="/login"
+                  replace
+                  state={{ from: loginRedirectPath }}
+                />
+              )
+            }
+          />
+          <Route
+            path="/account/signatures"
+            element={
+              isAuthenticated ? (
+                <div className="min-h-screen bg-[#f8fafc] flex flex-col">
+                  <Header 
+                    user={user} 
+                    onLogout={handleLogout} 
+                    onOpenSettings={() => setIsSettingsOpen(true)}
+                  />
+                  <SignatureManagementPage />
+                </div>
+              ) : (
+                <Navigate
+                  to="/login"
+                  replace
+                  state={{ from: loginRedirectPath }}
+                />
+              )
+            }
+          />
+          <Route
+            path="/contracts/signing/:token"
+            element={<SigningPortalPage />}
+          />
+          <Route path="/sign" element={<SigningPortalPage />} />
+          <Route path="*" element={<Navigate to={defaultRoute} replace />} />
+        </Routes>
+        
+        <EnterpriseSettingsModal 
+          isOpen={isSettingsOpen} 
+          onClose={() => setIsSettingsOpen(false)} 
         />
-        <Route
-          path="/activate-workspace-owner"
-          element={
-            isAuthenticated ? (
-              <Navigate to="/personnel/employees" replace />
-            ) : (
-              <WorkspaceOwnerActivationPage
-                onNavigateToLogin={() => navigate("/login")}
-                onActivationSuccess={handleActivationSuccess}
-              />
-            )
-          }
-        />
-        <Route
-          path="/personnel/employees"
-          element={
-            isAuthenticated ? (
-              <PermissionRoute user={user} resource="employee" action="read">
-                <EmployeeListRoute user={user} onLogout={handleLogout} />
-              </PermissionRoute>
-            ) : (
-              <Navigate
-                to="/login"
-                replace
-                state={{ from: loginRedirectPath }}
-              />
-            )
-          }
-        />
-        <Route
-          path="/personnel/contracts"
-          element={
-            isAuthenticated ? (
-              <PermissionRoute user={user} resource="contracts" action="read">
-                <ContractsRoute user={user} onLogout={handleLogout} />
-              </PermissionRoute>
-            ) : (
-              <Navigate
-                to="/login"
-                replace
-                state={{ from: loginRedirectPath }}
-              />
-            )
-          }
-        />
-        <Route
-          path="/working-day/timekeeping"
-          element={
-            isAuthenticated ? (
-              <PermissionRoute user={user} resource="shifts" action="read">
-                <WeeklyShiftSchedulingRoute user={user} onLogout={handleLogout} />
-              </PermissionRoute>
-            ) : (
-              <Navigate
-                to="/login"
-                replace
-                state={{ from: loginRedirectPath }}
-              />
-            )
-          }
-        />
-        <Route
-          path="/working-day/timekeeping/shift-templates"
-          element={
-            isAuthenticated ? (
-              <PermissionRoute user={user} resource="shifts" action="read">
-                <ShiftTemplateManagementRoute user={user} onLogout={handleLogout} />
-              </PermissionRoute>
-            ) : (
-              <Navigate
-                to="/login"
-                replace
-                state={{ from: loginRedirectPath }}
-              />
-            )
-          }
-        />
-        <Route
-          path="/personnel/employees/:employeeId"
-          element={
-            isAuthenticated ? (
-              <PermissionRoute user={user} resource="employee" action="read">
-                <EmployeeDetailRoute />
-              </PermissionRoute>
-            ) : (
-              <Navigate
-                to="/login"
-                replace
-                state={{ from: loginRedirectPath }}
-              />
-            )
-          }
-        />
-        <Route
-          path="/account/signatures"
-          element={
-            isAuthenticated ? (
-              <div className="min-h-screen bg-[#f8fafc] flex flex-col">
-                <Header user={user} onLogout={handleLogout} />
-                <SignatureManagementPage />
-              </div>
-            ) : (
-              <Navigate
-                to="/login"
-                replace
-                state={{ from: loginRedirectPath }}
-              />
-            )
-          }
-        />
-        <Route
-          path="/contracts/signing/:token"
-          element={<SigningPortalPage />}
-        />
-        <Route path="/sign" element={<SigningPortalPage />} />
-        <Route path="*" element={<Navigate to={defaultRoute} replace />} />
-      </Routes>
-    </div>
+      </div>
+    </SettingsProvider>
   );
 }
 
