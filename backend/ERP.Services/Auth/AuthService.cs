@@ -1358,8 +1358,17 @@ namespace ERP.Services.Auth
                 ? DetermineHighestScopeLevel(roleScopeLevels)
                 : ResolveLegacyScopeLevel(roleIds, roles);
             bool isSystemAdmin = false;
+            bool isWorkspaceAdmin = false;
 
-            // [OWNERSHIP AUTO-DETECTION] (FINAL DEFENSIVE LAYER)
+            // 1. Identify System Admin (SuperAdmin / Master Email)
+            if (roleIds.Contains(AuthSecurityConstants.RoleSuperAdminId) || 
+                roles.Contains(AuthSecurityConstants.RoleSuperAdmin, StringComparer.OrdinalIgnoreCase) ||
+                IsMasterEmail(primaryEmail))
+            {
+                isSystemAdmin = true;
+            }
+
+            // 2. Identify Workspace Admin / Owner
             if (!string.IsNullOrWhiteSpace(primaryEmail))
             {
                 var isOwner = await _context.WorkspaceOwnerInvitations
@@ -1367,18 +1376,19 @@ namespace ERP.Services.Auth
                     .AnyAsync(inv => inv.OwnerEmail.ToLower() == primaryEmail.ToLower() && inv.Status == "activated");
                 if (isOwner) 
                 {
-                    isSystemAdmin = true;
-                    if (scopeLevel == "PERSONAL") scopeLevel = "TENANT";
+                    isWorkspaceAdmin = true;
                 }
             }
 
-            // SuperAdmin (ID 1) or Workspace Admin (ID 8) check
-            if (roleIds.Contains(AuthSecurityConstants.RoleSuperAdminId) || 
-                roleIds.Contains(AuthSecurityConstants.RoleAdminId) ||
-                roles.Contains(AuthSecurityConstants.RoleSuperAdmin, StringComparer.OrdinalIgnoreCase) ||
+            if (roleIds.Contains(AuthSecurityConstants.RoleAdminId) ||
                 roles.Contains(AuthSecurityConstants.RoleAdmin, StringComparer.OrdinalIgnoreCase))
             {
-                isSystemAdmin = true;
+                isWorkspaceAdmin = true;
+            }
+
+            // Both levels of admins get TENANT scope visibility
+            if (isSystemAdmin || isWorkspaceAdmin)
+            {
                 if (scopeLevel == "PERSONAL") scopeLevel = "TENANT";
             }
 
@@ -1391,9 +1401,7 @@ namespace ERP.Services.Auth
                 .ToListAsync();
 
             // [ULTRASONIC SAFETY NET] God-mode for Admin/Owner/SuperAdmin
-            if (isSystemAdmin || 
-                roleIds.Contains(AuthSecurityConstants.RoleSuperAdminId) || 
-                roleIds.Contains(AuthSecurityConstants.RoleAdminId))
+            if (isSystemAdmin || isWorkspaceAdmin)
             {
                 var godModePermissions = new List<string> 
                 { 
@@ -1401,15 +1409,20 @@ namespace ERP.Services.Auth
                     "contracts:read", "contracts:create", "contracts:update", "contracts:delete",
                     "shifts:read", "shifts:create", "shifts:update", "shifts:delete",
                     "attendance:read", "attendance:update", "attendance:delete",
-                    "system:manage", "rbac:read", "rbac:manage", "tenant:manage"
+                    "rbac:read", "rbac:manage"
                 };
+                
+                // ONLY true System Admins get multi-tenant and system level rights
+                if (isSystemAdmin)
+                {
+                    godModePermissions.Add("system:manage");
+                    godModePermissions.Add("tenant:manage");
+                }
                 
                 foreach (var p in godModePermissions)
                 {
                     if (!permissions.Contains(p)) permissions.Add(p);
                 }
-                
-                isSystemAdmin = true;
             }
 
             return new UserInfoDto
