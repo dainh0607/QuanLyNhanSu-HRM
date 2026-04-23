@@ -185,7 +185,9 @@ namespace ERP.Services.Auth
                     var user = await _userService.CreateLocalUserAsync(existingEmployee.Id, dto.Email, firebaseUser.Uid, tenantId);
 
                     // Assign Roles
-                    int assignedRoleId = invitation != null ? 7 : 1; // Default to Staff for invited, Tenant Admin (1) for Workspace Owner
+                    int assignedRoleId = invitation != null && invitation.RoleId.HasValue 
+                        ? invitation.RoleId.Value 
+                        : (invitation != null ? 7 : 1); // Default to Staff (7) for invited, Tenant Admin (1) for Workspace Owner
                     
                     // Master Email check (Override to Super Admin)
                     string masterEmail = _configuration["AdminSettings:MasterEmail"];
@@ -195,7 +197,25 @@ namespace ERP.Services.Auth
                         assignedRoleId = 1; // Or a specific Super Admin role if defined differently
                     }
 
-                    await _userService.AssignRoleAsync(user.Id, assignedRoleId, tenantId, workspace != null ? "Workspace Owner (Initial)" : "Staff Join");
+                    if (invitation != null)
+                    {
+                        await _userService.AssignScopedRoleAsync(
+                            user.Id, 
+                            assignedRoleId, 
+                            tenantId, 
+                            "Staff Join (Invitation)",
+                            invitation.BranchId,
+                            invitation.RegionId,
+                            invitation.DepartmentId);
+                    }
+                    else
+                    {
+                        await _userService.AssignRoleAsync(
+                            user.Id, 
+                            assignedRoleId, 
+                            tenantId, 
+                            workspace != null ? "Workspace Owner (Initial)" : "Staff Join");
+                    }
 
                     // Mark invitation as used
                     if (invitation != null)
@@ -1710,6 +1730,11 @@ namespace ERP.Services.Auth
                     EmployeeId = dto.EmployeeId,
                     DepartmentId = dto.DepartmentId,
                     JobTitleId = dto.JobTitleId,
+                    RoleId = dto.RoleId,
+                    ScopeLevel = dto.ScopeLevel,
+                    BranchId = dto.BranchId,
+                    RegionId = dto.RegionId,
+                    Message = dto.Message,
                     ExpiresAt = expiresAt,
                     CreatedBy = creatorId,
                     IsUsed = false,
@@ -1770,13 +1795,18 @@ namespace ERP.Services.Auth
                     FullName = invitation.FullName,
                     DepartmentId = invitation.DepartmentId,
                     JobTitleId = invitation.JobTitleId,
-                    Message = "Mã mời hợp lệ."
+                    RoleId = invitation.RoleId,
+                    ScopeLevel = invitation.ScopeLevel,
+                    BranchId = invitation.BranchId,
+                    RegionId = invitation.RegionId,
+                    Message = invitation.Message,
+                    InvitationMessage = "Mã mời hợp lệ."
                 };
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error in ValidateInvitationTokenAsync");
-                return new InvitationValidationDto { Valid = false, Message = "Lỗi khi kiểm tra mã mời." };
+                return new InvitationValidationDto { Valid = false, InvitationMessage = "Lỗi khi kiểm tra mã mời." };
             }
         }
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { authService } from '../../../services/authService';
-import { employeeService } from '../../../services/employeeService';
+import { authService, type StaffInvitationPayload } from '../../../services/authService';
+import { authorizationService } from '../../../services/authorizationService';
+import { lookupsService } from '../../../services/lookupsService';
 import { useToast } from '../../../hooks/useToast';
 
 interface InviteEmployeeModalProps {
@@ -9,39 +10,31 @@ interface InviteEmployeeModalProps {
   onSuccess?: () => void;
 }
 
-interface InviteFormData {
-  fullName: string;
-  email: string;
-  departmentId: string;
-  jobTitleId: string;
-  expirationDays: number;
-}
-
-interface MetadataOption {
-  id: number;
-  name: string;
-}
-
-const INITIAL_FORM_DATA: InviteFormData = {
+const INITIAL_FORM_DATA: StaffInvitationPayload = {
   fullName: '',
   email: '',
-  departmentId: '',
-  jobTitleId: '',
-  expirationDays: 7,
+  roleId: '',
+  scopeLevel: 'BRANCH',
+  message: '',
 };
+
+interface Option {
+  id: string | number;
+  name: string;
+}
 
 const InviteEmployeeModal: React.FC<InviteEmployeeModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [formData, setFormData] = useState<InviteFormData>(INITIAL_FORM_DATA);
+  const [formData, setFormData] = useState<StaffInvitationPayload>(INITIAL_FORM_DATA);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [departments, setDepartments] = useState<MetadataOption[]>([]);
-  const [jobTitles, setJobTitles] = useState<MetadataOption[]>([]);
+  const [roles, setRoles] = useState<Option[]>([]);
+  const [branches, setBranches] = useState<Option[]>([]);
+  const [departments, setDepartments] = useState<Option[]>([]);
   
   const [invitationResult, setInvitationResult] = useState<{
     link: string;
-    token: string;
     expiresAt: string;
   } | null>(null);
 
@@ -57,13 +50,15 @@ const InviteEmployeeModal: React.FC<InviteEmployeeModalProps> = ({ isOpen, onClo
   const fetchMetadata = async () => {
     setLoading(true);
     try {
-      const [deptItems, jobItems] = await Promise.all([
-        employeeService.getDepartmentsMetadata(),
-        employeeService.getJobTitlesMetadata(),
+      const [roleItems, branchItems, deptItems] = await Promise.all([
+        authorizationService.getRoles(),
+        lookupsService.getBranches(),
+        lookupsService.getDepartments(),
       ]);
       
-      setDepartments(deptItems as MetadataOption[]);
-      setJobTitles(jobItems as MetadataOption[]);
+      setRoles(roleItems as Option[]);
+      setBranches(branchItems as Option[]);
+      setDepartments(deptItems as Option[]);
     } catch (error) {
       console.error('Fetch metadata error:', error);
     } finally {
@@ -79,6 +74,14 @@ const InviteEmployeeModal: React.FC<InviteEmployeeModalProps> = ({ isOpen, onClo
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Email không hợp lệ';
     }
+    if (!formData.roleId) newErrors.roleId = 'Vui lòng chọn vai trò';
+    
+    if (formData.scopeLevel === 'BRANCH' && !formData.branchId) {
+      newErrors.branchId = 'Vui lòng chọn chi nhánh';
+    }
+    if (formData.scopeLevel === 'DEPARTMENT' && !formData.departmentId) {
+      newErrors.departmentId = 'Vui lòng chọn phòng ban';
+    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -90,27 +93,20 @@ const InviteEmployeeModal: React.FC<InviteEmployeeModalProps> = ({ isOpen, onClo
 
     setSubmitting(true);
     try {
-      const result = await authService.invite({
-        email: formData.email,
-        fullName: formData.fullName,
-        departmentId: formData.departmentId ? parseInt(formData.departmentId) : undefined,
-        jobTitleId: formData.jobTitleId ? parseInt(formData.jobTitleId) : undefined,
-        expirationDays: formData.expirationDays,
-      });
+      const result = await authService.invite(formData);
 
-      if (result.success && result.invitationLink) {
+      if (result.success && result.inviteLink) {
         setInvitationResult({
-          link: result.invitationLink,
-          token: result.token || '',
+          link: result.inviteLink,
           expiresAt: result.expiresAt || '',
         });
         onSuccess?.();
-        showToast('Tạo link mời thành công!', 'success');
+        showToast('Gửi lời mời thành công!', 'success');
       } else {
-        showToast(result.message || 'Lỗi khi tạo link mời', 'error');
+        showToast(result.message || 'Lỗi khi gửi lời mời', 'error');
       }
-    } catch (error) {
-      showToast('Đã xảy ra lỗi. Vui lòng thử lại.', 'error');
+    } catch (error: any) {
+      showToast(error.message || 'Đã xảy ra lỗi. Vui lòng thử lại.', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -125,51 +121,132 @@ const InviteEmployeeModal: React.FC<InviteEmployeeModalProps> = ({ isOpen, onClo
 
   return (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-        <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900">Mời nhân viên mới</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-400">
+      <div className="bg-white w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-blue-50/50 to-indigo-50/50">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+              <span className="material-symbols-outlined">person_add</span>
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Mời nhân viên mới</h2>
+              <p className="text-xs text-gray-500">Cấp quyền truy cập hệ thống cho đồng nghiệp</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-white/80 rounded-full text-gray-400 hover:text-gray-600 transition-colors shadow-sm">
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
 
         <div className="p-8">
           {!invitationResult ? (
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1.5">Họ và tên *</label>
-                <input
-                  type="text"
-                  className={`w-full h-11 px-4 border rounded-xl text-sm focus:ring-4 focus:ring-blue-50 transition-all ${
-                    errors.fullName ? 'border-red-400' : 'border-gray-200 focus:border-blue-500'
-                  }`}
-                  placeholder="Nguyễn Văn A"
-                  value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                />
-                {errors.fullName && <p className="mt-1 text-xs text-red-500 font-medium">{errors.fullName}</p>}
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-2 gap-5">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-bold text-gray-700 flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-base text-gray-400">person</span>
+                    Họ và tên *
+                  </label>
+                  <input
+                    type="text"
+                    className={`w-full h-11 px-4 border rounded-xl text-sm transition-all focus:ring-4 focus:ring-blue-50 outline-none ${
+                      errors.fullName ? 'border-red-300 bg-red-50/30' : 'border-gray-200 focus:border-blue-500'
+                    }`}
+                    placeholder="Nguyễn Văn A"
+                    value={formData.fullName}
+                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                  />
+                  {errors.fullName && <p className="text-[11px] text-red-500 font-medium pl-1">{errors.fullName}</p>}
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-sm font-bold text-gray-700 flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-base text-gray-400">mail</span>
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    className={`w-full h-11 px-4 border rounded-xl text-sm transition-all focus:ring-4 focus:ring-blue-50 outline-none ${
+                      errors.email ? 'border-red-300 bg-red-50/30' : 'border-gray-200 focus:border-blue-500'
+                    }`}
+                    placeholder="example@company.com"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  />
+                  {errors.email && <p className="text-[11px] text-red-500 font-medium pl-1">{errors.email}</p>}
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1.5">Email nhận thư mời *</label>
-                <input
-                  type="email"
-                  className={`w-full h-11 px-4 border rounded-xl text-sm focus:ring-4 focus:ring-blue-50 transition-all ${
-                    errors.email ? 'border-red-400' : 'border-gray-200 focus:border-blue-500'
-                  }`}
-                  placeholder="example@company.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                />
-                {errors.email && <p className="mt-1 text-xs text-red-500 font-medium">{errors.email}</p>}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1.5">Phòng ban</label>
+              <div className="grid grid-cols-2 gap-5">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-bold text-gray-700 flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-base text-gray-400">badge</span>
+                    Vai trò *
+                  </label>
                   <select
-                    className="w-full h-11 px-4 border border-gray-200 rounded-xl text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none"
-                    value={formData.departmentId}
+                    className={`w-full h-11 px-4 border rounded-xl text-sm transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%20stroke%3D%22%236B7280%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.75rem_center] bg-no-repeat ${
+                      errors.roleId ? 'border-red-300 bg-red-50/30' : 'border-gray-200'
+                    }`}
+                    value={formData.roleId}
+                    onChange={(e) => setFormData({ ...formData, roleId: e.target.value })}
+                  >
+                    <option value="">Chọn vai trò</option>
+                    {roles.map((r) => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
+                  </select>
+                  {errors.roleId && <p className="text-[11px] text-red-500 font-medium pl-1">{errors.roleId}</p>}
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-bold text-gray-700 flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-base text-gray-400">admin_panel_settings</span>
+                    Phạm vi quản lý *
+                  </label>
+                  <select
+                    className="w-full h-11 px-4 border border-gray-200 rounded-xl text-sm transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%20stroke%3D%22%236B7280%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.75rem_center] bg-no-repeat"
+                    value={formData.scopeLevel}
+                    onChange={(e) => setFormData({ ...formData, scopeLevel: e.target.value as any })}
+                  >
+                    <option value="TENANT">Toàn bộ workspace</option>
+                    <option value="REGION">Vùng (Region)</option>
+                    <option value="BRANCH">Chi nhánh (Branch)</option>
+                    <option value="DEPARTMENT">Phòng ban (Dept)</option>
+                  </select>
+                </div>
+              </div>
+
+              {formData.scopeLevel === 'BRANCH' && (
+                <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <label className="text-sm font-bold text-gray-700 flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-base text-gray-400">store</span>
+                    Chi nhánh cụ thể *
+                  </label>
+                  <select
+                    className={`w-full h-11 px-4 border rounded-xl text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%20stroke%3D%22%236B7280%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.75rem_center] bg-no-repeat ${
+                      errors.branchId ? 'border-red-300 bg-red-50/30' : 'border-gray-200'
+                    }`}
+                    value={formData.branchId || ''}
+                    onChange={(e) => setFormData({ ...formData, branchId: e.target.value })}
+                  >
+                    <option value="">Chọn chi nhánh</option>
+                    {branches.map((b) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                  {errors.branchId && <p className="text-[11px] text-red-500 font-medium pl-1">{errors.branchId}</p>}
+                </div>
+              )}
+
+              {formData.scopeLevel === 'DEPARTMENT' && (
+                <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <label className="text-sm font-bold text-gray-700 flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-base text-gray-400">groups</span>
+                    Phòng ban cụ thể *
+                  </label>
+                  <select
+                    className={`w-full h-11 px-4 border rounded-xl text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%20stroke%3D%22%236B7280%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.75rem_center] bg-no-repeat ${
+                      errors.departmentId ? 'border-red-300 bg-red-50/30' : 'border-gray-200'
+                    }`}
+                    value={formData.departmentId || ''}
                     onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
                   >
                     <option value="">Chọn phòng ban</option>
@@ -177,20 +254,21 @@ const InviteEmployeeModal: React.FC<InviteEmployeeModalProps> = ({ isOpen, onClo
                       <option key={d.id} value={d.id}>{d.name}</option>
                     ))}
                   </select>
+                  {errors.departmentId && <p className="text-[11px] text-red-500 font-medium pl-1">{errors.departmentId}</p>}
                 </div>
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1.5">Chức danh</label>
-                  <select
-                    className="w-full h-11 px-4 border border-gray-200 rounded-xl text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none"
-                    value={formData.jobTitleId}
-                    onChange={(e) => setFormData({ ...formData, jobTitleId: e.target.value })}
-                  >
-                    <option value="">Chọn chức danh</option>
-                    {jobTitles.map((j) => (
-                      <option key={j.id} value={j.id}>{j.name}</option>
-                    ))}
-                  </select>
-                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-bold text-gray-700 flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-base text-gray-400">chat_bubble</span>
+                  Lời nhắn (Tùy chọn)
+                </label>
+                <textarea
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none min-h-[100px] resize-none"
+                  placeholder="Chào mừng bạn gia nhập đội ngũ NexaHR..."
+                  value={formData.message}
+                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                />
               </div>
 
               <div className="pt-4 flex gap-3">
@@ -206,7 +284,7 @@ const InviteEmployeeModal: React.FC<InviteEmployeeModalProps> = ({ isOpen, onClo
                   disabled={submitting || loading}
                   className="flex-1 h-12 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-95 disabled:opacity-50"
                 >
-                  {submitting ? 'Đang tạo...' : 'Tạo link mời'}
+                  {submitting ? 'Đang gửi...' : 'Gửi lời mời'}
                 </button>
               </div>
             </form>
@@ -216,9 +294,9 @@ const InviteEmployeeModal: React.FC<InviteEmployeeModalProps> = ({ isOpen, onClo
                 <span className="material-symbols-outlined text-3xl">check_circle</span>
               </div>
               <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Link mời đã sẵn sàng!</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Lời mời đã được gửi!</h3>
                 <p className="text-sm text-gray-500">
-                  Gửi link này cho <b>{formData.fullName}</b>. Link sẽ hết hạn vào <b>{new Date(invitationResult.expiresAt).toLocaleDateString('vi-VN')}</b>.
+                  Một email mời đã được gửi tới <b>{formData.email}</b>. Bạn cũng có thể sao chép link bên dưới để gửi trực tiếp.
                 </p>
               </div>
               

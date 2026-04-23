@@ -66,6 +66,51 @@ export interface ChangePasswordPayload {
   confirmPassword: string;
 }
 
+export interface RegisterPayload {
+  email: string;
+  password: string;
+  confirmPassword: string;
+  fullName: string;
+  employeeCode?: string;
+  companyName?: string;
+  phoneNumber?: string;
+  invitationToken?: string;
+}
+
+export interface InvitationValidationResult {
+  valid: boolean;
+  email?: string;
+  fullName?: string;
+  departmentId?: number;
+  jobTitleId?: number;
+  roleId?: number;
+  scopeLevel?: string;
+  branchId?: number;
+  regionId?: number;
+  message?: string;
+  invitationMessage?: string;
+}
+
+export interface StaffInvitationPayload {
+  email: string;
+  fullName: string;
+  roleId: string;
+  scopeLevel: 'TENANT' | 'REGION' | 'BRANCH' | 'DEPARTMENT';
+  branchId?: string;
+  regionId?: string;
+  departmentId?: string;
+  message?: string;
+}
+
+export interface StaffInvitationResult {
+  token: string;
+  inviteLink: string;
+  email: string;
+  expiresAt: string;
+  success?: boolean;
+  message?: string;
+}
+
 const CSRF_COOKIE_NAME = "hrm_csrf_token";
 const CSRF_HEADER_NAME = "X-CSRF-Token";
 const SESSION_MARKER_KEY = "hrm_has_session";
@@ -431,13 +476,95 @@ export const authService = {
     }
   },
 
-  register: async (userData: unknown): Promise<AuthResponse> => {
-    void userData;
-    return {
-      success: false,
-      message:
-        "Public signup is disabled. Workspace Owner accounts must be provisioned from SuperAdmin.",
-    };
+  register: async (userData: RegisterPayload): Promise<AuthResponse> => {
+    try {
+      const payload = JSON.stringify({
+        email: userData.email.trim().toLowerCase(),
+        password: userData.password,
+        confirmPassword: userData.confirmPassword,
+        fullName: userData.fullName.trim(),
+        employeeCode: userData.employeeCode?.trim() || undefined,
+        companyName: userData.companyName?.trim() || undefined,
+        phoneNumber: userData.phoneNumber?.trim() || undefined,
+        invitationToken: userData.invitationToken?.trim() || undefined,
+      });
+
+      const response = await fetch(`${API_URL}/auth/sign-up`, {
+        method: "POST",
+        credentials: "include",
+        headers: createHeaders(undefined, "POST", payload, {
+          includeAuth: false,
+          includeCsrf: false,
+        }),
+        body: payload,
+      });
+
+      const data = await readJsonSafely<AuthResponse>(response);
+
+      if (response.ok && data?.success) {
+        const user = applyAuthResponse(data);
+        return {
+          success: true,
+          user: user ?? undefined,
+          idToken: data.idToken,
+          expiresIn: data.expiresIn,
+          message: data.message,
+        };
+      }
+
+      clearAuthSession();
+      return {
+        success: false,
+        message: data?.message || "KhĂ´ng thá»ƒ hoĂ n táº¥t Ä‘Äƒng kĂ½.",
+      };
+    } catch {
+      clearInMemorySession();
+      return {
+        success: false,
+        message: "KhĂ´ng thá»ƒ káº¿t ná»‘i tá»›i mĂ¡y chá»§. Vui lĂ²ng thá»­ láº¡i sau.",
+      };
+    }
+  },
+
+  validateInvitation: async (
+    token: string,
+  ): Promise<InvitationValidationResult> => {
+    const normalizedToken = token.trim();
+    if (!normalizedToken) {
+      return {
+        valid: false,
+        message: "MĂ£ má»i khĂ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.",
+      };
+    }
+
+    try {
+      const response = await fetch(
+        `${API_URL}/auth/invitation/validate?token=${encodeURIComponent(normalizedToken)}`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            Accept: "application/json",
+          },
+        },
+      );
+
+      const result = await readJsonSafely<InvitationValidationResult>(response);
+
+      if (response.ok && result?.valid) {
+        return result;
+      }
+
+      return {
+        valid: false,
+        message: result?.message || "MĂ£ má»i khĂ´ng há»£p lá»‡ hoáº·c Ä‘Ă£ háº¿t háº¡n.",
+      };
+    } catch {
+      return {
+        valid: false,
+        message: "KhĂ´ng thá»ƒ kiá»ƒm tra mĂ£ má»i lĂºc nĂ y.",
+      };
+    }
   },
 
   changePassword: async (
@@ -548,19 +675,9 @@ export const authService = {
     rememberAuthCheck(user);
   },
 
-  invite: async (data: {
-    email: string;
-    fullName: string;
-    departmentId?: number;
-    jobTitleId?: number;
-    expirationDays?: number;
-  }): Promise<{
-    success: boolean;
-    message: string;
-    invitationLink?: string;
-    token?: string;
-    expiresAt?: string;
-  }> => {
+  inviteStaff: async (
+    data: StaffInvitationPayload,
+  ): Promise<StaffInvitationResult> => {
     try {
       const response = await authFetch(`${API_URL}/auth/invite`, {
         method: "POST",
@@ -569,25 +686,89 @@ export const authService = {
 
       const result = await readJsonSafely<any>(response);
 
-      if (response.ok && result?.success) {
+      if (response.ok) {
         return {
-          success: true,
-          message: result.message || "Tạo link mời thành công.",
-          invitationLink: result.invitationLink,
           token: result.token,
+          inviteLink: result.invitationLink,
+          email: data.email,
           expiresAt: result.expiresAt,
+          success: true
         };
       }
 
       return {
+        inviteId: "",
+        inviteLink: "",
+        email: data.email,
+        expiresAt: "",
         success: false,
         message: result?.message || "Không thể tạo link mời.",
       };
     } catch {
       return {
+        inviteId: "",
+        inviteLink: "",
+        email: data.email,
+        expiresAt: "",
         success: false,
         message: "Lỗi kết nối khi tạo link mời.",
       };
     }
   },
+
+  validateInvitationToken: async (token: string) => {
+    try {
+      const response = await fetch(
+        `${API_URL}/auth/invitation/validate?token=${encodeURIComponent(token)}`,
+        { method: "GET" },
+      );
+      if (!response.ok) throw new Error("Invalid invitation token");
+      return await response.json();
+    } catch (err: any) {
+      throw new Error(err.message || "Invalid invitation token");
+    }
+  },
+
+  signUpWithInvitation: async (data: {
+    invitationToken: string;
+    password: string;
+    confirmPassword: string;
+  }) => {
+    if (data.password !== data.confirmPassword) {
+      throw new Error("Passwords do not match");
+    }
+
+    const response = await fetch(`${API_URL}/auth/sign-up`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.message || "Failed to sign up");
+
+    if (result.idToken) {
+      localStorage.setItem("token", result.idToken);
+    }
+    if (result.refreshToken) {
+      localStorage.setItem("refreshToken", result.refreshToken);
+    }
+
+    return result;
+  },
+
+  getRoles: async () => {
+    const response = await authFetch(`${API_URL}/auth-mgmt/roles`, { method: "GET" });
+    if (!response.ok) throw new Error("Failed to fetch roles");
+    return await response.json();
+  },
+
+  getBranches: async () => {
+    const response = await authFetch(`${API_URL}/organizations/branches`, { method: "GET" });
+    if (!response.ok) throw new Error("Failed to fetch branches");
+    return await response.json();
+  },
+
+  invite: async (data: StaffInvitationPayload): Promise<StaffInvitationResult> =>
+    authService.inviteStaff(data),
 };

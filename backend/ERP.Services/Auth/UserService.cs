@@ -294,7 +294,12 @@ namespace ERP.Services.Auth
             await AssignRoleInternalAsync(userId, roleId, tenantId, assignmentReason);
         }
 
-        private async Task AssignRoleInternalAsync(int userId, int roleId, int? tenantId = null, string? assignmentReason = null)
+        public async Task AssignScopedRoleAsync(int userId, int roleId, int? tenantId = null, string? assignmentReason = null, int? branchId = null, int? regionId = null, int? departmentId = null)
+        {
+            await AssignRoleInternalAsync(userId, roleId, tenantId, assignmentReason, branchId, regionId, departmentId);
+        }
+
+        private async Task AssignRoleInternalAsync(int userId, int roleId, int? tenantId = null, string? assignmentReason = null, int? branchId = null, int? regionId = null, int? departmentId = null)
         {
             var existingRole = await _context.UserRoles
                 .IgnoreQueryFilters()
@@ -306,6 +311,12 @@ namespace ERP.Services.Auth
                 {
                     existingRole.is_active = true;
                     existingRole.UpdatedAt = DateTime.UtcNow;
+                    
+                    // Update scoping if provided
+                    if (branchId.HasValue) existingRole.branch_id = branchId;
+                    if (regionId.HasValue) existingRole.region_id = regionId;
+                    if (departmentId.HasValue) existingRole.department_id = departmentId;
+
                     await _context.SaveChangesAsync();
                 }
                 return;
@@ -319,7 +330,10 @@ namespace ERP.Services.Auth
                 assignment_reason = assignmentReason ?? "System Assignment",
                 is_active = true,
                 CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                UpdatedAt = DateTime.UtcNow,
+                branch_id = branchId,
+                region_id = regionId,
+                department_id = departmentId
             };
             _context.UserRoles.Add(userRole);
             await _context.SaveChangesAsync();
