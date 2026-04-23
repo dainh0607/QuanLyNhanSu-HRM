@@ -35,18 +35,31 @@ namespace ERP.API.Auth
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
                 // Find local user and their roles
-                var userRoles = await context.UserRoles
-                    .Where(ur => ur.User.firebase_uid == uid && ur.is_active)
-                    .Include(ur => ur.Role)
-                    .Select(ur => ur.Role.name)
-                    .ToListAsync();
+                var user = await context.Users.AsNoTracking()
+                    .Where(u => u.firebase_uid == uid && u.is_active)
+                    .FirstOrDefaultAsync();
 
-                if (userRoles.Any())
+                if (user != null)
                 {
-                    var identity = (ClaimsIdentity)principal.Identity!;
-                    foreach (var role in userRoles)
+                    var userRoles = await context.UserRoles.AsNoTracking()
+                        .Where(ur => ur.user_id == user.Id && ur.is_active)
+                        .Include(ur => ur.Role)
+                        .ToListAsync();
+
+                    if (userRoles.Any())
                     {
-                        identity.AddClaim(new Claim(ClaimTypes.Role, role));
+                        var identity = (ClaimsIdentity)principal.Identity!;
+                        
+                        // Add is_system_admin claim if Role 1 and no tenant_id
+                        if (user.tenant_id == null && userRoles.Any(ur => ur.role_id == 1))
+                        {
+                            identity.AddClaim(new Claim("is_system_admin", "true"));
+                        }
+
+                        foreach (var ur in userRoles)
+                        {
+                            identity.AddClaim(new Claim(ClaimTypes.Role, ur.Role.name));
+                        }
                     }
                 }
             }

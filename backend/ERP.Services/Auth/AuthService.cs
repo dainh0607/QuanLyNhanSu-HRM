@@ -187,14 +187,14 @@ namespace ERP.Services.Auth
                     // Assign Roles
                     int assignedRoleId = invitation != null && invitation.RoleId.HasValue 
                         ? invitation.RoleId.Value 
-                        : (invitation != null ? 7 : 1); // Default to Staff (7) for invited, Tenant Admin (1) for Workspace Owner
+                        : (invitation != null ? 7 : AuthSecurityConstants.RoleAdminId); // Default to Staff (7) for invited, Workspace Admin (8) for Owner
                     
                     // Master Email check (Override to Super Admin)
                     string masterEmail = _configuration["AdminSettings:MasterEmail"];
                     if (!string.IsNullOrEmpty(masterEmail) &&
                         string.Equals(dto.Email, masterEmail, StringComparison.OrdinalIgnoreCase))
                     {
-                        assignedRoleId = 1; // Or a specific Super Admin role if defined differently
+                        assignedRoleId = AuthSecurityConstants.RoleSuperAdminId; // ID 1
                     }
 
                     if (invitation != null)

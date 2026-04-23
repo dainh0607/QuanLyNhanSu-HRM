@@ -129,7 +129,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(AuthSecurityConstants.SuperAdminPolicyName, policy =>
     {
         policy.RequireAuthenticatedUser();
-        policy.RequireRole(AuthSecurityConstants.RoleAdmin);
+        policy.RequireRole(AuthSecurityConstants.RoleSuperAdmin);
     });
 });
 

@@ -15,6 +15,7 @@ namespace ERP.DTOs.Auth
         public const string WorkspaceMismatchMessage = "Workspace khong khop voi tai khoan dang nhap.";
 
         // Access Groups (Roles)
+        public const string RoleSuperAdmin = "SuperAdmin";
         public const string RoleAdmin = "Admin";
         public const string RoleDirector = "Manager";
         public const string RoleRegionManager = "Regional Manager";
@@ -24,12 +25,13 @@ namespace ERP.DTOs.Auth
         public const string RoleEmployee = "Staff";
 
         // Access Group IDs
-        public const int RoleAdminId = 1;
+        public const int RoleSuperAdminId = 1;
         public const int RoleDirectorId = 2;
         public const int RoleRegionManagerId = 3;
         public const int RoleBranchManagerId = 4;
         public const int RoleDeptManagerId = 5;
         public const int RoleModuleAdminId = 6;
         public const int RoleEmployeeId = 7;
+        public const int RoleAdminId = 8;
     }
 }
