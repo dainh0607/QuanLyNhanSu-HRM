@@ -14,7 +14,7 @@ namespace ERP.API.DataTest
         {
             using var scope = serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var logger = scope.ServiceProvider.GetRequiredService<ILogger<typeof(AppDbContext)>>();
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<DataSeeder>>();
 
             try
             {
