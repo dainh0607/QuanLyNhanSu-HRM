@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -145,18 +145,6 @@ namespace ERP.Entities.Migrations
                 nullable: false,
                 defaultValue: "");
 
-            migrationBuilder.UpdateData(
-                table: "Roles",
-                keyColumn: "id",
-                keyValue: 1,
-                columns: new[] { "description", "name" },
-                values: new object[] { "Platform Level Administrator", "SuperAdmin" });
-
-            migrationBuilder.InsertData(
-                table: "Roles",
-                columns: new[] { "id", "created_at", "updated_at", "description", "is_active", "is_system_role", "name", "tenant_id" },
-                values: new object[] { 8, new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc), "Workspace Administrator", true, true, "Admin", null });
-
             migrationBuilder.CreateIndex(
                 name: "IX_Shifts_keyword",
                 table: "Shifts",
@@ -191,11 +179,6 @@ namespace ERP.Entities.Migrations
             migrationBuilder.DropIndex(
                 name: "IX_Shifts_meal_type_id",
                 table: "Shifts");
-
-            migrationBuilder.DeleteData(
-                table: "Roles",
-                keyColumn: "id",
-                keyValue: 8);
 
             migrationBuilder.DropColumn(
                 name: "allowed_early_mins",
@@ -277,12 +260,6 @@ namespace ERP.Entities.Migrations
                 name: "timezone",
                 table: "Shifts");
 
-            migrationBuilder.UpdateData(
-                table: "Roles",
-                keyColumn: "id",
-                keyValue: 1,
-                columns: new[] { "description", "name" },
-                values: new object[] { "System Administrator", "Admin" });
         }
     }
 }
