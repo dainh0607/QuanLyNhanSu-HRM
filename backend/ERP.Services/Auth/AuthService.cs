@@ -979,6 +979,8 @@ namespace ERP.Services.Auth
                 full_name = IsMasterEmail(email) ? "System Administrator" : email.Split('@')[0],
                 email = email,
                 work_email = email,
+                gender_code = "MALE", // Default required field
+                marital_status_code = "SINGLE", // Default required field
                 is_active = true,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
