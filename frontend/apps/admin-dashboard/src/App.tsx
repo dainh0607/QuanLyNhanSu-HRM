@@ -8,6 +8,7 @@ import {
   useParams,
 } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
+import InviteRegistrationPage from "./pages/InviteRegistrationPage";
 import WorkspaceOwnerActivationPage from "./pages/WorkspaceOwnerActivationPage";
 import { EmployeeList } from "./features/employees";
 import {
@@ -684,6 +685,13 @@ function RoutedApp() {
     navigate(getDefaultAuthorizedRoute(activatedUser), { replace: true });
   };
 
+  const handleRegistrationSuccess = (registeredUser: User, token: string) => {
+    authService.setSession(registeredUser, token);
+    setIsAuthenticated(true);
+    setUser(registeredUser);
+    navigate(getDefaultAuthorizedRoute(registeredUser), { replace: true });
+  };
+
   const handleLogout = async () => {
     await authService.logout();
     setIsAuthenticated(false);
@@ -728,6 +736,32 @@ function RoutedApp() {
               <WorkspaceOwnerActivationPage
                 onNavigateToLogin={() => navigate("/login")}
                 onActivationSuccess={handleActivationSuccess}
+              />
+            )
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            isAuthenticated ? (
+              <Navigate to={defaultRoute} replace />
+            ) : (
+              <InviteRegistrationPage
+                onNavigateToLogin={() => navigate("/login")}
+                onRegistrationSuccess={handleRegistrationSuccess}
+              />
+            )
+          }
+        />
+        <Route
+          path="/invite/:token"
+          element={
+            isAuthenticated ? (
+              <Navigate to={defaultRoute} replace />
+            ) : (
+              <InviteRegistrationPage
+                onNavigateToLogin={() => navigate("/login")}
+                onRegistrationSuccess={handleRegistrationSuccess}
               />
             )
           }

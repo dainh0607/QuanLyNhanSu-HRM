@@ -5,7 +5,7 @@ namespace ERP.Services.Auth
 {
     public interface IAuthService
     {
-        Task<AuthResponseDto> SignUpAsync(SignUpDto dto);
+        Task<AuthResponseDto> SignUpAsync(SignUpDto dto, AuthSessionContextDto sessionContext);
         Task<AuthResponseDto> LoginAsync(LoginDto dto, AuthSessionContextDto sessionContext);
         Task<AuthResponseDto> RefreshSessionAsync(string refreshToken, AuthSessionContextDto sessionContext);
         Task<AuthResponseDto> CreateSessionForUserAsync(int userId, AuthSessionContextDto sessionContext, string message);
