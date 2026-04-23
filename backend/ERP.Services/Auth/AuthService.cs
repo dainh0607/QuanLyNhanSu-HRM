@@ -744,7 +744,7 @@ namespace ERP.Services.Auth
 
                 await _context.SaveChangesAsync();
 
-                var assignedRoleId = roleId ?? 2;
+                var assignedRoleId = roleId ?? AuthSecurityConstants.RoleDirectorId; // Default to Manager (2)
                 var existingRole = await _context.UserRoles
                     .IgnoreQueryFilters()
                     .FirstOrDefaultAsync(ur => ur.user_id == user.Id && ur.role_id == assignedRoleId);
@@ -1048,47 +1048,59 @@ namespace ERP.Services.Auth
                 await SyncRoleNamesToEnglishAsync();
 
                 // 3. Logic assigning default role for new users & fixing broken roles
-                var activeRoleIds = await _context.UserRoles
+                var userRoles = await _context.UserRoles
                     .IgnoreQueryFilters()
                     .Where(ur => ur.user_id == userId && ur.is_active)
-                    .Select(ur => ur.role_id)
                     .ToListAsync();
 
+                var activeRoleIds = userRoles.Select(ur => ur.role_id).ToList();
                 var isMasterEmail = IsMasterEmail(email);
                 
-                // [FIX] Also detect Workspace Owners via WorkspaceOwnerInvitations table
+                // [FIX] Robust detection of Workspace Owners with Trim() to avoid matching failures
+                var normalizedLoginEmail = email.Trim().ToLowerInvariant();
                 var isWorkspaceOwner = await _context.WorkspaceOwnerInvitations
                     .IgnoreQueryFilters()
-                    .AnyAsync(inv => inv.OwnerEmail.ToLower() == email.ToLower() && inv.Status == "activated");
+                    .AnyAsync(inv => inv.OwnerEmail.Trim().ToLower() == normalizedLoginEmail && inv.Status == "activated");
                 
                 var isAdminEligible = isMasterEmail || isWorkspaceOwner;
                 var defaultRoleId = isAdminEligible ? adminRoleId : employeeRoleId;
 
-                // ✅ NEW: Check if user has only negative/invalid roleIds (e.g., Staff role for admin)
-                // If workspace owner/master email but only has Staff role, promote to Admin
-                if (isAdminEligible && activeRoleIds.Count > 0 && !activeRoleIds.Contains(adminRoleId))
+                // ✅ FIX: Auto-Promotion & Cleanup logic
+                // If user is Admin-eligible but has Staff role or NO Admin role
+                if (isAdminEligible)
                 {
-                    // Admin-eligible user but no Admin role - this is incorrect, need to add Admin role
-                    _logger.LogWarning(
-                        "Admin-eligible user {Email} (IsMaster={IsMaster}, IsOwner={IsOwner}) missing Admin role. Adding Admin role now.",
-                        email, isMasterEmail, isWorkspaceOwner);
-                    
-                    _context.UserRoles.Add(new UserRoles
+                    if (!activeRoleIds.Contains(adminRoleId))
                     {
-                        user_id = userId,
-                        role_id = adminRoleId,
-                        assignment_reason = isWorkspaceOwner 
-                            ? "Workspace Owner Auto-Promotion (LOGIN)" 
-                            : "Master Email Auto-Promotion (OLD ACCOUNT)",
-                        is_active = true,
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow
-                    });
+                        _logger.LogWarning(
+                            "Admin-eligible user {Email} missing Admin role. Adding Admin role now.", email);
+                        
+                        _context.UserRoles.Add(new UserRoles
+                        {
+                            user_id = userId,
+                            role_id = adminRoleId,
+                            assignment_reason = isWorkspaceOwner 
+                                ? "Workspace Owner Auto-Promotion (LOGIN)" 
+                                : "Master Email Auto-Promotion (OLD ACCOUNT)",
+                            is_active = true,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        });
+                        await _context.SaveChangesAsync();
+                    }
 
-                    await _context.SaveChangesAsync();
+                    // 🔴 CLEANUP: Remove Staff role if this is an Admin to prevent "duplicate" roles appearing in UI
+                    var staffRoleEntry = userRoles.FirstOrDefault(ur => ur.role_id == employeeRoleId);
+                    if (staffRoleEntry != null)
+                    {
+                        _logger.LogInformation("Removing redundant Staff role for Admin-eligible user {Email}", email);
+                        _context.UserRoles.Remove(staffRoleEntry);
+                        await _context.SaveChangesAsync();
+                    }
+                    
                     return;
                 }
 
+                // Default logic for regular users
                 if (activeRoleIds.Count == 0)
                 {
                     _context.UserRoles.Add(new UserRoles
@@ -1096,22 +1108,6 @@ namespace ERP.Services.Auth
                         user_id = userId,
                         role_id = defaultRoleId,
                         assignment_reason = "Initial Login Synchronization",
-                        is_active = true,
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow
-                    });
-
-                    await _context.SaveChangesAsync();
-                    return;
-                }
-
-                if (isMasterEmail && !activeRoleIds.Contains(adminRoleId))
-                {
-                    _context.UserRoles.Add(new UserRoles
-                    {
-                        user_id = userId,
-                        role_id = adminRoleId,
-                        assignment_reason = "Master Email Promotion",
                         is_active = true,
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow

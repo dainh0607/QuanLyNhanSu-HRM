@@ -242,7 +242,7 @@ namespace ERP.Services.ControlPlane
                     invitation.OwnerFullName,
                     employee.Id,
                     tenant.Id,
-                    1);
+                    AuthSecurityConstants.RoleAdminId);
 
                 // Mark invitation as activated
                 invitation.Status = "activated";
