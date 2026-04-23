@@ -399,7 +399,11 @@ namespace ERP.Services.Organization
         #region JobTitles
         public async Task<PaginatedListDto<JobTitleDto>> GetPagedJobTitlesAsync(int pageNumber, int pageSize, string? searchTerm)
         {
-            var query = _context.JobTitles.AsNoTracking();
+            var query = _context.JobTitles
+                .Include(j => j.ParentJobTitle)
+                .Include(j => j.Branch)
+                .Include(j => j.Department)
+                .AsNoTracking();
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
@@ -407,7 +411,7 @@ namespace ERP.Services.Organization
             }
 
             var count = await query.CountAsync();
-            var items = await query.OrderByDescending(j => j.CreatedAt)
+            var items = await query.OrderBy(j => j.display_order).ThenByDescending(j => j.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .Select(j => new JobTitleDto
@@ -415,6 +419,15 @@ namespace ERP.Services.Organization
                     Id = j.Id,
                     Name = j.name,
                     Code = j.code,
+                    ParentId = j.parent_id,
+                    ParentName = j.ParentJobTitle != null ? j.ParentJobTitle.name : null,
+                    BranchId = j.branch_id,
+                    BranchName = j.Branch != null ? j.Branch.name : null,
+                    DepartmentId = j.department_id,
+                    DepartmentName = j.Department != null ? j.Department.name : null,
+                    Qualification = j.qualification,
+                    Experience = j.experience,
+                    DisplayOrder = j.display_order,
                     Note = j.note,
                     CreatedAt = j.CreatedAt
                 })
@@ -433,12 +446,26 @@ namespace ERP.Services.Organization
 
         public async Task<JobTitleDto?> GetJobTitleByIdAsync(int id)
         {
-            var j = await _context.JobTitles.FindAsync(id);
+            var j = await _context.JobTitles
+                .Include(x => x.ParentJobTitle)
+                .Include(x => x.Branch)
+                .Include(x => x.Department)
+                .FirstOrDefaultAsync(x => x.Id == id);
+                
             return j == null ? null : new JobTitleDto
             {
                 Id = j.Id,
                 Name = j.name,
                 Code = j.code,
+                ParentId = j.parent_id,
+                ParentName = j.ParentJobTitle?.name,
+                BranchId = j.branch_id,
+                BranchName = j.Branch?.name,
+                DepartmentId = j.department_id,
+                DepartmentName = j.Department?.name,
+                Qualification = j.qualification,
+                Experience = j.experience,
+                DisplayOrder = j.display_order,
                 Note = j.note,
                 CreatedAt = j.CreatedAt
             };
@@ -451,6 +478,12 @@ namespace ERP.Services.Organization
             {
                 name = dto.Name,
                 code = dto.Code,
+                parent_id = dto.ParentId,
+                branch_id = dto.BranchId,
+                department_id = dto.DepartmentId,
+                qualification = dto.Qualification,
+                experience = dto.Experience,
+                display_order = dto.DisplayOrder,
                 note = dto.Note
             };
             _context.JobTitles.Add(j);
@@ -464,11 +497,40 @@ namespace ERP.Services.Organization
             var j = await _context.JobTitles.FindAsync(id);
             if (j == null) return false;
 
+            // Circular dependency check
+            if (dto.ParentId.HasValue)
+            {
+                await CheckJobTitleCircularDependency(id, dto.ParentId);
+            }
+
             j.name = dto.Name;
             j.code = dto.Code;
+            j.parent_id = dto.ParentId;
+            j.branch_id = dto.BranchId;
+            j.department_id = dto.DepartmentId;
+            j.qualification = dto.Qualification;
+            j.experience = dto.Experience;
+            j.display_order = dto.DisplayOrder;
             j.note = dto.Note;
 
             return await _context.SaveChangesAsync() > 0;
+        }
+
+        private async Task CheckJobTitleCircularDependency(int jobId, int? parentId)
+        {
+            if (!parentId.HasValue) return;
+            if (jobId == parentId.Value)
+                throw new InvalidOperationException("Chức danh không thể là cấp trên của chính nó.");
+
+            var currentParentId = parentId;
+            while (currentParentId.HasValue)
+            {
+                var parent = await _context.JobTitles.AsNoTracking().FirstOrDefaultAsync(x => x.Id == currentParentId.Value);
+                if (parent == null) break;
+                if (parent.parent_id == jobId)
+                    throw new InvalidOperationException("Không thể thiết lập tuyến báo cáo vì sẽ gây ra vòng lặp vô tận.");
+                currentParentId = parent.parent_id;
+            }
         }
 
         public async Task<bool> DeleteJobTitleAsync(int id)
@@ -476,9 +538,16 @@ namespace ERP.Services.Organization
             var j = await _context.JobTitles.FindAsync(id);
             if (j == null) return false;
 
+            // Constraint check: Employees using this title
             if (await _context.Employees.AnyAsync(e => e.job_title_id == id || e.secondary_job_title_id == id))
             {
-                throw new InvalidOperationException($"Không thể xóa chức danh '{j.name}' vì đang có nhân viên mang chức danh này.");
+                throw new InvalidOperationException($"Không thể xóa chức danh '{j.name}' vì đang có nhân viên trực thuộc.");
+            }
+
+            // Constraint check: Sub-titles using this title as parent
+            if (await _context.JobTitles.AnyAsync(sub => sub.parent_id == id))
+            {
+                throw new InvalidOperationException($"Không thể xóa chức danh '{j.name}' vì đang là cấp trên của chức danh khác.");
             }
 
             _context.JobTitles.Remove(j);

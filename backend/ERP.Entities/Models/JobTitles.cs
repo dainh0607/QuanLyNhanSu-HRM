@@ -19,10 +19,40 @@ namespace ERP.Entities.Models
         [StringLength(50)]
         public string code { get; set; } = null!;
 
+        [Column("parent_id")]
+        public int? parent_id { get; set; }
+
+        [ForeignKey("parent_id")]
+        public virtual JobTitles? ParentJobTitle { get; set; }
+
+        [Column("branch_id")]
+        public int? branch_id { get; set; }
+
+        [ForeignKey("branch_id")]
+        public virtual Branches? Branch { get; set; }
+
+        [Column("department_id")]
+        public int? department_id { get; set; }
+
+        [ForeignKey("department_id")]
+        public virtual Departments? Department { get; set; }
+
+        [Column("qualification")]
+        [StringLength(100)]
+        public string? qualification { get; set; }
+
+        [Column("experience")]
+        [StringLength(200)]
+        public string? experience { get; set; }
+
+        [Column("display_order")]
+        public int display_order { get; set; } = 0;
+
         [Column("note")]
         [StringLength(500)]
         public string? note { get; set; }
 
+        public virtual ICollection<JobTitles> SubJobTitles { get; set; } = new HashSet<JobTitles>();
         public virtual ICollection<Employees> Employees { get; set; } = new HashSet<Employees>();
     }
 }
