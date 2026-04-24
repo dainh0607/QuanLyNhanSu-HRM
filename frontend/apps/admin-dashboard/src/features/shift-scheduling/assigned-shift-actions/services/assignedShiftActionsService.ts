@@ -287,7 +287,7 @@ export const resolveLeaveTypeId = async (
   const response = await requestJson<LeaveDependentDataApiResponse>(
     `${API_URL}/leave-requests/dependent-data?branchId=${branchId}&excludeEmployeeId=${context.employee.id}`,
     { method: "GET" },
-    "KhĂ´ng thá»ƒ táº£i dá»¯ liá»‡u loáº¡i nghá»‰ phĂ©p",
+    "Không thể tải dữ liệu loại nghỉ phép",
   );
 
   const leaveTypes = response.leaveTypes ?? response.LeaveTypes ?? [];
@@ -483,29 +483,36 @@ export const assignedShiftActionsService = {
     values: LeaveRequestFormValues,
   ): Promise<void> {
     const resolvedRange = getLeaveTimeRange(values);
-    const approvalStatus = isLeaveRequestAutoApproved() ? "approved" : "pending";
+    
+    // Resolve leave_type_id from the code
+    const reasonLabel = values.leaveReasonCode ? LEAVE_REASON_LABEL_MAP[values.leaveReasonCode] : "";
+    const leaveTypeId = await resolveLeaveTypeId(context, reasonLabel);
+    
+    if (!leaveTypeId) {
+      throw new Error(`Không thể tìm thấy loại nghỉ phép tương ứng với "${reasonLabel}". Vui lòng liên hệ quản trị viên.`);
+    }
+
+    const payload = {
+      employee_id: context.employee.id,
+      leave_date: values.startDate,
+      shift_id: context.shift.shiftId,
+      leave_type_id: leaveTypeId,
+      leave_type_duration: LEAVE_DURATION_VALUE_MAP[values.durationType],
+      start_time: resolvedRange?.startTime ?? values.startTime,
+      end_time: resolvedRange?.endTime ?? values.endTime,
+      handover_employee_id: values.handoverEmployeeId ? Number(values.handoverEmployeeId) : null,
+      handover_phone: values.phoneNumber || null,
+      handover_note: values.discussionContent || null,
+      reason: values.reason,
+    };
+
+    console.log("Submitting Leave Request Matrix:", payload);
 
     await requestJson(
-      `${API_URL}/leave-requests`,
+      `${API_URL}/leave-requests/matrix`,
       {
         method: "POST",
-        body: JSON.stringify({
-          employee_id: context.employee.id,
-          shift_assignment_id: context.shift.sourceId ?? null,
-          shift_id: context.shift.shiftId ?? null,
-          leave_date: values.startDate,
-          duration_type: values.durationType,
-          leave_reason_code: values.leaveReasonCode,
-          leave_reason: values.reason,
-          handover_employee_id: values.handoverEmployeeId
-            ? Number(values.handoverEmployeeId)
-            : null,
-          contact_phone: values.phoneNumber || null,
-          discussion_content: values.discussionContent || null,
-          start_time: resolvedRange?.startTime ?? values.startTime,
-          end_time: resolvedRange?.endTime ?? values.endTime,
-          approval_status: approvalStatus,
-        }),
+        body: JSON.stringify(payload),
       },
       "Không thể tạo yêu cầu nghỉ phép",
     );

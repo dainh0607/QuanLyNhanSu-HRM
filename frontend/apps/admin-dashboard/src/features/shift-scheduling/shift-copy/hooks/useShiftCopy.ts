@@ -38,6 +38,7 @@ interface UseShiftCopyResult {
   isPreviewLoading: boolean;
   isSubmitting: boolean;
   isQuickDepartmentSelectOpen: boolean;
+  isMultiWeekPickerOpen: boolean;
   canGoBack: boolean;
   canContinue: boolean;
   continueLabel: string;
@@ -53,6 +54,9 @@ interface UseShiftCopyResult {
   openQuickDepartmentSelect: () => void;
   closeQuickDepartmentSelect: () => void;
   applyQuickDepartmentSelect: (values: string[]) => void;
+  openMultiWeekPicker: () => void;
+  closeMultiWeekPicker: () => void;
+  selectWeeks: (weekStartDates: string[], action: "select" | "deselect") => void;
   goBack: () => void;
   goNext: () => Promise<void>;
 }
@@ -118,7 +122,7 @@ const buildWeekOptions = (sourceWeekStartDate: string): ShiftCopyWeekOption[] =>
       label: getWeekLabel(weekStartDate),
       annotation: getWeekAnnotation(weekStartDate, currentWeekStartDate),
     };
-  });
+  }).filter((option) => option.weekStartDate.length > 0);
 };
 
 export const useShiftCopy = ({
@@ -153,6 +157,7 @@ export const useShiftCopy = ({
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isQuickDepartmentSelectOpen, setIsQuickDepartmentSelectOpen] = useState(false);
+  const [isMultiWeekPickerOpen, setIsMultiWeekPickerOpen] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
@@ -169,6 +174,7 @@ export const useShiftCopy = ({
     setDestinationWeekStartDates(nextState.destinationWeekStartDates);
     setPreview(null);
     setIsQuickDepartmentSelectOpen(false);
+    setIsMultiWeekPickerOpen(false);
   }, [branchOptions, initialBranchId, initialWeekStartDate, isOpen]);
 
   useEffect(() => {
@@ -371,6 +377,7 @@ export const useShiftCopy = ({
     isPreviewLoading,
     isSubmitting,
     isQuickDepartmentSelectOpen,
+    isMultiWeekPickerOpen,
     canGoBack: step > 1,
     canContinue,
     continueLabel,
@@ -394,6 +401,19 @@ export const useShiftCopy = ({
     applyQuickDepartmentSelect: (values) => {
       setDepartmentIds(values);
       setIsQuickDepartmentSelectOpen(false);
+    },
+    openMultiWeekPicker: () => setIsMultiWeekPickerOpen(true),
+    closeMultiWeekPicker: () => setIsMultiWeekPickerOpen(false),
+    selectWeeks: (weekStartDates, action) => {
+      setDestinationWeekStartDates((current) => {
+        if (action === "select") {
+          const next = new Set([...current, ...weekStartDates]);
+          return Array.from(next);
+        }
+        const next = new Set(current);
+        weekStartDates.forEach((date) => next.delete(date));
+        return Array.from(next);
+      });
     },
     goBack: () => {
       if (step > 1) {

@@ -14,6 +14,8 @@ export type ShiftTemplateFormErrors = Partial<
     | keyof ShiftTemplateFormValues
     | "startTime"
     | "endTime"
+    | "startTime2"
+    | "endTime2"
     | "branchIds"
     | "breakWindow"
     | "checkInWindow"
@@ -121,16 +123,32 @@ export const validateShiftTemplateForm = (
     errors.workUnits = "Số công phải là số không âm.";
   }
 
-  if (!values.startHour || !values.startMinute) {
-    errors.startTime = "Vui lòng chọn đầy đủ giờ bắt đầu.";
-  }
+  if (!values.isRestDay) {
+    if (!values.startHour || !values.startMinute) {
+      errors.startTime = "Vui lòng chọn đầy đủ giờ bắt đầu.";
+    }
 
-  if (!values.endHour || !values.endMinute) {
-    errors.endTime = "Vui lòng chọn đầy đủ giờ kết thúc.";
-  }
+    if (!values.endHour || !values.endMinute) {
+      errors.endTime = "Vui lòng chọn đầy đủ giờ kết thúc.";
+    }
 
-  if (startTime && endTime && startTime === endTime) {
-    errors.endTime = "Giờ kết thúc phải khác giờ bắt đầu.";
+    if (startTime && endTime && startTime === endTime) {
+      errors.endTime = "Giờ kết thúc phải khác giờ bắt đầu.";
+    }
+
+    if (values.isSplitShift) {
+      if (!values.startHour2 || !values.startMinute2) {
+        errors.startTime2 = "Vui lòng chọn đầy đủ giờ bắt đầu ca 2.";
+      }
+      if (!values.endHour2 || !values.endMinute2) {
+        errors.endTime2 = "Vui lòng chọn đầy đủ giờ kết thúc ca 2.";
+      }
+      const startTime2 = combineTime(values.startHour2, values.startMinute2);
+      const endTime2 = combineTime(values.endHour2, values.endMinute2);
+      if (startTime2 && endTime2 && startTime2 === endTime2) {
+        errors.endTime2 = "Giờ kết thúc ca 2 phải khác giờ bắt đầu.";
+      }
+    }
   }
 
   if (!values.branchIds.length) {

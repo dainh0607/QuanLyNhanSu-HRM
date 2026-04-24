@@ -3,6 +3,7 @@ import type { WeeklyScheduleEmployee } from "../types";
 import ActionModalShell from "./ActionModalShell";
 import LeaveRequestField from "./leave-request/LeaveRequestField";
 import LeaveRequestTimeSummary from "./leave-request/LeaveRequestTimeSummary";
+import SearchableSelect from "./leave-request/SearchableSelect";
 import {
   LEAVE_DURATION_OPTIONS,
   LEAVE_REASON_OPTIONS,
@@ -250,37 +251,39 @@ export const ShiftLeaveRequestModal = ({
           </LeaveRequestField>
 
           {isHourlyLeave(formValues.durationType) ? (
-            <>
-              <LeaveRequestField
-                label="Từ giờ"
-                required
-                error={errors.startTime}
-                hint={`Khung ca: ${context?.shift.startTime ?? "--"} - ${context?.shift.endTime ?? "--"}`}
-              >
-                <input
-                  type="time"
-                  value={formValues.startTime}
-                  onChange={(event) => setFieldValue("startTime", event.target.value)}
-                  disabled={isSubmitting}
-                  className={inputClassName(Boolean(errors.startTime))}
-                />
-              </LeaveRequestField>
+            <div className="md:col-span-2 rounded-2xl border border-[#134BBA]/10 bg-[#134BBA]/5 p-4">
+              <div className="grid grid-cols-2 gap-4">
+                <LeaveRequestField
+                  label="Từ giờ"
+                  required
+                  error={errors.startTime}
+                  hint={`Khung ca: ${context?.shift.startTime ?? "--"} - ${context?.shift.endTime ?? "--"}`}
+                >
+                  <input
+                    type="time"
+                    value={formValues.startTime}
+                    onChange={(event) => setFieldValue("startTime", event.target.value)}
+                    disabled={isSubmitting}
+                    className={inputClassName(Boolean(errors.startTime))}
+                  />
+                </LeaveRequestField>
 
-              <LeaveRequestField
-                label="Đến giờ"
-                required
-                error={errors.endTime}
-                hint="Thời gian nghỉ phải nằm gọn trong ca làm đang chọn."
-              >
-                <input
-                  type="time"
-                  value={formValues.endTime}
-                  onChange={(event) => setFieldValue("endTime", event.target.value)}
-                  disabled={isSubmitting}
-                  className={inputClassName(Boolean(errors.endTime))}
-                />
-              </LeaveRequestField>
-            </>
+                <LeaveRequestField
+                  label="Đến giờ"
+                  required
+                  error={errors.endTime}
+                  hint="Thời gian nghỉ nằm gọn trong ca."
+                >
+                  <input
+                    type="time"
+                    value={formValues.endTime}
+                    onChange={(event) => setFieldValue("endTime", event.target.value)}
+                    disabled={isSubmitting}
+                    className={inputClassName(Boolean(errors.endTime))}
+                  />
+                </LeaveRequestField>
+              </div>
+            </div>
           ) : (
             <div className="md:col-span-2">
               <LeaveRequestTimeSummary range={resolvedRange} shiftLabel={getShiftDisplayLabel(context)} />
@@ -291,20 +294,18 @@ export const ShiftLeaveRequestModal = ({
             label="Người nhận bàn giao"
             hint="Chỉ hiển thị nhân sự cùng chi nhánh và không bao gồm chính nhân viên này."
           >
-            <select
-              value={formValues.handoverEmployeeId}
-              onChange={(event) => setFieldValue("handoverEmployeeId", event.target.value)}
+            <SearchableSelect
+              placeholder="Chọn người nhận bàn giao"
+              options={eligibleEmployees.map((emp) => ({
+                value: String(emp.id),
+                label: emp.fullName,
+                subLabel: emp.jobTitleName || undefined,
+              }))}
+              value={formValues.handoverEmployeeId || ""}
+              onChange={(value) => setFieldValue("handoverEmployeeId", value)}
               disabled={isSubmitting}
-              className={inputClassName()}
-            >
-              <option value="">Không chọn</option>
-              {eligibleEmployees.map((employee) => (
-                <option key={employee.id} value={String(employee.id)}>
-                  {employee.fullName}
-                  {employee.jobTitleName ? ` - ${employee.jobTitleName}` : ""}
-                </option>
-              ))}
-            </select>
+              error={Boolean(errors.handoverEmployeeId)}
+            />
           </LeaveRequestField>
 
           <LeaveRequestField label="Số điện thoại">

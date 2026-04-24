@@ -28,7 +28,7 @@ const AssetForm = forwardRef<AssetFormRef, AssetFormProps>(({ data, employeeName
   };
 
   return (
-    <div className="flex flex-col gap-6 pb-6">
+    <div className="flex flex-col gap-[14px] pb-6">
       {/* Assets Table Section */}
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white/80 backdrop-blur-sm shadow-sm">
         <div className="overflow-x-auto">

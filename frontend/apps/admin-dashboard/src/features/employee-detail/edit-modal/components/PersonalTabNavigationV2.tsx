@@ -77,22 +77,25 @@ const PersonalTabNavigationV2: React.FC<PersonalTabNavigationProps> = ({
     });
   };
 
-  const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
+  useEffect(() => {
     const container = scrollContainerRef.current;
-    if (!container || !hasOverflow) {
-      return;
-    }
+    if (!container || !hasOverflow) return;
 
-    if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) {
-      return;
-    }
+    const handleWheel = (event: WheelEvent) => {
+      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) {
+        return;
+      }
 
-    event.preventDefault();
-    container.scrollBy({
-      left: event.deltaY,
-      behavior: 'auto',
-    });
-  };
+      event.preventDefault();
+      container.scrollBy({
+        left: event.deltaY,
+        behavior: 'auto',
+      });
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, [hasOverflow]);
 
   return (
     <div className="mt-5 min-w-0 ">
@@ -131,7 +134,6 @@ const PersonalTabNavigationV2: React.FC<PersonalTabNavigationProps> = ({
 
           <div
             ref={scrollContainerRef}
-            onWheel={handleWheel}
             className={`overflow-x-auto overflow-y-hidden scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
               hasOverflow ? 'px-12' : 'px-1'
             }`}
@@ -148,7 +150,7 @@ const PersonalTabNavigationV2: React.FC<PersonalTabNavigationProps> = ({
                     type="button"
                     onClick={() => onChange(tab.key)}
                     aria-current={isActive ? 'page' : undefined}
-                    className={`relative shrink-0 rounded-2xl px-4 py-3 text-sm font-semibold transition-all ${
+                    className={`relative shrink-0 rounded-2xl px-4 py-3 text-[13px] font-semibold transition-all ${
                       isActive
                         ? 'bg-white text-slate-900 shadow-[0_10px_24px_rgba(15,23,42,0.10)] ring-1 ring-emerald-100'
                         : 'text-slate-500 hover:bg-white/80 hover:text-slate-800'

@@ -95,7 +95,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
   const showBulkDelete = selectedIndices.size >= 2;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-[22px]">
       {/* AC 1.1: Tiêu đề tab */}
       <FormHeading title="Danh sách hợp đồng" />
 

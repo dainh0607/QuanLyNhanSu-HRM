@@ -960,8 +960,8 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
       nextErrors.phone = 'Số điện thoại phải gồm từ 9 đến 15 chữ số.';
     }
 
-    if (homePhone && !isPhoneValid(homePhone)) {
-      nextErrors.homePhone = 'Số nhà riêng phải gồm từ 9 đến 15 chữ số.';
+    if (homePhone && (!isNumericString(homePhone) || homePhone.length > 10)) {
+      nextErrors.homePhone = 'Số nhà riêng phải là chữ số và tối đa 10 số.';
     }
 
     if (skype && !isSkypeValid(skype)) {
@@ -998,8 +998,8 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
 
     if (!homePhone) {
       nextErrors.homePhone = 'Số cố định khẩn cấp là bắt buộc.';
-    } else if (!isPhoneValid(homePhone)) {
-      nextErrors.homePhone = 'Số cố định khẩn cấp phải gồm từ 9 đến 15 chữ số.';
+    } else if (!isNumericString(homePhone) || homePhone.length > 10) {
+      nextErrors.homePhone = 'Số cố định khẩn cấp phải là chữ số và tối đa 10 số.';
     }
 
     if (!data.address.trim()) {
@@ -1368,7 +1368,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
       <div className="flex h-full items-center justify-center p-4 lg:p-8">
         <div className="relative flex h-[min(900px,calc(100vh-32px))] w-full max-w-[1820px] flex-col overflow-hidden rounded-[34px] bg-white shadow-[0_32px_120px_rgba(15,23,42,0.32)]">
           <header className="flex items-center justify-between border-b border-slate-200 px-7 py-2">
-            <h2 className="text-[22px] font-bold tracking-tight text-[#1c3563]">Nhân sự</h2>
+            <h2 className="text-[21px] font-bold tracking-tight text-[#1c3563]">Nhân sự</h2>
             <button
               type="button"
               onClick={handleRequestClose}
@@ -1385,10 +1385,10 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
               <div className="min-w-0 border-b border-slate-200 px-[1.1rem] pt-4 pb-[0.6rem] lg:px-[1.1rem]">
                   <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                     <div>
-                      <h3 className="mt-1 text-[26px] font-bold tracking-tight text-[#253a69]">
+                      <h3 className="mt-1 text-[25px] font-bold tracking-tight text-[#253a69]">
                         {activeSectionConfig.label}
                       </h3>
-                      <p className="text-sm font-semibold text-slate-500">{employee.fullName}</p>
+                      <p className="text-[13px] font-semibold text-slate-500">{employee.fullName}</p>
                     </div>
 
                     <div className="flex items-center gap-3">
@@ -1397,7 +1397,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
                           type="button"
                           onClick={handleSave}
                           disabled={!isSaveEnabled}
-                          className={`inline-flex min-h-11 items-center justify-center rounded-2xl px-6 text-sm font-bold transition-all ${
+                          className={`inline-flex min-h-11 items-center justify-center rounded-2xl px-6 text-[13px] font-bold transition-all ${
                             isSaveEnabled
                               ? 'bg-emerald-500 text-white shadow-[0_16px_30px_rgba(16,185,129,0.25)] hover:bg-emerald-600'
                               : 'cursor-not-allowed bg-slate-200 text-slate-500'
@@ -1417,7 +1417,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
                         <button
                           type="button"
                           onClick={handleResetPermission}
-                          className="h-11 px-6 rounded-2xl font-bold text-[14px] text-slate-600 border border-slate-200 hover:bg-slate-50 transition-all active:scale-95"
+                          className="h-11 px-6 rounded-2xl font-bold text-[13px] text-slate-600 border border-slate-200 hover:bg-slate-50 transition-all active:scale-95"
                         >
                           Đặt lại mặc định
                         </button>
@@ -1428,7 +1428,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
                           <button 
                             type="button"
                             onClick={() => setIsAddFileModalOpen(true)}
-                            className="h-11 px-6 rounded-2xl bg-emerald-500 text-white font-bold text-sm flex items-center gap-2 hover:bg-emerald-600 active:scale-95 transition-all shadow-lg shadow-emerald-500/20"
+                            className="h-11 px-6 rounded-2xl bg-emerald-500 text-white font-bold text-[13px] flex items-center gap-2 hover:bg-emerald-600 active:scale-95 transition-all shadow-lg shadow-emerald-500/20"
                           >
                             <span className="material-symbols-outlined text-[20px]">upload</span>
                             Tải lên
@@ -1436,7 +1436,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
                           <button 
                             type="button"
                             onClick={() => setIsAddFolderModalOpen(true)}
-                            className="h-11 px-6 rounded-2xl bg-[#52d891] text-white font-bold text-sm flex items-center gap-2 hover:bg-[#40c47f] active:scale-95 transition-all shadow-lg shadow-emerald-500/20"
+                            className="h-11 px-6 rounded-2xl bg-[#52d891] text-white font-bold text-[13px] flex items-center gap-2 hover:bg-[#40c47f] active:scale-95 transition-all shadow-lg shadow-emerald-500/20"
                           >
                             Tạo mới
                           </button>
@@ -1447,7 +1447,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
                         <button
                           type="button"
                           onClick={() => assetRef.current?.openIssueModal()}
-                          className="h-11 px-6 rounded-2xl bg-emerald-500 text-white font-bold text-sm flex items-center gap-2 hover:bg-emerald-600 active:scale-95 transition-all shadow-lg shadow-emerald-500/20"
+                          className="h-11 px-6 rounded-2xl bg-emerald-500 text-white font-bold text-[13px] flex items-center gap-2 hover:bg-emerald-600 active:scale-95 transition-all shadow-lg shadow-emerald-500/20"
                         >
                           <span className="material-symbols-outlined text-[20px]">add_circle</span>
                           Cấp tài sản
@@ -1458,7 +1458,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
                         <button
                           type="button"
                           onClick={() => signatureRef.current?.openCreateModal()}
-                          className="h-11 px-6 rounded-2xl bg-emerald-500 text-white font-bold text-sm flex items-center gap-2 hover:bg-emerald-600 active:scale-95 transition-all shadow-lg shadow-emerald-500/20"
+                          className="h-11 px-6 rounded-2xl bg-emerald-500 text-white font-bold text-[13px] flex items-center gap-2 hover:bg-emerald-600 active:scale-95 transition-all shadow-lg shadow-emerald-500/20"
                         >
                           <span className="material-symbols-outlined text-[20px]">add</span>
                           Tạo mới
@@ -1490,7 +1490,7 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
 
               <div className="min-h-0 min-w-0 flex-1 overflow-y-auto px-6 py-8 lg:px-9">
                 {currentLoadError ? (
-                  <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800">
                     {currentLoadError}
                   </div>
                 ) : null}

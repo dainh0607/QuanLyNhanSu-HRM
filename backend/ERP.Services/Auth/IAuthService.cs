@@ -21,6 +21,7 @@ namespace ERP.Services.Auth
         /// Chức năng đổi mật khẩu cho người dùng hiện tại (bên trong Thông tin cá nhân)
         /// </summary>
         Task<AuthResponseDto> ChangePasswordAsync(int userId, ChangePasswordDto dto);
+        Task<AuthResponseDto> AdminResetPasswordAsync(int targetEmployeeId, AdminResetPasswordDto dto, int requesterId);
 
         /// <summary>
         /// Tạo link mời tham gia cho ứng viên/nhân viên mới

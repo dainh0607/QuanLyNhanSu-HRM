@@ -11,6 +11,7 @@ interface SearchableMultiSelectProps {
   onChange: (values: string[]) => void;
   error?: string;
   disabled?: boolean;
+  openUpwards?: boolean;
 }
 
 export const SearchableMultiSelect = ({
@@ -23,6 +24,7 @@ export const SearchableMultiSelect = ({
   onChange,
   error,
   disabled = false,
+  openUpwards = false,
 }: SearchableMultiSelectProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -113,7 +115,11 @@ export const SearchableMultiSelect = ({
         </button>
 
         {isOpen ? (
-          <div className="absolute z-[600] mt-2 w-full rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_16px_40px_rgba(15,23,42,0.14)]">
+          <div
+            className={`absolute z-[600] w-full rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_16px_40px_rgba(15,23,42,0.14)] ${
+              openUpwards ? "bottom-full mb-2" : "mt-2"
+            }`}
+          >
             <label className="relative block">
               <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400">
                 search

@@ -18,7 +18,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ data, errors, onFieldChange }
       title="Liên hệ"
       description="Quản lý thông tin liên hệ cá nhân và các kênh kết nối mạng xã hội."
     />
-    <div className="space-y-5">
+    <div className="space-y-[1px]">
       <FormRow label="Email" required error={errors.email}>
         <input
           type="email"
@@ -44,6 +44,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ data, errors, onFieldChange }
         <input
           type="text"
           inputMode="numeric"
+          maxLength={10}
           value={data.homePhone}
           onChange={(event) => onFieldChange('homePhone', event.target.value.replace(/\D/g, ''))}
           className={getFieldClassName(Boolean(errors.homePhone))}

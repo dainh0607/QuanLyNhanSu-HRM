@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ActionModalShell from "../../assigned-shift-actions/ActionModalShell";
 import type { SelectOption } from "../../types";
 import type { ShiftCopyDepartmentOption } from "../types";
@@ -118,9 +118,9 @@ export const ShiftCopyDepartmentQuickSelectModal = ({
     >
       <div className="grid gap-4 p-5 md:grid-cols-2">
         {groupedDepartments.length ? (
-          groupedDepartments.map((group) => (
+          groupedDepartments.map((group, groupIndex) => (
             <section
-              key={group.branch.value}
+              key={group.branch.value || groupIndex}
               className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4"
             >
               <div className="mb-3 flex items-center justify-between gap-3">
@@ -132,9 +132,9 @@ export const ShiftCopyDepartmentQuickSelectModal = ({
 
               <div className="space-y-2">
                 {group.departments.length ? (
-                  group.departments.map((department) => (
+                  group.departments.map((department, deptIndex) => (
                     <label
-                      key={`${group.branch.value}-${department.value}`}
+                      key={`${group.branch.value}-${department.value}-${deptIndex}`}
                       className="flex cursor-pointer items-center gap-3 rounded-xl border border-white bg-white px-3 py-2.5 text-sm text-slate-700 shadow-sm"
                     >
                       <input

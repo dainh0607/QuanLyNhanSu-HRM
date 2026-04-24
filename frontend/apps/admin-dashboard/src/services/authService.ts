@@ -138,6 +138,7 @@ const ADMIN_ACCESS_ROLES = new Set([
   "Staff",
   "Quản trị",
   "Workspace Owner",
+  "Tenant Admin",
 ]);
 
 export const hasAdministrativeAccess = (
@@ -591,6 +592,37 @@ export const authService = {
       return {
         success: false,
         message: data?.message || "Không thể đổi mật khẩu.",
+      };
+    } catch {
+      return {
+        success: false,
+        message: "Không thể kết nối tới máy chủ. Vui lòng thử lại sau.",
+      };
+    }
+  },
+
+  resetEmployeePassword: async (
+    employeeId: number,
+    payload: { newPassword: string; confirmPassword: string },
+  ): Promise<AuthResponse> => {
+    try {
+      const response = await authFetch(`${API_URL}/auth/reset-employee-password/${employeeId}`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      const data = await readJsonSafely<AuthResponse>(response);
+
+      if (response.ok && data?.success) {
+        return {
+          success: true,
+          message: data.message || "Đặt lại mật khẩu thành công.",
+        };
+      }
+
+      return {
+        success: false,
+        message: data?.message || "Không thể đặt lại mật khẩu.",
       };
     } catch {
       return {

@@ -1,6 +1,7 @@
 import ActionModalShell from "../assigned-shift-actions/ActionModalShell";
 import { getWeekLabel } from "../utils/week";
 import ShiftCopyDepartmentQuickSelectModal from "./components/ShiftCopyDepartmentQuickSelectModal";
+import ShiftCopyMultiWeekPickerModal from "./components/ShiftCopyMultiWeekPickerModal";
 import ShiftCopyReviewStep from "./components/ShiftCopyReviewStep";
 import ShiftCopyStepper from "./components/ShiftCopyStepper";
 import ShiftCopyTargetStep from "./components/ShiftCopyTargetStep";
@@ -101,9 +102,7 @@ export const ShiftCopyModal = ({
               weekOptions={controller.weekOptions}
               onSourceWeekChange={controller.setSourceWeekStartDate}
               onDestinationModeChange={controller.setDestinationMode}
-              onToggleDestinationWeek={controller.toggleDestinationWeek}
-              onSelectAllDestinationWeeks={controller.selectAllDestinationWeeks}
-              onClearDestinationWeeks={controller.clearDestinationWeeks}
+              onOpenMultiWeekPicker={controller.openMultiWeekPicker}
             />
           ) : null}
 
@@ -121,6 +120,17 @@ export const ShiftCopyModal = ({
         selectedDepartmentIds={controller.departmentIds}
         onClose={controller.closeQuickDepartmentSelect}
         onApply={controller.applyQuickDepartmentSelect}
+      />
+
+      <ShiftCopyMultiWeekPickerModal
+        isOpen={controller.isMultiWeekPickerOpen}
+        weekOptions={controller.weekOptions}
+        selectedWeekStartDates={controller.destinationWeekStartDates}
+        onClose={controller.closeMultiWeekPicker}
+        onToggleWeek={controller.toggleDestinationWeek}
+        onSelectWeeks={controller.selectWeeks}
+        onSelectAll={controller.selectAllDestinationWeeks}
+        onClear={controller.clearDestinationWeeks}
       />
     </>
   );

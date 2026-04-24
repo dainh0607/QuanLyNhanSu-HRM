@@ -5,10 +5,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ERP.Entities.Models
 {
     [Table("Districts")]
-    public class Districts : AuditableEntity, ERP.Entities.Interfaces.ITenantEntity
+    public class Districts : AuditableEntity
     {
-        [Column("tenant_id")]
-        public int? tenant_id { get; set; }
 
         [Required]
         [StringLength(20)]
@@ -27,5 +25,8 @@ namespace ERP.Entities.Models
         // FIX: Foreign key relationship to Provinces.code (not Provinces.Id)
         [ForeignKey(nameof(province_code))]
         public virtual Provinces Province { get; set; } = null!;
+
+        // Wards collection
+        public virtual ICollection<Wards> Wards { get; set; } = new HashSet<Wards>();
     }
 }

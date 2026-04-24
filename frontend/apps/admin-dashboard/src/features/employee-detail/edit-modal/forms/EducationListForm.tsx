@@ -121,7 +121,7 @@ const EducationListForm: React.FC<EducationListFormProps> = ({ data, errors, onC
         description="Quản lý nhiều bằng cấp hoặc quá trình đào tạo của nhân viên dưới dạng danh sách động."
       />
 
-      <div className="space-y-5">
+      <div className="space-y-[1px]">
         {educationItems.map((item, index) => (
           <section
             key={`education-${item.id ?? 'new'}-${index}`}
@@ -149,7 +149,7 @@ const EducationListForm: React.FC<EducationListFormProps> = ({ data, errors, onC
               )}
             </div>
 
-            <div className="space-y-5">
+            <div className="space-y-[1px]">
               <FormRow label="Trình độ">
                 <div className="relative">
                   <select

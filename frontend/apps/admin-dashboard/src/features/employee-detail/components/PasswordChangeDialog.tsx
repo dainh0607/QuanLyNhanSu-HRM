@@ -16,6 +16,7 @@ interface PasswordChangeDialogProps {
   onClose: () => void;
   onFieldChange: (field: keyof PasswordFormState, value: string) => void;
   onConfirm: () => void;
+  showOldPassword?: boolean;
 }
 
 const PasswordChangeDialog: React.FC<PasswordChangeDialogProps> = ({
@@ -28,6 +29,7 @@ const PasswordChangeDialog: React.FC<PasswordChangeDialogProps> = ({
   onClose,
   onFieldChange,
   onConfirm,
+  showOldPassword = true,
 }) => {
   if (!isOpen) {
     return null;
@@ -50,7 +52,9 @@ const PasswordChangeDialog: React.FC<PasswordChangeDialogProps> = ({
         <form id="password-change-form" className="contents" onSubmit={handleSubmit} autoComplete="on">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h3 className="mt-2 text-xl font-bold text-slate-900">Đổi mật khẩu</h3>
+            <h3 className="mt-2 text-xl font-bold text-slate-900">
+              {showOldPassword ? 'Đổi mật khẩu' : 'Đặt lại mật khẩu'}
+            </h3>
           </div>
 
           <button
@@ -63,16 +67,18 @@ const PasswordChangeDialog: React.FC<PasswordChangeDialogProps> = ({
         </div>
 
         <div className="mt-6 space-y-4">
-          <div>
-            <label className="text-sm font-semibold text-slate-700">Mật khẩu cũ</label>
-            <input
-              type="password"
-              value={passwordForm.oldPassword}
-              onChange={(event) => onFieldChange('oldPassword', event.target.value)}
-              placeholder="Nhập mật khẩu hiện tại"
-              className="mt-2 h-12 w-full rounded-xl border border-slate-200 px-4 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
-            />
-          </div>
+          {showOldPassword && (
+            <div>
+              <label className="text-sm font-semibold text-slate-700">Mật khẩu cũ</label>
+              <input
+                type="password"
+                value={passwordForm.oldPassword}
+                onChange={(event) => onFieldChange('oldPassword', event.target.value)}
+                placeholder="Nhập mật khẩu hiện tại"
+                className="mt-2 h-12 w-full rounded-xl border border-slate-200 px-4 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+              />
+            </div>
+          )}
 
           <div>
             <label className="text-sm font-semibold text-slate-700">Mật khẩu mới</label>
@@ -84,7 +90,7 @@ const PasswordChangeDialog: React.FC<PasswordChangeDialogProps> = ({
               className="mt-2 h-12 w-full rounded-xl border border-slate-200 px-4 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
             />
             {passwordTooShort ? (
-              <p className="mt-2 text-sm font-medium text-rose-600">Mật khẩu phải dài hơn 6 ký tự.</p>
+              <p className="mt-2 text-sm font-medium text-rose-600">Mật khẩu phải dài ít nhất 8 ký tự.</p>
             ) : null}
           </div>
 
@@ -126,7 +132,7 @@ const PasswordChangeDialog: React.FC<PasswordChangeDialogProps> = ({
             type="submit"
             disabled={
               isSubmitting ||
-              !passwordForm.oldPassword ||
+              (showOldPassword && !passwordForm.oldPassword) ||
               !passwordForm.password ||
               !passwordForm.confirmPassword ||
               passwordMismatch ||

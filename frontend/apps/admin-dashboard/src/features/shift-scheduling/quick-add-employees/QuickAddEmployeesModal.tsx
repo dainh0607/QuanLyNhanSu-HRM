@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import QuickAddEmployeeRow from "./components/QuickAddEmployeeRow";
-import { createSampleEmployeeData } from "./data/sampleEmployees";
 import { quickAddEmployeesService } from "./services/quickAddEmployeesService";
 import type {
   QuickAddEmployeeCatalogData,
@@ -37,8 +36,6 @@ const createEmptyRow = (defaultAccessGroupId: string): QuickAddEmployeeDraftRow 
   fullName: "",
   phone: "",
   accessGroupId: defaultAccessGroupId,
-  isSampleName: false,
-  isSamplePhone: false,
 });
 
 const isCompletelyBlankRow = (
@@ -76,8 +73,6 @@ export const QuickAddEmployeesModal = ({
   const [validation, setValidation] = useState<ValidationState>({ rows: {} });
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [useSampleData, setUseSampleData] = useState<boolean>(false);
-  const sampleSeedRef = useRef<number>(0);
 
   const initializeRows = (defaultAccessGroupId: string) =>
     Array.from({ length: 3 }, () => createEmptyRow(defaultAccessGroupId));
@@ -92,8 +87,6 @@ export const QuickAddEmployeesModal = ({
     const loadCatalog = async () => {
       setIsLoading(true);
       setValidation({ rows: {} });
-      setUseSampleData(false);
-      sampleSeedRef.current = 0;
 
       try {
         const nextCatalog = await quickAddEmployeesService.getCatalogData(preferredBranchId);
@@ -137,52 +130,9 @@ export const QuickAddEmployeesModal = ({
     [rows],
   );
 
-  const fillSampleRow = (row: QuickAddEmployeeDraftRow): QuickAddEmployeeDraftRow => {
-    const sampleData = createSampleEmployeeData(sampleSeedRef.current);
-    sampleSeedRef.current += 1;
-
-    return {
-      ...row,
-      fullName: sampleData.fullName,
-      phone: sampleData.phone,
-      isSampleName: true,
-      isSamplePhone: true,
-    };
-  };
-
-  const handleToggleSampleData = () => {
-    setUseSampleData((current) => {
-      const nextValue = !current;
-
-      setRows((existingRows) =>
-        existingRows.map((row) => {
-          if (nextValue) {
-            return isCompletelyBlankRow(row, catalog.defaultAccessGroupId)
-              ? fillSampleRow(row)
-              : row;
-          }
-
-          return {
-            ...row,
-            fullName: row.isSampleName ? "" : row.fullName,
-            phone: row.isSamplePhone ? "" : row.phone,
-            isSampleName: false,
-            isSamplePhone: false,
-          };
-        }),
-      );
-
-      return nextValue;
-    });
-  };
 
   const handleAddRow = () => {
-    setRows((current) => [
-      ...current,
-      useSampleData
-        ? fillSampleRow(createEmptyRow(catalog.defaultAccessGroupId))
-        : createEmptyRow(catalog.defaultAccessGroupId),
-    ]);
+    setRows((current) => [...current, createEmptyRow(catalog.defaultAccessGroupId)]);
   };
 
   const handleRemoveRow = (rowId: string) => {
@@ -217,7 +167,6 @@ export const QuickAddEmployeesModal = ({
           return {
             ...row,
             fullName: normalizeNameInput(value),
-            isSampleName: false,
           };
         }
 
@@ -225,7 +174,6 @@ export const QuickAddEmployeesModal = ({
           return {
             ...row,
             phone: value,
-            isSamplePhone: false,
           };
         }
 
@@ -419,27 +367,6 @@ export const QuickAddEmployeesModal = ({
                 )}
               </div>
 
-              <label className="inline-flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-600">
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={useSampleData}
-                  onClick={handleToggleSampleData}
-                  disabled={isLoading || isSubmitting}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                    useSampleData ? "bg-emerald-500" : "bg-slate-300"
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition ${
-                      useSampleData ? "translate-x-5" : "translate-x-0.5"
-                    }`}
-                  />
-                </button>
-                <span className="font-medium text-slate-700">
-                  Sử dụng dữ liệu mẫu để điền vào danh sách nhân viên
-                </span>
-              </label>
             </div>
           </div>
 

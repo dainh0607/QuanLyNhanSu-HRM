@@ -153,7 +153,7 @@ const WorkTabNavigation: React.FC<WorkTabNavigationProps> = ({
                   }`}
                 >
                   <span className="flex items-center gap-2">
-                    <span className="text-[14px] leading-none">{tab.label}</span>
+                    <span className="text-[13px] leading-none">{tab.label}</span>
                     {isDirty ? (
                       <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                     ) : null}

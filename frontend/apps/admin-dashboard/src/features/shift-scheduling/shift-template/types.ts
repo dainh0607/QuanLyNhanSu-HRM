@@ -43,6 +43,12 @@ export interface ShiftTemplateAdvancedSettings {
   mealTypeId: string;
   mealCount: string;
   isOvertimeShift: boolean;
+  isRestDay: boolean;
+  isSplitShift: boolean;
+  startHour2: string;
+  startMinute2: string;
+  endHour2: string;
+  endMinute2: string;
 }
 
 export interface ShiftTemplateFormValues extends ShiftTemplateAdvancedSettings {
@@ -84,6 +90,10 @@ export interface ShiftTemplateSubmitPayload extends ShiftTemplateAdvancedSetting
   departmentIds: string[];
   jobTitleIds: string[];
   repeatDays: string[];
+  isRestDay: boolean;
+  isSplitShift: boolean;
+  startTime2?: string | null;
+  endTime2?: string | null;
   note?: string | null;
   assignDate?: string;
 }

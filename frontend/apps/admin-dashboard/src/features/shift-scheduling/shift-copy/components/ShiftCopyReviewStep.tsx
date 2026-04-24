@@ -1,4 +1,4 @@
-﻿import { formatTimeRange } from "../../utils/week";
+import { formatTimeRange } from "../../utils/week";
 import type { ShiftCopyPreviewResult } from "../types";
 
 interface ShiftCopyReviewStepProps {
@@ -71,9 +71,9 @@ export const ShiftCopyReviewStep = ({ preview, isLoading }: ShiftCopyReviewStepP
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            {preview.targetWeekLabels.map((label) => (
+            {preview.targetWeekLabels.map((label, index) => (
               <span
-                key={label}
+                key={`${label}-${index}`}
                 className="rounded-full bg-[#EFF6FF] px-3 py-1 text-xs font-semibold text-[#134BBA]"
               >
                 {label}
@@ -83,8 +83,8 @@ export const ShiftCopyReviewStep = ({ preview, isLoading }: ShiftCopyReviewStepP
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          {preview.summary.shiftGroups.map((group) => (
-            <div key={group.key} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+          {preview.summary.shiftGroups.map((group, index) => (
+            <div key={group.key || index} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
               <p className="text-sm font-semibold text-slate-800">{group.shiftName}</p>
               <p className="mt-1 text-sm text-slate-500">{group.timeRange}</p>
               <p className="mt-3 text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">

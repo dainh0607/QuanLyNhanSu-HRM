@@ -15,8 +15,6 @@ export interface QuickAddEmployeeDraftRow {
   fullName: string;
   phone: string;
   accessGroupId: string;
-  isSampleName: boolean;
-  isSamplePhone: boolean;
 }
 
 export interface QuickAddEmployeeRowErrors {

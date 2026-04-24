@@ -1,4 +1,4 @@
-﻿import { useMemo } from "react";
+import { useMemo } from "react";
 import SearchableMultiSelect from "../../shift-template/SearchableMultiSelect";
 import type { ShiftTemplateTargetOption } from "../../shift-template/types";
 import type { SelectOption } from "../../types";
@@ -46,10 +46,10 @@ export const ShiftCopyTargetStep = ({
   const employeeSelectOptions = useMemo(() => toSearchableOptions(employees), [employees]);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
+    <div className="space-y-6">
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div>
-          <h3 className="text-sm font-semibold text-slate-900">Đối tượng sao chép</h3>
+          <h3 className="text-base font-semibold text-slate-900">Đối tượng sao chép</h3>
           <p className="mt-1 text-sm text-slate-500">
             Chọn chi nhánh bắt buộc, sau đó có thể thu hẹp phạm vi bằng phòng ban hoặc nhân viên cụ thể.
           </p>
@@ -108,24 +108,6 @@ export const ShiftCopyTargetStep = ({
             onChange={onEmployeeChange}
             disabled={!branchIds.length}
           />
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-slate-200 bg-slate-50/80 p-5">
-        <h3 className="text-sm font-semibold text-slate-900">Ràng buộc bước 1</h3>
-        <div className="mt-4 space-y-3 text-sm text-slate-600">
-          <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-            <p className="font-semibold text-slate-800">Chi nhánh là bắt buộc</p>
-            <p className="mt-1">
-              Nút <span className="font-semibold">Tiếp tục</span> chỉ hoạt động khi đã chọn ít nhất 1 chi nhánh.
-            </p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-            <p className="font-semibold text-slate-800">Phạm vi lọc linh hoạt</p>
-            <p className="mt-1">
-              Bạn có thể chỉ chọn chi nhánh, hoặc thu hẹp tiếp bằng phòng ban và nhân viên nếu cần.
-            </p>
-          </div>
         </div>
       </section>
     </div>

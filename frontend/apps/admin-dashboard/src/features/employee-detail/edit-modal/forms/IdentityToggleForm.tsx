@@ -74,7 +74,7 @@ const IdentityToggleForm: React.FC<IdentityToggleFormProps> = ({ data, errors, o
         checked={data.hasIdentityCard}
         onToggle={() => onFieldChange('hasIdentityCard', !data.hasIdentityCard)}
       >
-        <div className="space-y-5">
+        <div className="space-y-[1px]">
           <FormRow label="Số CMND/CCCD">
             <input
               type="text"
@@ -114,7 +114,7 @@ const IdentityToggleForm: React.FC<IdentityToggleFormProps> = ({ data, errors, o
         checked={data.hasPassport}
         onToggle={() => onFieldChange('hasPassport', !data.hasPassport)}
       >
-        <div className="space-y-5">
+        <div className="space-y-[1px]">
           <FormRow label="Số hộ chiếu">
             <input
               type="text"

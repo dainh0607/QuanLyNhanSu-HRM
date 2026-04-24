@@ -135,7 +135,7 @@ const PromotionHistoryForm: React.FC<PromotionHistoryFormProps> = ({ data, error
   const showBulkDelete = selectedIndices.size >= 2;
 
   return (
-    <div className="relative space-y-6">
+    <div className="relative space-y-[14px]">
       {/* Settings Modal */}
       {isSettingsOpen && (
         <>
@@ -148,7 +148,7 @@ const PromotionHistoryForm: React.FC<PromotionHistoryFormProps> = ({ data, error
                   <span className="material-symbols-outlined">close</span>
                 </button>
               </div>
-              <div className="flex-1 overflow-y-auto p-6 space-y-2">
+              <div className="flex-1 overflow-y-auto p-6 space-y-1.5">
                 {PROMOTION_COLUMNS.map((col) => (
                   <div key={col.id} className="flex items-center justify-between rounded-xl bg-slate-50/50 p-4 transition-colors hover:bg-slate-50">
                     <span className="text-sm font-medium text-slate-700">{col.label}</span>

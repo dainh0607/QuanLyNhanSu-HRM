@@ -4,9 +4,9 @@ import {
   type EmployeeEditAddressFormPayload,
   type EmployeeEditPermanentAddressPayload,
 } from '../../../../services/employeeService';
-import { MERGED_VIETNAM_PROVINCE_OPTIONS } from '../../data/mergedVietnamProvinceOptions';
-import { FormRow } from '../components/FormPrimitives';
 import { getFieldClassName } from '../formStyles';
+import { addressService, type GeographicalLookup } from '../../../../services/addressService';
+import { FormRow } from '../components/FormPrimitives';
 
 type AddressFormKey = 'permanentAddress' | 'mergedAddress';
 
@@ -20,10 +20,12 @@ interface PermanentAddressCascadingFormProps {
 }
 
 interface AddressOptionState {
-  cities: string[];
-  districts: string[];
-  isLoadingCities: boolean;
+  provinces: GeographicalLookup[];
+  districts: GeographicalLookup[];
+  wards: GeographicalLookup[];
+  isLoadingProvinces: boolean;
   isLoadingDistricts: boolean;
+  isLoadingWards: boolean;
 }
 
 const ADDRESS_FORM_CONFIG: Record<
@@ -51,16 +53,20 @@ const ADDRESS_FORM_CONFIG: Record<
 
 const createAddressOptionState = (): Record<AddressFormKey, AddressOptionState> => ({
   permanentAddress: {
-    cities: [],
+    provinces: [],
     districts: [],
-    isLoadingCities: false,
+    wards: [],
+    isLoadingProvinces: false,
     isLoadingDistricts: false,
+    isLoadingWards: false,
   },
   mergedAddress: {
-    cities: [],
+    provinces: [],
     districts: [],
-    isLoadingCities: false,
+    wards: [],
+    isLoadingProvinces: false,
     isLoadingDistricts: false,
+    isLoadingWards: false,
   },
 });
 
@@ -97,11 +103,11 @@ const AddressSelectField: React.FC<{
   label: string;
   value: string;
   placeholder: string;
-  options: string[];
+  options: GeographicalLookup[];
   error?: string;
   disabled?: boolean;
   loading?: boolean;
-  onChange: (value: string) => void;
+  onChange: (value: string, code?: string) => void;
 }> = ({
   label,
   value,
@@ -116,14 +122,17 @@ const AddressSelectField: React.FC<{
     <div className="relative">
       <select
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => {
+          const selectedOption = options.find(opt => opt.name === event.target.value);
+          onChange(event.target.value, selectedOption?.code);
+        }}
         disabled={disabled || loading}
         className={getSelectClassName(disabled || loading)}
       >
         <option value="">{loading ? `Đang tải ${label.toLowerCase()}...` : placeholder}</option>
         {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
+          <option key={option.code} value={option.name}>
+            {option.name}
           </option>
         ))}
       </select>
@@ -151,17 +160,11 @@ const PermanentAddressCascadingForm: React.FC<PermanentAddressCascadingFormProps
   const isMergedVietnam = isMergedAddressView && isVietnamCountry(activeAddress.country);
   const getFieldError = (field: keyof EmployeeEditAddressFormPayload): string | undefined =>
     errors[`${activeAddressForm}.${field}`];
-  const resolvedCountryOptions = mergeUniqueOptions(countryOptions, [
-    data.permanentAddress.country,
-    data.mergedAddress.country,
-  ]);
-  const resolvedCityOptions = mergeUniqueOptions(
-    isMergedVietnam ? MERGED_VIETNAM_PROVINCE_OPTIONS : activeOptionState.cities,
-    [activeAddress.city],
-  );
-  const resolvedDistrictOptions = mergeUniqueOptions(activeOptionState.districts, [
-    activeAddress.district,
-  ]);
+
+  const [selectedCodes, setSelectedCodes] = useState<Record<AddressFormKey, { province?: string, district?: string }>>({
+    permanentAddress: {},
+    mergedAddress: {},
+  });
 
   const updateAddressState = (formKey: AddressFormKey, patch: Partial<AddressOptionState>) => {
     setAddressOptions((prev) => ({
@@ -186,10 +189,12 @@ const PermanentAddressCascadingForm: React.FC<PermanentAddressCascadingFormProps
 
   const handleCountryChange = (formKey: AddressFormKey, country: string) => {
     updateAddressState(formKey, {
-      cities: [],
+      provinces: [],
       districts: [],
-      isLoadingCities: false,
+      wards: [],
+      isLoadingProvinces: false,
       isLoadingDistricts: false,
+      isLoadingWards: false,
     });
 
     onFieldChange(formKey, {
@@ -197,19 +202,46 @@ const PermanentAddressCascadingForm: React.FC<PermanentAddressCascadingFormProps
       country,
       city: '',
       district: '',
+      ward: '',
     });
   };
 
-  const handleCityChange = (formKey: AddressFormKey, city: string) => {
+  const handleCityChange = (formKey: AddressFormKey, city: string, code?: string) => {
     updateAddressState(formKey, {
       districts: [],
+      wards: [],
       isLoadingDistricts: false,
+      isLoadingWards: false,
     });
+
+    setSelectedCodes(prev => ({
+      ...prev,
+      [formKey]: { ...prev[formKey], province: code, district: undefined }
+    }));
 
     onFieldChange(formKey, {
       ...data[formKey],
       city,
       district: '',
+      ward: '',
+    });
+  };
+
+  const handleDistrictChange = (formKey: AddressFormKey, district: string, code?: string) => {
+    updateAddressState(formKey, {
+      wards: [],
+      isLoadingWards: false,
+    });
+
+    setSelectedCodes(prev => ({
+      ...prev,
+      [formKey]: { ...prev[formKey], district: code }
+    }));
+
+    onFieldChange(formKey, {
+      ...data[formKey],
+      district,
+      ward: '',
     });
   };
 
@@ -251,189 +283,278 @@ const PermanentAddressCascadingForm: React.FC<PermanentAddressCascadingFormProps
     let isMounted = true;
     const country = data.permanentAddress.country.trim();
 
-    if (!country) {
-      const resetFrameId = window.requestAnimationFrame(() => {
-        updateAddressState('permanentAddress', {
-          cities: [],
-          districts: [],
-          isLoadingCities: false,
-          isLoadingDistricts: false,
-        });
+    if (!country || !isVietnamCountry(country)) {
+      updateAddressState('permanentAddress', {
+        provinces: [],
+        districts: [],
+        wards: [],
+        isLoadingProvinces: false,
+        isLoadingDistricts: false,
+        isLoadingWards: false,
       });
-      return () => {
-        window.cancelAnimationFrame(resetFrameId);
-      };
+      return;
     }
 
-    const loadingFrameId = window.requestAnimationFrame(() => {
-      updateAddressState('permanentAddress', {
-        isLoadingCities: true,
-        districts: [],
-        isLoadingDistricts: false,
-      });
-    });
-
-    const loadCities = async () => {
+    const loadProvinces = async () => {
+      updateAddressState('permanentAddress', { isLoadingProvinces: true });
       try {
-        const options = await employeeService.getAddressCityOptions(country);
+        const provinces = await addressService.getProvinces();
         if (isMounted) {
           updateAddressState('permanentAddress', {
-            cities: options,
-            isLoadingCities: false,
+            provinces,
+            isLoadingProvinces: false,
           });
+
+          // If we have a city name but no code, find it
+          const city = data.permanentAddress.city;
+          if (city && !selectedCodes.permanentAddress.province) {
+            const match = provinces.find(p => p.name === city);
+            if (match) {
+              setSelectedCodes(prev => ({
+                ...prev,
+                permanentAddress: { ...prev.permanentAddress, province: match.code }
+              }));
+            }
+          }
         }
       } catch (error) {
-        console.error('Load permanent address city options error:', error);
+        console.error('Load provinces error:', error);
         if (isMounted) {
-          updateAddressState('permanentAddress', {
-            cities: [],
-            isLoadingCities: false,
-          });
+          updateAddressState('permanentAddress', { isLoadingProvinces: false });
         }
       }
     };
 
-    void loadCities();
-
-    return () => {
-      isMounted = false;
-      window.cancelAnimationFrame(loadingFrameId);
-    };
+    loadProvinces();
+    return () => { isMounted = false; };
   }, [data.permanentAddress.country]);
 
   useEffect(() => {
     let isMounted = true;
-    const country = data.permanentAddress.country.trim();
-    const city = data.permanentAddress.city.trim();
+    const provinceCode = selectedCodes.permanentAddress.province;
 
-    if (!country || !city) {
-      const resetFrameId = window.requestAnimationFrame(() => {
-        updateAddressState('permanentAddress', {
-          districts: [],
-          isLoadingDistricts: false,
-        });
+    if (!provinceCode) {
+      updateAddressState('permanentAddress', {
+        districts: [],
+        wards: [],
+        isLoadingDistricts: false,
+        isLoadingWards: false,
       });
-      return () => {
-        window.cancelAnimationFrame(resetFrameId);
-      };
+      return;
     }
 
-    const loadingFrameId = window.requestAnimationFrame(() => {
-      updateAddressState('permanentAddress', {
-        isLoadingDistricts: true,
-      });
-    });
-
     const loadDistricts = async () => {
+      updateAddressState('permanentAddress', { isLoadingDistricts: true });
       try {
-        const options = await employeeService.getAddressDistrictOptions(country, city);
+        const districts = await addressService.getDistricts(provinceCode);
         if (isMounted) {
           updateAddressState('permanentAddress', {
-            districts: options,
+            districts,
             isLoadingDistricts: false,
           });
+
+          // If we have a district name but no code, find it
+          const districtName = data.permanentAddress.district;
+          if (districtName && !selectedCodes.permanentAddress.district) {
+            const match = districts.find(d => d.name === districtName);
+            if (match) {
+              setSelectedCodes(prev => ({
+                ...prev,
+                permanentAddress: { ...prev.permanentAddress, district: match.code }
+              }));
+            }
+          }
         }
       } catch (error) {
-        console.error('Load permanent address district options error:', error);
+        console.error('Load districts error:', error);
         if (isMounted) {
-          updateAddressState('permanentAddress', {
-            districts: [],
-            isLoadingDistricts: false,
-          });
+          updateAddressState('permanentAddress', { isLoadingDistricts: false });
         }
       }
     };
 
-    void loadDistricts();
+    loadDistricts();
+    return () => { isMounted = false; };
+  }, [selectedCodes.permanentAddress.province]);
 
-    return () => {
-      isMounted = false;
-      window.cancelAnimationFrame(loadingFrameId);
+  useEffect(() => {
+    let isMounted = true;
+    const districtCode = selectedCodes.permanentAddress.district;
+
+    if (!districtCode) {
+      updateAddressState('permanentAddress', {
+        wards: [],
+        isLoadingWards: false,
+      });
+      return;
+    }
+
+    const loadWards = async () => {
+      updateAddressState('permanentAddress', { isLoadingWards: true });
+      try {
+        const wards = await addressService.getWards(districtCode);
+        if (isMounted) {
+          updateAddressState('permanentAddress', {
+            wards,
+            isLoadingWards: false,
+          });
+        }
+      } catch (error) {
+        console.error('Load wards error:', error);
+        if (isMounted) {
+          updateAddressState('permanentAddress', { isLoadingWards: false });
+        }
+      }
     };
-  }, [data.permanentAddress.city, data.permanentAddress.country]);
+
+    loadWards();
+    return () => { isMounted = false; };
+  }, [selectedCodes.permanentAddress.district]);
 
   useEffect(() => {
     let isMounted = true;
     const country = data.mergedAddress.country.trim();
-    const isVietnam = isVietnamCountry(country);
 
-    if (!country) {
-      const resetFrameId = window.requestAnimationFrame(() => {
-        updateAddressState('mergedAddress', {
-          cities: [],
-          districts: [],
-          isLoadingCities: false,
-          isLoadingDistricts: false,
-        });
-      });
-      return () => {
-        window.cancelAnimationFrame(resetFrameId);
-      };
-    }
-
-    if (isVietnam) {
-      const setVietnamFrameId = window.requestAnimationFrame(() => {
-        updateAddressState('mergedAddress', {
-          cities: MERGED_VIETNAM_PROVINCE_OPTIONS,
-          districts: [],
-          isLoadingCities: false,
-          isLoadingDistricts: false,
-        });
-      });
-
-      return () => {
-        window.cancelAnimationFrame(setVietnamFrameId);
-      };
-    }
-
-    const loadingFrameId = window.requestAnimationFrame(() => {
+    if (!country || !isVietnamCountry(country)) {
       updateAddressState('mergedAddress', {
-        isLoadingCities: true,
+        provinces: [],
         districts: [],
+        wards: [],
+        isLoadingProvinces: false,
         isLoadingDistricts: false,
+        isLoadingWards: false,
       });
-    });
+      return;
+    }
 
-    const loadCities = async () => {
+    const loadProvinces = async () => {
+      updateAddressState('mergedAddress', { isLoadingProvinces: true });
       try {
-        const options = await employeeService.getAddressCityOptions(country);
+        const provinces = await addressService.getMergedProvinces();
         if (isMounted) {
           updateAddressState('mergedAddress', {
-            cities: options,
-            isLoadingCities: false,
+            provinces,
+            isLoadingProvinces: false,
           });
+
+          // Sync code for mergedAddress
+          const city = data.mergedAddress.city;
+          if (city && !selectedCodes.mergedAddress.province) {
+            const match = provinces.find(p => p.name === city);
+            if (match) {
+              setSelectedCodes(prev => ({
+                ...prev,
+                mergedAddress: { ...prev.mergedAddress, province: match.code }
+              }));
+            }
+          }
         }
       } catch (error) {
-        console.error('Load merged address city options error:', error);
+        console.error('Load provinces error:', error);
         if (isMounted) {
-          updateAddressState('mergedAddress', {
-            cities: [],
-            isLoadingCities: false,
-          });
+          updateAddressState('mergedAddress', { isLoadingProvinces: false });
         }
       }
     };
 
-    void loadCities();
-
-    return () => {
-      isMounted = false;
-      window.cancelAnimationFrame(loadingFrameId);
-    };
+    loadProvinces();
+    return () => { isMounted = false; };
   }, [data.mergedAddress.country]);
 
   useEffect(() => {
-    const resetDistrictFrameId = window.requestAnimationFrame(() => {
+    let isMounted = true;
+    const provinceCode = selectedCodes.mergedAddress.province;
+
+    if (!provinceCode) {
       updateAddressState('mergedAddress', {
         districts: [],
+        wards: [],
         isLoadingDistricts: false,
+        isLoadingWards: false,
       });
-    });
+      return;
+    }
 
-    return () => {
-      window.cancelAnimationFrame(resetDistrictFrameId);
+    const loadDistricts = async () => {
+      // Skip districts for merged address as we flattened the hierarchy
+      if (isMergedAddressView) {
+        updateAddressState('mergedAddress', { 
+          districts: [], 
+          isLoadingDistricts: false 
+        });
+        return;
+      }
+
+      updateAddressState('mergedAddress', { isLoadingDistricts: true });
+      try {
+        const districts = await addressService.getDistricts(provinceCode);
+        if (isMounted) {
+          updateAddressState('mergedAddress', {
+            districts,
+            isLoadingDistricts: false,
+          });
+
+          // Sync code for mergedAddress
+          const districtName = data.mergedAddress.district;
+          if (districtName && !selectedCodes.mergedAddress.district) {
+            const match = districts.find(d => d.name === districtName);
+            if (match) {
+              setSelectedCodes(prev => ({
+                ...prev,
+                mergedAddress: { ...prev.mergedAddress, district: match.code }
+              }));
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Load districts error:', error);
+        if (isMounted) {
+          updateAddressState('mergedAddress', { isLoadingDistricts: false });
+        }
+      }
     };
-  }, [data.mergedAddress.city, data.mergedAddress.country]);
+
+    loadDistricts();
+    return () => { isMounted = false; };
+  }, [selectedCodes.mergedAddress.province]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const parentCode = isMergedAddressView 
+      ? selectedCodes.mergedAddress.province 
+      : selectedCodes.mergedAddress.district;
+
+    if (!parentCode) {
+      updateAddressState('mergedAddress', {
+        wards: [],
+        isLoadingWards: false,
+      });
+      return;
+    }
+
+    const loadWards = async () => {
+      updateAddressState('mergedAddress', { isLoadingWards: true });
+      try {
+        const wards = isMergedAddressView
+          ? await addressService.getMergedWards(parentCode)
+          : await addressService.getWards(parentCode);
+        if (isMounted) {
+          updateAddressState('mergedAddress', {
+            wards,
+            isLoadingWards: false,
+          });
+        }
+      } catch (error) {
+        console.error('Load wards error:', error);
+        if (isMounted) {
+          updateAddressState('mergedAddress', { isLoadingWards: false });
+        }
+      }
+    };
+
+    loadWards();
+    return () => { isMounted = false; };
+  }, [selectedCodes.mergedAddress.district, selectedCodes.mergedAddress.province, isMergedAddressView]);
 
   return (
     <>
@@ -460,12 +581,12 @@ const PermanentAddressCascadingForm: React.FC<PermanentAddressCascadingFormProps
         </div>
       </div>
 
-      <div className="space-y-5">
+      <div className="space-y-[1px]">
         <AddressSelectField
           label="Quốc gia"
           value={activeAddress.country}
           placeholder="Chọn quốc gia"
-          options={resolvedCountryOptions}
+          options={countryOptions.map(name => ({ name, code: name }))}
           error={getFieldError('country')}
           onChange={(value) => handleCountryChange(activeAddressForm, value)}
         />
@@ -475,44 +596,57 @@ const PermanentAddressCascadingForm: React.FC<PermanentAddressCascadingFormProps
           value={activeAddress.city}
           placeholder={
             activeAddress.country.trim()
-              ? isMergedAddressView
-                ? 'Chọn tỉnh/thành phố sau sát nhập'
-                : 'Chọn tỉnh/thành phố trước sát nhập'
+              ? isVietnamCountry(activeAddress.country)
+                ? 'Chọn tỉnh/thành phố'
+                : 'Nhập tỉnh/thành phố'
               : 'Chọn quốc gia trước'
           }
-          options={resolvedCityOptions}
+          options={activeOptionState.provinces}
           error={getFieldError('city')}
-          disabled={!activeAddress.country.trim()}
-          loading={activeOptionState.isLoadingCities}
-          onChange={(value) => handleCityChange(activeAddressForm, value)}
+          disabled={!activeAddress.country.trim() || !isVietnamCountry(activeAddress.country)}
+          loading={activeOptionState.isLoadingProvinces}
+          onChange={(value, code) => handleCityChange(activeAddressForm, value, code)}
         />
 
-        {!isMergedAddressView ? (
+        {!isMergedAddressView && (
           <AddressSelectField
             label="Quận/Huyện"
             value={activeAddress.district}
             placeholder={
               activeAddress.city.trim()
-                ? 'Chọn quận/huyện trước sát nhập'
+                ? 'Chọn quận/huyện'
                 : 'Chọn tỉnh/thành phố trước'
             }
-            options={resolvedDistrictOptions}
+            options={activeOptionState.districts}
             error={getFieldError('district')}
-            disabled={!activeAddress.country.trim() || !activeAddress.city.trim()}
+            disabled={!activeAddress.city.trim() || !isVietnamCountry(activeAddress.country)}
             loading={activeOptionState.isLoadingDistricts}
-            onChange={(value) => updateAddressForm(activeAddressForm, 'district', value)}
+            onChange={(value, code) => handleDistrictChange(activeAddressForm, value, code)}
           />
-        ) : null}
+        )}
 
-        <FormRow label="Phường (xã, thị trấn)">
-          <input
-            type="text"
-            value={activeAddress.ward}
-            onChange={(event) => updateAddressForm(activeAddressForm, 'ward', event.target.value)}
-            className={getFieldClassName(false)}
-            placeholder="Nhập phường, xã hoặc thị trấn"
-          />
-        </FormRow>
+        <AddressSelectField
+          label="Phường (xã, thị trấn)"
+          value={activeAddress.ward}
+          placeholder={
+            isMergedAddressView
+              ? activeAddress.city.trim()
+                ? 'Chọn phường/xã'
+                : 'Chọn tỉnh/thành phố trước'
+              : activeAddress.district.trim()
+                ? 'Chọn phường/xã'
+                : 'Chọn quận/huyện trước'
+          }
+          options={activeOptionState.wards}
+          error={getFieldError('ward')}
+          disabled={
+            isMergedAddressView
+              ? !activeAddress.city.trim()
+              : !activeAddress.district.trim()
+          }
+          loading={activeOptionState.isLoadingWards}
+          onChange={(value) => updateAddressForm(activeAddressForm, 'ward', value)}
+        />
 
         <FormRow label={activeConfig.addressLabel} error={getFieldError('addressLine')}>
           <input

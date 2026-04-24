@@ -635,6 +635,57 @@ namespace ERP.Services.Auth
                 };
             }
         }
+        
+        public async Task<AuthResponseDto> AdminResetPasswordAsync(int targetEmployeeId, AdminResetPasswordDto dto, int requesterId)
+        {
+            try
+            {
+                var requester = await _context.Users
+                    .FirstOrDefaultAsync(u => u.Id == requesterId && u.is_active);
+                
+                var targetUser = await _context.Users
+                    .Include(u => u.Employee)
+                    .FirstOrDefaultAsync(u => u.employee_id == targetEmployeeId && u.is_active);
+
+                if (requester == null || targetUser == null)
+                {
+                    return new AuthResponseDto { Success = false, Message = "Không tìm thấy tài khoản người dùng cho nhân viên này." };
+                }
+
+                // Security Check: Requester must be Admin/SuperAdmin and in the same tenant (if not SuperAdmin)
+                var requesterRoles = await _context.UserRoles
+                    .Where(ur => ur.user_id == requesterId && ur.is_active)
+                    .Select(ur => ur.role_id)
+                    .ToListAsync();
+
+                bool isSuperAdmin = requesterRoles.Contains(AuthSecurityConstants.RoleSuperAdminId);
+                bool isAdmin = requesterRoles.Contains(AuthSecurityConstants.RoleAdminId);
+
+                if (!isSuperAdmin && !isAdmin)
+                {
+                    return new AuthResponseDto { Success = false, Message = "Bạn không có quyền thực hiện chức năng này." };
+                }
+
+                if (!isSuperAdmin && requester.tenant_id != targetUser.tenant_id)
+                {
+                    return new AuthResponseDto { Success = false, Message = "Bạn không có quyền quản lý nhân viên ở tổ chức khác." };
+                }
+
+                // Update password in Firebase
+                await _firebaseService.UpdateUserPasswordAsync(targetUser.firebase_uid, dto.NewPassword);
+
+                return new AuthResponseDto
+                {
+                    Success = true,
+                    Message = $"Đã đặt lại mật khẩu thành công cho nhân viên {targetUser.Employee?.full_name}."
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in AdminResetPasswordAsync for targetEmployeeId {TargetEmployeeId}", targetEmployeeId);
+                return new AuthResponseDto { Success = false, Message = "Lỗi xảy ra trong quá trình đặt lại mật khẩu." };
+            }
+        }
 
         public async Task<AuthResponseDto> PreRegisterStaffAsync(PreRegisterStaffDto dto)
         {

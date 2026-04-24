@@ -181,26 +181,26 @@ namespace ERP.Services.Authorization
         public async Task<bool> CanPerformAction(int userId, string action, string resource)
         {
             var userRoles = await GetUserRoles(userId);
-            if (!userRoles.Any())
-                return false;
+            
+            // Log for debugging
+            System.Console.WriteLine($"[AUTH-DEBUG] User {userId} has {userRoles.Count} active roles.");
 
             // [CRITICAL FIX] Admin/Director bypass - full access to all resources within their scope
             var roleIds = userRoles.Select(r => r.Id).ToList();
             var roleNames = userRoles.Select(r => r.name).ToList();
 
-            // [ULTRASONIC BYPASS] SuperAdmin, Admin, Director always have full workspace access
-            if (roleIds.Any(id => id == ERP.DTOs.Auth.AuthSecurityConstants.RoleSuperAdminId || 
-                                 id == ERP.DTOs.Auth.AuthSecurityConstants.RoleAdminId || 
-                                 id == ERP.DTOs.Auth.AuthSecurityConstants.RoleDirectorId) ||
-                roleNames.Any(n => n.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase) || 
-                                   n.Equals("Admin", StringComparison.OrdinalIgnoreCase) || 
-                                   n.Equals("Manager", StringComparison.OrdinalIgnoreCase)))
+            // 1. Bypass check for Admin/SuperAdmin/Director roles
+            if (roleNames.Any(name => string.Equals(name.Trim(), ERP.DTOs.Auth.AuthSecurityConstants.RoleSuperAdmin, StringComparison.OrdinalIgnoreCase)) ||
+                roleNames.Any(name => string.Equals(name.Trim(), ERP.DTOs.Auth.AuthSecurityConstants.RoleAdmin, StringComparison.OrdinalIgnoreCase)) ||
+                roleNames.Any(name => string.Equals(name.Trim(), ERP.DTOs.Auth.AuthSecurityConstants.RoleDirector, StringComparison.OrdinalIgnoreCase)) ||
+                roleIds.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleSuperAdminId) || 
+                roleIds.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleAdminId))
             {
                 _logger.LogInformation("[AUTH] User {UserId} bypassed check for {Resource}:{Action} due to admin/manager role.", userId, resource, action);
                 return true;
             }
 
-            // [CRITICAL FIX] Workspace Owner bypass via WorkspaceOwnerInvitations
+            // 2. [CRITICAL FIX] Workspace Owner bypass via WorkspaceOwnerInvitations (Even if no roles assigned)
             var userEmail = await _context.Users
                 .IgnoreQueryFilters()
                 .Where(u => u.Id == userId)
@@ -215,6 +215,9 @@ namespace ERP.Services.Authorization
                                   && inv.Status == "activated");
                 if (isOwner) return true;
             }
+
+            if (!userRoles.Any())
+                return false;
 
             // [NEW] Check FeaturePermissions (Master Toggles)
             var featureCode = MapToActionFeatureCode(action, resource);

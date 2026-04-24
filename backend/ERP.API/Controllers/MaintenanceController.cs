@@ -176,7 +176,7 @@ namespace ERP.API.Controllers
                             {
                                 string email = !string.IsNullOrWhiteSpace(emp.email) 
                                     ? emp.email 
-                                    : $"{emp.employee_code.ToLower()}@nexahrm.local";
+                                    : $"{emp.employee_code.ToLower()}@nexahrm.com";
 
                                 string? normalizedPhone = null;
                                 if (!string.IsNullOrWhiteSpace(emp.phone))

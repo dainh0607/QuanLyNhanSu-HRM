@@ -125,11 +125,11 @@ const AttendanceForm = forwardRef<AttendanceFormRef, AttendanceFormProps>(({
     onToggle: () => void,
     hasNested: boolean = false
   ) => (
-    <div className={`py-5 flex flex-col border-b border-slate-50 last:border-0`}>
+    <div className={`py-[14px] flex flex-col border-b border-slate-50 last:border-0`}>
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-1">
-          <span className="text-[15px] font-bold text-slate-800 tracking-tight">{title}</span>
-          <span className="text-[13px] text-slate-400 font-medium">{description}</span>
+          <span className="text-[14px] font-bold text-slate-800 tracking-tight">{title}</span>
+          <span className="text-[12px] text-slate-400 font-medium">{description}</span>
         </div>
         <button
           onClick={onToggle}
@@ -148,7 +148,7 @@ const AttendanceForm = forwardRef<AttendanceFormRef, AttendanceFormProps>(({
       {/* AC 3.2: Nested Logic for Unconstrained Attendance */}
       {hasNested && value && (
         <div className="mt-6 ml-4 pl-6 border-l-2 border-emerald-100 flex flex-col gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
-           <div className="flex flex-col gap-4 py-2">
+           <div className="flex flex-col gap-1.5 py-2">
               <label className="flex items-center gap-3 cursor-pointer group">
                 <input 
                   type="radio" 
@@ -158,7 +158,7 @@ const AttendanceForm = forwardRef<AttendanceFormRef, AttendanceFormProps>(({
                   className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer" 
                 />
                 <div className="flex items-center gap-2">
-                  <span className="text-[14px] font-bold text-slate-700">Yêu cầu chia sẻ vị trí (GPS).</span>
+                  <span className="text-[13px] font-bold text-slate-700">Yêu cầu chia sẻ vị trí (GPS).</span>
                   <span className="material-symbols-outlined text-slate-300 text-[18px] cursor-help" title="Nhân viên phải bật GPS khi chấm công">help</span>
                 </div>
               </label>
@@ -171,7 +171,7 @@ const AttendanceForm = forwardRef<AttendanceFormRef, AttendanceFormProps>(({
                   onChange={() => handleGpsOptionChange('not_required')}
                   className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer" 
                 />
-                <span className="text-[14px] font-bold text-slate-700">Không yêu cầu chia sẻ vị trí (GPS).</span>
+                <span className="text-[13px] font-bold text-slate-700">Không yêu cầu chia sẻ vị trí (GPS).</span>
               </label>
 
               <label className="flex items-center gap-3 cursor-pointer">
@@ -182,7 +182,7 @@ const AttendanceForm = forwardRef<AttendanceFormRef, AttendanceFormProps>(({
                   onChange={() => handleGpsOptionChange('image_required')}
                   className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer" 
                 />
-                <span className="text-[14px] font-bold text-slate-700">Nhân viên chấm công trên điện thoại phải chia sẻ hình ảnh hiện tại.</span>
+                <span className="text-[13px] font-bold text-slate-700">Nhân viên chấm công trên điện thoại phải chia sẻ hình ảnh hiện tại.</span>
               </label>
            </div>
         </div>
@@ -198,7 +198,7 @@ const AttendanceForm = forwardRef<AttendanceFormRef, AttendanceFormProps>(({
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`h-11 px-6 rounded-xl flex items-center gap-2.5 transition-all text-[14px] font-bold ${
+            className={`h-11 px-6 rounded-xl flex items-center gap-2.5 transition-all text-[13px] font-bold ${
               activeTab === tab.id 
               ? 'bg-white text-emerald-600 shadow-sm' 
               : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
@@ -213,7 +213,7 @@ const AttendanceForm = forwardRef<AttendanceFormRef, AttendanceFormProps>(({
       {/* TAB CONTENT */}
       <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
         {activeTab === 'options' ? (
-          <div className="bg-white rounded-[32px] border border-slate-100 p-10 space-y-2 mb-10">
+          <div className="bg-white rounded-[32px] border border-slate-100 p-10 space-y-0.5 mb-10">
             {renderConfigItem(
               'Đăng nhập trên nhiều thiết bị',
               'Cho phép nhân viên đăng nhập tài khoản trên nhiều thiết bị di động cùng lúc.',
@@ -299,8 +299,8 @@ const AttendanceForm = forwardRef<AttendanceFormRef, AttendanceFormProps>(({
                     <span className="material-symbols-outlined text-emerald-600">id_card</span>
                   </div>
                   <div>
-                    <h3 className="text-[16px] font-bold text-slate-800">Chi tiết ánh xạ</h3>
-                    <p className="text-[12px] text-slate-400 font-medium">Danh sách ID chấm công trên từng thiết bị</p>
+                    <h3 className="text-[15px] font-bold text-slate-800">Chi tiết ánh xạ</h3>
+                    <p className="text-[11px] text-slate-400 font-medium">Danh sách ID chấm công trên từng thiết bị</p>
                   </div>
                </div>
             </div>
@@ -308,19 +308,19 @@ const AttendanceForm = forwardRef<AttendanceFormRef, AttendanceFormProps>(({
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/50">
-                  <th className="px-8 py-4 text-[13px] font-black text-slate-500 uppercase tracking-wider w-20">STT</th>
-                  <th className="px-8 py-4 text-[13px] font-black text-slate-500 uppercase tracking-wider">Tên máy chấm công</th>
-                  <th className="px-8 py-4 text-[13px] font-black text-slate-500 uppercase tracking-wider w-[300px]">Mã chấm công</th>
+                  <th className="px-8 py-4 text-[12px] font-black text-slate-500 uppercase tracking-wider w-20">STT</th>
+                  <th className="px-8 py-4 text-[12px] font-black text-slate-500 uppercase tracking-wider">Tên máy chấm công</th>
+                  <th className="px-8 py-4 text-[12px] font-black text-slate-500 uppercase tracking-wider w-[300px]">Mã chấm công</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {localMappings.map((mapping, index) => (
                   <tr key={mapping.machineId} className="hover:bg-slate-50/30 transition-colors group">
-                    <td className="px-8 py-5 text-[14px] font-bold text-slate-400">{index + 1}</td>
+                    <td className="px-8 py-5 text-[13px] font-bold text-slate-400">{index + 1}</td>
                     <td className="px-8 py-5">
                       <div className="flex flex-col">
-                        <span className="text-[14px] font-bold text-slate-700">{mapping.machineName}</span>
-                        <span className="text-[11px] text-slate-400 font-medium mt-0.5">ID: {mapping.machineId}</span>
+                        <span className="text-[13px] font-bold text-slate-700">{mapping.machineName}</span>
+                        <span className="text-[10px] text-slate-400 font-medium mt-0.5">ID: {mapping.machineId}</span>
                       </div>
                     </td>
                     <td className="px-8 py-5">
@@ -330,7 +330,7 @@ const AttendanceForm = forwardRef<AttendanceFormRef, AttendanceFormProps>(({
                           value={mapping.timekeepingCode}
                           onChange={(e) => handleMappingChange(mapping.machineId, e.target.value)}
                           placeholder="Nhập mã ID..."
-                          className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white text-[14px] font-bold text-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/10 transition-all outline-none group-hover/input:border-slate-300"
+                          className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white text-[13px] font-bold text-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/10 transition-all outline-none group-hover/input:border-slate-300"
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-200 text-[18px] group-hover/input:text-slate-300 transition-colors">edit</span>
                       </div>
@@ -343,7 +343,7 @@ const AttendanceForm = forwardRef<AttendanceFormRef, AttendanceFormProps>(({
             {localMappings.length === 0 && (
               <div className="py-20 flex flex-col items-center justify-center text-slate-300">
                 <span className="material-symbols-outlined text-[48px] mb-2 text-slate-200">devices_off</span>
-                <p className="font-bold text-sm">Không tìm thấy thiết bị nào</p>
+                <p className="font-bold text-[13px]">Không tìm thấy thiết bị nào</p>
               </div>
             )}
           </div>
@@ -351,7 +351,7 @@ const AttendanceForm = forwardRef<AttendanceFormRef, AttendanceFormProps>(({
           <div className="h-[400px] flex flex-col items-center justify-center bg-slate-50/50 rounded-[40px] border-2 border-dashed border-slate-100 text-slate-300">
              <span className="material-symbols-outlined text-[64px] mb-4">construction</span>
              <p className="font-bold">Tính năng đang được phát triển</p>
-             <p className="text-sm mt-1">Vui lòng quay lại sau</p>
+             <p className="text-[13px] mt-1">Vui lòng quay lại sau</p>
           </div>
         )}
       </div>

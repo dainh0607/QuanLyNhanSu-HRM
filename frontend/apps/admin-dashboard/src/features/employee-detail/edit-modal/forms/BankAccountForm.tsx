@@ -18,7 +18,7 @@ const BankAccountForm: React.FC<BankAccountFormProps> = ({ data, errors, onField
       title="Thông tin ngân hàng"
       description="Cập nhật tài khoản nhận lương và chi nhánh ngân hàng của nhân viên."
     />
-    <div className="space-y-5">
+    <div className="space-y-[1px]">
       <FormRow label="Chủ tài khoản">
         <input
           type="text"

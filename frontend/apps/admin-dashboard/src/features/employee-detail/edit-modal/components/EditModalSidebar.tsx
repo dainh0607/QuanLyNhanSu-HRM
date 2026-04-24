@@ -30,7 +30,7 @@ const EditModalSidebar: React.FC<EditModalSidebarProps> = ({ activeSection, onCh
             }`}
           >
             <span className="material-symbols-outlined shrink-0 text-[22px]">{section.icon}</span>
-            <span className="whitespace-nowrap text-[15px] font-semibold">{section.label}</span>
+            <span className="whitespace-nowrap text-[14px] font-semibold">{section.label}</span>
           </button>
         );
       })}

@@ -55,7 +55,7 @@ const HealthForm: React.FC<HealthFormProps> = ({ data, errors, onFieldChange }) 
       description="Cập nhật hồ sơ y tế cơ bản để hỗ trợ vận hành phúc lợi và theo dõi nhân sự."
     />
 
-    <div className="space-y-5">
+    <div className="space-y-[1px]">
       <FormRow label="Chiều cao" error={errors.height}>
         <NumberInputWithSuffix
           value={data.height}

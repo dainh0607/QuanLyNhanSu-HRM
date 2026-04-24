@@ -60,7 +60,7 @@ namespace ERP.Services.Auth
                     return new FirebaseUserDto
                     {
                         Uid = uid,
-                        Email = "bypass@nexahrm.local",
+                        Email = "bypass@nexahrm.com",
                         DisplayName = "Bypass User"
                     };
                 }

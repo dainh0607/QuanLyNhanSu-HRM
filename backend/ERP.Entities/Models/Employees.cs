@@ -37,7 +37,7 @@ namespace ERP.Entities.Models
         public string? phone { get; set; }
 
         [Column("home_phone")]
-        [StringLength(20)]
+        [StringLength(10)]
         public string? home_phone { get; set; }
 
         [Column("facebook")]
