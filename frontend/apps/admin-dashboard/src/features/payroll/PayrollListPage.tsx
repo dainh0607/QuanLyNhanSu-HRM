@@ -65,17 +65,17 @@ export const PayrollListPage: React.FC = () => {
         
         <div className="flex items-center gap-3">
           <button 
-            onClick={() => navigate('/payroll/types')} // AC 1.3
+            onClick={() => navigate('/payroll/types')}
             className="flex h-11 w-11 items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-all shadow-sm group"
             title="Loại bảng lương (Master Data)"
           >
             <span className="material-symbols-outlined text-[24px] group-hover:scale-110 transition-transform">
-              payments
+              attach_money
             </span>
           </button>
           
           <button 
-            className="h-11 px-6 bg-[#134BBA] text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-100 hover:bg-[#0f3f9f] hover:-translate-y-0.5 active:scale-95 transition-all flex items-center gap-2"
+            className="h-11 px-6 bg-[#10b981] text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-100 hover:bg-[#059669] hover:-translate-y-0.5 active:scale-95 transition-all flex items-center gap-2"
           >
             <span className="material-symbols-outlined text-[20px]">add</span>
             Tạo bảng lương

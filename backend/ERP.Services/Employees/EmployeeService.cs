@@ -12,8 +12,10 @@ using Microsoft.EntityFrameworkCore;
 using System.Text;
 using FirebaseAdmin.Auth;
 using ERP.DTOs.Auth;
+using ERP.DTOs.Settings;
 using Microsoft.Extensions.Logging;
 using ERP.Services.Authorization;
+using ERP.Services.Settings;
 using ERP.Entities.Interfaces;
 using System.Security.Claims;
 using EmployeeEntity = ERP.Entities.Models.Employees;
@@ -30,6 +32,7 @@ namespace ERP.Services.Employees
         private readonly IAuthorizationService _authService;
         private readonly IScopedQueryHelper _scopedQueryHelper;
         private readonly IEmploymentHistoryService _historyService;
+        private readonly ITenantSettingService _tenantSettingService;
 
         public EmployeeService(
             IUnitOfWork unitOfWork, 
@@ -39,7 +42,8 @@ namespace ERP.Services.Employees
             ICurrentUserContext userContext,
             IAuthorizationService authService,
             IScopedQueryHelper scopedQueryHelper,
-            IEmploymentHistoryService historyService)
+            IEmploymentHistoryService historyService,
+            ITenantSettingService tenantSettingService)
         {
             _unitOfWork = unitOfWork;
             _firebaseService = firebaseService;
@@ -49,6 +53,7 @@ namespace ERP.Services.Employees
             _authService = authService;
             _scopedQueryHelper = scopedQueryHelper;
             _historyService = historyService;
+            _tenantSettingService = tenantSettingService;
         }
 
         private async Task EnsureEmployeeAccess(int employeeId)
@@ -188,7 +193,29 @@ namespace ERP.Services.Employees
             }
             else
             {
-                query = query.OrderBy(e => e.employee_code);
+                // AC 3.3: Apply default sorting from tenant settings if user hasn't specified one
+                var sortConfig = await _tenantSettingService.GetEmployeeSortConfigAsync();
+                if (sortConfig.Config != null && sortConfig.Config.Any())
+                {
+                    IOrderedQueryable<EmployeeEntity>? orderedQuery = null;
+                    foreach (var rule in sortConfig.Config)
+                    {
+                        bool isDesc = rule.Order.ToLower() == "desc";
+                        if (orderedQuery == null)
+                        {
+                            orderedQuery = ApplyEmployeeSort(query, rule.Field, isDesc);
+                        }
+                        else
+                        {
+                            orderedQuery = ApplyEmployeeThenSort(orderedQuery, rule.Field, isDesc);
+                        }
+                    }
+                    query = orderedQuery ?? query.OrderBy(e => e.employee_code);
+                }
+                else
+                {
+                    query = query.OrderBy(e => e.employee_code);
+                }
             }
 
             // 8. Execution & Mapping
@@ -1871,6 +1898,32 @@ namespace ERP.Services.Employees
             public string AccountNumber { get; init; } = string.Empty;
             public string BankName { get; init; } = string.Empty;
             public string Branch { get; init; } = string.Empty;
+        }
+
+        private IOrderedQueryable<EmployeeEntity> ApplyEmployeeSort(IQueryable<EmployeeEntity> query, string field, bool isDesc)
+        {
+            return field.ToLower() switch
+            {
+                "fullname" or "name" => isDesc ? query.OrderByDescending(e => e.full_name) : query.OrderBy(e => e.full_name),
+                "code" or "employeecode" => isDesc ? query.OrderByDescending(e => e.employee_code) : query.OrderBy(e => e.employee_code),
+                "startdate" or "joiningdate" => isDesc ? query.OrderByDescending(e => e.start_date) : query.OrderBy(e => e.start_date),
+                "department" => isDesc ? query.OrderByDescending(e => e.department_id) : query.OrderBy(e => e.department_id),
+                "jobtitle" or "position" => isDesc ? query.OrderByDescending(e => e.job_title_id) : query.OrderBy(e => e.job_title_id),
+                _ => isDesc ? query.OrderByDescending(e => e.employee_code) : query.OrderBy(e => e.employee_code)
+            };
+        }
+
+        private IOrderedQueryable<EmployeeEntity> ApplyEmployeeThenSort(IOrderedQueryable<EmployeeEntity> query, string field, bool isDesc)
+        {
+            return field.ToLower() switch
+            {
+                "fullname" or "name" => isDesc ? query.ThenByDescending(e => e.full_name) : query.ThenBy(e => e.full_name),
+                "code" or "employeecode" => isDesc ? query.ThenByDescending(e => e.employee_code) : query.ThenBy(e => e.employee_code),
+                "startdate" or "joiningdate" => isDesc ? query.ThenByDescending(e => e.start_date) : query.ThenBy(e => e.start_date),
+                "department" => isDesc ? query.ThenByDescending(e => e.department_id) : query.ThenBy(e => e.department_id),
+                "jobtitle" or "position" => isDesc ? query.ThenByDescending(e => e.job_title_id) : query.ThenBy(e => e.job_title_id),
+                _ => isDesc ? query.ThenByDescending(e => e.employee_code) : query.ThenBy(e => e.employee_code)
+            };
         }
     }
 }
