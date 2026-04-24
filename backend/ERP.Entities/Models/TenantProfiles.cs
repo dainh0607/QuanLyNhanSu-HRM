@@ -71,6 +71,9 @@ namespace ERP.Entities.Models
         [StringLength(20)]
         public string? theme_color { get; set; }
 
+        [Column("default_employee_sort_config")]
+        public string? default_employee_sort_config { get; set; } // JSON array: [{field: "name", order: "asc"}]
+
         [Column("notes")]
         [StringLength(1000)]
         public string? notes { get; set; }

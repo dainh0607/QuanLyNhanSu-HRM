@@ -157,11 +157,10 @@ export const PayrollTable: React.FC<PayrollTableProps> = ({ groups, onDelete, is
                         </button>
                         <button 
                           onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
-                          className="h-9 w-9 flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-200 hover:shadow-md rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                          title="Xóa"
+                          className="px-4 py-1.5 bg-white border border-blue-500 text-blue-600 hover:bg-blue-50 hover:border-blue-600 rounded-lg text-[13px] font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                           disabled={item.status?.toLowerCase() !== 'draft'}
                         >
-                          <span className="material-symbols-outlined text-[18px]">delete</span>
+                          Xóa
                         </button>
                       </div>
                     </td>
