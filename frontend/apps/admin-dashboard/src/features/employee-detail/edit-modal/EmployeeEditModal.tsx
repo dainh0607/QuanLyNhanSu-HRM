@@ -960,8 +960,8 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
       nextErrors.phone = 'Số điện thoại phải gồm từ 9 đến 15 chữ số.';
     }
 
-    if (homePhone && !isPhoneValid(homePhone)) {
-      nextErrors.homePhone = 'Số nhà riêng phải gồm từ 9 đến 15 chữ số.';
+    if (homePhone && (!isNumericString(homePhone) || homePhone.length > 10)) {
+      nextErrors.homePhone = 'Số nhà riêng phải là chữ số và tối đa 10 số.';
     }
 
     if (skype && !isSkypeValid(skype)) {
@@ -998,8 +998,8 @@ const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
 
     if (!homePhone) {
       nextErrors.homePhone = 'Số cố định khẩn cấp là bắt buộc.';
-    } else if (!isPhoneValid(homePhone)) {
-      nextErrors.homePhone = 'Số cố định khẩn cấp phải gồm từ 9 đến 15 chữ số.';
+    } else if (!isNumericString(homePhone) || homePhone.length > 10) {
+      nextErrors.homePhone = 'Số cố định khẩn cấp phải là chữ số và tối đa 10 số.';
     }
 
     if (!data.address.trim()) {

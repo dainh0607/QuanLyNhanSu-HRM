@@ -77,22 +77,25 @@ const PersonalTabNavigationV2: React.FC<PersonalTabNavigationProps> = ({
     });
   };
 
-  const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
+  useEffect(() => {
     const container = scrollContainerRef.current;
-    if (!container || !hasOverflow) {
-      return;
-    }
+    if (!container || !hasOverflow) return;
 
-    if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) {
-      return;
-    }
+    const handleWheel = (event: WheelEvent) => {
+      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) {
+        return;
+      }
 
-    event.preventDefault();
-    container.scrollBy({
-      left: event.deltaY,
-      behavior: 'auto',
-    });
-  };
+      event.preventDefault();
+      container.scrollBy({
+        left: event.deltaY,
+        behavior: 'auto',
+      });
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, [hasOverflow]);
 
   return (
     <div className="mt-5 min-w-0 ">
@@ -131,7 +134,6 @@ const PersonalTabNavigationV2: React.FC<PersonalTabNavigationProps> = ({
 
           <div
             ref={scrollContainerRef}
-            onWheel={handleWheel}
             className={`overflow-x-auto overflow-y-hidden scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
               hasOverflow ? 'px-12' : 'px-1'
             }`}

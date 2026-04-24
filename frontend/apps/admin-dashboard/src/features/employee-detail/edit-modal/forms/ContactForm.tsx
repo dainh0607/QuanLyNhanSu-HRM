@@ -44,6 +44,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ data, errors, onFieldChange }
         <input
           type="text"
           inputMode="numeric"
+          maxLength={10}
           value={data.homePhone}
           onChange={(event) => onFieldChange('homePhone', event.target.value.replace(/\D/g, ''))}
           className={getFieldClassName(Boolean(errors.homePhone))}

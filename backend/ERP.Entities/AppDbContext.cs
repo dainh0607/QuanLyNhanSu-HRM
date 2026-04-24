@@ -249,6 +249,19 @@ namespace ERP.Entities
                 .HasForeignKey(w => w.province_code)
                 .HasPrincipalKey(p => p.code);
 
+            // FIX: Map Genders and MaritalStatuses using 'code' as principal key
+            modelBuilder.Entity<Employees>()
+                .HasOne(e => e.Gender)
+                .WithMany()
+                .HasForeignKey(e => e.gender_code)
+                .HasPrincipalKey(g => g.code);
+
+            modelBuilder.Entity<Employees>()
+                .HasOne(e => e.MaritalStatus)
+                .WithMany()
+                .HasForeignKey(e => e.marital_status_code)
+                .HasPrincipalKey(m => m.code);
+
             // Map Principal Keys for String-based Foreign Keys
             modelBuilder.Entity<Provinces>()
                 .HasOne(p => p.Country)

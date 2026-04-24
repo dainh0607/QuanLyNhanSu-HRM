@@ -46,8 +46,8 @@ export const CompactShiftScheduleGrid = ({
     <div className="overflow-x-auto shift-scheduling-scrollbar">
       <div className="min-w-[1260px]">
         <div className="grid" style={{ gridTemplateColumns }}>
-          <div className="sticky left-0 top-0 z-30 border-b border-r border-slate-200 bg-white p-2">
-            <label className="relative block">
+          <div className="sticky left-0 top-0 z-30 flex items-center gap-2 border-b border-r border-slate-200 bg-white p-2">
+            <label className="relative flex-1">
               <span className="sr-only">Tìm kiếm nhân viên</span>
               <span className="material-symbols-outlined pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[16px] text-slate-400">
                 search
@@ -60,6 +60,14 @@ export const CompactShiftScheduleGrid = ({
                 className="h-9 w-full rounded-md border border-slate-200 bg-white py-1.5 pl-8 pr-3 text-sm text-slate-700 outline-none transition focus:border-[#134BBA] focus:ring-2 focus:ring-[#BFDBFE]"
               />
             </label>
+            <button
+              type="button"
+              onClick={onAddEmployee}
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition hover:border-[#134BBA] hover:text-[#134BBA]"
+              title="Thêm nhân viên nhanh"
+            >
+              <span className="material-symbols-outlined text-[20px]">person_add</span>
+            </button>
           </div>
 
           {weekDates.map((date) => {
@@ -135,25 +143,6 @@ export const CompactShiftScheduleGrid = ({
             </div>
           ))}
 
-          <div className="sticky left-0 z-10 border-r border-slate-200 bg-white px-3 py-2">
-            <button
-              type="button"
-              onClick={onAddEmployee}
-              className="flex h-full min-h-[42px] w-full items-center justify-start gap-2 rounded-[6px] border border-dashed border-slate-300 px-2 text-sm font-medium text-slate-600 transition hover:border-slate-400"
-            >
-              <span className="material-symbols-outlined text-[18px]">person_add</span>
-              Thêm nhân viên
-            </button>
-          </div>
-
-          {weekDates.map((date) => (
-            <div
-              key={`footer-${toIsoDate(date)}`}
-              className="border-r border-slate-200 bg-white px-2 py-2 text-center text-[11px] font-medium text-slate-400"
-            >
-              +
-            </div>
-          ))}
         </div>
       </div>
     </div>

@@ -508,14 +508,28 @@ namespace ERP.Services.Employees
                 // 3. Create Firebase User
                 var userArgs = new UserRecordArgs()
                 {
-                    Email = dto.Email ?? dto.EmployeeCode + "@nexahrm.local",
+                    Email = dto.Email ?? dto.EmployeeCode.ToLower() + "@nexahrm.com",
                     Password = dto.Password,
                     DisplayName = dto.FullName,
                     PhoneNumber = dto.Phone,
                     Disabled = false
                 };
                 
-                var firebaseUser = await _firebaseService.CreateUserAsync(userArgs);
+                FirebaseUserDto firebaseUser;
+                try
+                {
+                    firebaseUser = await _firebaseService.CreateUserAsync(userArgs);
+                }
+                catch (Exception ex)
+                {
+                    var errorStr = ex.ToString();
+                    if (errorStr.Contains("EMAIL_EXISTS") || errorStr.Contains("email already exists"))
+                        throw new Exception($"Email hoặc tài khoản liên kết với mã '{dto.EmployeeCode}' đã tồn tại trên hệ thống (Firebase). Vui lòng kiểm tra lại.");
+                    if (errorStr.Contains("PHONE_NUMBER_EXISTS"))
+                        throw new Exception("Số điện thoại này đã được sử dụng cho một tài khoản khác.");
+                    
+                    throw new Exception("Lỗi khi tạo tài khoản trên hệ thống xác thực: " + ex.Message);
+                }
 
                 try
                 {
@@ -567,7 +581,7 @@ namespace ERP.Services.Employees
                         throw new Exception($"Nhóm truy cập ID {item.AccessGroupId} cho nhân viên '{item.FullName}' không tồn tại hoặc đã ngừng hoạt động.");
 
                     string nextCode = await GenerateNextEmployeeCodeAsync("NV");
-                    string defaultEmail = $"{nextCode.ToLower()}@nexahrm.local";
+                    string defaultEmail = $"{nextCode.ToLower()}@nexahrm.com";
                     string defaultPassword = "NexaHR" + new Random().Next(1000, 9999) + "!";
 
                     var tenantId = _userContext.TenantId;
@@ -597,7 +611,19 @@ namespace ERP.Services.Employees
                         Disabled = false
                     };
                     
-                    var firebaseUser = await _firebaseService.CreateUserAsync(userArgs);
+                    FirebaseUserDto firebaseUser;
+                    try
+                    {
+                        firebaseUser = await _firebaseService.CreateUserAsync(userArgs);
+                    }
+                    catch (Exception ex)
+                    {
+                        var errorStr = ex.ToString();
+                        string friendlyError = (errorStr.Contains("EMAIL_EXISTS") || errorStr.Contains("email already exists")) 
+                            ? $"Tài khoản ứng với mã '{nextCode}' đã tồn tại trên hệ thống (Firebase). Vui lòng kiểm tra lại." 
+                            : $"Lỗi tạo tài khoản cho {item.FullName}: {ex.Message}";
+                        throw new Exception(friendlyError);
+                    }
                     createdFirebaseUids.Add(firebaseUser.Uid);
 
                     var user = await _userService.CreateLocalUserAsync(employee.Id, userArgs.Email, firebaseUser.Uid, tenantId);
@@ -843,35 +869,20 @@ namespace ERP.Services.Employees
 
         public async Task<string> GenerateNextEmployeeCodeAsync(string prefix = "NV")
         {
-            var employees = await _unitOfWork.Repository<EmployeeEntity>().GetAllAsync();
+            var employees = await _unitOfWork.Repository<EmployeeEntity>().AsQueryable()
+                .Where(e => e.employee_code.StartsWith(prefix))
+                .Select(e => e.employee_code)
+                .ToListAsync();
             
-            // Collect all numeric parts from ACTIVE employees using this prefix
-            var takenNumbers = employees
-                .Where(e => e.is_active && e.employee_code.StartsWith(prefix))
-                .Select(e => {
-                    var numericPart = e.employee_code.Substring(prefix.Length);
+            var maxNumber = employees
+                .Select(code => {
+                    var numericPart = code.Substring(prefix.Length);
                     return int.TryParse(numericPart, out int result) ? result : 0;
                 })
-                .Where(n => n > 0)
-                .OrderBy(n => n)
-                .Distinct()
-                .ToList();
-
-            // Find the first gap (smallest missing positive)
-            int candidate = 1;
-            foreach (var num in takenNumbers)
-            {
-                if (num == candidate)
-                {
-                    candidate++;
-                }
-                else if (num > candidate)
-                {
-                    break; // Found a gap
-                }
-            }
-
-            return $"{prefix}{candidate:D4}"; // Format as PrefixXXXX (e.g., NV0001)
+                .DefaultIfEmpty(0)
+                .Max();
+            
+            return $"{prefix}{(maxNumber + 1):D4}";
         }
 
         public async Task<string> GetCodeForReturningEmployeeAsync(int employeeId, string prefix = "NV")

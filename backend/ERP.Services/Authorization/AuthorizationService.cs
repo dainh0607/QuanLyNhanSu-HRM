@@ -178,8 +178,9 @@ namespace ERP.Services.Authorization
         public async Task<bool> CanPerformAction(int userId, string action, string resource)
         {
             var userRoles = await GetUserRoles(userId);
-            if (!userRoles.Any())
-                return false;
+            
+            // Log for debugging
+            System.Console.WriteLine($"[AUTH-DEBUG] User {userId} has {userRoles.Count} active roles.");
 
             var roleIds = userRoles.Select(r => r.Id).ToList();
             var roleNames = userRoles
@@ -187,19 +188,17 @@ namespace ERP.Services.Authorization
                 .Where(name => !string.IsNullOrWhiteSpace(name))
                 .ToList();
 
-            // [CRITICAL FIX] Admin/Director bypass - full access to all resources within their scope
-            // Prevents 403 when ActionPermissions table hasn't been seeded for new tenants
-            if (roleIds.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleSuperAdminId) || 
-                roleIds.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleAdminId) ||
-                roleIds.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleDirectorId) ||
-                roleNames.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleSuperAdmin, StringComparer.OrdinalIgnoreCase) ||
-                roleNames.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleAdmin, StringComparer.OrdinalIgnoreCase) ||
-                roleNames.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleDirector, StringComparer.OrdinalIgnoreCase))
+            // 1. Bypass check for Admin/SuperAdmin/Director roles
+            if (roleNames.Any(name => string.Equals(name.Trim(), ERP.DTOs.Auth.AuthSecurityConstants.RoleSuperAdmin, StringComparison.OrdinalIgnoreCase)) ||
+                roleNames.Any(name => string.Equals(name.Trim(), ERP.DTOs.Auth.AuthSecurityConstants.RoleAdmin, StringComparison.OrdinalIgnoreCase)) ||
+                roleNames.Any(name => string.Equals(name.Trim(), ERP.DTOs.Auth.AuthSecurityConstants.RoleDirector, StringComparison.OrdinalIgnoreCase)) ||
+                roleIds.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleSuperAdminId) || 
+                roleIds.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleAdminId))
             {
                 return true;
             }
 
-            // [CRITICAL FIX] Workspace Owner bypass via WorkspaceOwnerInvitations
+            // 2. [CRITICAL FIX] Workspace Owner bypass via WorkspaceOwnerInvitations (Even if no roles assigned)
             var userEmail = await _context.Users
                 .IgnoreQueryFilters()
                 .Where(u => u.Id == userId)
@@ -214,6 +213,9 @@ namespace ERP.Services.Authorization
                                   && inv.Status == "activated");
                 if (isOwner) return true;
             }
+
+            if (!userRoles.Any())
+                return false;
 
             // [NEW] Check FeaturePermissions (Master Toggles)
             var featureCode = MapToActionFeatureCode(action, resource);

@@ -44,9 +44,9 @@ namespace ERP.API.Auth
             var path = context.Request.Path;
             var method = context.Request.Method;
 
-            if (!RequiresCsrfValidation(context))
+            if (_env.IsDevelopment() || !RequiresCsrfValidation(context))
             {
-                _logger.LogInformation("[CSRF] Skip validation for {Method} {Path}", method, path);
+                _logger.LogInformation("[CSRF] Skip validation for {Method} {Path} (Development or Safe Method)", method, path);
                 await _next(context);
                 return;
             }

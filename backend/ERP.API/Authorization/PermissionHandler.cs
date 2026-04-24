@@ -35,6 +35,10 @@ namespace ERP.API.Authorization
             {
                 context.Succeed(requirement);
             }
+            else
+            {
+                System.Console.WriteLine($"[AUTH-DEBUG] User {_userContext.UserId} DENIED {requirement.Action} on {requirement.Resource}");
+            }
         }
     }
 }
