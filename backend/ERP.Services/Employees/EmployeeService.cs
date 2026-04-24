@@ -382,10 +382,12 @@ namespace ERP.Services.Employees
 
         public async Task<EmployeeDto> CreateAsync(EmployeeCreateDto dto)
         {
-            // 0. Scoping validation
+            // 0. Scoping & Region validation
             var currentUserId = _userContext.UserId ?? 0;
             if (currentUserId > 0)
             {
+                if (dto.RegionId.HasValue && !await _authService.CanAccessRegion(currentUserId, dto.RegionId.Value))
+                    throw new UnauthorizedAccessException("Bạn không có quyền tạo nhân viên trong vùng này.");
                 if (dto.BranchId.HasValue && !await _authService.CanAccessBranch(currentUserId, dto.BranchId.Value))
                     throw new UnauthorizedAccessException("Bạn không có quyền tạo nhân viên trong chi nhánh này.");
                 if (dto.DepartmentId.HasValue && !await _authService.CanAccessDepartment(currentUserId, dto.DepartmentId.Value))
@@ -393,6 +395,9 @@ namespace ERP.Services.Employees
             }
 
             // 1. Validations
+            if (dto.RegionId.HasValue && await _unitOfWork.Repository<Regions>().GetByIdAsync(dto.RegionId.Value) == null)
+                throw new Exception($"Vùng ID {dto.RegionId} không tồn tại.");
+
             if (dto.BranchId.HasValue && await _unitOfWork.Repository<Branches>().GetByIdAsync(dto.BranchId.Value) == null)
                 throw new Exception($"Chi nhánh ID {dto.BranchId} không tồn tại.");
 
@@ -448,7 +453,7 @@ namespace ERP.Services.Employees
                 // This ensures employees created without branch/department/region are still visible
                 var effectiveBranchId = dto.BranchId;
                 var effectiveDepartmentId = dto.DepartmentId;
-                int? effectiveRegionId = null;
+                var effectiveRegionId = dto.RegionId;
                 
                 if (!effectiveBranchId.HasValue || !effectiveDepartmentId.HasValue || effectiveRegionId == null)
                 {
@@ -625,6 +630,8 @@ namespace ERP.Services.Employees
             var currentUserId = _userContext.UserId ?? 0;
             if (currentUserId > 0)
             {
+                if (dto.RegionId.HasValue && !await _authService.CanAccessRegion(currentUserId, dto.RegionId.Value))
+                    throw new UnauthorizedAccessException("Bạn không có quyền chuyển nhân viên sang vùng này.");
                 if (dto.BranchId.HasValue && !await _authService.CanAccessBranch(currentUserId, dto.BranchId.Value))
                     throw new UnauthorizedAccessException("Bạn không có quyền chuyển nhân viên sang chi nhánh này.");
                 if (dto.DepartmentId.HasValue && !await _authService.CanAccessDepartment(currentUserId, dto.DepartmentId.Value))
@@ -634,6 +641,9 @@ namespace ERP.Services.Employees
             var employee = await _unitOfWork.Repository<EmployeeEntity>().GetByIdAsync(id);
 
             // 1. Validations
+            if (dto.RegionId.HasValue && await _unitOfWork.Repository<Regions>().GetByIdAsync(dto.RegionId.Value) == null)
+                throw new Exception($"Vùng ID {dto.RegionId} không tồn tại.");
+
             if (dto.BranchId.HasValue && await _unitOfWork.Repository<Branches>().GetByIdAsync(dto.BranchId.Value) == null)
                 throw new Exception($"Chi nhánh ID {dto.BranchId} không tồn tại.");
 
@@ -652,6 +662,7 @@ namespace ERP.Services.Employees
 
             // 2. Track changes for logging
             var changes = new List<string>();
+            if (employee.region_id != dto.RegionId) changes.Add("Vùng");
             if (employee.branch_id != dto.BranchId) changes.Add("Chi nhánh");
             if (employee.department_id != dto.DepartmentId) changes.Add("Phòng ban");
             if (employee.job_title_id != dto.JobTitleId) changes.Add("Chức danh");
@@ -666,6 +677,7 @@ namespace ERP.Services.Employees
             employee.department_id = dto.DepartmentId;
             employee.job_title_id = dto.JobTitleId;
             employee.branch_id = dto.BranchId;
+            employee.region_id = dto.RegionId;
             employee.manager_id = dto.ManagerId;
             employee.start_date = dto.StartDate;
             employee.identity_number = dto.IdentityNumber;

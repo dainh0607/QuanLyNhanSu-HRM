@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { employeeService, type EmployeeCreatePayload } from '../../../services/employeeService';
-import { authService, type User } from '../../../services/authService';
+
 import { useToast } from '../../../hooks/useToast';
 import {
   DEFAULT_PHONE_COUNTRY_VALUE,
@@ -323,7 +323,6 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [hasLoadedOrganizationMetadata, setHasLoadedOrganizationMetadata] = useState(false);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const hasUserEditedEmployeeCodeRef = useRef(false);
 
   // Form State
@@ -355,9 +354,6 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
     setMetadata(INITIAL_METADATA);
     setMetadataLoading(INITIAL_METADATA_LOADING_STATE);
     try {
-      // Lấy thông tin user hiện tại
-      setCurrentUser(authService.getCurrentUser());
-
       setMetadataLoading((prev) => ({
         ...prev,
         accessGroups: true,

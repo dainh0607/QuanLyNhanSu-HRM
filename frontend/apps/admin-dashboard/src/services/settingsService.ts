@@ -1,4 +1,4 @@
-import { authFetch, authService } from "./authService";
+import { authFetch } from "./authService";
 import { API_URL } from "./apiConfig";
 
 export interface EnterpriseInfo {
@@ -11,9 +11,9 @@ export interface EnterpriseInfo {
   bankAccountNo: string | null;
   taxCode: string | null;
   address: string | null;
-  countryId: number | null;
-  provinceId: number | null;
-  districtId: number | null;
+  countryCode: string | null;
+  provinceCode: string | null;
+  districtCode: string | null;
   dateFormat: string;
   timeFormat: string;
   notes: string | null;
@@ -137,12 +137,12 @@ export const settingsService = {
     }));
   },
 
-  async getPermissions(moduleId: string): Promise<any[]> {
+  async getPermissions(_moduleId: string): Promise<any[]> {
     // Integration with actual permission matrix API
     return [];
   },
 
-  async updatePermissions(moduleId: string, matrix: any[]): Promise<boolean> {
+  async updatePermissions(_moduleId: string, _matrix: any[]): Promise<boolean> {
     return true;
   }
 };
