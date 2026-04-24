@@ -147,6 +147,7 @@ namespace ERP.Entities
         public DbSet<EmployeeMobilePermissions> EmployeeMobilePermissions { get; set; }
         public DbSet<TenantProfiles> TenantProfiles { get; set; }
         public DbSet<FeaturePermissions> FeaturePermissions { get; set; }
+        public DbSet<EmploymentTypes> EmploymentTypes { get; set; }
 
         // NEW: RBAC Authorization Tables (FIX)
         public DbSet<RoleScopes> RoleScopes { get; set; }

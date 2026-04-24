@@ -104,6 +104,12 @@ namespace ERP.Entities.Models
         [StringLength(50)]
         public string? work_type { get; set; }
 
+        [Column("employment_type_id")]
+        public int? employment_type_id { get; set; }
+
+        [ForeignKey("employment_type_id")]
+        public virtual EmploymentTypes? EmploymentType { get; set; }
+
         [Column("seniority_months")]
         public int? seniority_months { get; set; }
 

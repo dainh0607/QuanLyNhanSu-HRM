@@ -125,5 +125,12 @@ namespace ERP.Services.Lookup
             var data = await query.ToListAsync();
             return data.Select(x => new LookupDto { Code = x.Id.ToString(), Name = x.name });
         }
+
+        public async Task<IEnumerable<LookupDto>> GetEmploymentTypesLookupAsync()
+        {
+            var data = await _unitOfWork.Repository<EmploymentTypes>().FindAsync(x => x.is_active);
+            return data.OrderBy(x => x.display_order ?? 999).ThenBy(x => x.name)
+                       .Select(x => new LookupDto { Code = x.Id.ToString(), Name = x.name });
+        }
     }
 }
