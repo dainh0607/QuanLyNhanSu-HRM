@@ -215,6 +215,25 @@ namespace ERP.Services.Authorization
                 if (isOwner) return true;
             }
 
+            // [NEW] Check FeaturePermissions (Master Toggles)
+            var featureCode = MapToActionFeatureCode(action, resource);
+            if (!string.IsNullOrEmpty(featureCode))
+            {
+                var featurePerms = await _context.Set<FeaturePermissions>()
+                    .IgnoreQueryFilters()
+                    .Where(fp => roleIds.Contains(fp.role_id) && fp.feature_code == featureCode)
+                    .ToListAsync();
+
+                // If any role explicitly has it granted, it's allowed at feature level.
+                // But wait, the UI is per role. 
+                // If a user has multiple roles, and one is 'None' and another is 'Access', usually 'Access' wins (Union).
+                if (featurePerms.Any() && !featurePerms.Any(fp => fp.is_granted))
+                {
+                    // All roles for this user have this feature disabled
+                    return false;
+                }
+            }
+
             var actionPermission = await _context.ActionPermissions
                 .IgnoreQueryFilters()
                 .Where(ap => roleIds.Contains(ap.role_id) &&
@@ -224,6 +243,31 @@ namespace ERP.Services.Authorization
                 .FirstOrDefaultAsync();
 
             return actionPermission != null;
+        }
+
+        private string? MapToActionFeatureCode(string action, string resource)
+        {
+            var key = $"{resource.ToUpper()}_{action.ToUpper()}";
+            return key switch
+            {
+                "EMPLOYEE_READ" => "EMPLOYEE_VIEW",
+                "EMPLOYEE_CREATE" => "EMPLOYEE_CREATE",
+                "EMPLOYEE_UPDATE" => "EMPLOYEE_UPDATE",
+                "EMPLOYEE_DELETE" => "EMPLOYEE_DELETE",
+                "EMPLOYEE_EXPORT" => "EMPLOYEE_EXPORT",
+                "ATTENDANCE_READ" => "ATTENDANCE_VIEW",
+                "ATTENDANCE_UPDATE" => "ATTENDANCE_EDIT",
+                "ATTENDANCE_APPROVE" => "ATTENDANCE_APPROVE",
+                "PAYROLL_READ" => "PAYROLL_VIEW",
+                "PAYROLL_CALCULATE" => "PAYROLL_CALCULATE",
+                "PAYROLL_APPROVE" => "PAYROLL_APPROVE",
+                "PAYROLL_MANAGE" => "PAYROLL_LOCK",
+                "ORGANIZATION_READ" => "ORG_VIEW",
+                "ORGANIZATION_MANAGE" => "ORG_MANAGE",
+                "DASHBOARD_READ" => "DASHBOARD_VIEW",
+                "REPORTS_READ" => "DASHBOARD_REPORTS",
+                _ => null
+            };
         }
 
         /// <summary>

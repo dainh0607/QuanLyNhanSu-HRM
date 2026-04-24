@@ -4,6 +4,7 @@ using ERP.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ERP.Entities.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260423174658_AddBrandingToTenantProfiles")]
+    partial class AddBrandingToTenantProfiles
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -4350,53 +4353,6 @@ namespace ERP.Entities.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Evaluations", (string)null);
-                });
-
-            modelBuilder.Entity("ERP.Entities.Models.FeaturePermissions", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("updated_at");
-
-                    b.Property<string>("description")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
-                        .HasColumnName("description");
-
-                    b.Property<string>("feature_code")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("feature_code");
-
-                    b.Property<bool>("is_granted")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_granted");
-
-                    b.Property<int>("role_id")
-                        .HasColumnType("int")
-                        .HasColumnName("role_id");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("role_id");
-
-                    b.ToTable("FeaturePermissions");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.Genders", b =>
@@ -10336,17 +10292,6 @@ namespace ERP.Entities.Migrations
                     b.Navigation("Employee");
 
                     b.Navigation("Province");
-                });
-
-            modelBuilder.Entity("ERP.Entities.Models.FeaturePermissions", b =>
-                {
-                    b.HasOne("ERP.Entities.Models.Roles", "Role")
-                        .WithMany()
-                        .HasForeignKey("role_id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Role");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.HealthRecords", b =>

@@ -18,6 +18,9 @@ namespace ERP.DTOs.Tenant
         public string? DistrictCode { get; set; }
         public string DateFormat { get; set; } = "DD/MM/YYYY";
         public string TimeFormat { get; set; } = "24H";
+        public string? LogoUrl { get; set; }
+        public string? ThemeColor { get; set; }
+        public string? Subdomain { get; set; }
         public string? Notes { get; set; }
     }
 
@@ -37,6 +40,9 @@ namespace ERP.DTOs.Tenant
         public string? DistrictCode { get; set; }
         public string DateFormat { get; set; } = "DD/MM/YYYY";
         public string TimeFormat { get; set; } = "24H";
+        public string? LogoUrl { get; set; }
+        public string? ThemeColor { get; set; }
+        public string? Subdomain { get; set; }
         public string? Notes { get; set; }
     }
 }

@@ -63,6 +63,14 @@ namespace ERP.Entities.Models
         [StringLength(20)]
         public string time_format { get; set; } = "24H";
 
+        [Column("logo_url")]
+        [StringLength(500)]
+        public string? logo_url { get; set; }
+
+        [Column("theme_color")]
+        [StringLength(20)]
+        public string? theme_color { get; set; }
+
         [Column("notes")]
         [StringLength(1000)]
         public string? notes { get; set; }
