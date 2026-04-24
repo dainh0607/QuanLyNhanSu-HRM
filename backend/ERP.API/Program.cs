@@ -195,6 +195,7 @@ builder.Services.AddScoped<IRewardTypeService, RewardTypeService>();
 builder.Services.AddScoped<IMealTypeService, MealTypeService>();
 builder.Services.AddScoped<IAdvanceTypeService, AdvanceTypeService>();
 builder.Services.AddScoped<ISystemFieldService, SystemFieldService>();
+builder.Services.AddScoped<ITenantCustomFieldService, TenantCustomFieldService>();
 builder.Services.AddScoped<ILookupService, LookupService>();
 builder.Services.AddScoped<IAddressService, AddressService>();
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));

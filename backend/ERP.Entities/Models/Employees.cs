@@ -133,6 +133,9 @@ namespace ERP.Entities.Models
         [ForeignKey("resignation_reason_id")]
         public virtual ResignationReasons? ResignationReasonEntity { get; set; }
 
+        [Column("custom_data")]
+        public string? custom_data { get; set; }
+
         [Column("region_id")]
         public int? region_id { get; set; }
 
