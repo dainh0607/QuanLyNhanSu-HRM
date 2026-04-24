@@ -231,6 +231,13 @@ namespace ERP.Entities.Seeding
                 // Executive - Full access within tenant
                 new ActionPermissions { Id = 5, role_id = 2, action = "read", resource = "employee", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
                 new ActionPermissions { Id = 6, role_id = 2, action = "approve", resource = "request", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 105, role_id = 2, action = "read", resource = "payroll", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 106, role_id = 2, action = "create", resource = "payroll", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 107, role_id = 2, action = "update", resource = "payroll", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 108, role_id = 2, action = "delete", resource = "payroll", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 109, role_id = 2, action = "approve", resource = "payroll", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 110, role_id = 2, action = "manage", resource = "payroll", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 111, role_id = 2, action = "calculate", resource = "payroll", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
                 
                 // Regional Manager - Region-scoped CRUD
                 new ActionPermissions { Id = 7, role_id = 3, action = "create", resource = "employee", allowed_scope = "SAME_REGION", is_active = true, created_at = seedDate },

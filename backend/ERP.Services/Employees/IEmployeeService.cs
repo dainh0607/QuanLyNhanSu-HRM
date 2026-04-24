@@ -26,5 +26,6 @@ namespace ERP.Services.Employees
         Task<IEnumerable<EmployeeSearchDto>> SearchEmployeesAsync(string term, int? excludeId = null);
         Task<EmployeeJobInfoDto?> GetJobInfoAsync(int employeeId);
         Task<bool> UpdateJobInfoAsync(int employeeId, EmployeeJobInfoDto dto);
+        Task<IEnumerable<BulkParseResponseDto>> BulkParseEmployeesAsync(BulkParseRequestDto request);
     }
 }

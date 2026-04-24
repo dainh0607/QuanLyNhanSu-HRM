@@ -6,6 +6,7 @@ using ERP.Entities;
 using ERP.Entities.Models;
 using ERP.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace ERP.Services.Authorization
 {
@@ -38,11 +39,13 @@ namespace ERP.Services.Authorization
     {
         private readonly AppDbContext _context;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ILogger<AuthorizationService> _logger;
 
-        public AuthorizationService(AppDbContext context, IUnitOfWork unitOfWork)
+        public AuthorizationService(AppDbContext context, IUnitOfWork unitOfWork, ILogger<AuthorizationService> logger)
         {
             _context = context;
             _unitOfWork = unitOfWork;
+            _logger = logger;
         }
 
         /// <summary>
@@ -181,21 +184,19 @@ namespace ERP.Services.Authorization
             if (!userRoles.Any())
                 return false;
 
-            var roleIds = userRoles.Select(r => r.Id).ToList();
-            var roleNames = userRoles
-                .Select(r => r.name)
-                .Where(name => !string.IsNullOrWhiteSpace(name))
-                .ToList();
-
             // [CRITICAL FIX] Admin/Director bypass - full access to all resources within their scope
-            // Prevents 403 when ActionPermissions table hasn't been seeded for new tenants
-            if (roleIds.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleSuperAdminId) || 
-                roleIds.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleAdminId) ||
-                roleIds.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleDirectorId) ||
-                roleNames.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleSuperAdmin, StringComparer.OrdinalIgnoreCase) ||
-                roleNames.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleAdmin, StringComparer.OrdinalIgnoreCase) ||
-                roleNames.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleDirector, StringComparer.OrdinalIgnoreCase))
+            var roleIds = userRoles.Select(r => r.Id).ToList();
+            var roleNames = userRoles.Select(r => r.name).ToList();
+
+            // [ULTRASONIC BYPASS] SuperAdmin, Admin, Director always have full workspace access
+            if (roleIds.Any(id => id == ERP.DTOs.Auth.AuthSecurityConstants.RoleSuperAdminId || 
+                                 id == ERP.DTOs.Auth.AuthSecurityConstants.RoleAdminId || 
+                                 id == ERP.DTOs.Auth.AuthSecurityConstants.RoleDirectorId) ||
+                roleNames.Any(n => n.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase) || 
+                                   n.Equals("Admin", StringComparison.OrdinalIgnoreCase) || 
+                                   n.Equals("Manager", StringComparison.OrdinalIgnoreCase)))
             {
+                _logger.LogInformation("[AUTH] User {UserId} bypassed check for {Resource}:{Action} due to admin/manager role.", userId, resource, action);
                 return true;
             }
 
@@ -259,6 +260,9 @@ namespace ERP.Services.Authorization
                 "ATTENDANCE_UPDATE" => "ATTENDANCE_EDIT",
                 "ATTENDANCE_APPROVE" => "ATTENDANCE_APPROVE",
                 "PAYROLL_READ" => "PAYROLL_VIEW",
+                "PAYROLL_CREATE" => "PAYROLL_MANAGE",
+                "PAYROLL_UPDATE" => "PAYROLL_MANAGE",
+                "PAYROLL_DELETE" => "PAYROLL_MANAGE",
                 "PAYROLL_CALCULATE" => "PAYROLL_CALCULATE",
                 "PAYROLL_APPROVE" => "PAYROLL_APPROVE",
                 "PAYROLL_MANAGE" => "PAYROLL_LOCK",

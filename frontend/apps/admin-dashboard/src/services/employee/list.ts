@@ -242,6 +242,22 @@ const checkEmployeeEmailExists = async (
   }
 };
 
+const bulkParseEmployees = async (rawText: string, branchIds: number[]): Promise<any[]> => {
+  try {
+    return await requestJson<any[]>(
+      `${API_URL}/employees/bulk-parse`,
+      {
+        method: "POST",
+        body: JSON.stringify({ rawText, branchIds }),
+      },
+      "Lỗi khi xử lý danh sách nhân viên",
+    );
+  } catch (error) {
+    console.error("Bulk Parse Employees Error:", error);
+    throw error;
+  }
+};
+
 export const employeeListService = {
   getEmployees,
   getActiveEmployeesByBranch,
@@ -252,6 +268,7 @@ export const employeeListService = {
   getNextEmployeeCode,
   createEmployee,
   bulkCreateEmployees,
+  bulkParseEmployees,
   checkEmployeeCodeExists,
   checkEmployeeEmailExists,
 };

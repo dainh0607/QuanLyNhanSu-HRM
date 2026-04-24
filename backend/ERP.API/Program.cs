@@ -112,7 +112,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 using var scope = context.HttpContext.RequestServices.CreateScope();
                 var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-                var authSession = await dbContext.AuthSessions.AsNoTracking()
+                var authSession = await dbContext.AuthSessions
+                    .AsNoTracking()
+                    .IgnoreQueryFilters()
                     .FirstOrDefaultAsync(session => session.session_id == sessionId && session.user_id == userId);
 
                 if (authSession == null || !authSession.is_active || authSession.revoked_at.HasValue || authSession.expires_at <= DateTime.UtcNow)
@@ -183,6 +185,7 @@ builder.Services.AddScoped<IInsuranceService, InsuranceService>();
 builder.Services.AddScoped<ISignatureService, SignatureService>();
 builder.Services.AddScoped<IMobilePermissionService, MobilePermissionService>();
 builder.Services.AddScoped<IPayrollService, PayrollService>();
+builder.Services.AddScoped<IPayrollConfigService, PayrollConfigService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 builder.Services.AddScoped<IEmploymentTypeService, EmploymentTypeService>();

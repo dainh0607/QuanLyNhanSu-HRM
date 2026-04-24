@@ -360,6 +360,7 @@ namespace ERP.Services.Auth
 
                 var tokenHash = AuthTokenSecurity.ComputeHash(refreshToken);
                 var existingSession = await _context.AuthSessions
+                    .IgnoreQueryFilters()
                     .FirstOrDefaultAsync(session => session.refresh_token_hash == tokenHash);
 
                 if (existingSession == null)
@@ -483,6 +484,7 @@ namespace ERP.Services.Auth
 
             var tokenHash = AuthTokenSecurity.ComputeHash(refreshToken);
             var authSession = await _context.AuthSessions
+                .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(session => session.refresh_token_hash == tokenHash);
 
             if (authSession == null || authSession.revoked_at.HasValue)
@@ -1381,7 +1383,9 @@ namespace ERP.Services.Auth
             }
 
             if (roleIds.Contains(AuthSecurityConstants.RoleAdminId) ||
-                roles.Contains(AuthSecurityConstants.RoleAdmin, StringComparer.OrdinalIgnoreCase))
+                roleIds.Contains(AuthSecurityConstants.RoleDirectorId) ||
+                roles.Contains(AuthSecurityConstants.RoleAdmin, StringComparer.OrdinalIgnoreCase) ||
+                roles.Contains(AuthSecurityConstants.RoleDirector, StringComparer.OrdinalIgnoreCase))
             {
                 isWorkspaceAdmin = true;
             }
@@ -1409,6 +1413,7 @@ namespace ERP.Services.Auth
                     "contracts:read", "contracts:create", "contracts:update", "contracts:delete",
                     "shifts:read", "shifts:create", "shifts:update", "shifts:delete",
                     "attendance:read", "attendance:update", "attendance:delete",
+                    "payroll:read", "payroll:create", "payroll:update", "payroll:delete", "payroll:approve",
                     "rbac:read", "rbac:manage"
                 };
                 
@@ -1683,6 +1688,7 @@ namespace ERP.Services.Auth
         private async Task RevokeAllActiveSessionsAsync(int userId, DateTime utcNow, string note)
         {
             var activeSessions = await _context.AuthSessions
+                .IgnoreQueryFilters()
                 .Where(session => session.user_id == userId && session.is_active && !session.revoked_at.HasValue)
                 .ToListAsync();
 

@@ -5,11 +5,11 @@ POST {{baseUrl}}/auth/sign-up
 Content-Type: application/json
 
 {
-  "email": "kfrog1233@gmail.com",
+  "email": "kfrog1222@gmail.com",
   "password": "trihung123",
   "confirmPassword": "trihung123",
   "fullName": "Chủ sở hữu công ty",
-  "companyName": "Công ty TNHH Test Dự án",
-  "phoneNumber": "+84987654321",
-  "employeeCode": "ADMIN-001"
+  "companyName": "Công ty TNHH",
+  "phoneNumber": "+84987654340",
+  "employeeCode": "ADMIN-0012"
 }
