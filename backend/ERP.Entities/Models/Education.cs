@@ -24,6 +24,12 @@ namespace ERP.Entities.Models
         [StringLength(100)]
         public string major { get; set; } = null!;
 
+        [Column("major_id")]
+        public int? major_id { get; set; }
+
+        [ForeignKey("major_id")]
+        public virtual Majors? MajorEntity { get; set; }
+
         [Column("institution")]
         [StringLength(200)]
         public string institution { get; set; } = null!;
