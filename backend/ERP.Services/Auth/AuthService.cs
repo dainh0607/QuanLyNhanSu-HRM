@@ -269,36 +269,36 @@ namespace ERP.Services.Auth
         {
             try
             {
-            var normalizedEmail = dto.Email?.Trim();
-            var firebaseResult = await _firebaseService.SignInWithPasswordAsync(normalizedEmail ?? string.Empty, dto.Password);
-            if (!firebaseResult.Success)
-            {
-                return new AuthResponseDto { Success = false, Message = firebaseResult.Message ?? "Dang nhap that bai" };
-            }
-
-            var allowAutoProvisionEmployee =
-                !string.IsNullOrWhiteSpace(firebaseResult.LocalId) &&
-                !firebaseResult.LocalId.StartsWith("bypass:", StringComparison.OrdinalIgnoreCase);
-
-            var localUser = await EnsureLocalUserForLoginAsync(
-                firebaseResult.LocalId,
-                firebaseResult.Email ?? normalizedEmail,
-                allowAutoProvisionEmployee,
-                sessionContext.ResolvedTenantId
-            );
-            if (localUser == null)
-            {
-                return new AuthResponseDto
+                var normalizedEmail = dto.Email?.Trim();
+                var firebaseResult = await _firebaseService.SignInWithPasswordAsync(normalizedEmail ?? string.Empty, dto.Password);
+                if (!firebaseResult.Success)
                 {
-                    Success = false,
-                    Message = "Tai khoan chua duoc dong bo vao he thong. Vui long lien he quan tri vien."
-                };
-            }
+                    return new AuthResponseDto { Success = false, Message = firebaseResult.Message ?? "Dang nhap that bai" };
+                }
+
+                var allowAutoProvisionEmployee =
+                    !string.IsNullOrWhiteSpace(firebaseResult.LocalId) &&
+                    !firebaseResult.LocalId.StartsWith("bypass:", StringComparison.OrdinalIgnoreCase);
+
+                var localUser = await EnsureLocalUserForLoginAsync(
+                    firebaseResult.LocalId,
+                    firebaseResult.Email ?? normalizedEmail,
+                    allowAutoProvisionEmployee,
+                    sessionContext.ResolvedTenantId
+                );
+                if (localUser == null)
+                {
+                    return new AuthResponseDto
+                    {
+                        Success = false,
+                        Message = "Tai khoan chua duoc dong bo vao he thong. Vui long lien he quan tri vien."
+                    };
+                }
 
                 var userInfo = await BuildUserInfoAsync(localUser);
                 if (userInfo == null)
                 {
-                    throw new AuthenticationSystemException("Khong the tai thong tin nguoi dung sau khi xac thuc dang nhap.");
+                    return new AuthResponseDto { Success = false, Message = "Khong the tai thong tin nguoi dung" };
                 }
 
                 var workspaceMismatch = ValidateResolvedWorkspace(userInfo, sessionContext, "login");
@@ -340,8 +340,8 @@ namespace ERP.Services.Auth
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "🔴 CRITICAL ERROR in LoginAsync for user {Email}: {Message}", dto?.Email, ex.Message);
-                throw;
+                _logger.LogError(ex, "Error in LoginAsync");
+                return new AuthResponseDto { Success = false, Message = "Loi xay ra trong qua trinh dang nhap" };
             }
         }
 
@@ -360,7 +360,6 @@ namespace ERP.Services.Auth
 
                 var tokenHash = AuthTokenSecurity.ComputeHash(refreshToken);
                 var existingSession = await _context.AuthSessions
-                    .IgnoreQueryFilters()
                     .FirstOrDefaultAsync(session => session.refresh_token_hash == tokenHash);
 
                 if (existingSession == null)
@@ -484,7 +483,6 @@ namespace ERP.Services.Auth
 
             var tokenHash = AuthTokenSecurity.ComputeHash(refreshToken);
             var authSession = await _context.AuthSessions
-                .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(session => session.refresh_token_hash == tokenHash);
 
             if (authSession == null || authSession.revoked_at.HasValue)
@@ -635,57 +633,6 @@ namespace ERP.Services.Auth
                 };
             }
         }
-        
-        public async Task<AuthResponseDto> AdminResetPasswordAsync(int targetEmployeeId, AdminResetPasswordDto dto, int requesterId)
-        {
-            try
-            {
-                var requester = await _context.Users
-                    .FirstOrDefaultAsync(u => u.Id == requesterId && u.is_active);
-                
-                var targetUser = await _context.Users
-                    .Include(u => u.Employee)
-                    .FirstOrDefaultAsync(u => u.employee_id == targetEmployeeId && u.is_active);
-
-                if (requester == null || targetUser == null)
-                {
-                    return new AuthResponseDto { Success = false, Message = "Không tìm thấy tài khoản người dùng cho nhân viên này." };
-                }
-
-                // Security Check: Requester must be Admin/SuperAdmin and in the same tenant (if not SuperAdmin)
-                var requesterRoles = await _context.UserRoles
-                    .Where(ur => ur.user_id == requesterId && ur.is_active)
-                    .Select(ur => ur.role_id)
-                    .ToListAsync();
-
-                bool isSuperAdmin = requesterRoles.Contains(AuthSecurityConstants.RoleSuperAdminId);
-                bool isAdmin = requesterRoles.Contains(AuthSecurityConstants.RoleAdminId);
-
-                if (!isSuperAdmin && !isAdmin)
-                {
-                    return new AuthResponseDto { Success = false, Message = "Bạn không có quyền thực hiện chức năng này." };
-                }
-
-                if (!isSuperAdmin && requester.tenant_id != targetUser.tenant_id)
-                {
-                    return new AuthResponseDto { Success = false, Message = "Bạn không có quyền quản lý nhân viên ở tổ chức khác." };
-                }
-
-                // Update password in Firebase
-                await _firebaseService.UpdateUserPasswordAsync(targetUser.firebase_uid, dto.NewPassword);
-
-                return new AuthResponseDto
-                {
-                    Success = true,
-                    Message = $"Đã đặt lại mật khẩu thành công cho nhân viên {targetUser.Employee?.full_name}."
-                };
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error in AdminResetPasswordAsync for targetEmployeeId {TargetEmployeeId}", targetEmployeeId);
-                return new AuthResponseDto { Success = false, Message = "Lỗi xảy ra trong quá trình đặt lại mật khẩu." };
-            }
-        }
 
         public async Task<AuthResponseDto> PreRegisterStaffAsync(PreRegisterStaffDto dto)
         {
@@ -797,7 +744,7 @@ namespace ERP.Services.Auth
 
                 await _context.SaveChangesAsync();
 
-                var assignedRoleId = roleId ?? AuthSecurityConstants.RoleDirectorId; // Default to Manager (2)
+                var assignedRoleId = roleId ?? 2;
                 var existingRole = await _context.UserRoles
                     .IgnoreQueryFilters()
                     .FirstOrDefaultAsync(ur => ur.user_id == user.Id && ur.role_id == assignedRoleId);
@@ -1028,8 +975,6 @@ namespace ERP.Services.Auth
                 full_name = IsMasterEmail(email) ? "System Administrator" : email.Split('@')[0],
                 email = email,
                 work_email = email,
-                gender_code = "MALE", // Default required field
-                marital_status_code = "SINGLE", // Default required field
                 is_active = true,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -1076,84 +1021,50 @@ namespace ERP.Services.Auth
                 
                 // ✅ CRITICAL FIX: Ensure role names are always ENGLISH for code consistency
                 // Many places check role.name against AuthSecurityConstants (English), so we need consistency
-                var adminRoleId = await _context.Roles
-                    .IgnoreQueryFilters()
-                    .Where(r => r.is_active && r.name == AuthSecurityConstants.RoleAdmin)
-                    .Select(r => r.Id)
-                    .FirstOrDefaultAsync();
-
-                if (adminRoleId == 0)
-                {
-                    adminRoleId = AuthSecurityConstants.RoleAdminId;
-                }
-
-                var employeeRoleId = await _context.Roles
-                    .IgnoreQueryFilters()
-                    .Where(r => r.is_active && r.name == AuthSecurityConstants.RoleEmployee)
-                    .Select(r => r.Id)
-                    .FirstOrDefaultAsync();
-
-                if (employeeRoleId == 0)
-                {
-                    employeeRoleId = AuthSecurityConstants.RoleEmployeeId;
-                }
-
                 await SyncRoleNamesToEnglishAsync();
 
                 // 3. Logic assigning default role for new users & fixing broken roles
-                var userRoles = await _context.UserRoles
+                var activeRoleIds = await _context.UserRoles
                     .IgnoreQueryFilters()
                     .Where(ur => ur.user_id == userId && ur.is_active)
+                    .Select(ur => ur.role_id)
                     .ToListAsync();
 
-                var activeRoleIds = userRoles.Select(ur => ur.role_id).ToList();
                 var isMasterEmail = IsMasterEmail(email);
                 
-                // [FIX] Robust detection of Workspace Owners with Trim() to avoid matching failures
-                var normalizedLoginEmail = email.Trim().ToLowerInvariant();
+                // [FIX] Also detect Workspace Owners via WorkspaceOwnerInvitations table
                 var isWorkspaceOwner = await _context.WorkspaceOwnerInvitations
                     .IgnoreQueryFilters()
-                    .AnyAsync(inv => inv.OwnerEmail.Trim().ToLower() == normalizedLoginEmail && inv.Status == "activated");
+                    .AnyAsync(inv => inv.OwnerEmail.ToLower() == email.ToLower() && inv.Status == "activated");
                 
                 var isAdminEligible = isMasterEmail || isWorkspaceOwner;
-                var defaultRoleId = isAdminEligible ? adminRoleId : employeeRoleId;
+                var defaultRoleId = isAdminEligible ? AuthSecurityConstants.RoleAdminId : AuthSecurityConstants.RoleEmployeeId;
 
-                // ✅ FIX: Auto-Promotion & Cleanup logic
-                // If user is Admin-eligible but has Staff role or NO Admin role
-                if (isAdminEligible)
+                // ✅ NEW: Check if user has only negative/invalid roleIds (e.g., Staff role for admin)
+                // If workspace owner/master email but only has Staff role, promote to Admin
+                if (isAdminEligible && activeRoleIds.Count > 0 && !activeRoleIds.Contains(AuthSecurityConstants.RoleAdminId))
                 {
-                    if (!activeRoleIds.Contains(adminRoleId))
-                    {
-                        _logger.LogWarning(
-                            "Admin-eligible user {Email} missing Admin role. Adding Admin role now.", email);
-                        
-                        _context.UserRoles.Add(new UserRoles
-                        {
-                            user_id = userId,
-                            role_id = adminRoleId,
-                            assignment_reason = isWorkspaceOwner 
-                                ? "Workspace Owner Auto-Promotion (LOGIN)" 
-                                : "Master Email Auto-Promotion (OLD ACCOUNT)",
-                            is_active = true,
-                            CreatedAt = DateTime.UtcNow,
-                            UpdatedAt = DateTime.UtcNow
-                        });
-                        await _context.SaveChangesAsync();
-                    }
-
-                    // 🔴 CLEANUP: Remove Staff role if this is an Admin to prevent "duplicate" roles appearing in UI
-                    var staffRoleEntry = userRoles.FirstOrDefault(ur => ur.role_id == employeeRoleId);
-                    if (staffRoleEntry != null)
-                    {
-                        _logger.LogInformation("Removing redundant Staff role for Admin-eligible user {Email}", email);
-                        _context.UserRoles.Remove(staffRoleEntry);
-                        await _context.SaveChangesAsync();
-                    }
+                    // Admin-eligible user but no Admin role - this is incorrect, need to add Admin role
+                    _logger.LogWarning(
+                        "Admin-eligible user {Email} (IsMaster={IsMaster}, IsOwner={IsOwner}) missing Admin role. Adding Admin role now.",
+                        email, isMasterEmail, isWorkspaceOwner);
                     
+                    _context.UserRoles.Add(new UserRoles
+                    {
+                        user_id = userId,
+                        role_id = AuthSecurityConstants.RoleAdminId,
+                        assignment_reason = isWorkspaceOwner 
+                            ? "Workspace Owner Auto-Promotion (LOGIN)" 
+                            : "Master Email Auto-Promotion (OLD ACCOUNT)",
+                        is_active = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+
+                    await _context.SaveChangesAsync();
                     return;
                 }
 
-                // Default logic for regular users
                 if (activeRoleIds.Count == 0)
                 {
                     _context.UserRoles.Add(new UserRoles
@@ -1161,6 +1072,22 @@ namespace ERP.Services.Auth
                         user_id = userId,
                         role_id = defaultRoleId,
                         assignment_reason = "Initial Login Synchronization",
+                        is_active = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+
+                    await _context.SaveChangesAsync();
+                    return;
+                }
+
+                if (isMasterEmail && !activeRoleIds.Contains(AuthSecurityConstants.RoleAdminId))
+                {
+                    _context.UserRoles.Add(new UserRoles
+                    {
+                        user_id = userId,
+                        role_id = AuthSecurityConstants.RoleAdminId,
+                        assignment_reason = "Master Email Promotion",
                         is_active = true,
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow
@@ -1335,6 +1262,7 @@ namespace ERP.Services.Auth
         {
             return _configuration["AdminSettings:MasterEmail"]?.Trim();
         }
+
         private bool IsMasterEmail(string? email)
         {
             var masterEmail = GetMasterEmail();
@@ -1395,7 +1323,6 @@ namespace ERP.Services.Auth
                 primaryEmail = localUser.Employee?.work_email ?? string.Empty;
             }
 
-            // Master Email should always have SuperAdmin role
             if (IsMasterEmail(primaryEmail) &&
                 !roles.Contains(AuthSecurityConstants.RoleSuperAdmin, StringComparer.OrdinalIgnoreCase))
             {
@@ -1407,21 +1334,14 @@ namespace ERP.Services.Auth
             }
 
             // Calculate Scope Level and SystemAdmin status.
+            // RoleScopes is the primary RBAC source. Hardcoded role-name fallback is only for legacy data.
             var scopeLevel = roleScopeLevels.Any()
                 ? DetermineHighestScopeLevel(roleScopeLevels)
                 : ResolveLegacyScopeLevel(roleIds, roles);
             bool isSystemAdmin = false;
-            bool isWorkspaceAdmin = false;
 
-            // 1. Identify System Admin (SuperAdmin / Master Email)
-            if (roleIds.Contains(AuthSecurityConstants.RoleSuperAdminId) || 
-                roles.Contains(AuthSecurityConstants.RoleSuperAdmin, StringComparer.OrdinalIgnoreCase) ||
-                IsMasterEmail(primaryEmail))
-            {
-                isSystemAdmin = true;
-            }
-
-            // 2. Identify Workspace Admin / Owner
+            // [OWNERSHIP AUTO-DETECTION] (FINAL DEFENSIVE LAYER)
+            // If the user's email matches an activated Workspace Owner Invitation, they ARE system admin for their tenant.
             if (!string.IsNullOrWhiteSpace(primaryEmail))
             {
                 var isOwner = await _context.WorkspaceOwnerInvitations
@@ -1429,21 +1349,20 @@ namespace ERP.Services.Auth
                     .AnyAsync(inv => inv.OwnerEmail.ToLower() == primaryEmail.ToLower() && inv.Status == "activated");
                 if (isOwner) 
                 {
-                    isWorkspaceAdmin = true;
+                    isSystemAdmin = true;
+                    scopeLevel = "TENANT";
                 }
             }
 
-            if (roleIds.Contains(AuthSecurityConstants.RoleAdminId) ||
-                roleIds.Contains(AuthSecurityConstants.RoleDirectorId) ||
-                roles.Contains(AuthSecurityConstants.RoleAdmin, StringComparer.OrdinalIgnoreCase) ||
-                roles.Contains(AuthSecurityConstants.RoleDirector, StringComparer.OrdinalIgnoreCase))
+            // SuperAdmin (ID 1) or Workspace Admin (ID 8) check
+            if (roleIds.Contains(AuthSecurityConstants.RoleSuperAdminId) || 
+                roleIds.Contains(AuthSecurityConstants.RoleAdminId) ||
+                roles.Contains(AuthSecurityConstants.RoleSuperAdmin, StringComparer.OrdinalIgnoreCase) ||
+                roles.Contains(AuthSecurityConstants.RoleAdmin, StringComparer.OrdinalIgnoreCase))
             {
-                isWorkspaceAdmin = true;
-            }
-
-            // Both levels of admins get TENANT scope visibility
-            if (isSystemAdmin || isWorkspaceAdmin)
-            {
+                // Note: SuperAdmin gets full access in AppDbContext if tenant_id is null
+                // Workspace Admin gets full access within their tenant
+                isSystemAdmin = true;
                 if (scopeLevel == "PERSONAL") scopeLevel = "TENANT";
             }
 
@@ -1456,7 +1375,10 @@ namespace ERP.Services.Auth
                 .ToListAsync();
 
             // [ULTRASONIC SAFETY NET] God-mode for Admin/Owner/SuperAdmin
-            if (isSystemAdmin || isWorkspaceAdmin)
+            // If they have Role ID 1 (SuperAdmin) or ID 8 (Admin), we FORCE-ADD all essential permissions to prevent UI lockouts.
+            if (isSystemAdmin || 
+                roleIds.Contains(AuthSecurityConstants.RoleSuperAdminId) || 
+                roleIds.Contains(AuthSecurityConstants.RoleAdminId))
             {
                 var godModePermissions = new List<string> 
                 { 
@@ -1464,21 +1386,16 @@ namespace ERP.Services.Auth
                     "contracts:read", "contracts:create", "contracts:update", "contracts:delete",
                     "shifts:read", "shifts:create", "shifts:update", "shifts:delete",
                     "attendance:read", "attendance:update", "attendance:delete",
-                    "payroll:read", "payroll:create", "payroll:update", "payroll:delete", "payroll:approve",
-                    "rbac:read", "rbac:manage"
+                    "system:manage", "rbac:read", "rbac:manage", "tenant:manage"
                 };
-                
-                // ONLY true System Admins get multi-tenant and system level rights
-                if (isSystemAdmin)
-                {
-                    godModePermissions.Add("system:manage");
-                    godModePermissions.Add("tenant:manage");
-                }
                 
                 foreach (var p in godModePermissions)
                 {
                     if (!permissions.Contains(p)) permissions.Add(p);
                 }
+                
+                // Ensure isSystemAdmin is consistently true for Admin roles
+                isSystemAdmin = true;
             }
 
             return new UserInfoDto
@@ -1492,7 +1409,7 @@ namespace ERP.Services.Auth
                 PhoneNumber = localUser.Employee?.phone ?? string.Empty,
                 IsActive = localUser.is_active,
                 Roles = roles,
-                Permissions = permissions,
+                Permissions = permissions, // [NEW] Populate permissions for frontend routing
                 ScopeLevel = scopeLevel,
                 RegionId = localUser.Employee?.region_id,
                 BranchId = localUser.Employee?.branch_id,
@@ -1724,8 +1641,8 @@ namespace ERP.Services.Auth
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new(AuthSecurityConstants.SessionIdClaimType, sessionId),
                 new(AuthSecurityConstants.TokenTypeClaimType, AuthSecurityConstants.AccessTokenType),
-                // FIX: tenant_id should be NULL for SuperAdmin, never "0" which causes ambiguous lookups
-                new("tenant_id", user.TenantId?.ToString() ?? string.Empty),
+                // FIX: Ensure tenant_id is always set to a valid number (0 as fallback for null)
+                new("tenant_id", user.TenantId?.ToString() ?? "0"),
                 new("EmployeeId", user.EmployeeId.ToString()),
                 new("EmployeeCode", user.EmployeeCode ?? string.Empty),
                 new("scope_level", user.ScopeLevel ?? "PERSONAL"),
@@ -1739,7 +1656,6 @@ namespace ERP.Services.Auth
         private async Task RevokeAllActiveSessionsAsync(int userId, DateTime utcNow, string note)
         {
             var activeSessions = await _context.AuthSessions
-                .IgnoreQueryFilters()
                 .Where(session => session.user_id == userId && session.is_active && !session.revoked_at.HasValue)
                 .ToListAsync();
 
