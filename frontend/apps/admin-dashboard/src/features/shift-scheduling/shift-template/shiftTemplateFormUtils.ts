@@ -41,6 +41,12 @@ export const DEFAULT_SHIFT_TEMPLATE_FORM_VALUES: ShiftTemplateFormValues = {
   mealTypeId: "",
   mealCount: "0",
   isOvertimeShift: false,
+  isRestDay: false,
+  isSplitShift: false,
+  startHour2: "",
+  startMinute2: "",
+  endHour2: "",
+  endMinute2: "",
 };
 
 export const WEEKDAYS = [
@@ -144,6 +150,8 @@ export const createShiftTemplateFormValues = (
 ): ShiftTemplateFormValues => {
   const start = splitTime(initialData?.startTime);
   const end = splitTime(initialData?.endTime);
+  const start2 = splitTime(initialData?.startTime2 || "");
+  const end2 = splitTime(initialData?.endTime2 || "");
   const branchIds =
     initialData?.branchIds && initialData.branchIds.length > 0
       ? initialData.branchIds
@@ -208,6 +216,12 @@ export const createShiftTemplateFormValues = (
     isOvertimeShift:
       initialData?.isOvertimeShift ??
       DEFAULT_SHIFT_TEMPLATE_FORM_VALUES.isOvertimeShift,
+    isRestDay: initialData?.isRestDay ?? false,
+    isSplitShift: initialData?.isSplitShift ?? false,
+    startHour2: start2.hour,
+    startMinute2: start2.minute,
+    endHour2: end2.hour,
+    endMinute2: end2.minute,
   };
 };
 
@@ -260,6 +274,10 @@ export const buildShiftTemplateSubmitPayload = (
     mealTypeId: formValues.mealTypeId,
     mealCount: formValues.mealCount,
     isOvertimeShift: formValues.isOvertimeShift,
+    isRestDay: formValues.isRestDay,
+    isSplitShift: formValues.isSplitShift,
+    startTime2: formValues.isSplitShift ? combineTime(formValues.startHour2, formValues.startMinute2) : null,
+    endTime2: formValues.isSplitShift ? combineTime(formValues.endHour2, formValues.endMinute2) : null,
     note: null,
     assignDate: assignmentContext?.assignmentDate,
   };

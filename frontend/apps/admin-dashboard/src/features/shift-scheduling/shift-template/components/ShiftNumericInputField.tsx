@@ -11,6 +11,7 @@ interface ShiftNumericInputFieldProps {
   error?: string;
   inputMode?: "numeric" | "decimal";
   suffix?: string;
+  disabled?: boolean;
 }
 
 export const ShiftNumericInputField = ({
@@ -24,15 +25,18 @@ export const ShiftNumericInputField = ({
   error,
   inputMode = "numeric",
   suffix,
+  disabled = false,
 }: ShiftNumericInputFieldProps) => (
-  <label className="block">
+  <label className={`block ${disabled ? "opacity-60" : ""}`}>
     <ShiftFieldLabel
       label={label}
       required={required}
       tooltip={tooltip}
     />
     <div
-      className={`flex h-11 items-center overflow-hidden rounded-xl border bg-white transition ${
+      className={`flex h-11 items-center overflow-hidden rounded-xl border transition ${
+        disabled ? "bg-slate-50 border-slate-200" : "bg-white"
+      } ${
         error
           ? "border-rose-400 focus-within:border-rose-500 focus-within:ring-1 focus-within:ring-rose-200"
           : "border-slate-200 focus-within:border-[#134BBA] focus-within:ring-1 focus-within:ring-[#BFDBFE]"
@@ -42,9 +46,12 @@ export const ShiftNumericInputField = ({
         type="text"
         inputMode={inputMode}
         value={value}
+        disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="h-full flex-1 bg-transparent px-3 text-sm text-slate-700 outline-none"
+        className={`h-full flex-1 bg-transparent px-3 text-sm text-slate-700 outline-none ${
+          disabled ? "cursor-not-allowed" : ""
+        }`}
       />
       {suffix ? (
         <span className="border-l border-slate-200 px-3 text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">

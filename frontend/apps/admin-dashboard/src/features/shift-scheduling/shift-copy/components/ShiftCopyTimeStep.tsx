@@ -1,4 +1,5 @@
-﻿import { parseIsoWeekInputValue, toIsoWeekInputValue } from "../../utils/week";
+import { getIsoWeekNumber, parseIsoDate, parseIsoWeekInputValue, toIsoWeekInputValue } from "../../utils/week";
+import { ANNOTATION_LABELS } from "../constants";
 import type {
   ShiftCopyDestinationMode,
   ShiftCopyWeekAnnotation,
@@ -14,16 +15,8 @@ interface ShiftCopyTimeStepProps {
   weekOptions: ShiftCopyWeekOption[];
   onSourceWeekChange: (value: string) => void;
   onDestinationModeChange: (value: ShiftCopyDestinationMode) => void;
-  onToggleDestinationWeek: (weekStartDate: string) => void;
-  onSelectAllDestinationWeeks: () => void;
-  onClearDestinationWeeks: () => void;
+  onOpenMultiWeekPicker: () => void;
 }
-
-const ANNOTATION_LABELS: Record<ShiftCopyWeekAnnotation, string> = {
-  past: "Tuần cũ",
-  current: "Tuần hiện tại",
-  future: "Tuần tương lai",
-};
 
 const ANNOTATION_STYLES: Record<ShiftCopyWeekAnnotation, string> = {
   past: "bg-slate-100 text-slate-500",
@@ -37,12 +30,9 @@ export const ShiftCopyTimeStep = ({
   nextWeekLabel,
   destinationMode,
   destinationWeekStartDates,
-  weekOptions,
   onSourceWeekChange,
   onDestinationModeChange,
-  onToggleDestinationWeek,
-  onSelectAllDestinationWeeks,
-  onClearDestinationWeeks,
+  onOpenMultiWeekPicker,
 }: ShiftCopyTimeStepProps) => (
   <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
     <section className="rounded-2xl border border-slate-200 bg-white p-5">
@@ -111,66 +101,46 @@ export const ShiftCopyTimeStep = ({
       </div>
 
       {destinationMode === "multiWeek" ? (
-        <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
+          <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold text-slate-800">Danh sách tuần trong năm</p>
+              <p className="text-sm font-semibold text-slate-800">Các tuần đã chọn</p>
               <p className="mt-1 text-xs text-slate-500">
-                Cần chọn ít nhất 1 tuần đích trước khi tiếp tục.
+                Đã chọn <span className="font-bold text-[#134BBA]">{destinationWeekStartDates.length}</span> tuần đích.
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={onSelectAllDestinationWeeks}
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-              >
-                Chọn tất cả
-              </button>
-              <button
-                type="button"
-                onClick={onClearDestinationWeeks}
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-              >
-                Hủy chọn
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={onOpenMultiWeekPicker}
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-[#134BBA] shadow-sm ring-1 ring-inset ring-slate-200 transition hover:bg-slate-50"
+            >
+              <span className="material-symbols-outlined text-[18px]">calendar_add_on</span>
+              {destinationWeekStartDates.length > 0 ? "Thay đổi" : "Chọn tuần"}
+            </button>
           </div>
 
-          <div className="max-h-[320px] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shift-scheduling-scrollbar">
-            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-              {weekOptions.map((week) => {
-                const checked = destinationWeekStartDates.includes(week.weekStartDate);
-
-                return (
-                  <label
-                    key={week.weekStartDate}
-                    className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-3 transition ${
-                      checked
-                        ? "border-[#134BBA] bg-[#EFF6FF]"
-                        : "border-slate-200 bg-white hover:border-[#BFDBFE]"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => onToggleDestinationWeek(week.weekStartDate)}
-                      className="h-4 w-4 rounded border-slate-300 text-[#134BBA] focus:ring-[#134BBA]"
-                    />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-slate-800">{week.label}</p>
-                      <span
-                        className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${ANNOTATION_STYLES[week.annotation]}`}
-                      >
-                        {ANNOTATION_LABELS[week.annotation]}
-                      </span>
-                    </div>
-                  </label>
-                );
-              })}
+          {destinationWeekStartDates.length > 0 ? (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {destinationWeekStartDates.slice(0, 8).map((date) => (
+                <span
+                  key={date}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50/50 px-2.5 py-1 text-xs font-semibold text-[#134BBA]"
+                >
+                  T{getIsoWeekNumber(parseIsoDate(date))}
+                </span>
+              ))}
+              {destinationWeekStartDates.length > 8 ? (
+                <span className="inline-flex items-center rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">
+                  +{destinationWeekStartDates.length - 8}
+                </span>
+              ) : null}
             </div>
-          </div>
+          ) : (
+            <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-white/50 py-6 text-center">
+              <p className="text-xs text-slate-400">Chưa có tuần nào được chọn</p>
+            </div>
+          )}
         </div>
       ) : null}
     </section>

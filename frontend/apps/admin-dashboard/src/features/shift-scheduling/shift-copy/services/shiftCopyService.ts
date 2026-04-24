@@ -166,11 +166,8 @@ const buildPreviewSummary = (
 
 export const shiftCopyService = {
   async getCatalogData(branchOptions: SelectOption[]): Promise<ShiftCopyCatalogData> {
-    const cleanedBranchOptions = sortOptions(
-      branchOptions.filter((option) => option.value.trim().length > 0),
-    );
-
-    const [departments, employeeResponse] = await Promise.all([
+    const [branches, departments, employeeResponse] = await Promise.all([
+      employeeService.getBranchesMetadata().catch(() => []),
       employeeService.getDepartmentsMetadata().catch(() => []),
       employeeService.getEmployees(1, 1000, "", "all").catch(() => ({
         items: [],
@@ -183,6 +180,19 @@ export const shiftCopyService = {
     ]);
 
     const departmentBranchMap = buildDepartmentBranchMap(employeeResponse.items);
+
+    const branchList: SelectOption[] = sortOptions([
+      ...branchOptions.filter((option) => option.value.trim().length > 0),
+      ...branches
+        .filter((branch) => Number.isFinite(branch.id) && branch.name?.trim())
+        .map((branch) => ({
+          value: String(branch.id),
+          label: branch.name.trim(),
+        })),
+    ]);
+
+    // Remove duplicates based on value
+    const uniqueBranchList = Array.from(new Map(branchList.map((item) => [item.value, item])).values());
 
     const departmentOptions: ShiftCopyDepartmentOption[] = sortOptions(
       departments
@@ -207,7 +217,7 @@ export const shiftCopyService = {
     );
 
     return {
-      branches: cleanedBranchOptions,
+      branches: uniqueBranchList,
       departments: departmentOptions,
       employees: employeeOptions,
     };
