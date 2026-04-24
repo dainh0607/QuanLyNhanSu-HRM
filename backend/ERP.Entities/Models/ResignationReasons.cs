@@ -11,9 +11,16 @@ namespace ERP.Entities.Models
         public int? tenant_id { get; set; }
 
         [Required]
-        [Column("reason_name")]
+        [Column("name")]
         [StringLength(255)]
-        public string reason_name { get; set; }
+        public string name { get; set; } = null!;
+
+        [Column("description")]
+        [StringLength(500)]
+        public string? description { get; set; }
+
+        [Column("is_active")]
+        public bool is_active { get; set; } = true;
 
         [Column("is_default")]
         public bool is_default { get; set; }

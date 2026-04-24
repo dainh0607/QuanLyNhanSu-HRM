@@ -4,6 +4,7 @@ using ERP.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ERP.Entities.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260424134814_UpdateOvertimeTypesSchema")]
+    partial class UpdateOvertimeTypesSchema
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -3342,9 +3345,15 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("updated_at");
 
+                    b.Property<string>("code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("code");
+
                     b.Property<string>("description")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
                         .HasColumnName("description");
 
                     b.Property<int?>("display_order")
@@ -3354,12 +3363,6 @@ namespace ERP.Entities.Migrations
                     b.Property<bool>("is_active")
                         .HasColumnType("bit")
                         .HasColumnName("is_active");
-
-                    b.Property<string>("keyword")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("keyword");
 
                     b.Property<string>("name")
                         .IsRequired()
@@ -3381,9 +3384,9 @@ namespace ERP.Entities.Migrations
                             Id = 1,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            code = "KL01",
                             description = "Khiển trách bằng văn bản",
                             is_active = true,
-                            keyword = "KYLUAT_KHIEN_TRACH",
                             name = "Khiển trách"
                         },
                         new
@@ -3391,9 +3394,9 @@ namespace ERP.Entities.Migrations
                             Id = 2,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            code = "KL02",
                             description = "Cảnh cáo trước toàn công ty",
                             is_active = true,
-                            keyword = "KYLUAT_CANH_CAO",
                             name = "Cảnh cáo"
                         },
                         new
@@ -3401,9 +3404,9 @@ namespace ERP.Entities.Migrations
                             Id = 3,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            code = "KL03",
                             description = "Giảm bậc lương hiện tại",
                             is_active = true,
-                            keyword = "KYLUAT_HA_BAC_LUONG",
                             name = "Hạ bậc lương"
                         },
                         new
@@ -3411,9 +3414,9 @@ namespace ERP.Entities.Migrations
                             Id = 4,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            code = "KL04",
                             description = "Miễn nhiệm chức vụ hiện tại",
                             is_active = true,
-                            keyword = "KYLUAT_CACH_CHUC",
                             name = "Cách chức"
                         },
                         new
@@ -3421,9 +3424,9 @@ namespace ERP.Entities.Migrations
                             Id = 5,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            code = "KL05",
                             description = "Chấm dứt hợp đồng lao động",
                             is_active = true,
-                            keyword = "KYLUAT_SA_THAI",
                             name = "Sa thải"
                         });
                 });

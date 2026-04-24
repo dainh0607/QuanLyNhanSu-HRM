@@ -117,11 +117,11 @@ namespace ERP.Entities.Seeding
 
             // 14. DisciplineTypes (Loại kỷ luật)
             modelBuilder.Entity<DisciplineTypes>().HasData(
-                new DisciplineTypes { Id = 1, code = "KL01", name = "Khiển trách", description = "Khiển trách bằng văn bản", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
-                new DisciplineTypes { Id = 2, code = "KL02", name = "Cảnh cáo", description = "Cảnh cáo trước toàn công ty", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
-                new DisciplineTypes { Id = 3, code = "KL03", name = "Hạ bậc lương", description = "Giảm bậc lương hiện tại", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
-                new DisciplineTypes { Id = 4, code = "KL04", name = "Cách chức", description = "Miễn nhiệm chức vụ hiện tại", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
-                new DisciplineTypes { Id = 5, code = "KL05", name = "Sa thải", description = "Chấm dứt hợp đồng lao động", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate }
+                new DisciplineTypes { Id = 1, keyword = "KYLUAT_KHIEN_TRACH", name = "Khiển trách", description = "Khiển trách bằng văn bản", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new DisciplineTypes { Id = 2, keyword = "KYLUAT_CANH_CAO", name = "Cảnh cáo", description = "Cảnh cáo trước toàn công ty", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new DisciplineTypes { Id = 3, keyword = "KYLUAT_HA_BAC_LUONG", name = "Hạ bậc lương", description = "Giảm bậc lương hiện tại", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new DisciplineTypes { Id = 4, keyword = "KYLUAT_CACH_CHUC", name = "Cách chức", description = "Miễn nhiệm chức vụ hiện tại", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new DisciplineTypes { Id = 5, keyword = "KYLUAT_SA_THAI", name = "Sa thải", description = "Chấm dứt hợp đồng lao động", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate }
             );
 
             // 15. RewardTypes (Loại khen thưởng)
