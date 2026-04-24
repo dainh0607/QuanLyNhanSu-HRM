@@ -128,6 +128,7 @@ namespace ERP.Entities
         public DbSet<TaxBrackets> TaxBrackets { get; set; }
         public DbSet<TaxTypes> TaxTypes { get; set; }
         public DbSet<TimeMachines> TimeMachines { get; set; }
+        public DbSet<EmployeeTimekeepingMachines> EmployeeTimekeepingMachines { get; set; }
         public DbSet<UpdateHistory> UpdateHistory { get; set; }
         public DbSet<UserRoles> UserRoles { get; set; }
         public DbSet<Users> Users { get; set; }
@@ -139,8 +140,11 @@ namespace ERP.Entities
         public DbSet<InvitationTokens> InvitationTokens { get; set; }
         public DbSet<EmployeeDocuments> EmployeeDocuments { get; set; }
         public DbSet<Countries> Countries { get; set; }
-        public DbSet<Provinces> Provinces { get; set; }
-        public DbSet<Districts> Districts { get; set; }
+        public DbSet<Provinces> Provinces { get; set; } = null!;
+        public DbSet<Districts> Districts { get; set; } = null!;
+        public DbSet<Wards> Wards { get; set; } = null!;
+        public DbSet<MergedProvinces> MergedProvinces { get; set; } = null!;
+        public DbSet<MergedWards> MergedWards { get; set; } = null!;
         public DbSet<ResignationReasons> ResignationReasons { get; set; }
         public DbSet<EmploymentHistoryLog> EmploymentHistoryLogs { get; set; }
         public DbSet<MobilePermissionManifest> MobilePermissionManifest { get; set; }
@@ -200,6 +204,48 @@ namespace ERP.Entities
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
+            // Address Indexes
+            modelBuilder.Entity<Provinces>(entity =>
+            {
+                entity.HasIndex(e => e.code).IsUnique();
+                entity.HasIndex(e => e.name);
+            });
+
+            modelBuilder.Entity<Districts>(entity =>
+            {
+                entity.HasIndex(e => e.code).IsUnique();
+                entity.HasIndex(e => e.province_code);
+                entity.HasIndex(e => e.name);
+            });
+
+            modelBuilder.Entity<Wards>(entity =>
+            {
+                entity.HasIndex(e => e.code).IsUnique();
+                entity.HasIndex(e => e.district_code);
+                entity.HasIndex(e => e.name);
+            });
+
+            // Merged Address Indexes
+            modelBuilder.Entity<MergedProvinces>(entity =>
+            {
+                entity.HasIndex(e => e.code).IsUnique();
+                entity.HasIndex(e => e.name);
+            });
+
+            modelBuilder.Entity<MergedWards>(entity =>
+            {
+                entity.HasIndex(e => e.code).IsUnique();
+                entity.HasIndex(e => e.province_code);
+                entity.HasIndex(e => e.name);
+            });
+
+            // Map Principal Keys for Merged Address Tables
+            modelBuilder.Entity<MergedWards>()
+                .HasOne(w => w.Province)
+                .WithMany(p => p.Wards)
+                .HasForeignKey(w => w.province_code)
+                .HasPrincipalKey(p => p.code);
+
             // Map Principal Keys for String-based Foreign Keys
             modelBuilder.Entity<Provinces>()
                 .HasOne(p => p.Country)
@@ -212,6 +258,12 @@ namespace ERP.Entities
                 .WithMany(p => p.Districts)
                 .HasForeignKey(d => d.province_code)
                 .HasPrincipalKey(p => p.code);
+
+            modelBuilder.Entity<Wards>()
+                .HasOne(w => w.District)
+                .WithMany(d => d.Wards)
+                .HasForeignKey(w => w.district_code)
+                .HasPrincipalKey(d => d.code);
 
             // Seed Master Data via Extension Method
             modelBuilder.SeedMasterData();

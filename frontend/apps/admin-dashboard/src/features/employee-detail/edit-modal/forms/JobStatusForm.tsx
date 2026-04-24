@@ -378,7 +378,7 @@ const JobStatusForm: React.FC<JobStatusFormProps> = ({ data, errors, onFieldChan
             </div>
 
             {data.isResigned && (
-              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-[14px] animate-in fade-in slide-in-from-top-2 duration-300">
                 <div className="space-y-2">
                   <label className="text-[13px] font-bold text-slate-700">Lý do nghỉ việc</label>
                   <div className="relative group">

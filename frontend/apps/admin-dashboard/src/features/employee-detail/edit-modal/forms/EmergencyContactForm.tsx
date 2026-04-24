@@ -22,7 +22,7 @@ const EmergencyContactForm: React.FC<EmergencyContactFormProps> = ({
       title="Liên hệ khẩn cấp"
       description="Thông tin này được dùng khi cần liên hệ khẩn cấp với người thân của nhân viên."
     />
-    <div className="space-y-5">
+    <div className="space-y-[1px]">
       <FormRow label="Tên người liên hệ" required error={errors.name}>
         <input
           type="text"

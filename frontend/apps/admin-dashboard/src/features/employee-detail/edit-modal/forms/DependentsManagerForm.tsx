@@ -249,7 +249,7 @@ const DependentsManagerForm: React.FC<DependentsManagerFormProps> = ({
 
   return (
     <>
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-[14px]">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <FormHeading
             title="Người phụ thuộc"
@@ -368,7 +368,7 @@ const DependentsManagerForm: React.FC<DependentsManagerFormProps> = ({
             </div>
 
             <form onSubmit={handleSubmit}>
-              <div className="max-h-[min(72vh,760px)] space-y-5 overflow-y-auto px-6 py-6">
+              <div className="max-h-[min(72vh,760px)] space-y-[1px] overflow-y-auto px-6 py-6">
                 <FormRow label="Họ và tên đầy đủ" required error={errors.fullName}>
                   <input
                     type="text"

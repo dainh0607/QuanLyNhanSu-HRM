@@ -41,7 +41,7 @@ const getInitials = (fullName: string | undefined) => {
 };
 
 const getRoleLabel = (user: User) => {
-  if (user.roles?.includes("Admin")) return "Quản trị viên";
+  if (user.roles?.includes("Admin") || user.roles?.includes("Tenant Admin")) return "Quản trị viên";
   if (user.roles?.includes("Manager")) return "Quản lý";
   return "Nhân viên";
 };

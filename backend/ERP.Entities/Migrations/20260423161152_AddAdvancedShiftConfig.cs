@@ -84,6 +84,9 @@ namespace ERP.Entities.Migrations
                 nullable: false,
                 defaultValue: "");
 
+            // FIX: Populate keyword with unique shift_code before creating unique index
+            migrationBuilder.Sql("UPDATE Shifts SET keyword = shift_code WHERE keyword = '' OR keyword IS NULL");
+
             migrationBuilder.AddColumn<int>(
                 name: "max_early_mins",
                 table: "Shifts",
@@ -143,7 +146,7 @@ namespace ERP.Entities.Migrations
                 type: "nvarchar(50)",
                 maxLength: 50,
                 nullable: false,
-                defaultValue: "");
+                defaultValue: "Asia/Saigon");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Shifts_keyword",

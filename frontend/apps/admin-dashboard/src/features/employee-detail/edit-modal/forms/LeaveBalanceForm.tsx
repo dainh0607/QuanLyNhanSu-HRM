@@ -13,7 +13,7 @@ const LeaveBalanceForm: React.FC<LeaveBalanceFormProps> = ({ data }) => {
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
       
       {/* AC 3.1: Dòng tổng hợp số ngày nghỉ - Dạng thẻ (Cards) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-[22px]">
          {/* Thẻ Nghỉ có lương */}
          <div className="group relative overflow-hidden rounded-[32px] border border-emerald-100 bg-emerald-50/30 p-8 transition-all hover:bg-emerald-50 hover:shadow-xl hover:shadow-emerald-500/10 active:scale-[0.98]">
             <div className="absolute -right-6 -top-6 flex h-24 w-24 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500 group-hover:scale-110 transition-transform">

@@ -45,7 +45,29 @@ namespace ERP.API.DataTest
                 foreach (var command in commands)
                 {
                     if (string.IsNullOrWhiteSpace(command)) continue;
-                    await context.Database.ExecuteSqlRawAsync(command);
+                    
+                    // Simple regex to find table name in INSERT statement
+                    var match = System.Text.RegularExpressions.Regex.Match(command, @"INSERT\s+INTO\s+([\[\]\w\d_]+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                    
+                    if (match.Success)
+                    {
+                        string tableName = match.Groups[1].Value.Trim('[', ']');
+                        try 
+                        {
+                            // Wrap with IDENTITY_INSERT. This must be in the same batch/connection for some SQL providers.
+                            // We use a single string to execute as one batch.
+                            await context.Database.ExecuteSqlRawAsync($"SET IDENTITY_INSERT {tableName} ON; {command}; SET IDENTITY_INSERT {tableName} OFF;");
+                        }
+                        catch (Exception)
+                        {
+                            // If SET IDENTITY_INSERT fails (e.g. table has no identity column), fall back to normal execution
+                            await context.Database.ExecuteSqlRawAsync(command);
+                        }
+                    }
+                    else
+                    {
+                        await context.Database.ExecuteSqlRawAsync(command);
+                    }
                 }
 
                 logger.LogInformation("Sample data applied successfully.");

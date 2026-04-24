@@ -153,7 +153,7 @@ const SalaryAllowanceForm: React.FC<SalaryAllowanceFormProps> = ({ data, onField
                 <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-[14px]">
                  <div className="space-y-1">
                     <label className="text-[11px] font-black uppercase text-slate-400 ml-1">Hình thức chi trả <span className="text-rose-500">*</span></label>
                     <select
@@ -189,7 +189,7 @@ const SalaryAllowanceForm: React.FC<SalaryAllowanceFormProps> = ({ data, onField
                       className="h-12 w-full rounded-[16px] border-none bg-slate-50 px-4 text-[13px] font-black text-emerald-600 outline-none"
                     />
                  </div>
-                 <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-[14px]">
                     <div className="space-y-1">
                       <label className="text-[11px] font-black uppercase text-slate-400 ml-1">Khoảng thời gian <span className="text-rose-500">*</span></label>
                       <div className="flex items-center gap-2">

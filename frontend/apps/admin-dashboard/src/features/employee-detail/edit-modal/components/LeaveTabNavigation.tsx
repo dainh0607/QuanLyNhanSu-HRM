@@ -153,7 +153,7 @@ const LeaveTabNavigation: React.FC<LeaveTabNavigationProps> = ({
                   }`}
                 >
                   <span className="flex items-center gap-2">
-                    <span className="text-[14px] leading-none">{tab.label}</span>
+                    <span className="text-[13px] leading-none">{tab.label}</span>
                     {isDirty ? (
                       <span className="inline-block h-1.5 w-1.5 rounded-full bg-orange-500 animate-pulse"></span>
                     ) : null}

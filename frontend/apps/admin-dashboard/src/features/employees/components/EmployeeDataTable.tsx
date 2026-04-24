@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Employee, ColumnConfig } from '../types';
 import { authService, hasPermission } from '../../../services/authService';
+import ResetPasswordModal from './ResetPasswordModal';
 
 interface EmployeeDataTableProps {
   employees: Employee[];
@@ -70,7 +71,8 @@ const isAdminAccessGroup = (accessGroup?: string): boolean => {
   return (
     normalizedAccessGroup.includes('quan tri') ||
     normalizedAccessGroup.includes('admin') ||
-    normalizedAccessGroup.includes('administrator')
+    normalizedAccessGroup.includes('administrator') ||
+    normalizedAccessGroup.includes('tenant')
   );
 };
 
@@ -138,10 +140,12 @@ const EmployeeDataTable: React.FC<EmployeeDataTableProps> = ({
 }) => {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
+  const [resetPasswordEmployee, setResetPasswordEmployee] = useState<Employee | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const user = authService.getCurrentUser();
   const canUpdate = hasPermission(user, 'employee', 'update');
   const canDelete = hasPermission(user, 'employee', 'delete');
+  const isAdminUser = user?.roles.includes('Admin') || user?.roles.includes('SuperAdmin') || user?.roles.includes('Tenant Admin');
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -379,20 +383,23 @@ const EmployeeDataTable: React.FC<EmployeeDataTableProps> = ({
                           </button>
                         )}
 
-                        {!canDelete && !canUpdate && (
-                          <button
-                            onClick={() => {
-                              onSelectEmployee?.(employee);
-                              setActiveMenuId(null);
-                            }}
-                            className="flex w-full items-center gap-[11px] px-[15px] py-[7px] text-left text-[13px] font-medium text-gray-700 transition-colors hover:bg-gray-50"
-                            type="button"
-                          >
-                            <span className="material-symbols-outlined text-[19px] text-[#192841]">
-                              visibility
-                            </span>
-                            Xem
-                          </button>
+                        {isAdminUser && (
+                          <>
+                            <div className="mx-2 my-0.5 h-px bg-gray-50" />
+                            <button
+                              onClick={() => {
+                                setResetPasswordEmployee(employee);
+                                setActiveMenuId(null);
+                              }}
+                              className="flex w-full items-center gap-[11px] px-[15px] py-[7px] text-left text-[13px] font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                              type="button"
+                            >
+                              <span className="material-symbols-outlined text-[19px] text-[#192841]">
+                                lock_reset
+                              </span>
+                              Đổi mật khẩu
+                            </button>
+                          </>
                         )}
                       </div>
                     ) : null}
@@ -403,6 +410,15 @@ const EmployeeDataTable: React.FC<EmployeeDataTableProps> = ({
           })}
         </tbody>
       </table>
+
+      {resetPasswordEmployee && (
+        <ResetPasswordModal
+          isOpen={!!resetPasswordEmployee}
+          onClose={() => setResetPasswordEmployee(null)}
+          employeeId={resetPasswordEmployee.id}
+          employeeName={resetPasswordEmployee.fullName}
+        />
+      )}
     </div>
   );
 };

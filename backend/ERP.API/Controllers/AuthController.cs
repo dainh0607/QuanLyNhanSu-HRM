@@ -285,6 +285,32 @@ namespace ERP.API.Controllers
             }
         }
 
+        [HttpPost("reset-employee-password/{employeeId}")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
+        public async Task<IActionResult> ResetEmployeePassword(int employeeId, [FromBody] AdminResetPasswordDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+        
+            var userIdValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? User.FindFirst(Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames.Sub)?.Value;
+        
+            if (!int.TryParse(userIdValue, out var requesterId))
+            {
+                return Unauthorized();
+            }
+        
+            var result = await _authService.AdminResetPasswordAsync(employeeId, dto, requesterId);
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+        
+            return Ok(result);
+        }
+        
         [HttpPost("change-password")]
         [Authorize]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)

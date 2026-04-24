@@ -52,7 +52,7 @@ const AdditionalInfoForm: React.FC<AdditionalInfoFormProps> = ({
       description="Bổ sung các thông tin phục vụ hồ sơ thuế thu nhập cá nhân và báo cáo nhân sự định kỳ."
     />
 
-    <div className="space-y-5">
+    <div className="space-y-[1px]">
       <FormRow label="Công đoàn">
         <input
           type="text"

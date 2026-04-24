@@ -101,7 +101,7 @@ const ACCESS_GROUP_PRESETS = [
   },
 ] as const;
 
-const MIN_PASSWORD_LENGTH = 7;
+const MIN_PASSWORD_LENGTH = 8;
 const CONFIGURED_COMPANY_EMAIL_DOMAIN = (import.meta.env.VITE_COMPANY_EMAIL_DOMAIN ?? '')
   .trim()
   .toLowerCase()
@@ -471,7 +471,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({ isOpen, onClose, on
       if (isPasswordEmpty) {
         newErrors.password = 'Email và mật khẩu không được để trống';
       } else if (formData.password.length < MIN_PASSWORD_LENGTH) {
-        newErrors.password = `Mật khẩu phải dài hơn ${MIN_PASSWORD_LENGTH} ký tự`;
+        newErrors.password = `Mật khẩu phải dài ít nhất ${MIN_PASSWORD_LENGTH} ký tự`;
       }
     }
 

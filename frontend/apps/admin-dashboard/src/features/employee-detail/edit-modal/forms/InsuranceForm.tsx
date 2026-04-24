@@ -72,7 +72,7 @@ const InsuranceForm: React.FC<InsuranceFormProps> = ({ data, errors, profile, on
   const showBulkDelete = selectedIndices.size >= 2;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-[14px]">
       {/* Header content */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">

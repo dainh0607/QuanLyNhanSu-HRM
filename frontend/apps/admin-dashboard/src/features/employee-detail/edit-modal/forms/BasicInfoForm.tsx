@@ -26,7 +26,7 @@ const BasicInfoForm: React.FC<BasicInfoFormProps> = ({ data, errors, onFieldChan
         title="Thông tin cơ bản"
         description="Cập nhật các dữ liệu nhân sự cốt lõi và kiểm tra tính hợp lệ trước khi lưu."
       />
-      <div className="space-y-5">
+      <div className="space-y-[1px]">
         <FormRow label="Họ tên" required error={errors.fullName}>
           <input
             type="text"

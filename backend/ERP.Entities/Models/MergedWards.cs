@@ -1,13 +1,13 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ERP.Entities.Models
 {
-    [Table("Districts")]
-    public class Districts : AuditableEntity
+    [Table("MergedWards")]
+    public class MergedWards : AuditableEntity
     {
-
         [Required]
         [StringLength(20)]
         [Column("code")]
@@ -22,11 +22,7 @@ namespace ERP.Entities.Models
         [StringLength(20)]
         public string province_code { get; set; } = null!;
 
-        // FIX: Foreign key relationship to Provinces.code (not Provinces.Id)
         [ForeignKey(nameof(province_code))]
-        public virtual Provinces Province { get; set; } = null!;
-
-        // Wards collection
-        public virtual ICollection<Wards> Wards { get; set; } = new HashSet<Wards>();
+        public virtual MergedProvinces Province { get; set; } = null!;
     }
 }

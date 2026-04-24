@@ -26,6 +26,7 @@ using ERP.DTOs.Common;
 using ERP.Services.ControlPlane;
 using System.Text;
 using System.Text.Encodings.Web;
+using Scalar.AspNetCore;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Unicode;
@@ -184,6 +185,7 @@ builder.Services.AddScoped<IPayrollService, PayrollService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 builder.Services.AddScoped<ILookupService, LookupService>();
+builder.Services.AddScoped<IAddressService, AddressService>();
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddScoped<IContractService, ContractService>();
 builder.Services.AddScoped<IContractTemplateService, ContractTemplateService>();
@@ -221,8 +223,19 @@ builder.Services.AddScoped<ERP.Services.ControlPlane.IWorkspaceActivationService
 builder.Services.AddScoped<ERP.Services.Tenant.ITenantProfileService, ERP.Services.Tenant.TenantProfileService>();
 builder.Services.AddScoped<ERP.Services.Tenant.ITenantSubscriptionService, ERP.Services.Tenant.TenantSubscriptionService>();
 
+builder.Services.AddMemoryCache();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("RedisConnection");
+    options.ConfigurationOptions = StackExchange.Redis.ConfigurationOptions.Parse(connectionString!);
+    options.ConfigurationOptions.ConnectTimeout = 500; // 0.5s
+    options.ConfigurationOptions.SyncTimeout = 500;    // 0.5s
+    options.ConfigurationOptions.AbortOnConnectFail = false;
+    options.InstanceName = "NexaHRM_";
+});
 
 var app = builder.Build();
 
@@ -267,6 +280,7 @@ using (var scope = app.Services.CreateScope())
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 if (!app.Environment.IsDevelopment())

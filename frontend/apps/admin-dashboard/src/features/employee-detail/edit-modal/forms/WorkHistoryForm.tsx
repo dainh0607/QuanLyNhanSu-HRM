@@ -76,7 +76,7 @@ const WorkHistoryForm: React.FC<WorkHistoryFormProps> = ({ data, errors, onChang
         </button>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-[14px]">
         {workItems.length === 0 ? (
           <div className="py-20 bg-slate-50/50 rounded-[32px] border-2 border-dashed border-slate-200">
             <EmptyState 
@@ -105,7 +105,7 @@ const WorkHistoryForm: React.FC<WorkHistoryFormProps> = ({ data, errors, onChang
                 <span className="text-[11px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-50 px-3 py-1 rounded-full">Hồ sơ {index + 1}</span>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-[14px]">
                 {/* AC 1.2: Các trường dữ liệu */}
                 <FormRow label="Nơi làm việc">
                   <input
@@ -150,7 +150,7 @@ const WorkHistoryForm: React.FC<WorkHistoryFormProps> = ({ data, errors, onChang
                 {/* AC 2.1 & 2.2: Ẩn/hiện trường Ngày kết thúc */}
                 {!item.isCurrent && (
                   <FormRow label="Ngày kết thúc">
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       <DatePickerInput
                         value={item.endDate}
                         onChange={(val) => updateItem(index, { endDate: val })}

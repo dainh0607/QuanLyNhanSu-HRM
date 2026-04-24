@@ -6,10 +6,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ERP.Entities.Models
 {
     [Table("Provinces")]
-    public class Provinces : AuditableEntity, ERP.Entities.Interfaces.ITenantEntity
+    public class Provinces : AuditableEntity
     {
-        [Column("tenant_id")]
-        public int? tenant_id { get; set; }
 
         [Required]
         [StringLength(20)]

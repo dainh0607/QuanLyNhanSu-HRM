@@ -148,7 +148,7 @@ const PersonalTabNavigationV2: React.FC<PersonalTabNavigationProps> = ({
                     type="button"
                     onClick={() => onChange(tab.key)}
                     aria-current={isActive ? 'page' : undefined}
-                    className={`relative shrink-0 rounded-2xl px-4 py-3 text-sm font-semibold transition-all ${
+                    className={`relative shrink-0 rounded-2xl px-4 py-3 text-[13px] font-semibold transition-all ${
                       isActive
                         ? 'bg-white text-slate-900 shadow-[0_10px_24px_rgba(15,23,42,0.10)] ring-1 ring-emerald-100'
                         : 'text-slate-500 hover:bg-white/80 hover:text-slate-800'

@@ -56,7 +56,7 @@ interface EmployeeDetailProps {
 
 type EmployeeDetailTab = (typeof EMPLOYEE_DETAIL_TABS)[number];
 
-const MIN_PASSWORD_LENGTH = 7;
+const MIN_PASSWORD_LENGTH = 8;
 const MAX_AVATAR_FILE_SIZE = MAX_AVATAR_SOURCE_FILE_SIZE_BYTES;
 
 export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
@@ -252,15 +252,17 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
     undefined;
 
   const currentUser = authService.getCurrentUser();
-  const canChangeOwnPassword = currentUser?.employeeId === employee.id;
+  const isOwnProfile = currentUser?.employeeId === employee.id;
+  const isAdminUser = currentUser?.roles.includes('Admin') || currentUser?.roles.includes('SuperAdmin');
+  const canManagePassword = isOwnProfile || isAdminUser;
   const passwordMismatch =
     passwordForm.confirmPassword.length > 0 && passwordForm.password !== passwordForm.confirmPassword;
   const passwordTooShort =
     passwordForm.password.length > 0 && passwordForm.password.length < MIN_PASSWORD_LENGTH;
 
   const handleOpenPasswordModal = () => {
-    if (!canChangeOwnPassword) {
-      showToast('Bạn chỉ có thể đổi mật khẩu cho chính tài khoản của mình với API hiện tại.', 'error');
+    if (!canManagePassword) {
+      showToast('Bạn không có quyền đổi mật khẩu cho nhân sự này.', 'error');
       return;
     }
 
@@ -302,9 +304,11 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
   };
 
   const handleConfirmPassword = async () => {
+    const isOldPasswordRequired = isOwnProfile;
+    
     if (
-      !canChangeOwnPassword ||
-      !passwordForm.oldPassword ||
+      !canManagePassword ||
+      (isOldPasswordRequired && !passwordForm.oldPassword) ||
       !passwordForm.password ||
       !passwordForm.confirmPassword ||
       passwordMismatch ||
@@ -317,11 +321,21 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
     setPasswordSubmitError(null);
 
     try {
-      const result = await authService.changePassword({
-        oldPassword: passwordForm.oldPassword,
-        newPassword: passwordForm.password,
-        confirmPassword: passwordForm.confirmPassword,
-      });
+      let result;
+      
+      if (isOwnProfile) {
+        result = await authService.changePassword({
+          oldPassword: passwordForm.oldPassword,
+          newPassword: passwordForm.password,
+          confirmPassword: passwordForm.confirmPassword,
+        });
+      } else {
+        // Admin resetting someone else's password
+        result = await authService.resetEmployeePassword(employee.id, {
+          newPassword: passwordForm.password,
+          confirmPassword: passwordForm.confirmPassword,
+        });
+      }
 
       if (!result.success) {
         const message = result.message || 'Không thể đổi mật khẩu. Vui lòng thử lại.';
@@ -536,11 +550,11 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
                 <button
                   type="button"
                   onClick={handleOpenPasswordModal}
-                  disabled={!canChangeOwnPassword}
+                  disabled={!canManagePassword}
                   title={
-                    canChangeOwnPassword
+                    canManagePassword
                       ? 'Đổi mật khẩu'
-                      : 'API hiện tại chỉ hỗ trợ đổi mật khẩu cho hồ sơ của chính bạn.'
+                      : 'Bạn không có quyền đổi mật khẩu cho nhân sự này.'
                   }
                   className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
                 >
@@ -673,6 +687,7 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
           onClose={handleClosePasswordModal}
           onFieldChange={handlePasswordFieldChange}
           onConfirm={handleConfirmPassword}
+          showOldPassword={isOwnProfile}
         />
 
         {isEditModalOpen ? (
