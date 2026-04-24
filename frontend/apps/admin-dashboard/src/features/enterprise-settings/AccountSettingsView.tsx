@@ -254,7 +254,7 @@ const AccountSettingsView: React.FC<AccountSettingsViewProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {Object.entries(planData.resources).map(([key, resource], idx) => {
-            const percent = (resource.used / resource.usage?.total || resource.total) * 100;
+            const percent = (resource.used / resource.total) * 100;
             const label = key === 'employees' ? 'Giới hạn nhân viên' : 'Dung lượng lưu trữ';
             const icon = key === 'employees' ? 'person_outline' : 'cloud_queue';
             return (

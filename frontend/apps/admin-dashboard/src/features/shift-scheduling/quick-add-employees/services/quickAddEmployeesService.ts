@@ -229,6 +229,7 @@ export const quickAddEmployeesService = {
     );
     const accessGroupOptions = sortOptions(
       accessGroups
+        .filter((item) => String(item.id) !== "1")
         .map((item) => toQuickAddOption(item.id, item.name))
         .filter((item): item is QuickAddEmployeeOption => Boolean(item)),
     );

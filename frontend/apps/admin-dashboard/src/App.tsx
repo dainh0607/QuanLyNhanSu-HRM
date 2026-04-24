@@ -15,7 +15,7 @@ import {
   ContractsManagementPage,
   SigningPortalPage,
 } from "./features/employees-contracts";
-import { ShiftSchedulingPage, WeeklyShiftSchedulePage } from "./features/shift-scheduling";
+import { WeeklyShiftSchedulePage } from "./features/shift-scheduling";
 import { ShiftTemplateManagementPage } from "./features/shift-scheduling/shift-template-management/ShiftTemplateManagementPage";
 import { EmployeeDetail } from "./features/employee-detail/EmployeeDetailViewIntegrated";
 import type { PersonalTabKey } from "./features/employee-detail/edit-modal/types";

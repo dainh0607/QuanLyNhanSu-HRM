@@ -32,6 +32,7 @@ namespace ERP.DTOs.Employees
         public int? JobTitleId { get; set; }
         public string? JobTitleName { get; set; }
         public string? RegionName { get; set; }
+        public int? RegionId { get; set; }
         public string? AccessGroup { get; set; }
         public int? BranchId { get; set; }
         public string? BranchName { get; set; }

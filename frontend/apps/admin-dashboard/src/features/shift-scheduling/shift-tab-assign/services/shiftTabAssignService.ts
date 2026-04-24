@@ -46,8 +46,11 @@ interface ShiftCatalogApiItem {
 }
 
 const DEFAULT_SCHEDULE_FILTERS: ShiftTabAssignScheduleFilters = {
+  timeMode: "week",
   viewMode: "branch",
   weekStartDate: "",
+  startDate: "",
+  endDate: "",
   regionId: "",
   branchId: "",
   departmentId: "",
@@ -70,6 +73,8 @@ const createScheduleFilters = (
   ...DEFAULT_SCHEDULE_FILTERS,
   branchId,
   weekStartDate,
+  startDate: weekStartDate,
+  endDate: weekStartDate,
 });
 
 const getTabKey = (

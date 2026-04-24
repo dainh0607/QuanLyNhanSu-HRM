@@ -71,7 +71,10 @@ export interface ShiftTabAssignModalProps {
 
 export type ShiftTabAssignScheduleFilters = Pick<
   ShiftScheduleFilters,
+  | "timeMode"
   | "weekStartDate"
+  | "startDate"
+  | "endDate"
   | "branchId"
   | "regionId"
   | "departmentId"
