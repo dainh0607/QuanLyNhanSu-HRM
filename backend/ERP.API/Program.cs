@@ -189,6 +189,7 @@ builder.Services.AddScoped<IMajorService, MajorService>();
 builder.Services.AddScoped<IResignationReasonService, ResignationReasonService>();
 builder.Services.AddScoped<IOvertimeTypeService, OvertimeTypeService>();
 builder.Services.AddScoped<IDisciplineTypeService, DisciplineTypeService>();
+builder.Services.AddScoped<IRewardTypeService, RewardTypeService>();
 builder.Services.AddScoped<ILookupService, LookupService>();
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddScoped<IContractService, ContractService>();

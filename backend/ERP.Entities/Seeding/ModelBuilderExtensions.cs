@@ -126,9 +126,9 @@ namespace ERP.Entities.Seeding
 
             // 15. RewardTypes (Loại khen thưởng)
             modelBuilder.Entity<RewardTypes>().HasData(
-                new RewardTypes { Id = 1, code = "KT01", name = "Tiền mặt", description = "Thưởng bằng tiền mặt", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
-                new RewardTypes { Id = 2, code = "KT02", name = "Bằng khen", description = "Thanh thưởng bằng giấy khen", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
-                new RewardTypes { Id = 3, code = "KT03", name = "Hiện vật", description = "Thưởng bằng quà tặng/hiện vật", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate }
+                new RewardTypes { Id = 1, keyword = "THUONG_TIEN_MAT", name = "Tiền mặt", description = "Thưởng bằng tiền mặt", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new RewardTypes { Id = 2, keyword = "THUONG_BANG_KHEN", name = "Bằng khen", description = "Thanh thưởng bằng giấy khen", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new RewardTypes { Id = 3, keyword = "THUONG_HIEN_VAT", name = "Hiện vật", description = "Thưởng bằng quà tặng/hiện vật", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate }
             );
 
             // 16. RequestTypes (Loại yêu cầu)
