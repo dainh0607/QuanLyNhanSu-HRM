@@ -90,8 +90,6 @@ export interface ShiftTemplateSubmitPayload extends ShiftTemplateAdvancedSetting
   departmentIds: string[];
   jobTitleIds: string[];
   repeatDays: string[];
-  isRestDay: boolean;
-  isSplitShift: boolean;
   startTime2?: string | null;
   endTime2?: string | null;
   note?: string | null;

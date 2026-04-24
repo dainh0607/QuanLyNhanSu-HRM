@@ -565,7 +565,7 @@ export const saveElectronicContractStep3Signers = async (payload: ContractStep3D
       method: 'POST',
       body: JSON.stringify(payload),
     },
-    'LÆ°u danh sĂ¡ch ngÆ°á»i kĂ½ tháº¥t báº¡i',
+    'Lưu danh sách người ký thất bại',
   );
 
   return {
