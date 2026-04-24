@@ -7,5 +7,7 @@ namespace ERP.Services.Tenant
     {
         Task<TenantProfileDto> GetProfileAsync();
         Task<bool> UpdateProfileAsync(TenantProfileUpdateDto updateDto);
+        Task<string> UploadLogoAsync(System.IO.Stream fileStream, string fileName, string contentType);
+        Task<BrandingDto?> GetBrandingBySubdomainAsync(string subdomain);
     }
 }

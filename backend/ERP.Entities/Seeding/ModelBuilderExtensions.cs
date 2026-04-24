@@ -117,18 +117,18 @@ namespace ERP.Entities.Seeding
 
             // 14. DisciplineTypes (Loại kỷ luật)
             modelBuilder.Entity<DisciplineTypes>().HasData(
-                new DisciplineTypes { Id = 1, code = "KL01", name = "Khiển trách", description = "Khiển trách bằng văn bản", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
-                new DisciplineTypes { Id = 2, code = "KL02", name = "Cảnh cáo", description = "Cảnh cáo trước toàn công ty", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
-                new DisciplineTypes { Id = 3, code = "KL03", name = "Hạ bậc lương", description = "Giảm bậc lương hiện tại", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
-                new DisciplineTypes { Id = 4, code = "KL04", name = "Cách chức", description = "Miễn nhiệm chức vụ hiện tại", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
-                new DisciplineTypes { Id = 5, code = "KL05", name = "Sa thải", description = "Chấm dứt hợp đồng lao động", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate }
+                new DisciplineTypes { Id = 1, keyword = "KYLUAT_KHIEN_TRACH", name = "Khiển trách", description = "Khiển trách bằng văn bản", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new DisciplineTypes { Id = 2, keyword = "KYLUAT_CANH_CAO", name = "Cảnh cáo", description = "Cảnh cáo trước toàn công ty", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new DisciplineTypes { Id = 3, keyword = "KYLUAT_HA_BAC_LUONG", name = "Hạ bậc lương", description = "Giảm bậc lương hiện tại", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new DisciplineTypes { Id = 4, keyword = "KYLUAT_CACH_CHUC", name = "Cách chức", description = "Miễn nhiệm chức vụ hiện tại", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new DisciplineTypes { Id = 5, keyword = "KYLUAT_SA_THAI", name = "Sa thải", description = "Chấm dứt hợp đồng lao động", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate }
             );
 
             // 15. RewardTypes (Loại khen thưởng)
             modelBuilder.Entity<RewardTypes>().HasData(
-                new RewardTypes { Id = 1, code = "KT01", name = "Tiền mặt", description = "Thưởng bằng tiền mặt", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
-                new RewardTypes { Id = 2, code = "KT02", name = "Bằng khen", description = "Thanh thưởng bằng giấy khen", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
-                new RewardTypes { Id = 3, code = "KT03", name = "Hiện vật", description = "Thưởng bằng quà tặng/hiện vật", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate }
+                new RewardTypes { Id = 1, keyword = "THUONG_TIEN_MAT", name = "Tiền mặt", description = "Thưởng bằng tiền mặt", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new RewardTypes { Id = 2, keyword = "THUONG_BANG_KHEN", name = "Bằng khen", description = "Thanh thưởng bằng giấy khen", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new RewardTypes { Id = 3, keyword = "THUONG_HIEN_VAT", name = "Hiện vật", description = "Thưởng bằng quà tặng/hiện vật", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate }
             );
 
             // 16. RequestTypes (Loại yêu cầu)
@@ -366,6 +366,69 @@ namespace ERP.Entities.Seeding
                 new IncomeType { Id = 1, name = "Thưởng KPI", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
                 new IncomeType { Id = 2, name = "Thưởng lễ tết", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate },
                 new IncomeType { Id = 3, name = "Thu nhập khác", is_active = true, CreatedAt = seedDate, UpdatedAt = seedDate }
+            );
+
+            // 28. SystemFields (Cấu trúc hồ sơ nhân viên)
+            modelBuilder.Entity<SystemFields>().HasData(
+                // Thông tin cơ bản
+                new SystemFields { Id = 1, category = "Thông tin cơ bản", field_name = "Họ và tên", field_type = "Văn bản", display_order = 1 },
+                new SystemFields { Id = 2, category = "Thông tin cơ bản", field_name = "Ngày sinh", field_type = "Ngày", display_order = 2 },
+                new SystemFields { Id = 3, category = "Thông tin cơ bản", field_name = "Giới tính", field_type = "Văn bản", display_order = 3 },
+                new SystemFields { Id = 4, category = "Thông tin cơ bản", field_name = "Mã nhân viên", field_type = "Văn bản", display_order = 4 },
+
+                // Thông tin liên hệ
+                new SystemFields { Id = 5, category = "Thông tin liên hệ", field_name = "Email", field_type = "Email", display_order = 1 },
+                new SystemFields { Id = 6, category = "Thông tin liên hệ", field_name = "Điện thoại", field_type = "Văn bản", display_order = 2 },
+                new SystemFields { Id = 7, category = "Thông tin liên hệ", field_name = "Địa chỉ", field_type = "Văn bản", display_order = 3 },
+                new SystemFields { Id = 8, category = "Thông tin liên hệ", field_name = "Mạng xã hội", field_type = "Văn bản", display_order = 4 },
+
+                // Liên hệ khẩn cấp
+                new SystemFields { Id = 9, category = "Liên hệ khẩn cấp", field_name = "Điện thoại di động", field_type = "Văn bản", display_order = 1 },
+                new SystemFields { Id = 10, category = "Liên hệ khẩn cấp", field_name = "Quan hệ với nhân viên", field_type = "Văn bản", display_order = 2 },
+                new SystemFields { Id = 11, category = "Liên hệ khẩn cấp", field_name = "Điện thoại cố định", field_type = "Văn bản", display_order = 3 },
+                new SystemFields { Id = 12, category = "Liên hệ khẩn cấp", field_name = "Địa chỉ khẩn cấp", field_type = "Văn bản", display_order = 4 },
+
+                // Địa chỉ thường trú
+                new SystemFields { Id = 13, category = "Địa chỉ thường trú", field_name = "Quốc gia", field_type = "Văn bản", display_order = 1 },
+                new SystemFields { Id = 14, category = "Địa chỉ thường trú", field_name = "Địa chỉ thường trú", field_type = "Văn bản", display_order = 2 },
+                new SystemFields { Id = 15, category = "Địa chỉ thường trú", field_name = "Nguyên quán", field_type = "Văn bản", display_order = 3 },
+
+                // Trình độ học vấn
+                new SystemFields { Id = 16, category = "Trình độ học vấn", field_name = "Trường đại học/Học viện", field_type = "Văn bản", display_order = 1 },
+                new SystemFields { Id = 17, category = "Trình độ học vấn", field_name = "Chuyên ngành", field_type = "Văn bản", display_order = 2 },
+                new SystemFields { Id = 18, category = "Trình độ học vấn", field_name = "Trình độ", field_type = "Văn bản", display_order = 3 },
+                new SystemFields { Id = 19, category = "Trình độ học vấn", field_name = "Ngày cấp", field_type = "Ngày", display_order = 4 },
+                new SystemFields { Id = 20, category = "Trình độ học vấn", field_name = "Ghi chú", field_type = "Văn bản", display_order = 5 },
+
+                // Thông tin định danh
+                new SystemFields { Id = 21, category = "Thông tin định danh", field_name = "Loại định danh", field_type = "Văn bản", display_order = 1 },
+                new SystemFields { Id = 22, category = "Thông tin định danh", field_name = "CMND/CCCD", field_type = "Văn bản", display_order = 2 },
+                new SystemFields { Id = 23, category = "Thông tin định danh", field_name = "Ngày cấp", field_type = "Ngày", display_order = 3 },
+                new SystemFields { Id = 24, category = "Thông tin định danh", field_name = "Nơi cấp", field_type = "Văn bản", display_order = 4 },
+                new SystemFields { Id = 25, category = "Thông tin định danh", field_name = "Số hộ chiếu", field_type = "Văn bản", display_order = 5 },
+                new SystemFields { Id = 26, category = "Thông tin định danh", field_name = "Ngày cấp hộ chiếu", field_type = "Ngày", display_order = 6 },
+                new SystemFields { Id = 27, category = "Thông tin định danh", field_name = "Ngày hết hạn hộ chiếu", field_type = "Ngày", display_order = 7 },
+                new SystemFields { Id = 28, category = "Thông tin định danh", field_name = "Nơi cấp hộ chiếu", field_type = "Văn bản", display_order = 8 },
+
+                // Sức khỏe
+                new SystemFields { Id = 29, category = "Sức khỏe", field_name = "Chiều cao", field_type = "Văn bản", display_order = 1 },
+                new SystemFields { Id = 30, category = "Sức khỏe", field_name = "Cân nặng", field_type = "Văn bản", display_order = 2 },
+                new SystemFields { Id = 31, category = "Sức khỏe", field_name = "Nhóm máu", field_type = "Văn bản", display_order = 3 },
+                new SystemFields { Id = 32, category = "Sức khỏe", field_name = "Tình trạng sức khỏe", field_type = "Văn bản", display_order = 4 },
+                new SystemFields { Id = 33, category = "Sức khỏe", field_name = "Bệnh bẩm sinh, mãn tính (nếu có)", field_type = "Văn bản", display_order = 5 },
+                new SystemFields { Id = 34, category = "Sức khỏe", field_name = "Ngày kiểm tra gần nhất", field_type = "Ngày", display_order = 6 },
+
+                // Chữ ký số
+                new SystemFields { Id = 35, category = "Chữ ký số", field_name = "Chữ ký điện tử", field_type = "Văn bản", display_order = 1 },
+                new SystemFields { Id = 36, category = "Chữ ký số", field_name = "Mã QR cá nhân", field_type = "Văn bản", display_order = 2 },
+
+                // Thông tin khác
+                new SystemFields { Id = 37, category = "Thông tin khác", field_name = "Công đoàn", field_type = "Văn bản", display_order = 1 },
+                new SystemFields { Id = 38, category = "Thông tin khác", field_name = "Dân tộc", field_type = "Văn bản", display_order = 2 },
+                new SystemFields { Id = 39, category = "Thông tin khác", field_name = "Tôn giáo", field_type = "Văn bản", display_order = 3 },
+                new SystemFields { Id = 40, category = "Thông tin khác", field_name = "Mã số thuế", field_type = "Văn bản", display_order = 4 },
+                new SystemFields { Id = 41, category = "Thông tin khác", field_name = "Tình trạng hôn nhân", field_type = "Văn bản", display_order = 5 },
+                new SystemFields { Id = 42, category = "Thông tin khác", field_name = "Ghi chú", field_type = "Văn bản", display_order = 6 }
             );
         }
     }

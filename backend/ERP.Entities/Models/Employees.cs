@@ -104,6 +104,12 @@ namespace ERP.Entities.Models
         [StringLength(50)]
         public string? work_type { get; set; }
 
+        [Column("employment_type_id")]
+        public int? employment_type_id { get; set; }
+
+        [ForeignKey("employment_type_id")]
+        public virtual EmploymentTypes? EmploymentType { get; set; }
+
         [Column("seniority_months")]
         public int? seniority_months { get; set; }
 
@@ -120,6 +126,12 @@ namespace ERP.Entities.Models
         [Column("resignation_reason")]
         [StringLength(255)]
         public string? resignation_reason { get; set; }
+
+        [Column("resignation_reason_id")]
+        public int? resignation_reason_id { get; set; }
+
+        [ForeignKey("resignation_reason_id")]
+        public virtual ResignationReasons? ResignationReasonEntity { get; set; }
 
         [Column("region_id")]
         public int? region_id { get; set; }

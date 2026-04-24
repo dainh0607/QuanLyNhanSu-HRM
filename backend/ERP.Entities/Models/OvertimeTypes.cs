@@ -10,20 +10,31 @@ namespace ERP.Entities.Models
         [Column("tenant_id")]
         public int? tenant_id { get; set; }
 
-        [Column("code")]
-        [StringLength(50)]
-        public string code { get; set; }
-
         [Column("name")]
         [StringLength(100)]
-        public string name { get; set; }
+        [Required]
+        public string name { get; set; } = null!;
 
-        [Column("description")]
-        [StringLength(255)]
-        public string description { get; set; }
+        [Column("keyword")]
+        [StringLength(100)]
+        [Required]
+        public string keyword { get; set; } = null!;
+
+        [Column("rate_percentage")]
+        public decimal rate_percentage { get; set; }
+
+        [Column("monthly_limit_hours")]
+        public decimal? monthly_limit_hours { get; set; }
+
+        [Column("yearly_limit_hours")]
+        public decimal? yearly_limit_hours { get; set; }
+
+        [Column("notes")]
+        [StringLength(500)]
+        public string? notes { get; set; }
 
         [Column("is_active")]
-        public bool is_active { get; set; }
+        public bool is_active { get; set; } = true;
 
         [Column("display_order")]
         public int? display_order { get; set; }

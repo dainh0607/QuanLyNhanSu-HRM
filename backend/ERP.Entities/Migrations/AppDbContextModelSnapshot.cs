@@ -853,15 +853,9 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("updated_at");
 
-                    b.Property<string>("code")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("code");
-
                     b.Property<string>("description")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
                         .HasColumnName("description");
 
                     b.Property<int?>("display_order")
@@ -3342,15 +3336,9 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("updated_at");
 
-                    b.Property<string>("code")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("code");
-
                     b.Property<string>("description")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
                         .HasColumnName("description");
 
                     b.Property<int?>("display_order")
@@ -3360,6 +3348,12 @@ namespace ERP.Entities.Migrations
                     b.Property<bool>("is_active")
                         .HasColumnType("bit")
                         .HasColumnName("is_active");
+
+                    b.Property<string>("keyword")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("keyword");
 
                     b.Property<string>("name")
                         .IsRequired()
@@ -3381,9 +3375,9 @@ namespace ERP.Entities.Migrations
                             Id = 1,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            code = "KL01",
                             description = "Khiển trách bằng văn bản",
                             is_active = true,
+                            keyword = "KYLUAT_KHIEN_TRACH",
                             name = "Khiển trách"
                         },
                         new
@@ -3391,9 +3385,9 @@ namespace ERP.Entities.Migrations
                             Id = 2,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            code = "KL02",
                             description = "Cảnh cáo trước toàn công ty",
                             is_active = true,
+                            keyword = "KYLUAT_CANH_CAO",
                             name = "Cảnh cáo"
                         },
                         new
@@ -3401,9 +3395,9 @@ namespace ERP.Entities.Migrations
                             Id = 3,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            code = "KL03",
                             description = "Giảm bậc lương hiện tại",
                             is_active = true,
+                            keyword = "KYLUAT_HA_BAC_LUONG",
                             name = "Hạ bậc lương"
                         },
                         new
@@ -3411,9 +3405,9 @@ namespace ERP.Entities.Migrations
                             Id = 4,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            code = "KL04",
                             description = "Miễn nhiệm chức vụ hiện tại",
                             is_active = true,
+                            keyword = "KYLUAT_CACH_CHUC",
                             name = "Cách chức"
                         },
                         new
@@ -3421,9 +3415,9 @@ namespace ERP.Entities.Migrations
                             Id = 5,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            code = "KL05",
                             description = "Chấm dứt hợp đồng lao động",
                             is_active = true,
+                            keyword = "KYLUAT_SA_THAI",
                             name = "Sa thải"
                         });
                 });
@@ -3551,6 +3545,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("major");
 
+                    b.Property<int?>("major_id")
+                        .HasColumnType("int")
+                        .HasColumnName("major_id");
+
                     b.Property<string>("note")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("note");
@@ -3562,6 +3560,8 @@ namespace ERP.Entities.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("employee_id");
+
+                    b.HasIndex("major_id");
 
                     b.ToTable("Education", (string)null);
                 });
@@ -4045,6 +4045,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("employee_code");
 
+                    b.Property<int?>("employment_type_id")
+                        .HasColumnType("int")
+                        .HasColumnName("employment_type_id");
+
                     b.Property<string>("ethnicity")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
@@ -4194,6 +4198,10 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("resignation_reason");
 
+                    b.Property<int?>("resignation_reason_id")
+                        .HasColumnType("int")
+                        .HasColumnName("resignation_reason_id");
+
                     b.Property<int?>("secondary_branch_id")
                         .HasColumnType("int")
                         .HasColumnName("secondary_branch_id");
@@ -4257,6 +4265,8 @@ namespace ERP.Entities.Migrations
 
                     b.HasIndex("department_id");
 
+                    b.HasIndex("employment_type_id");
+
                     b.HasIndex("gender_code");
 
                     b.HasIndex("job_title_id");
@@ -4266,6 +4276,8 @@ namespace ERP.Entities.Migrations
                     b.HasIndex("marital_status_code");
 
                     b.HasIndex("region_id");
+
+                    b.HasIndex("resignation_reason_id");
 
                     b.HasIndex("secondary_branch_id");
 
@@ -4364,6 +4376,51 @@ namespace ERP.Entities.Migrations
                     b.ToTable("EmploymentHistoryLogs");
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.EmploymentTypes", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("description");
+
+                    b.Property<int?>("display_order")
+                        .HasColumnType("int")
+                        .HasColumnName("display_order");
+
+                    b.Property<bool>("is_active")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("name");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("EmploymentTypes");
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.Evaluations", b =>
                 {
                     b.Property<int>("Id")
@@ -4395,6 +4452,53 @@ namespace ERP.Entities.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Evaluations", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Entities.Models.FeaturePermissions", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("description")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("feature_code")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("feature_code");
+
+                    b.Property<bool>("is_granted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_granted");
+
+                    b.Property<int>("role_id")
+                        .HasColumnType("int")
+                        .HasColumnName("role_id");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("role_id");
+
+                    b.ToTable("FeaturePermissions");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.Genders", b =>
@@ -5238,6 +5342,47 @@ namespace ERP.Entities.Migrations
                     b.ToTable("LoginAttempts");
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.Majors", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("description");
+
+                    b.Property<bool>("is_active")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("name");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Majors");
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.MaritalStatuses", b =>
                 {
                     b.Property<int>("Id")
@@ -5314,16 +5459,9 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("updated_at");
 
-                    b.Property<string>("code")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("code");
-
                     b.Property<string>("description")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
                         .HasColumnName("description");
 
                     b.Property<int?>("display_order")
@@ -5333,6 +5471,12 @@ namespace ERP.Entities.Migrations
                     b.Property<bool>("is_active")
                         .HasColumnType("bit")
                         .HasColumnName("is_active");
+
+                    b.Property<string>("keyword")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("keyword");
 
                     b.Property<string>("name")
                         .IsRequired()
@@ -5676,18 +5820,6 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("updated_at");
 
-                    b.Property<string>("code")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("code");
-
-                    b.Property<string>("description")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
-                        .HasColumnName("description");
-
                     b.Property<int?>("display_order")
                         .HasColumnType("int")
                         .HasColumnName("display_order");
@@ -5696,15 +5828,38 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("is_active");
 
+                    b.Property<string>("keyword")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("keyword");
+
+                    b.Property<decimal?>("monthly_limit_hours")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("monthly_limit_hours");
+
                     b.Property<string>("name")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("name");
 
+                    b.Property<string>("notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("notes");
+
+                    b.Property<decimal>("rate_percentage")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("rate_percentage");
+
                     b.Property<int?>("tenant_id")
                         .HasColumnType("int")
                         .HasColumnName("tenant_id");
+
+                    b.Property<decimal?>("yearly_limit_hours")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("yearly_limit_hours");
 
                     b.HasKey("Id");
 
@@ -7694,15 +7849,24 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("updated_at");
 
+                    b.Property<string>("description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("description");
+
+                    b.Property<bool>("is_active")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
                     b.Property<bool>("is_default")
                         .HasColumnType("bit")
                         .HasColumnName("is_default");
 
-                    b.Property<string>("reason_name")
+                    b.Property<string>("name")
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)")
-                        .HasColumnName("reason_name");
+                        .HasColumnName("name");
 
                     b.Property<int?>("tenant_id")
                         .HasColumnType("int")
@@ -7945,16 +8109,9 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("updated_at");
 
-                    b.Property<string>("code")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("code");
-
                     b.Property<string>("description")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
                         .HasColumnName("description");
 
                     b.Property<int?>("display_order")
@@ -7964,6 +8121,12 @@ namespace ERP.Entities.Migrations
                     b.Property<bool>("is_active")
                         .HasColumnType("bit")
                         .HasColumnName("is_active");
+
+                    b.Property<string>("keyword")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("keyword");
 
                     b.Property<string>("name")
                         .IsRequired()
@@ -7985,9 +8148,9 @@ namespace ERP.Entities.Migrations
                             Id = 1,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            code = "KT01",
                             description = "Thưởng bằng tiền mặt",
                             is_active = true,
+                            keyword = "THUONG_TIEN_MAT",
                             name = "Tiền mặt"
                         },
                         new
@@ -7995,9 +8158,9 @@ namespace ERP.Entities.Migrations
                             Id = 2,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            code = "KT02",
                             description = "Thanh thưởng bằng giấy khen",
                             is_active = true,
+                            keyword = "THUONG_BANG_KHEN",
                             name = "Bằng khen"
                         },
                         new
@@ -8005,9 +8168,9 @@ namespace ERP.Entities.Migrations
                             Id = 3,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
-                            code = "KT03",
                             description = "Thưởng bằng quà tặng/hiện vật",
                             is_active = true,
+                            keyword = "THUONG_HIEN_VAT",
                             name = "Hiện vật"
                         });
                 });
@@ -8994,6 +9157,380 @@ namespace ERP.Entities.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.SystemFields", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("category");
+
+                    b.Property<int>("display_order")
+                        .HasColumnType("int")
+                        .HasColumnName("display_order");
+
+                    b.Property<string>("field_name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("field_name");
+
+                    b.Property<string>("field_type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("field_type");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SystemFields");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            category = "Thông tin cơ bản",
+                            display_order = 1,
+                            field_name = "Họ và tên",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            category = "Thông tin cơ bản",
+                            display_order = 2,
+                            field_name = "Ngày sinh",
+                            field_type = "Ngày"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            category = "Thông tin cơ bản",
+                            display_order = 3,
+                            field_name = "Giới tính",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            category = "Thông tin cơ bản",
+                            display_order = 4,
+                            field_name = "Mã nhân viên",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            category = "Thông tin liên hệ",
+                            display_order = 1,
+                            field_name = "Email",
+                            field_type = "Email"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            category = "Thông tin liên hệ",
+                            display_order = 2,
+                            field_name = "Điện thoại",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            category = "Thông tin liên hệ",
+                            display_order = 3,
+                            field_name = "Địa chỉ",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            category = "Thông tin liên hệ",
+                            display_order = 4,
+                            field_name = "Mạng xã hội",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            category = "Liên hệ khẩn cấp",
+                            display_order = 1,
+                            field_name = "Điện thoại di động",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            category = "Liên hệ khẩn cấp",
+                            display_order = 2,
+                            field_name = "Quan hệ với nhân viên",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 11,
+                            category = "Liên hệ khẩn cấp",
+                            display_order = 3,
+                            field_name = "Điện thoại cố định",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 12,
+                            category = "Liên hệ khẩn cấp",
+                            display_order = 4,
+                            field_name = "Địa chỉ khẩn cấp",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 13,
+                            category = "Địa chỉ thường trú",
+                            display_order = 1,
+                            field_name = "Quốc gia",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 14,
+                            category = "Địa chỉ thường trú",
+                            display_order = 2,
+                            field_name = "Địa chỉ thường trú",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 15,
+                            category = "Địa chỉ thường trú",
+                            display_order = 3,
+                            field_name = "Nguyên quán",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 16,
+                            category = "Trình độ học vấn",
+                            display_order = 1,
+                            field_name = "Trường đại học/Học viện",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 17,
+                            category = "Trình độ học vấn",
+                            display_order = 2,
+                            field_name = "Chuyên ngành",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 18,
+                            category = "Trình độ học vấn",
+                            display_order = 3,
+                            field_name = "Trình độ",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 19,
+                            category = "Trình độ học vấn",
+                            display_order = 4,
+                            field_name = "Ngày cấp",
+                            field_type = "Ngày"
+                        },
+                        new
+                        {
+                            Id = 20,
+                            category = "Trình độ học vấn",
+                            display_order = 5,
+                            field_name = "Ghi chú",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 21,
+                            category = "Thông tin định danh",
+                            display_order = 1,
+                            field_name = "Loại định danh",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 22,
+                            category = "Thông tin định danh",
+                            display_order = 2,
+                            field_name = "CMND/CCCD",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 23,
+                            category = "Thông tin định danh",
+                            display_order = 3,
+                            field_name = "Ngày cấp",
+                            field_type = "Ngày"
+                        },
+                        new
+                        {
+                            Id = 24,
+                            category = "Thông tin định danh",
+                            display_order = 4,
+                            field_name = "Nơi cấp",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 25,
+                            category = "Thông tin định danh",
+                            display_order = 5,
+                            field_name = "Số hộ chiếu",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 26,
+                            category = "Thông tin định danh",
+                            display_order = 6,
+                            field_name = "Ngày cấp hộ chiếu",
+                            field_type = "Ngày"
+                        },
+                        new
+                        {
+                            Id = 27,
+                            category = "Thông tin định danh",
+                            display_order = 7,
+                            field_name = "Ngày hết hạn hộ chiếu",
+                            field_type = "Ngày"
+                        },
+                        new
+                        {
+                            Id = 28,
+                            category = "Thông tin định danh",
+                            display_order = 8,
+                            field_name = "Nơi cấp hộ chiếu",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 29,
+                            category = "Sức khỏe",
+                            display_order = 1,
+                            field_name = "Chiều cao",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 30,
+                            category = "Sức khỏe",
+                            display_order = 2,
+                            field_name = "Cân nặng",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 31,
+                            category = "Sức khỏe",
+                            display_order = 3,
+                            field_name = "Nhóm máu",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 32,
+                            category = "Sức khỏe",
+                            display_order = 4,
+                            field_name = "Tình trạng sức khỏe",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 33,
+                            category = "Sức khỏe",
+                            display_order = 5,
+                            field_name = "Bệnh bẩm sinh, mãn tính (nếu có)",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 34,
+                            category = "Sức khỏe",
+                            display_order = 6,
+                            field_name = "Ngày kiểm tra gần nhất",
+                            field_type = "Ngày"
+                        },
+                        new
+                        {
+                            Id = 35,
+                            category = "Chữ ký số",
+                            display_order = 1,
+                            field_name = "Chữ ký điện tử",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 36,
+                            category = "Chữ ký số",
+                            display_order = 2,
+                            field_name = "Mã QR cá nhân",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 37,
+                            category = "Thông tin khác",
+                            display_order = 1,
+                            field_name = "Công đoàn",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 38,
+                            category = "Thông tin khác",
+                            display_order = 2,
+                            field_name = "Dân tộc",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 39,
+                            category = "Thông tin khác",
+                            display_order = 3,
+                            field_name = "Tôn giáo",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 40,
+                            category = "Thông tin khác",
+                            display_order = 4,
+                            field_name = "Mã số thuế",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 41,
+                            category = "Thông tin khác",
+                            display_order = 5,
+                            field_name = "Tình trạng hôn nhân",
+                            field_type = "Văn bản"
+                        },
+                        new
+                        {
+                            Id = 42,
+                            category = "Thông tin khác",
+                            display_order = 6,
+                            field_name = "Ghi chú",
+                            field_type = "Văn bản"
+                        });
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.TaxBrackets", b =>
                 {
                     b.Property<int>("Id")
@@ -9198,6 +9735,11 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("establishment_date");
 
+                    b.Property<string>("logo_url")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("logo_url");
+
                     b.Property<string>("notes")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)")
@@ -9216,6 +9758,11 @@ namespace ERP.Entities.Migrations
                     b.Property<int>("tenant_id")
                         .HasColumnType("int")
                         .HasColumnName("tenant_id");
+
+                    b.Property<string>("theme_color")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("theme_color");
 
                     b.Property<string>("time_format")
                         .IsRequired()
@@ -10185,7 +10732,14 @@ namespace ERP.Entities.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ERP.Entities.Models.Majors", "MajorEntity")
+                        .WithMany()
+                        .HasForeignKey("major_id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Employee");
+
+                    b.Navigation("MajorEntity");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.EmergencyContacts", b =>
@@ -10382,6 +10936,11 @@ namespace ERP.Entities.Migrations
                         .HasForeignKey("department_id")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("ERP.Entities.Models.EmploymentTypes", "EmploymentType")
+                        .WithMany()
+                        .HasForeignKey("employment_type_id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ERP.Entities.Models.Genders", "Gender")
                         .WithMany()
                         .HasForeignKey("gender_code")
@@ -10409,6 +10968,11 @@ namespace ERP.Entities.Migrations
                         .HasForeignKey("region_id")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("ERP.Entities.Models.ResignationReasons", "ResignationReasonEntity")
+                        .WithMany()
+                        .HasForeignKey("resignation_reason_id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ERP.Entities.Models.Branches", "SecondaryBranch")
                         .WithMany("SecondaryEmployees")
                         .HasForeignKey("secondary_branch_id")
@@ -10428,6 +10992,8 @@ namespace ERP.Entities.Migrations
 
                     b.Navigation("Department");
 
+                    b.Navigation("EmploymentType");
+
                     b.Navigation("Gender");
 
                     b.Navigation("JobTitle");
@@ -10437,6 +11003,8 @@ namespace ERP.Entities.Migrations
                     b.Navigation("MaritalStatus");
 
                     b.Navigation("Region");
+
+                    b.Navigation("ResignationReasonEntity");
 
                     b.Navigation("SecondaryBranch");
 
@@ -10482,6 +11050,17 @@ namespace ERP.Entities.Migrations
                     b.Navigation("Employee");
 
                     b.Navigation("Province");
+                });
+
+            modelBuilder.Entity("ERP.Entities.Models.FeaturePermissions", b =>
+                {
+                    b.HasOne("ERP.Entities.Models.Roles", "Role")
+                        .WithMany()
+                        .HasForeignKey("role_id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Role");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.HealthRecords", b =>

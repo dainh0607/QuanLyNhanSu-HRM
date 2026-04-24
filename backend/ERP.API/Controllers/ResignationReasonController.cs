@@ -1,10 +1,9 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using ERP.Entities;
-using ERP.Entities.Models;
+using System;
 using System.Threading.Tasks;
-using System.Linq;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using ERP.Services.Lookup;
+using ERP.DTOs.Lookup;
 
 namespace ERP.API.Controllers
 {
@@ -13,31 +12,77 @@ namespace ERP.API.Controllers
     [Authorize]
     public class ResignationReasonController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IResignationReasonService _resignationReasonService;
 
-        public ResignationReasonController(AppDbContext context)
+        public ResignationReasonController(IResignationReasonService resignationReasonService)
         {
-            _context = context;
+            _resignationReasonService = resignationReasonService;
         }
 
         [HttpGet]
+        public async Task<IActionResult> GetPaged([FromQuery] string? searchTerm, [FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 10)
+        {
+            var result = await _resignationReasonService.GetPagedAsync(searchTerm, pageIndex, pageSize);
+            return Ok(result);
+        }
+
+        [HttpGet("all")]
         public async Task<IActionResult> GetAll()
         {
-            var reasons = await _context.ResignationReasons
-                .OrderBy(r => r.reason_name)
-                .ToListAsync();
-            return Ok(reasons);
+            var result = await _resignationReasonService.GetAllAsync();
+            return Ok(result);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var result = await _resignationReasonService.GetByIdAsync(id);
+            if (result == null) return NotFound(new { message = "Không tìm thấy lý do nghỉ việc" });
+            return Ok(result);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] ResignationReasons model)
+        public async Task<IActionResult> Create([FromBody] ResignationReasonCreateUpdateDto dto)
         {
-            if (string.IsNullOrWhiteSpace(model.reason_name))
-                return BadRequest("Tên lý do không được để trống.");
+            try
+            {
+                var id = await _resignationReasonService.CreateAsync(dto);
+                return CreatedAtAction(nameof(GetById), new { id }, new { id, message = "Tạo mới lý do nghỉ việc thành công" });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
 
-            _context.ResignationReasons.Add(model);
-            await _context.SaveChangesAsync();
-            return Ok(model);
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, [FromBody] ResignationReasonCreateUpdateDto dto)
+        {
+            try
+            {
+                var result = await _resignationReasonService.UpdateAsync(id, dto);
+                if (!result) return NotFound(new { message = "Không tìm thấy lý do nghỉ việc" });
+                return Ok(new { message = "Cập nhật lý do nghỉ việc thành công" });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            try
+            {
+                var result = await _resignationReasonService.DeleteAsync(id);
+                if (!result) return NotFound(new { message = "Không tìm thấy lý do nghỉ việc" });
+                return Ok(new { message = "Xóa lý do nghỉ việc thành công" });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

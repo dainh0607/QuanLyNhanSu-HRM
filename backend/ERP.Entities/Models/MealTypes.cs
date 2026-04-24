@@ -10,20 +10,22 @@ namespace ERP.Entities.Models
         [Column("tenant_id")]
         public int? tenant_id { get; set; }
 
-        [Column("code")]
-        [StringLength(50)]
-        public string code { get; set; }
-
         [Column("name")]
         [StringLength(100)]
-        public string name { get; set; }
+        [Required]
+        public string name { get; set; } = null!;
+
+        [Column("keyword")]
+        [StringLength(100)]
+        [Required]
+        public string keyword { get; set; } = null!;
 
         [Column("description")]
-        [StringLength(255)]
-        public string description { get; set; }
+        [StringLength(500)]
+        public string? description { get; set; }
 
         [Column("is_active")]
-        public bool is_active { get; set; }
+        public bool is_active { get; set; } = true;
 
         [Column("display_order")]
         public int? display_order { get; set; }
