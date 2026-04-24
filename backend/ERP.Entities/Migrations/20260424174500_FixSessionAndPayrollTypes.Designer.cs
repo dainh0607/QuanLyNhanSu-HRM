@@ -4,6 +4,7 @@ using ERP.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ERP.Entities.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260424174500_FixSessionAndPayrollTypes")]
+    partial class FixSessionAndPayrollTypes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -3527,15 +3530,14 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("province_code");
 
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
                     b.HasKey("Id");
 
                     b.HasAlternateKey("code")
                         .HasName("AK_Districts_code");
-
-                    b.HasIndex("code")
-                        .IsUnique();
-
-                    b.HasIndex("name");
 
                     b.HasIndex("province_code");
 
@@ -4001,50 +4003,6 @@ namespace ERP.Entities.Migrations
                     b.HasIndex("skill_id");
 
                     b.ToTable("EmployeeSkills", (string)null);
-                });
-
-            modelBuilder.Entity("ERP.Entities.Models.EmployeeTimekeepingMachines", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("updated_at");
-
-                    b.Property<int>("employee_id")
-                        .HasColumnType("int")
-                        .HasColumnName("employee_id");
-
-                    b.Property<int>("machine_id")
-                        .HasColumnType("int")
-                        .HasColumnName("machine_id");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<string>("timekeeping_code")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasColumnName("timekeeping_code");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("employee_id");
-
-                    b.HasIndex("machine_id");
-
-                    b.ToTable("EmployeeTimekeepingMachines");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.Employees", b =>
@@ -5567,98 +5525,6 @@ namespace ERP.Entities.Migrations
                     b.ToTable("MealTypes", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Entities.Models.MergedProvinces", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("updated_at");
-
-                    b.Property<string>("code")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasColumnName("code");
-
-                    b.Property<string>("country_code")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)")
-                        .HasColumnName("country_code");
-
-                    b.Property<string>("name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("name");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("code")
-                        .IsUnique();
-
-                    b.HasIndex("name");
-
-                    b.ToTable("MergedProvinces");
-                });
-
-            modelBuilder.Entity("ERP.Entities.Models.MergedWards", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("updated_at");
-
-                    b.Property<string>("code")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasColumnName("code");
-
-                    b.Property<string>("name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("name");
-
-                    b.Property<string>("province_code")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasColumnName("province_code");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("code")
-                        .IsUnique();
-
-                    b.HasIndex("name");
-
-                    b.HasIndex("province_code");
-
-                    b.ToTable("MergedWards");
-                });
-
             modelBuilder.Entity("ERP.Entities.Models.MobilePermissionManifest", b =>
                 {
                     b.Property<int>("Id")
@@ -6516,17 +6382,16 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("name");
 
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
                     b.HasKey("Id");
 
                     b.HasAlternateKey("code")
                         .HasName("AK_Provinces_code");
 
-                    b.HasIndex("code")
-                        .IsUnique();
-
                     b.HasIndex("country_code");
-
-                    b.HasIndex("name");
 
                     b.ToTable("Provinces", (string)null);
 
@@ -10364,52 +10229,6 @@ namespace ERP.Entities.Migrations
                     b.ToTable("VehicleTypes", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Entities.Models.Wards", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("updated_at");
-
-                    b.Property<string>("code")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasColumnName("code");
-
-                    b.Property<string>("district_code")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasColumnName("district_code");
-
-                    b.Property<string>("name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("name");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("code")
-                        .IsUnique();
-
-                    b.HasIndex("district_code");
-
-                    b.HasIndex("name");
-
-                    b.ToTable("Wards");
-                });
-
             modelBuilder.Entity("ERP.Entities.Models.WorkHistory", b =>
                 {
                     b.Property<int>("Id")
@@ -11084,25 +10903,6 @@ namespace ERP.Entities.Migrations
                     b.Navigation("Skill");
                 });
 
-            modelBuilder.Entity("ERP.Entities.Models.EmployeeTimekeepingMachines", b =>
-                {
-                    b.HasOne("ERP.Entities.Models.Employees", "Employee")
-                        .WithMany()
-                        .HasForeignKey("employee_id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("ERP.Entities.Models.TimeMachines", "Machine")
-                        .WithMany()
-                        .HasForeignKey("machine_id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Employee");
-
-                    b.Navigation("Machine");
-                });
-
             modelBuilder.Entity("ERP.Entities.Models.Employees", b =>
                 {
                     b.HasOne("ERP.Entities.Models.Branches", "Branch")
@@ -11416,18 +11216,6 @@ namespace ERP.Entities.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("ERP.Entities.Models.MergedWards", b =>
-                {
-                    b.HasOne("ERP.Entities.Models.MergedProvinces", "Province")
-                        .WithMany("Wards")
-                        .HasForeignKey("province_code")
-                        .HasPrincipalKey("code")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Province");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.MobilePermissionManifest", b =>
@@ -12297,18 +12085,6 @@ namespace ERP.Entities.Migrations
                     b.Navigation("SalaryGrade");
                 });
 
-            modelBuilder.Entity("ERP.Entities.Models.Wards", b =>
-                {
-                    b.HasOne("ERP.Entities.Models.Districts", "District")
-                        .WithMany("Wards")
-                        .HasForeignKey("district_code")
-                        .HasPrincipalKey("code")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("District");
-                });
-
             modelBuilder.Entity("ERP.Entities.Models.WorkHistory", b =>
                 {
                     b.HasOne("ERP.Entities.Models.Employees", "Employee")
@@ -12365,11 +12141,6 @@ namespace ERP.Entities.Migrations
                     b.Navigation("SubDepartments");
                 });
 
-            modelBuilder.Entity("ERP.Entities.Models.Districts", b =>
-                {
-                    b.Navigation("Wards");
-                });
-
             modelBuilder.Entity("ERP.Entities.Models.Employees", b =>
                 {
                     b.Navigation("Subordinates");
@@ -12380,11 +12151,6 @@ namespace ERP.Entities.Migrations
                     b.Navigation("Employees");
 
                     b.Navigation("SubJobTitles");
-                });
-
-            modelBuilder.Entity("ERP.Entities.Models.MergedProvinces", b =>
-                {
-                    b.Navigation("Wards");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.MobilePermissionManifest", b =>

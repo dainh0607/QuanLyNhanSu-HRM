@@ -76,7 +76,7 @@ const SalaryGradeManagement: React.FC = () => {
     if (window.confirm("Bạn có chắc chắn muốn xóa mục này?")) {
       let result;
       if (activeMainTab !== 'grade') {
-        result = await payrollService.deleteVariable(id);
+        result = await payrollService.deleteVariable(id, activeMainTab);
       } else {
         result = await payrollService.deleteSalaryGrade(id);
       }

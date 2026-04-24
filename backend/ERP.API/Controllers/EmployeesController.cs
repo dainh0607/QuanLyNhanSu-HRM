@@ -227,5 +227,12 @@ namespace ERP.API.Controllers
 
             return Ok(new { Message = "Cập nhật thông tin công việc thành công" });
         }
+
+        [HttpPost("bulk-parse")]
+        public async Task<IActionResult> BulkParse([FromBody] BulkParseRequestDto dto)
+        {
+            var result = await _employeeService.BulkParseEmployeesAsync(dto);
+            return Ok(result);
+        }
     }
 }

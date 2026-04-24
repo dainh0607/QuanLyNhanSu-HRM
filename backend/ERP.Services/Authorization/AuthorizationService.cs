@@ -6,6 +6,7 @@ using ERP.Entities;
 using ERP.Entities.Models;
 using ERP.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace ERP.Services.Authorization
 {
@@ -38,11 +39,13 @@ namespace ERP.Services.Authorization
     {
         private readonly AppDbContext _context;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ILogger<AuthorizationService> _logger;
 
-        public AuthorizationService(AppDbContext context, IUnitOfWork unitOfWork)
+        public AuthorizationService(AppDbContext context, IUnitOfWork unitOfWork, ILogger<AuthorizationService> logger)
         {
             _context = context;
             _unitOfWork = unitOfWork;
+            _logger = logger;
         }
 
         /// <summary>
@@ -182,11 +185,9 @@ namespace ERP.Services.Authorization
             // Log for debugging
             System.Console.WriteLine($"[AUTH-DEBUG] User {userId} has {userRoles.Count} active roles.");
 
+            // [CRITICAL FIX] Admin/Director bypass - full access to all resources within their scope
             var roleIds = userRoles.Select(r => r.Id).ToList();
-            var roleNames = userRoles
-                .Select(r => r.name)
-                .Where(name => !string.IsNullOrWhiteSpace(name))
-                .ToList();
+            var roleNames = userRoles.Select(r => r.name).ToList();
 
             // 1. Bypass check for Admin/SuperAdmin/Director roles
             if (roleNames.Any(name => string.Equals(name.Trim(), ERP.DTOs.Auth.AuthSecurityConstants.RoleSuperAdmin, StringComparison.OrdinalIgnoreCase)) ||
@@ -195,6 +196,7 @@ namespace ERP.Services.Authorization
                 roleIds.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleSuperAdminId) || 
                 roleIds.Contains(ERP.DTOs.Auth.AuthSecurityConstants.RoleAdminId))
             {
+                _logger.LogInformation("[AUTH] User {UserId} bypassed check for {Resource}:{Action} due to admin/manager role.", userId, resource, action);
                 return true;
             }
 
@@ -261,6 +263,9 @@ namespace ERP.Services.Authorization
                 "ATTENDANCE_UPDATE" => "ATTENDANCE_EDIT",
                 "ATTENDANCE_APPROVE" => "ATTENDANCE_APPROVE",
                 "PAYROLL_READ" => "PAYROLL_VIEW",
+                "PAYROLL_CREATE" => "PAYROLL_MANAGE",
+                "PAYROLL_UPDATE" => "PAYROLL_MANAGE",
+                "PAYROLL_DELETE" => "PAYROLL_MANAGE",
                 "PAYROLL_CALCULATE" => "PAYROLL_CALCULATE",
                 "PAYROLL_APPROVE" => "PAYROLL_APPROVE",
                 "PAYROLL_MANAGE" => "PAYROLL_LOCK",

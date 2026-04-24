@@ -169,6 +169,7 @@ namespace ERP.API.Auth
             {
                 return await dbContext.AuthSessions
                     .AsNoTracking()
+                    .IgnoreQueryFilters()
                     .FirstOrDefaultAsync(s => s.session_id == sessionId && s.user_id == userId);
             }
 
@@ -178,6 +179,7 @@ namespace ERP.API.Auth
                 var refreshTokenHash = AuthTokenSecurity.ComputeHash(refreshToken);
                 return await dbContext.AuthSessions
                     .AsNoTracking()
+                    .IgnoreQueryFilters()
                     .FirstOrDefaultAsync(s => s.refresh_token_hash == refreshTokenHash);
             }
 

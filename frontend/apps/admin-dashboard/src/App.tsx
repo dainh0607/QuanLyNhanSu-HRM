@@ -25,8 +25,12 @@ import type { User } from "./services/authService";
 import { employeeService } from "./services/employeeService";
 import { SignatureManagementPage } from "./features/signature-management/SignatureListPage";
 import { SettingsProvider } from "./config/SettingsContext";
-import EnterpriseSettingsModal from "./features/enterprise-settings/EnterpriseSettingsModal";
 import { PayrollListPage } from "./features/payroll/PayrollListPage";
+import PayrollDetailPage from "./features/payroll/PayrollDetailPage";
+import PayrollSettingsPage from "./features/payroll/PayrollSettingsPage";
+import PayrollTypeListPage from "./features/payroll/PayrollTypeListPage";
+import PayrollTypeCreatePage from "./features/payroll/PayrollTypeCreatePage";
+import EnterpriseSettingsModal from "./features/enterprise-settings/EnterpriseSettingsModal";
 import "./index.css";
 
 const getInitials = (fullName: string | undefined) => {
@@ -902,6 +906,98 @@ function RoutedApp() {
                       onOpenSettings={() => setIsSettingsOpen(true)}
                     />
                     <PayrollListPage />
+                  </div>
+                </PermissionRoute>
+              ) : (
+                <Navigate
+                  to="/login"
+                  replace
+                  state={{ from: loginRedirectPath }}
+                />
+              )
+            }
+          />
+          <Route
+            path="/payroll/:id"
+            element={
+              isAuthenticated ? (
+                <PermissionRoute user={user} resource="payroll" action="read">
+                  <div className="min-h-screen bg-[#f8fafc] flex flex-col">
+                    <Header 
+                      user={user} 
+                      onLogout={handleLogout} 
+                      onOpenSettings={() => setIsSettingsOpen(true)}
+                    />
+                    <PayrollDetailPage />
+                  </div>
+                </PermissionRoute>
+              ) : (
+                <Navigate
+                  to="/login"
+                  replace
+                  state={{ from: loginRedirectPath }}
+                />
+              )
+            }
+          />
+          <Route
+            path="/payroll/types"
+            element={
+              isAuthenticated ? (
+                <PermissionRoute user={user} resource="payroll" action="read">
+                  <div className="min-h-screen bg-[#f8fafc] flex flex-col">
+                    <Header 
+                      user={user} 
+                      onLogout={handleLogout} 
+                      onOpenSettings={() => setIsSettingsOpen(true)}
+                    />
+                    <PayrollTypeListPage />
+                  </div>
+                </PermissionRoute>
+              ) : (
+                <Navigate
+                  to="/login"
+                  replace
+                  state={{ from: loginRedirectPath }}
+                />
+              )
+            }
+          />
+          <Route
+            path="/payroll/types/create"
+            element={
+              isAuthenticated ? (
+                <PermissionRoute user={user} resource="payroll" action="read">
+                  <div className="min-h-screen bg-[#f8fafc] flex flex-col">
+                    <Header 
+                      user={user} 
+                      onLogout={handleLogout} 
+                      onOpenSettings={() => setIsSettingsOpen(true)}
+                    />
+                    <PayrollTypeCreatePage />
+                  </div>
+                </PermissionRoute>
+              ) : (
+                <Navigate
+                  to="/login"
+                  replace
+                  state={{ from: loginRedirectPath }}
+                />
+              )
+            }
+          />
+          <Route
+            path="/payroll/settings"
+            element={
+              isAuthenticated ? (
+                <PermissionRoute user={user} resource="payroll" action="read">
+                  <div className="min-h-screen bg-[#f8fafc] flex flex-col">
+                    <Header 
+                      user={user} 
+                      onLogout={handleLogout} 
+                      onOpenSettings={() => setIsSettingsOpen(true)}
+                    />
+                    <PayrollSettingsPage />
                   </div>
                 </PermissionRoute>
               ) : (

@@ -115,6 +115,7 @@ namespace ERP.Entities
         public DbSet<SalaryGrade> SalaryGrades { get; set; }
         public DbSet<AllowanceType> AllowanceTypes { get; set; }
         public DbSet<IncomeType> IncomeTypes { get; set; }
+        public DbSet<PayrollAdvanceType> PayrollAdvanceTypes { get; set; }
         public DbSet<VariableSalary> VariableSalaries { get; set; }
         public DbSet<SalaryGradeConfig> SalaryGradeConfig { get; set; }
         public DbSet<ShiftAssignments> ShiftAssignments { get; set; }

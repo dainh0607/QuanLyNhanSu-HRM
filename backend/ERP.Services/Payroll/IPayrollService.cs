@@ -9,8 +9,13 @@ namespace ERP.Services.Payroll
     {
         Task<PayrollPagedResponseDto> GetPayrollTablesAsync(int skip, int take);
         Task<PaginatedListDto<object>> GetPayrollsAsync(int month, int year, int skip, int take);
+        Task<PaginatedListDto<object>> GetPayrollsByPeriodAsync(int periodId, int skip, int take);
         Task<object?> GetPayrollDetailAsync(int payrollId);
         Task<bool> GeneratePayrollsAsync(int month, int year);
+        Task<int> CreatePayrollAsync(CreatePayrollRequestDto request);
+        Task<PaginatedListDto<PayrollTypeDto>> GetPayrollTypesAsync(int skip, int take);
+        Task<int> CreatePayrollTypeAsync(PayrollTypeDto dto);
+        Task<bool> DeletePayrollTypeAsync(int id);
         Task<bool> ApprovePayrollAsync(int payrollId, int approvedBy);
         Task<bool> DeletePayrollTableAsync(int periodId);
     }

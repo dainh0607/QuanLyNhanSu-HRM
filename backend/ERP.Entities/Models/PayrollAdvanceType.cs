@@ -4,8 +4,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ERP.Entities.Models
 {
-    [Table("SalaryGrades")]
-    public class SalaryGrade : AuditableEntity, ERP.Entities.Interfaces.ITenantEntity
+    [Table("PayrollAdvanceTypes")]
+    public class PayrollAdvanceType : AuditableEntity, ERP.Entities.Interfaces.ITenantEntity
     {
         [Column("tenant_id")]
         public int? tenant_id { get; set; }
@@ -15,12 +15,12 @@ namespace ERP.Entities.Models
         [StringLength(100)]
         public string name { get; set; }
 
-        [Column("amount")]
-        public decimal amount { get; set; }
+        [Column("keyword")]
+        [StringLength(100)]
+        public string? keyword { get; set; }
 
-        [Column("payment_type")]
-        [StringLength(20)]
-        public string payment_type { get; set; } = "MONTHLY"; // ONE_TIME, HOURLY, MONTHLY, DAILY
+        [Column("display_order")]
+        public int display_order { get; set; } = 0;
 
         [Column("is_active")]
         public bool is_active { get; set; } = true;

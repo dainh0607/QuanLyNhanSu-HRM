@@ -1,4 +1,14 @@
+import { authFetch } from '../../../../services/authService';
+import { API_URL } from '../../../../services/apiConfig';
+
 export type PaymentCycle = 'one-time' | 'hourly' | 'monthly' | 'daily';
+
+const CYCLE_TO_PAYMENT_TYPE: Record<PaymentCycle, string> = {
+  'one-time': 'ONE_TIME',
+  'hourly': 'HOURLY',
+  'monthly': 'MONTHLY',
+  'daily': 'DAILY'
+};
 
 export interface SalaryGrade {
   id: string;
@@ -6,138 +16,127 @@ export interface SalaryGrade {
   amount: number;
   cycle: PaymentCycle;
   type: 'grade' | 'allowance' | 'advance' | 'other';
-  isUsedInContract?: boolean;
 }
 
 export interface PayrollVariable {
   id: string;
   name: string;
-  keyword: string; // PHUCAP_XYZ, TAMUNG_XYZ, HESOLUONG_XYZ
+  keyword: string;
   displayOrder: number;
   category: 'allowance' | 'advance' | 'other';
-  isUsedInContract?: boolean;
-  isUsedInFormula?: boolean;
-  isLocked?: boolean; // Cho các phiếu lương đã chốt
 }
 
-class PayrollService {
-  private variables: PayrollVariable[] = [
-    { id: 'a1', name: 'Phụ cấp Điện thoại', keyword: 'PHUCAP_DIEN_THOAI', displayOrder: 1, category: 'allowance', isUsedInContract: true, isUsedInFormula: true },
-    { id: 'a2', name: 'Phụ cấp Xăng xe', keyword: 'PHUCAP_XANG_XE', displayOrder: 2, category: 'allowance' },
-    { id: 't1', name: 'Tạm ứng lương', keyword: 'TAMUNG_TAM_UNG_LUONG', displayOrder: 1, category: 'advance', isLocked: true },
-    { id: 'o1', name: 'Hệ số KPI', keyword: 'HESOLUONG_KPI', displayOrder: 1, category: 'other' },
-  ];
-  private salaryGrades: SalaryGrade[] = [
-    { id: 'g1', name: 'Lương Cơ bản Bậc 1', amount: 10000000, cycle: 'monthly', type: 'grade', isUsedInContract: true },
-    { id: 'g2', name: 'Lương Thử việc 85%', amount: 8500000, cycle: 'monthly', type: 'grade', isUsedInContract: false },
-    { id: 'g3', name: 'Lương Parttime Sinh viên', amount: 25000, cycle: 'hourly', type: 'grade', isUsedInContract: false },
-  ];
+const BASE = `${API_URL}/v1/payroll-config`;
 
-  async getSalaryGrades(type: SalaryGrade['type'], cycle: PaymentCycle): Promise<SalaryGrade[]> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const filtered = this.salaryGrades.filter(g => g.type === type && g.cycle === cycle);
-        resolve([...filtered]);
-      }, 500);
-    });
+const requestJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
+  const response = await authFetch(url, init || {});
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw data;
   }
+  return response.json() as Promise<T>;
+};
 
-  async saveSalaryGrade(grade: Partial<SalaryGrade>): Promise<SalaryGrade> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        if (grade.id) {
-          const index = this.salaryGrades.findIndex(g => g.id === grade.id);
-          this.salaryGrades[index] = { ...this.salaryGrades[index], ...grade } as SalaryGrade;
-          resolve(this.salaryGrades[index]);
-        } else {
-          const newGrade = {
-            ...grade,
-            id: Math.random().toString(36).substr(2, 9),
-            isUsedInContract: false
-          } as SalaryGrade;
-          this.salaryGrades.push(newGrade);
-          resolve(newGrade);
-        }
-      }, 500);
+// ==================== Salary Grades ====================
+
+const getSalaryGrades = async (_type: string, cycle: PaymentCycle): Promise<SalaryGrade[]> => {
+  const paymentType = CYCLE_TO_PAYMENT_TYPE[cycle];
+  const data = await requestJson<any[]>(`${BASE}/salary-grades?paymentType=${paymentType}`);
+  return data.map(d => ({
+    id: String(d.id),
+    name: d.name,
+    amount: d.amount,
+    cycle: cycle,
+    type: 'grade' as const
+  }));
+};
+
+const saveSalaryGrade = async (grade: Partial<SalaryGrade>): Promise<SalaryGrade> => {
+  const paymentType = grade.cycle ? CYCLE_TO_PAYMENT_TYPE[grade.cycle] : 'MONTHLY';
+  const payload = { name: grade.name, amount: grade.amount, paymentType };
+
+  if (grade.id) {
+    const data = await requestJson<any>(`${BASE}/salary-grades/${grade.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
     });
-  }
-
-  async deleteSalaryGrade(id: string): Promise<{ success: boolean; message?: string }> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const grade = this.salaryGrades.find(g => g.id === id);
-        if (grade?.isUsedInContract) {
-          resolve({ 
-            success: false, 
-            message: "Không thể xóa bậc lương này vì đang được sử dụng trong hợp đồng nhân viên. Vui lòng cập nhật hợp đồng trước." 
-          });
-          return;
-        }
-        this.salaryGrades = this.salaryGrades.filter(g => g.id !== id);
-        resolve({ success: true });
-      }, 500);
+    return { ...grade, id: String(data.id) } as SalaryGrade;
+  } else {
+    const data = await requestJson<any>(`${BASE}/salary-grades`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
     });
+    return { ...grade, id: String(data.id) } as SalaryGrade;
   }
+};
 
-  // --- VARIABLE METHODS (Allowance, Advance, Other) ---
-  async getVariables(category: PayrollVariable['category']): Promise<PayrollVariable[]> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const filtered = this.variables
-          .filter(v => v.category === category)
-          .sort((a, b) => a.displayOrder - b.displayOrder);
-        resolve([...filtered]);
-      }, 500);
-    });
+const deleteSalaryGrade = async (id: string): Promise<{ success: boolean; message?: string }> => {
+  try {
+    const data = await requestJson<{ success: boolean; message: string }>(`${BASE}/salary-grades/${id}`, { method: 'DELETE' });
+    return data;
+  } catch (error: any) {
+    return { success: false, message: error?.message || 'Lỗi khi xóa bậc lương' };
   }
+};
 
-  async saveVariable(variable: Partial<PayrollVariable>): Promise<{ success: boolean; message?: string; data?: PayrollVariable }> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // AC 3.1: Chống trùng lặp từ khóa
-        const isDuplicate = this.variables.some(v => v.keyword === variable.keyword && v.id !== variable.id);
-        if (isDuplicate) {
-          resolve({ success: false, message: `Từ khóa ${variable.keyword} đã tồn tại trong hệ thống.` });
-          return;
-        }
+// ==================== Variables (Allowance, Advance, Other) ====================
 
-        if (variable.id) {
-          const index = this.variables.findIndex(v => v.id === variable.id);
-          this.variables[index] = { ...this.variables[index], ...variable } as PayrollVariable;
-          resolve({ success: true, data: this.variables[index] });
-        } else {
-          const newVar = {
-            ...variable,
-            id: Math.random().toString(36).substr(2, 9),
-            isUsedInContract: false,
-            isUsedInFormula: false,
-            isLocked: false
-          } as PayrollVariable;
-          this.variables.push(newVar);
-          resolve({ success: true, data: newVar });
-        }
-      }, 500);
-    });
+const getVariables = async (category: PayrollVariable['category']): Promise<PayrollVariable[]> => {
+  const data = await requestJson<any[]>(`${BASE}/variables?category=${category}`);
+  return data.map(d => ({
+    id: String(d.id),
+    name: d.name,
+    keyword: d.keyword,
+    displayOrder: d.displayOrder,
+    category: d.category
+  }));
+};
+
+const saveVariable = async (variable: Partial<PayrollVariable>): Promise<{ success: boolean; message?: string; data?: PayrollVariable }> => {
+  const payload = {
+    name: variable.name,
+    keyword: variable.keyword,
+    displayOrder: variable.displayOrder || 0,
+    category: variable.category
+  };
+
+  try {
+    if (variable.id) {
+      const result = await requestJson<any>(`${BASE}/variables/${variable.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      return { success: result.success ?? true, data: result.data };
+    } else {
+      const result = await requestJson<any>(`${BASE}/variables`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      return { success: result.success ?? true, data: result.data };
+    }
+  } catch (error: any) {
+    return { success: false, message: error?.message || 'Lỗi khi lưu biến lương' };
   }
+};
 
-  async deleteVariable(id: string): Promise<{ success: boolean; message?: string }> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const variable = this.variables.find(v => v.id === id);
-        // AC 3.2: Ràng buộc xóa
-        if (variable?.isUsedInContract || variable?.isUsedInFormula || variable?.isLocked) {
-          const typeLabel = variable.category === 'advance' ? 'tạm ứng' : 'phụ cấp';
-          resolve({ 
-            success: false, 
-            message: `Không thể xóa loại ${typeLabel} này vì đang được sử dụng trong hợp đồng nhân viên, bảng lương hoặc công thức lương.` 
-          });
-          return;
-        }
-        this.variables = this.variables.filter(v => v.id !== id);
-        resolve({ success: true });
-      }, 500);
-    });
+const deleteVariable = async (id: string, category?: string): Promise<{ success: boolean; message?: string }> => {
+  try {
+    const data = await requestJson<{ success: boolean; message: string }>(`${BASE}/variables/${id}?category=${category || 'allowance'}`, { method: 'DELETE' });
+    return data;
+  } catch (error: any) {
+    return { success: false, message: error?.message || 'Lỗi khi xóa' };
   }
-}
+};
 
-export const payrollService = new PayrollService();
+export const payrollService = {
+  getSalaryGrades,
+  saveSalaryGrade,
+  deleteSalaryGrade,
+  getVariables,
+  saveVariable,
+  deleteVariable
+};

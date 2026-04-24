@@ -14,6 +14,23 @@ namespace ERP.Entities.Models
         [StringLength(100)]
         public string name { get; set; }
 
+        [Column("code")]
+        [StringLength(50)]
+        public string code { get; set; }
+
+        [Column("payroll_type_id")]
+        public int? payroll_type_id { get; set; }
+
+        [ForeignKey("payroll_type_id")]
+        public virtual PayrollTypes PayrollType { get; set; }
+
+        [Column("time_type")]
+        [StringLength(20)]
+        public string time_type { get; set; } // FULL_MONTH, RANGE
+
+        [Column("is_hidden")]
+        public bool is_hidden { get; set; } = false;
+
         [Column("start_date")]
         public DateTime start_date { get; set; }
 

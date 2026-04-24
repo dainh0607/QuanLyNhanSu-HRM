@@ -1936,5 +1936,44 @@ namespace ERP.Services.Employees
                 _ => isDesc ? query.ThenByDescending(e => e.employee_code) : query.ThenBy(e => e.employee_code)
             };
         }
+        public async Task<IEnumerable<BulkParseResponseDto>> BulkParseEmployeesAsync(BulkParseRequestDto request)
+        {
+            if (string.IsNullOrWhiteSpace(request.RawText)) return new List<BulkParseResponseDto>();
+
+            // Split by newline, comma, or semicolon
+            var tokens = request.RawText
+                .Split(new[] { '\n', '\r', ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(t => t.Trim())
+                .Where(t => !string.IsNullOrEmpty(t))
+                .ToList();
+
+            if (!tokens.Any()) return new List<BulkParseResponseDto>();
+
+            var query = _unitOfWork.Repository<EmployeeEntity>()
+                .AsQueryable()
+                .Include(e => e.Branch)
+                .Where(e => !e.is_resigned && e.is_active);
+
+            // Filter by branches if provided
+            if (request.BranchIds != null && request.BranchIds.Any())
+            {
+                query = query.Where(e => e.branch_id.HasValue && request.BranchIds.Contains(e.branch_id.Value));
+            }
+
+            // Search by Email, Code, or Phone
+            var employees = await query
+                .Where(e => tokens.Contains(e.email) || tokens.Contains(e.employee_code) || tokens.Contains(e.phone))
+                .Select(e => new BulkParseResponseDto
+                {
+                    Id = e.Id,
+                    FullName = e.full_name,
+                    EmployeeCode = e.employee_code,
+                    PhoneNumber = e.phone,
+                    BranchName = e.Branch != null ? e.Branch.name : ""
+                })
+                .ToListAsync();
+
+            return employees;
+        }
     }
 }

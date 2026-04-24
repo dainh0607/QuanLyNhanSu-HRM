@@ -15,6 +15,13 @@ namespace ERP.Entities.Models
         [StringLength(100)]
         public string name { get; set; }
 
+        [Column("keyword")]
+        [StringLength(100)]
+        public string? keyword { get; set; }
+
+        [Column("display_order")]
+        public int display_order { get; set; } = 0;
+
         [Column("is_active")]
         public bool is_active { get; set; } = true;
     }
