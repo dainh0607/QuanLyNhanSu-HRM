@@ -33,7 +33,6 @@ interface CompactShiftScheduleToolbarWithAdvancedSidebarProps {
   onOpenCopyShift: () => void;
   onOpenHistory: () => void;
   onOpenMealBoard: () => void;
-  onOpenMealBoard: () => void;
   isAdvancedFilterOpen: boolean;
   activeAdvancedFilterCount: number;
   onToggleAdvancedFilter: () => void;
@@ -65,7 +64,6 @@ export const CompactShiftScheduleToolbarWithAdvancedSidebar = ({
   onOpenAssignShift,
   onOpenCopyShift,
   onOpenHistory,
-  onOpenMealBoard,
   onOpenMealBoard,
   isAdvancedFilterOpen,
   activeAdvancedFilterCount,

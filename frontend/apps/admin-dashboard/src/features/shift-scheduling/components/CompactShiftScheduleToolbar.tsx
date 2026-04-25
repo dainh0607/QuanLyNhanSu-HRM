@@ -22,7 +22,6 @@ interface CompactShiftScheduleToolbarProps {
   onImport: () => void;
   onOpenHistory: () => void;
   onOpenMealBoard: () => void;
-  onOpenMealBoard: () => void;
 }
 
 export const CompactShiftScheduleToolbar = ({
@@ -43,7 +42,6 @@ export const CompactShiftScheduleToolbar = ({
   onExport,
   onImport,
   onOpenHistory,
-  onOpenMealBoard,
   onOpenMealBoard,
 }: CompactShiftScheduleToolbarProps) => (
   <section className="space-y-3">
