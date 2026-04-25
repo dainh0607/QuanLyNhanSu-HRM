@@ -7,13 +7,12 @@ import { PayrollTable } from './components/PayrollTable';
 import PayrollCreateModal from './components/PayrollCreateModal';
 import SalaryGradeManagement from '../enterprise-settings/payroll-settings/components/SalaryGradeManagement';
 
-type PayrollView = 'payroll-list' | 'payroll-types' | 'salary-config' | 'payroll-settings';
+type PayrollView = 'payroll-list' | 'payroll-types' | 'salary-config';
 
 const PAYROLL_TABS: { id: PayrollView; label: string; icon: string; desc: string }[] = [
   { id: 'payroll-list', label: 'Bảng lương', icon: 'receipt_long', desc: 'Quản lý bảng lương theo kỳ' },
   { id: 'payroll-types', label: 'Loại bảng lương', icon: 'category', desc: 'Thiết lập mẫu bảng lương' },
   { id: 'salary-config', label: 'Cấu hình tiền lương', icon: 'payments', desc: 'Bậc lương · Phụ cấp · Tạm ứng · Thu nhập' },
-  { id: 'payroll-settings', label: 'Thiết lập danh mục', icon: 'settings', desc: 'Phần thưởng · Khẩu phần ăn' },
 ];
 
 export const PayrollListPage: React.FC = () => {
@@ -68,8 +67,6 @@ export const PayrollListPage: React.FC = () => {
   const handleTabClick = (tab: PayrollView) => {
     if (tab === 'payroll-types') {
       navigate('/payroll/types');
-    } else if (tab === 'payroll-settings') {
-      navigate('/payroll/settings');
     } else {
       setActiveView(tab);
     }
