@@ -354,9 +354,9 @@ export const downloadExcelCompatibleFile = (
           .map(
             (cell) =>
               `<td>${String(cell ?? "")
-                .replaceAll("&", "&amp;")
-                .replaceAll("<", "&lt;")
-                .replaceAll(">", "&gt;")}</td>`,
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")}</td>`,
           )
           .join("")}</tr>`,
     )

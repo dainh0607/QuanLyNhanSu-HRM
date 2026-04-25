@@ -33,9 +33,28 @@ services:
     build:
       context: ./frontend/apps/admin-dashboard
       dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL:-http://localhost:5122/api}
+        - VITE_FIREBASE_API_KEY=${VITE_FIREBASE_API_KEY}
+        - VITE_FIREBASE_AUTH_DOMAIN=${VITE_FIREBASE_AUTH_DOMAIN}
+        - VITE_FIREBASE_PROJECT_ID=${VITE_FIREBASE_PROJECT_ID}
+        - VITE_FIREBASE_STORAGE_BUCKET=${VITE_FIREBASE_STORAGE_BUCKET}
+        - VITE_FIREBASE_MESSAGING_SENDER_ID=${VITE_FIREBASE_MESSAGING_SENDER_ID}
+        - VITE_FIREBASE_APP_ID=${VITE_FIREBASE_APP_ID}
+        - VITE_FIREBASE_MEASUREMENT_ID=${VITE_FIREBASE_MEASUREMENT_ID}
     container_name: nexahrm-frontend
     ports:
       - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - hrm-network
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: nexahrm-tunnel
+    restart: always
+    command: tunnel --no-autoupdate run --token eyJhIjoiYjgyZThjMTA5YThmYTNmYmFlZGQxNTZlMjhhMzZjZmUiLCJ0IjoiNGIxNzNlMjMtY2Y3Yi00NTBjLWIxNGItZTQ4NTFiOTI3Y2U5IiwicyI6Ik4yWXlOemd6WWpBdE9EUmtNeTAwWldRM0xXRTVORGt0WWpZeVlXRXlOemhpTVRobCJ9
     depends_on:
       - backend
     networks:

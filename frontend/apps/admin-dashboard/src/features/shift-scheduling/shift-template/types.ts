@@ -49,6 +49,7 @@ export interface ShiftTemplateAdvancedSettings {
   startMinute2: string;
   endHour2: string;
   endMinute2: string;
+  isPublished: boolean;
 }
 
 export interface ShiftTemplateFormValues extends ShiftTemplateAdvancedSettings {
@@ -90,8 +91,6 @@ export interface ShiftTemplateSubmitPayload extends ShiftTemplateAdvancedSetting
   departmentIds: string[];
   jobTitleIds: string[];
   repeatDays: string[];
-  isRestDay: boolean;
-  isSplitShift: boolean;
   startTime2?: string | null;
   endTime2?: string | null;
   note?: string | null;

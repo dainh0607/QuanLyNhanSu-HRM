@@ -70,21 +70,6 @@ const createAddressOptionState = (): Record<AddressFormKey, AddressOptionState> 
   },
 });
 
-const mergeUniqueOptions = (...optionGroups: Array<Array<string | undefined>>): string[] => {
-  const values = new Set<string>();
-
-  optionGroups.forEach((group) => {
-    group.forEach((option) => {
-      const normalizedOption = option?.trim() ?? '';
-      if (normalizedOption) {
-        values.add(normalizedOption);
-      }
-    });
-  });
-
-  return Array.from(values).sort((left, right) => left.localeCompare(right, 'vi'));
-};
-
 const normalizeCountryValue = (value: string): string =>
   value
     .normalize('NFD')
@@ -157,7 +142,6 @@ const PermanentAddressCascadingForm: React.FC<PermanentAddressCascadingFormProps
   const activeAddress = data[activeAddressForm];
   const activeOptionState = addressOptions[activeAddressForm];
   const isMergedAddressView = activeAddressForm === 'mergedAddress';
-  const isMergedVietnam = isMergedAddressView && isVietnamCountry(activeAddress.country);
   const getFieldError = (field: keyof EmployeeEditAddressFormPayload): string | undefined =>
     errors[`${activeAddressForm}.${field}`];
 

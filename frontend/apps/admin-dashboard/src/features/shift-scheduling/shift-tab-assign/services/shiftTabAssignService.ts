@@ -1,5 +1,6 @@
 import { employeeListService } from "../../../../services/employee/list";
 import { API_URL, requestJson } from "../../../../services/employee/core";
+import { shiftAssignmentsService } from "../../../../services/shiftsAssignmentsService";
 import { weeklyShiftScheduleService } from "../../services/weeklyShiftScheduleService";
 import type { ShiftScheduleGridData } from "../../types";
 import {
@@ -167,6 +168,69 @@ const loadShiftCatalog = async (
     .filter((item): item is ShiftTabAssignTab => Boolean(item));
 };
 
+const loadShiftTabsFromApi = async (
+  branchId: string,
+): Promise<ShiftTabAssignTab[]> => {
+  const numericBranchId = Number(branchId);
+  if (!Number.isFinite(numericBranchId) || numericBranchId <= 0) {
+    return [];
+  }
+
+  const tabs = await shiftAssignmentsService.getShiftTabs(numericBranchId);
+
+  return tabs.map((tab) => ({
+    key: getTabKey(tab.shiftId, tab.shiftName, tab.startTime, tab.endTime),
+    shiftId: tab.shiftId,
+    shiftName: tab.shiftName,
+    startTime: formatTime(tab.startTime),
+    endTime: formatTime(tab.endTime),
+    branchId: numericBranchId,
+    branchName: null,
+    days: [],
+  }));
+};
+
+const loadAssignedDaysForTab = async (
+  branchId: string,
+  weekStartDate: string,
+  tab: ShiftTabAssignTab,
+): Promise<ShiftTabAssignDay[]> => {
+  if (tab.shiftId === null) {
+    return createEmptyDays(weekStartDate);
+  }
+
+  const numericBranchId = Number(branchId);
+  if (!Number.isFinite(numericBranchId) || numericBranchId <= 0) {
+    return createEmptyDays(weekStartDate);
+  }
+
+  const response = await shiftAssignmentsService.getAssignedUsers(
+    tab.shiftId,
+    weekStartDate,
+    numericBranchId,
+  );
+  const assignedByDate = new Map(response.map((item) => [item.date, item]));
+
+  return createEmptyDays(weekStartDate).map((day) => {
+    const assignedUsers = assignedByDate.get(day.date);
+
+    return {
+      ...day,
+      employees: (assignedUsers?.users ?? [])
+        .map((employee) => ({
+          assignmentId: employee.assignmentId,
+          employeeId: employee.employeeId,
+          fullName: employee.fullName,
+          avatar: employee.avatar ?? null,
+          phone: employee.phone || "N/A",
+          branchId: numericBranchId,
+          branchName: null,
+        }))
+        .sort((left, right) => left.fullName.localeCompare(right.fullName, "vi")),
+    };
+  });
+};
+
 const enrichPhones = async (
   branchId: string,
   scheduleData: ShiftScheduleGridData,
@@ -286,11 +350,45 @@ const buildTabsFromSchedule = async (
     );
 };
 
+const buildTabsFromApi = async (
+  branchId: string,
+  weekStartDate: string,
+): Promise<ShiftTabAssignTab[]> => {
+  const tabs = await loadShiftTabsFromApi(branchId);
+
+  if (tabs.length === 0) {
+    return [];
+  }
+
+  const tabsWithDays = await Promise.all(
+    tabs.map(async (tab) => ({
+      ...tab,
+      days: await loadAssignedDaysForTab(branchId, weekStartDate, tab),
+    })),
+  );
+
+  return tabsWithDays.sort((left, right) =>
+    `${left.shiftName}-${left.startTime}`.localeCompare(
+      `${right.shiftName}-${right.startTime}`,
+      "vi",
+    ),
+  );
+};
+
 export const shiftTabAssignService = {
   async getShiftTabs(
     branchId: string,
     weekStartDate: string,
   ): Promise<ShiftTabAssignTab[]> {
+    try {
+      const tabsFromApi = await buildTabsFromApi(branchId, weekStartDate);
+      if (tabsFromApi.length > 0) {
+        return tabsFromApi;
+      }
+    } catch (error) {
+      console.warn("Failed to load shift tabs from dedicated APIs, falling back.", error);
+    }
+
     return buildTabsFromSchedule(branchId, weekStartDate);
   },
 
@@ -352,30 +450,19 @@ export const shiftTabAssignService = {
     }
 
     for (const employeeId of params.employeeIds) {
-      await requestJson(
-        `${API_URL}/shift-assignments`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            employee_id: employeeId,
-            shift_id: params.shiftId,
-            assignment_date: params.date,
-            note: `Assigned from shift tab ${params.shiftName}`,
-          }),
-        },
-        "Failed to bulk assign shifts",
-      );
+      await shiftAssignmentsService.createAssignment({
+        employee_id: employeeId,
+        shift_id: params.shiftId,
+        assignment_date: params.date,
+        note: `Assigned from shift tab ${params.shiftName}`,
+      });
     }
   },
 
   async removeAssignedShift(
     assignmentId: number,
   ): Promise<void> {
-    await requestJson(
-      `${API_URL}/shift-assignments/${assignmentId}`,
-      { method: "DELETE" },
-      "Failed to remove employee from shift",
-    );
+    await shiftAssignmentsService.deleteAssignment(assignmentId);
   },
 };
 

@@ -152,7 +152,7 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
     setStepFourReady(false);
     setContractId(null);
     setContractSigners([]);
-    setPdfSourceLabel('Há»£p Ä‘á»“ng Ä‘iá»‡n tá»­.pdf');
+    setPdfSourceLabel('Hợp đồng điện tử.pdf');
 
     if (pdfUrlRef.current) {
       URL.revokeObjectURL(pdfUrlRef.current);
@@ -240,8 +240,8 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
       formValues.attachmentFile && isPdfFile(formValues.attachmentFile.name, formValues.attachmentFile.type)
         ? formValues.attachmentFile.name
         : formValues.attachmentName && !isPdfFile(formValues.attachmentName)
-          ? `${formValues.attachmentName} - báº£n xem trÆ°á»›c PDF`
-          : `${baseTitle || 'Há»£p Ä‘á»“ng Ä‘iá»‡n tá»­'}.pdf`;
+          ? `${formValues.attachmentName} - bản xem trước PDF`
+          : `${baseTitle || 'Hợp đồng điện tử'}.pdf`;
 
     try {
       const previewBlob = await contractsService.getContractPreviewBlob(targetContractId);
@@ -504,7 +504,7 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
   };
 
   const buildDraftNote = () =>
-    `Táº¡o tá»« trĂ¬nh thuáº­t thuáº­t kĂ½ Ä‘iá»‡n tá»­ - Máº«u: ${formValues.templateName || 'Tá»‡p táº£i lĂªn'}`;
+    `Tạo từ trình thuật thuật ký điện tử - Mẫu: ${formValues.templateName || 'Tệp tải lên'}`;
 
   const buildElectronicDraftPayload = () => ({
     EmployeeId: Number(formValues.employeeId),
@@ -542,7 +542,7 @@ const ElectronicContractFlowWizard: React.FC<ElectronicContractFlowWizardProps> 
 
     const response = await contractsService.createElectronicDraft(buildElectronicDraftPayload());
     if (!response.id) {
-      throw new Error('KhĂ´ng nháº­n Ä‘Æ°á»£c ID báº£n nhĂ¡p tá»« há»‡ thá»‘ng.');
+      throw new Error('Không nhận được ID bản nháp từ hệ thống.');
     }
 
     setContractId(response.id);

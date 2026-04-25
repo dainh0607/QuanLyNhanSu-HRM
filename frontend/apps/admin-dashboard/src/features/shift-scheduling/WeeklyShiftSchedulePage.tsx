@@ -10,7 +10,6 @@ import CompactShiftScheduleGrid from "./components/CompactShiftScheduleGrid";
 import CompactShiftScheduleToolbarWithAdvancedSidebar from "./components/CompactShiftScheduleToolbarWithAdvancedSidebar";
 import ShiftLegend from "./components/ShiftLegend";
 import ShiftSettingsModal from "./components/ShiftSettingsModal";
-import ShiftSchedulingConfigView from "./ShiftSchedulingConfigView";
 import ShiftTaskListView from "./components/ShiftTaskListView";
 import { useWeeklyShiftSchedule } from "./hooks/useWeeklyShiftSchedule";
 import OpenShiftModal from "./open-shift/OpenShiftModal";
@@ -105,7 +104,6 @@ export const WeeklyShiftSchedulePage = () => {
   const [isShiftCopyOpen, setIsShiftCopyOpen] = useState<boolean>(false);
   const [isBulkProcessing, setIsBulkProcessing] = useState<boolean>(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
-  const [isConfigModalOpen, setIsConfigModalOpen] = useState<boolean>(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState<boolean>(false);
 
   const assignedShiftQuickActions = useAssignedShiftQuickActions({
@@ -352,9 +350,6 @@ export const WeeklyShiftSchedulePage = () => {
                   "info",
                 )
               }
-              onOpenSettings={() => setIsSettingsOpen(true)}
-              onOpenConfig={() => setIsConfigModalOpen(true)}
-              onOpenTasks={() => setIsTaskModalOpen(true)}
               isAdvancedFilterOpen={isAdvancedFilterOpen}
               activeAdvancedFilterCount={activeAdvancedFilterCount}
               onToggleAdvancedFilter={() =>
@@ -417,6 +412,13 @@ export const WeeklyShiftSchedulePage = () => {
                 }
               }}
               onDeleteUnconfirmed={() => setIsDeleteModalOpen(true)}
+              onOpenConfig={() => {
+                window.dispatchEvent(
+                  new CustomEvent("open-enterprise-settings", {
+                    detail: { module: "timesheet-settings" },
+                  }),
+                );
+              }}
             />
 
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
@@ -596,11 +598,6 @@ export const WeeklyShiftSchedulePage = () => {
             setIsBulkProcessing(false);
           }
         }}
-      />
-
-      <ShiftSchedulingConfigView 
-        isOpen={isConfigModalOpen}
-        onClose={() => setIsConfigModalOpen(false)}
       />
 
       <ShiftTaskListView 

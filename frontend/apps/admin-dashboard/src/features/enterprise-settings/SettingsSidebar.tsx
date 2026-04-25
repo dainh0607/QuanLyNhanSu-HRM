@@ -31,11 +31,6 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeModule, onModul
 
   return (
     <div className="flex flex-col h-full bg-[#f8fafc]/50 p-4">
-      <div className="mb-6 px-2">
-        <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Quản lý Yêu cầu</h2>
-        <p className="text-[11px] text-slate-500 mt-0.5 font-medium">Quản lý cấu hình hệ thống</p>
-      </div>
-
       <nav className="space-y-1 flex-1">
         {menuItems.map((item) => {
           const isActive = activeModule === item.id;

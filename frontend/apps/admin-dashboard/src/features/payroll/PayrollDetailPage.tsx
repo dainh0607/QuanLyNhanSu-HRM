@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { payrollService } from "../../services/payrollService";
+import {
+  payrollService,
+  type PayrollEntryDetail,
+} from "../../services/payrollService";
 import { useToast } from "../../hooks/useToast";
+import PayrollItemDetailModal from "./components/PayrollItemDetailModal";
 
 const PayrollDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -9,6 +13,10 @@ const PayrollDetailPage: React.FC = () => {
   const { showToast, ToastComponent } = useToast();
   const [data, setData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPayrollItemDetailOpen, setIsPayrollItemDetailOpen] = useState(false);
+  const [isPayrollItemDetailLoading, setIsPayrollItemDetailLoading] = useState(false);
+  const [selectedPayrollItemDetail, setSelectedPayrollItemDetail] =
+    useState<PayrollEntryDetail | null>(null);
   const [summary, setSummary] = useState({
     totalNet: 0,
     totalEmployees: 0,
@@ -44,6 +52,29 @@ const PayrollDetailPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleOpenPayrollItemDetail = async (payrollId: number) => {
+    setIsPayrollItemDetailOpen(true);
+    setIsPayrollItemDetailLoading(true);
+    setSelectedPayrollItemDetail(null);
+
+    try {
+      const detail = await payrollService.getPayrollDetail(payrollId);
+      setSelectedPayrollItemDetail(detail);
+    } catch (error) {
+      console.error("Failed to load payroll item detail:", error);
+      setSelectedPayrollItemDetail(null);
+      showToast("KhĂ´ng thá»ƒ táº£i chi tiáº¿t phiáº¿u lÆ°Æ¡ng", "error");
+    } finally {
+      setIsPayrollItemDetailLoading(false);
+    }
+  };
+
+  const handleClosePayrollItemDetail = () => {
+    setIsPayrollItemDetailOpen(false);
+    setIsPayrollItemDetailLoading(false);
+    setSelectedPayrollItemDetail(null);
   };
 
   const formatCurrency = (amount: number) => {
@@ -190,7 +221,10 @@ const PayrollDetailPage: React.FC = () => {
                         <span className="text-[14px] font-bold text-gray-900">{formatCurrency(item.net_salary)}</span>
                       </td>
                       <td className="px-[15px] py-[15px] border-b border-gray-100 text-right">
-                        <button className="h-9 w-9 inline-flex items-center justify-center bg-white border border-gray-200 text-gray-400 hover:text-[#134BBA] hover:border-blue-200 hover:shadow-md rounded-xl transition-all">
+                        <button
+                          onClick={() => void handleOpenPayrollItemDetail(item.id)}
+                          className="h-9 w-9 inline-flex items-center justify-center bg-white border border-gray-200 text-gray-400 hover:text-[#134BBA] hover:border-blue-200 hover:shadow-md rounded-xl transition-all"
+                        >
                           <span className="material-symbols-outlined text-[19px]">visibility</span>
                         </button>
                       </td>
@@ -202,6 +236,14 @@ const PayrollDetailPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <PayrollItemDetailModal
+        isOpen={isPayrollItemDetailOpen}
+        isLoading={isPayrollItemDetailLoading}
+        detail={selectedPayrollItemDetail}
+        onClose={handleClosePayrollItemDetail}
+        formatCurrency={formatCurrency}
+      />
     </main>
   );
 };

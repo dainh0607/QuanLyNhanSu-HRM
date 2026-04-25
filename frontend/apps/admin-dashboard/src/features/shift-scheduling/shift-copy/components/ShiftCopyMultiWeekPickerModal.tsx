@@ -9,7 +9,6 @@ interface ShiftCopyMultiWeekPickerModalProps {
   weekOptions: ShiftCopyWeekOption[];
   selectedWeekStartDates: string[];
   onClose: () => void;
-  onToggleWeek: (weekStartDate: string) => void;
   onSelectWeeks: (weekStartDates: string[], action: "select" | "deselect") => void;
   onSelectAll: () => void;
   onClear: () => void;
@@ -20,7 +19,6 @@ export const ShiftCopyMultiWeekPickerModal = ({
   weekOptions,
   selectedWeekStartDates,
   onClose,
-  onToggleWeek,
   onSelectWeeks,
   onSelectAll,
   onClear,

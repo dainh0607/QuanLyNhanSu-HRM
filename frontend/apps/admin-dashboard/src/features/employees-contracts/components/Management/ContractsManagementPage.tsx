@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Pagination from '../../../employees/components/Pagination';
 import { buildContractSummary, createEmployeeMap, downloadExcelCompatibleFile, matchesContractFilters, matchesContractSearch } from '../../utils';
-import { DEFAULT_CONTRACT_COLUMNS, PAGE_SIZE } from '../../constants';
+import { CONTRACT_TYPE_OPTIONS, DEFAULT_CONTRACT_COLUMNS, PAGE_SIZE } from '../../constants';
 import { contractsService } from '../../services/contractsService';
-import type { ContractFilterMetadata, ContractFilterState, ContractListItem } from '../../types';
+import type { ContractDto, ContractFilterMetadata, ContractFilterState, ContractListItem, ContractSummary } from '../../types';
 import { useToast } from '../../../../hooks/useToast';
 import ContractPreviewModal from '../Shared/ContractPreviewModal';
 import ContractsActionBar from './ContractsActionBar';
@@ -31,6 +31,11 @@ const ContractsManagementPage: React.FC = () => {
 
   const [contracts, setContracts] = useState<ContractListItem[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [summary, setSummary] = useState<ContractSummary>({
+    effectiveCount: 0,
+    pendingCount: 0,
+    expiredCount: 0,
+  });
   const [metadata, setMetadata] = useState<ContractFilterMetadata>({
     branches: [],
     departments: [],
@@ -49,24 +54,36 @@ const ContractsManagementPage: React.FC = () => {
   const [isRegularModalOpen, setIsRegularModalOpen] = useState(false);
   const [isElectronicModalOpen, setIsElectronicModalOpen] = useState(false);
   const [previewContract, setPreviewContract] = useState<ContractListItem | null>(null);
+  const [previewContractDetail, setPreviewContractDetail] = useState<ContractDto | null>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
 
   const loadDashboard = useCallback(async () => {
     setIsLoading(true);
     setLoadError(null);
 
     try {
-      const [dashboardData, filterMetadata] = await Promise.all([
+      const [dashboardData, filterMetadata, summaryData] = await Promise.all([
         contractsService.getDashboardData(),
         contractsService.getFilterMetadata(),
+        contractsService.getContractsSummary().catch((error) => {
+          console.error('Failed to load contracts summary:', error);
+          return null;
+        }),
       ]);
 
       setContracts(dashboardData.contracts);
       setEmployees(dashboardData.employees);
       setMetadata(filterMetadata);
+      setSummary(summaryData ?? buildContractSummary(dashboardData.contracts));
     } catch (error) {
       console.error('Failed to load contracts dashboard:', error);
-      setLoadError('Không thể tải danh sách hợp đồng. Vui lòng thử lại.');
-      showToast('Không thể tải danh sách hợp đồng. Vui lòng thử lại.', 'error');
+      setLoadError('Khong the tai danh sach hop dong. Vui long thu lai.');
+      showToast('Khong the tai danh sach hop dong. Vui long thu lai.', 'error');
+      setSummary({
+        effectiveCount: 0,
+        pendingCount: 0,
+        expiredCount: 0,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -106,8 +123,6 @@ const ContractsManagementPage: React.FC = () => {
     [activeFilters.branchId, activeFilters.departmentId, contracts, employeeMap, searchKeyword, selectedCategory],
   );
 
-  const summary = useMemo(() => buildContractSummary(contracts), [contracts]);
-
   const paginatedContracts = useMemo(() => {
     if (!isPaginationEnabled) {
       return filteredContracts;
@@ -132,45 +147,40 @@ const ContractsManagementPage: React.FC = () => {
   }, [currentPage, filteredContracts.length, isPaginationEnabled]);
 
   const handleDeleteContract = async (contract: ContractListItem) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa hợp đồng ${contract.contractNumber || ''}?`)) {
+    if (!window.confirm(`Ban co chac chan muon xoa hop dong ${contract.contractNumber || ''}?`)) {
       return;
     }
 
     try {
       await contractsService.deleteContract(contract.id);
-      showToast('Đã xóa hợp đồng.', 'success');
+      showToast('Da xoa hop dong.', 'success');
       await loadDashboard();
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Xóa hợp đồng thất bại. Vui lòng thử lại.';
+        error instanceof Error ? error.message : 'Xoa hop dong that bai. Vui long thu lai.';
       showToast(message, 'error');
     }
   };
 
-  const handleExport = () => {
-    if (filteredContracts.length === 0) {
-      showToast('Hiện chưa có dữ liệu hợp đồng để xuất file.', 'info');
-      return;
-    }
-
+  const exportContractsFromView = () => {
     const today = new Date();
     const filename = `Contracts_${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}.xls`;
 
     downloadExcelCompatibleFile(filename, [
       [
-        'Mã nhân viên',
-        'Họ và tên',
-        'Số hợp đồng',
-        'Loại hợp đồng',
-        'Trạng thái',
-        'Ngày ký',
-        'Ngày hiệu lực',
-        'Ngày hết hạn',
-        'Chi nhánh',
-        'Phòng ban',
-        'Người ký',
-        'Loại thuế TNCN',
-        'Tệp đính kèm',
+        'Ma nhan vien',
+        'Ho va ten',
+        'So hop dong',
+        'Loai hop dong',
+        'Trang thai',
+        'Ngay ky',
+        'Ngay hieu luc',
+        'Ngay het han',
+        'Chi nhanh',
+        'Phong ban',
+        'Nguoi ky',
+        'Loai thue TNCN',
+        'Tep dinh kem',
       ],
       ...filteredContracts.map((contract) => [
         contract.employeeCode,
@@ -179,7 +189,7 @@ const ContractsManagementPage: React.FC = () => {
         contract.contractTypeName || '',
         contract.statusLabel,
         contract.signDateLabel,
-        contract.signDateLabel,
+        contract.effectiveDateLabel,
         contract.expiryDateLabel,
         contract.branchName,
         contract.departmentName,
@@ -188,8 +198,59 @@ const ContractsManagementPage: React.FC = () => {
         contract.attachment || '',
       ]),
     ]);
+  };
 
-    showToast('Đã xuất file hợp đồng hiện tại.', 'success');
+  const handleExport = async () => {
+    if (filteredContracts.length === 0) {
+      showToast('Chua co du lieu hop dong de xuat file.', 'info');
+      return;
+    }
+
+    const apiExportContractTypeId =
+      selectedCategory === 'probation' || selectedCategory === 'seasonal'
+        ? CONTRACT_TYPE_OPTIONS.find((option) => option.category === selectedCategory)?.id
+        : undefined;
+    const canUseApiExport = selectedCategory !== 'official';
+
+    if (canUseApiExport) {
+      try {
+        await contractsService.exportContracts({
+          search: searchKeyword,
+          branchId: activeFilters.branchId,
+          departmentId: activeFilters.departmentId,
+          contractTypeId: apiExportContractTypeId,
+        });
+        showToast('Da xuat file hop dong.', 'success');
+        return;
+      } catch (error) {
+        console.error('Failed to export contracts from API:', error);
+      }
+    }
+
+    exportContractsFromView();
+    showToast('Da xuat file hop dong tu du lieu hien tai.', 'success');
+  };
+
+  const handleOpenPreview = async (contract: ContractListItem) => {
+    setPreviewContract(contract);
+    setPreviewContractDetail(null);
+    setIsPreviewLoading(true);
+
+    try {
+      const detail = await contractsService.getContractById(contract.id);
+      setPreviewContractDetail(detail);
+    } catch (error) {
+      console.error('Failed to load contract detail:', error);
+      showToast('Khong the tai chi tiet hop dong tu API. Dang hien thi du lieu danh sach.', 'info');
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  };
+
+  const handleClosePreview = () => {
+    setPreviewContract(null);
+    setPreviewContractDetail(null);
+    setIsPreviewLoading(false);
   };
 
   const handleNavigateToEmployeeProfile = (employeeId: number) => {
@@ -206,7 +267,9 @@ const ContractsManagementPage: React.FC = () => {
       <ContractsPageToolbar
         onBack={() => navigate('/personnel/employees')}
         onCreateNew={canCreate ? () => setIsCreateMethodOpen(true) : undefined}
-        onExport={canRead ? handleExport : undefined}
+        onExport={canRead ? () => {
+          void handleExport();
+        } : undefined}
       />
 
       <ContractsSummaryCards summary={summary} />
@@ -241,7 +304,7 @@ const ContractsManagementPage: React.FC = () => {
 
           <div className="mb-4 flex items-center justify-between gap-4">
             <p className="text-sm font-medium text-slate-500">
-              Đang hiển thị <span className="font-semibold text-slate-900">{paginatedContracts.length}</span>/
+              Dang hien thi <span className="font-semibold text-slate-900">{paginatedContracts.length}</span>/
               <span className="font-semibold text-slate-900">{filteredContracts.length}</span>
             </p>
             {loadError ? (
@@ -262,7 +325,9 @@ const ContractsManagementPage: React.FC = () => {
                 contracts={paginatedContracts}
                 columns={columns}
                 startIndex={startIndex}
-                onView={setPreviewContract}
+                onView={(contract) => {
+                  void handleOpenPreview(contract);
+                }}
                 onDelete={canDelete ? (contract) => {
                   void handleDeleteContract(contract);
                 } : undefined}
@@ -327,7 +392,12 @@ const ContractsManagementPage: React.FC = () => {
         showToast={showToast}
       />
 
-      <ContractPreviewModal contract={previewContract} onClose={() => setPreviewContract(null)} />
+      <ContractPreviewModal
+        contract={previewContract}
+        contractDetail={previewContractDetail}
+        isLoading={isPreviewLoading}
+        onClose={handleClosePreview}
+      />
 
       {ToastComponent}
     </main>

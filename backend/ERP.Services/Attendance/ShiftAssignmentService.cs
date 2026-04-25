@@ -47,9 +47,10 @@ namespace ERP.Services.Attendance
                     (ur, role) => new { UserRole = ur, RoleName = role.name })
                 .Where(x =>
                     ExemptRoleIds.Contains(x.UserRole.role_id) ||
-                    x.RoleName == AuthSecurityConstants.RoleAdmin ||
-                    x.RoleName == AuthSecurityConstants.RoleDirector ||
-                    x.RoleName == AuthSecurityConstants.RoleRegionManager)
+                    (x.UserRole.role_id == AuthSecurityConstants.RoleSuperAdminId ||
+                     x.UserRole.role_id == AuthSecurityConstants.RoleAdminId ||
+                     x.UserRole.role_id == AuthSecurityConstants.RoleDirectorId ||
+                     x.UserRole.role_id == AuthSecurityConstants.RoleRegionManagerId))
                 .Join(_context.Users.IgnoreQueryFilters().Where(u => u.is_active),
                     x => x.UserRole.user_id,
                     u => u.Id,

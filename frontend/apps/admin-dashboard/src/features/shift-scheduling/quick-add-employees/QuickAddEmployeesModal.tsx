@@ -38,14 +38,6 @@ const createEmptyRow = (defaultAccessGroupId: string): QuickAddEmployeeDraftRow 
   accessGroupId: defaultAccessGroupId,
 });
 
-const isCompletelyBlankRow = (
-  row: QuickAddEmployeeDraftRow,
-  defaultAccessGroupId: string,
-): boolean =>
-  !row.fullName.trim() &&
-  !row.phone.trim() &&
-  (!row.accessGroupId || row.accessGroupId === defaultAccessGroupId);
-
 const isActiveRow = (
   row: QuickAddEmployeeDraftRow,
   defaultAccessGroupId: string,

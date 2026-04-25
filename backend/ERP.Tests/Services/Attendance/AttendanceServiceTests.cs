@@ -26,6 +26,7 @@ namespace ERP.Tests.Services.Attendance
         private readonly Mock<IGenericRepository<EmployeeTimekeepingMachines>> _mockMachineRepo;
         private readonly Mock<IGenericRepository<TimeMachines>> _mockTimeMachineRepo;
         private readonly Mock<IGenericRepository<AttendanceSettings>> _mockSettingsRepo;
+        private readonly Mock<IGenericRepository<ShiftAssignments>> _mockShiftAssignmentRepo;
         private readonly Mock<ILogger<AttendanceService>> _mockLogger;
         private readonly Mock<IAuthorizationService> _mockAuthService;
         private readonly Mock<ICurrentUserContext> _mockUserContext;
@@ -41,6 +42,7 @@ namespace ERP.Tests.Services.Attendance
             _mockMachineRepo = new Mock<IGenericRepository<EmployeeTimekeepingMachines>>();
             _mockTimeMachineRepo = new Mock<IGenericRepository<TimeMachines>>();
             _mockSettingsRepo = new Mock<IGenericRepository<AttendanceSettings>>();
+            _mockShiftAssignmentRepo = new Mock<IGenericRepository<ShiftAssignments>>();
 
             _mockUow.Setup(u => u.Repository<AttendanceRecords>()).Returns(_mockAttendanceRepo.Object);
             _mockUow.Setup(u => u.Repository<Users>()).Returns(_mockUserRepo.Object);
@@ -48,10 +50,20 @@ namespace ERP.Tests.Services.Attendance
             _mockUow.Setup(u => u.Repository<EmployeeTimekeepingMachines>()).Returns(_mockMachineRepo.Object);
             _mockUow.Setup(u => u.Repository<TimeMachines>()).Returns(_mockTimeMachineRepo.Object);
             _mockUow.Setup(u => u.Repository<AttendanceSettings>()).Returns(_mockSettingsRepo.Object);
+            _mockUow.Setup(u => u.Repository<ShiftAssignments>()).Returns(_mockShiftAssignmentRepo.Object);
 
             _mockLogger = new Mock<ILogger<AttendanceService>>();
             _mockAuthService = new Mock<IAuthorizationService>();
             _mockUserContext = new Mock<ICurrentUserContext>();
+
+            // Default setup for AsQueryable for all repositories
+            _mockAttendanceRepo.Setup(r => r.AsQueryable()).Returns(new List<AttendanceRecords>().BuildMock());
+            _mockUserRepo.Setup(r => r.AsQueryable()).Returns(new List<Users>().BuildMock());
+            _mockModRepo.Setup(r => r.AsQueryable()).Returns(new List<AttendanceModifications>().BuildMock());
+            _mockMachineRepo.Setup(r => r.AsQueryable()).Returns(new List<EmployeeTimekeepingMachines>().BuildMock());
+            _mockTimeMachineRepo.Setup(r => r.AsQueryable()).Returns(new List<TimeMachines>().BuildMock());
+            _mockSettingsRepo.Setup(r => r.AsQueryable()).Returns(new List<AttendanceSettings>().BuildMock());
+            _mockShiftAssignmentRepo.Setup(r => r.AsQueryable()).Returns(new List<ShiftAssignments>().BuildMock());
 
             _service = new AttendanceService(_mockUow.Object, _mockLogger.Object, _mockAuthService.Object, _mockUserContext.Object);
         }

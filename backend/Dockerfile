@@ -9,6 +9,7 @@ COPY ["ERP.Services/ERP.Services.csproj", "ERP.Services/"]
 COPY ["ERP.DTOs/ERP.DTOs.csproj", "ERP.DTOs/"]
 COPY ["ERP.Repositories/ERP.Repositories.csproj", "ERP.Repositories/"]
 COPY ["ERP.Entities/ERP.Entities.csproj", "ERP.Entities/"]
+COPY ["ERP.Tests/ERP.Tests.csproj", "ERP.Tests/"]
 
 # Restore dependencies
 RUN dotnet restore

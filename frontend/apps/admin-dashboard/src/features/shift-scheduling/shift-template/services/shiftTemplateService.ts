@@ -210,24 +210,64 @@ const buildExistingIdentifiers = async (): Promise<
   return dedupeIdentifierRecords([...storedIdentifiers, ...apiIdentifiers]);
 };
 
+const formatTimeForBackend = (time: string | null | undefined): string | null => {
+  if (!time || !String(time).trim()) return null;
+  const trimmed = String(time).trim();
+  if (trimmed.includes(":") && trimmed.split(":").length === 2) {
+    return `${trimmed}:00`;
+  }
+  return trimmed;
+};
+
 const buildCreateShiftDto = (payload: ShiftTemplateSubmitPayload) => ({
+  // Các trường định danh bắt buộc
   shiftCode: payload.identifier,
   shiftName: payload.name,
-  startTime:
-    payload.startTime.includes(":") && payload.startTime.split(":").length === 2
-      ? `${payload.startTime}:00`
-      : payload.startTime,
-  endTime:
-    payload.endTime.includes(":") && payload.endTime.split(":").length === 2
-      ? `${payload.endTime}:00`
-      : payload.endTime,
+  keyword: payload.identifier,
+  symbol: payload.symbol || payload.identifier.substring(0, 5),
+
+  // Thời gian làm việc
+  startTime: formatTimeForBackend(payload.startTime),
+  endTime: formatTimeForBackend(payload.endTime),
   isOvernight: payload.isCrossNight,
+  
+  // Nghỉ giữa giờ
+  breakStart: formatTimeForBackend(payload.breakStartTime),
+  breakEnd: formatTimeForBackend(payload.breakEndTime),
+
+  // Dung sai & Khung giờ
   gracePeriodIn: Number(payload.allowedLateCheckInMinutes || 0),
   gracePeriodOut: Number(payload.allowedEarlyCheckOutMinutes || 0),
-  note: payload.note,
+  allowedLateMins: Number(payload.allowedLateCheckInMinutes || 0),
+  allowedEarlyMins: Number(payload.allowedEarlyCheckOutMinutes || 0),
+  maxLateMins: payload.maximumLateCheckInMinutes ? Number(payload.maximumLateCheckInMinutes) : null,
+  maxEarlyMins: payload.maximumEarlyCheckOutMinutes ? Number(payload.maximumEarlyCheckOutMinutes) : null,
+  
+  checkinWindowStart: formatTimeForBackend(payload.checkInWindowStart),
+  checkinWindowEnd: formatTimeForBackend(payload.checkInWindowEnd),
+  checkoutWindowStart: formatTimeForBackend(payload.checkOutWindowStart),
+  checkoutWindowEnd: formatTimeForBackend(payload.checkOutWindowEnd),
+
+  // Cấu hình C&B
+  standardEffort: Number(payload.workUnits || 1),
+  minWorkingHours: Number(payload.minimumWorkingHours || 0),
+  isOvertimeShift: payload.isOvertimeShift,
+  
+  // Suất ăn
+  mealTypeId: payload.mealTypeId ? Number(payload.mealTypeId) : null,
+  mealCount: Number(payload.mealCount || 0),
+
+  // Cấu hình hệ thống
+  timezone: payload.timeZone || "Asia/Saigon",
+  note: payload.note || "",
+  isActive: true,
+
+  // Đối tượng áp dụng (phân quyền ca)
   branchIds: payload.branchIds.map(Number),
   departmentIds: payload.departmentIds.map(Number),
   jobTitleIds: payload.jobTitleIds.map(Number),
+
+  // Tự động gán (T300)
   isPublished: true,
   assignDate: payload.assignDate,
   repeatDays: payload.repeatDays,

@@ -7,6 +7,7 @@ using ERP.Entities.Models;
 using ERP.Repositories.Interfaces;
 using ERP.Services.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
@@ -18,6 +19,7 @@ namespace ERP.Tests.Services.Authorization
         private readonly Mock<IUnitOfWork> _mockUow;
         private readonly AppDbContext _context;
         private readonly AuthorizationService _authService;
+        private readonly Mock<ILogger<AuthorizationService>> _mockLogger;
 
         public FeatureGateTests()
         {
@@ -30,7 +32,8 @@ namespace ERP.Tests.Services.Authorization
 
             _context = new AppDbContext(options, _mockUserContext.Object);
             _mockUow = new Mock<IUnitOfWork>();
-            _authService = new AuthorizationService(_context, _mockUow.Object);
+            _mockLogger = new Mock<ILogger<AuthorizationService>>();
+            _authService = new AuthorizationService(_context, _mockUow.Object, _mockLogger.Object);
         }
 
         [Fact]

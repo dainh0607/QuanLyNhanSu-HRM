@@ -1,6 +1,6 @@
 import { authFetch } from '../../../services/authService';
 import { employeeService } from '../../../services/employeeService';
-import { API_URL, requestBlob, requestJson } from '../../../services/employee/core';
+import { API_URL, parseDownloadFilename, requestBlob, requestJson } from '../../../services/employee/core';
 import type { Employee } from '../../employees/types';
 import {
   buildContractSummaryFromDto,
@@ -84,6 +84,15 @@ interface ElectronicContractSubmitResultApi {
   NotificationSent?: boolean;
 }
 
+interface ContractTemplateApiResponse {
+  id?: number;
+  Id?: number;
+  name?: string | null;
+  Name?: string | null;
+  category?: string | null;
+  Category?: string | null;
+}
+
 const EMPLOYEE_PAGE_SIZE = 100;
 const CONTRACT_COLLECTION_PAGE_SIZE = 100;
 
@@ -114,18 +123,32 @@ const normalizeElectronicSubmitResult = (
   notificationSent: response.notificationSent ?? response.NotificationSent ?? undefined,
 });
 
+const normalizeContractTemplateOption = (
+  template: ContractTemplateApiResponse,
+): ContractTemplateOption => {
+  const id = template.id ?? template.Id ?? 0;
+  const title = template.name ?? template.Name ?? `Template ${id}`;
+  const category = template.category ?? template.Category ?? '';
+
+  return {
+    id: String(id),
+    title,
+    subtitle: category || 'Mau hop dong',
+  };
+};
+
 const createEmployeeOptions = (employees: Employee[]) =>
   employees.map((employee) => ({
     value: String(employee.id),
     label: employee.fullName,
-    supportingText: `${employee.employeeCode} • ${employee.branchName || "Chưa có chi nhánh"}`,
+    supportingText: `${employee.employeeCode} - ${employee.branchName || "Chua co chi nhanh"}`,
   }));
 
 const createSignerOptions = (employees: Employee[]) =>
   employees.map((employee) => ({
     value: String(employee.id),
     label: employee.fullName,
-    supportingText: `${employee.jobTitleName || "Nhân sự"} • ${employee.branchName || "Chưa có chi nhánh"}`,
+    supportingText: `${employee.jobTitleName || "Nhan su"} - ${employee.branchName || "Chua co chi nhanh"}`,
   }));
 
 const fetchAllEmployees = async () => {
@@ -202,30 +225,48 @@ const exportContracts = async (filters: {
   branchId?: string;
   departmentId?: string;
   status?: string;
+  contractTypeId?: number;
 }) => {
-  const queryParams = new URLSearchParams({
-    ...(filters.search && { search: filters.search }),
-    ...(filters.branchId && { branchId: filters.branchId }),
-    ...(filters.departmentId && { departmentId: filters.departmentId }),
-    ...(filters.status && { status: filters.status }),
-  });
+  const requestUrl = new URL(`${API_URL}/contracts/export`);
 
-  const response = await authFetch(
-    `${API_URL}/contracts/export?${queryParams.toString()}`,
-  );
-  if (!response.ok) {
-    throw new Error("Xuất file thất bại");
+  if (filters.search?.trim()) {
+    requestUrl.searchParams.append('search', filters.search.trim());
   }
 
-  const blob = await response.blob();
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `Contracts_${new Date().getTime()}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  window.URL.revokeObjectURL(url);
-  document.body.removeChild(a);
+  if (filters.branchId) {
+    requestUrl.searchParams.append('branchId', filters.branchId);
+  }
+
+  if (filters.departmentId) {
+    requestUrl.searchParams.append('departmentId', filters.departmentId);
+  }
+
+  if (filters.status?.trim()) {
+    requestUrl.searchParams.append('status', filters.status.trim());
+  }
+
+  if (typeof filters.contractTypeId === 'number') {
+    requestUrl.searchParams.append('contractTypeId', String(filters.contractTypeId));
+  }
+
+  const { blob, headers } = await requestBlob(
+    requestUrl.toString(),
+    { method: 'GET' },
+    'Export contracts failed',
+  );
+
+  const filename = parseDownloadFilename(
+    headers.get('content-disposition'),
+    `Contracts_${new Date().getTime()}.csv`,
+  );
+  const downloadUrl = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = downloadUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  window.URL.revokeObjectURL(downloadUrl);
+  document.body.removeChild(link);
 };
 
 const fetchContractsPage = async (
@@ -237,7 +278,7 @@ const fetchContractsPage = async (
   return requestJson<PaginatedResponse<ContractListItemDto>>(
     url.toString(),
     { method: 'GET' },
-    'Không thể tải danh sách hợp đồng',
+    'Khong the tai danh sach hop dong',
   );
 };
 
@@ -353,7 +394,7 @@ const getContractsSummary = async (): Promise<ContractSummary> => {
   const response = await requestJson<ContractSummaryDto>(
     `${API_URL}/contracts/summary`,
     { method: 'GET' },
-    'Không thể tải tổng quan hợp đồng',
+    'Khong the tai tong quan hop dong',
   );
 
   return buildContractSummaryFromDto(response);
@@ -404,7 +445,7 @@ const uploadAttachment = async (file: File) => {
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(errorText || "Tải tệp đính kèm thất bại.");
+    throw new Error(errorText || "Tai tep dinh kem that bai.");
   }
 
   const data = (await response.json()) as UploadedDocumentResponse;
@@ -418,7 +459,7 @@ const createRegularContract = async (payload: ContractCreatePayload) =>
       method: "POST",
       body: JSON.stringify(payload),
     },
-    "Tạo hợp đồng thất bại",
+    "Tao hop dong that bai",
   );
 
 const createElectronicContract = async (payload: ContractCreatePayload) =>
@@ -428,19 +469,19 @@ const createElectronicContract = async (payload: ContractCreatePayload) =>
       method: 'POST',
       body: JSON.stringify(payload),
     },
-    'Tạo hợp đồng điện tử thất bại',
+    'Tao hop dong dien tu that bai',
   );
 
 const getContractPreviewBlob = async (id: number) => {
   const { blob } = await requestBlob(
     `${API_URL}/contracts/preview/${id}`,
     { method: 'GET' },
-    'Không thể tải bản xem trước hợp đồng',
+    'Khong the tai ban xem truoc hop dong',
   );
 
   const contentType = blob.type?.toLowerCase() ?? '';
   if (contentType && !contentType.includes('pdf')) {
-    throw new Error('Bản xem trước hiện tại không phải là file PDF.');
+    throw new Error('Ban xem truoc hien tai khong phai la file PDF.');
   }
 
   return blob;
@@ -478,13 +519,13 @@ export const contractsService = {
         method: 'PUT',
         body: JSON.stringify(payload),
       },
-      'Cập nhật hợp đồng thất bại',
+      'Cap nhat hop dong that bai',
     ),
   deleteContract: (id: number) =>
     requestJson<{ message?: string }>(
       `${API_URL}/contracts/${id}`,
       { method: "DELETE" },
-      "Xóa hợp đồng thất bại",
+      "Xoa hop dong that bai",
     ),
   bulkDeleteContracts: (ids: number[]) =>
     requestJson<{ message?: string }>(
@@ -493,32 +534,32 @@ export const contractsService = {
         method: "POST",
         body: JSON.stringify(ids),
       },
-      "Xóa hàng loạt thất bại",
+      "Xoa hang loat that bai",
     ),
   getContractById: (id: number) =>
     requestJson<ContractDto>(
       `${API_URL}/contracts/${id}`,
       { method: "GET" },
-      "Không thể tải chi tiết hợp đồng",
+      "Khong the tai chi tiet hop dong",
     ),
   getContractTypes: () =>
     requestJson<LookupItem[]>(
       `${API_URL}/lookups/contract-types`,
       { method: "GET" },
-      "Không thể tải danh sách loại hợp đồng",
+      "Khong the tai danh sach loai hop dong",
     ),
   getTaxTypes: () =>
     requestJson<LookupItem[]>(
       `${API_URL}/lookups/tax-types`,
       { method: "GET" },
-      "Không thể tải danh sách loại thuế",
+      "Khong the tai danh sach loai thue",
     ),
   getTemplates: () =>
-    requestJson<ContractTemplateOption[]>(
-      `${API_URL}/contracttemplates`,
+    requestJson<ContractTemplateApiResponse[]>(
+      `${API_URL}/contract-templates`,
       { method: "GET" },
-      "Không thể tải danh sách mẫu hợp đồng",
-    ),
+      "Khong the tai danh sach mau hop dong",
+    ).then((templates) => templates.map(normalizeContractTemplateOption)),
   createElectronicDraft: (payload: ElectronicContractDraftDto) =>
     requestJson<ElectronicContractDraftResponse>(
       `${API_URL}/contracts/electronic/draft`,
@@ -526,7 +567,7 @@ export const contractsService = {
         method: 'POST',
         body: JSON.stringify(payload),
       },
-      'Lưu bản nháp thất bại',
+      'Luu ban nhap that bai',
     ).then(normalizeElectronicDraftResponse),
   saveStep3Signers: (payload: ContractStep3Dto) =>
     requestJson<{ Signers: ContractSignerDto[]; message?: string }>(
@@ -535,7 +576,7 @@ export const contractsService = {
         method: 'POST',
         body: JSON.stringify(payload),
       },
-      'Lưu danh sách người ký thất bại',
+      'Luu danh sach nguoi ky that bai',
     ),
   saveStep4Positions: (payload: ContractStep4Dto) =>
     requestJson<{ message?: string }>(
@@ -544,7 +585,7 @@ export const contractsService = {
         method: 'POST',
         body: JSON.stringify(payload),
       },
-      'Lưu vị trí chữ ký thất bại',
+      'Luu vi tri chu ky that bai',
     ),
   submitElectronicContract: (id: number) =>
     requestJson<ElectronicContractSubmitResultApi>(
@@ -553,7 +594,7 @@ export const contractsService = {
         method: 'POST',
         body: JSON.stringify({ contractId: id }),
       },
-      'Gửi hợp đồng thất bại',
+      'Gui hop dong that bai',
     ).then(normalizeElectronicSubmitResult),
   getContractPreviewBlob,
 };
@@ -565,7 +606,7 @@ export const saveElectronicContractStep3Signers = async (payload: ContractStep3D
       method: 'POST',
       body: JSON.stringify(payload),
     },
-    'LÆ°u danh sĂ¡ch ngÆ°á»i kĂ½ tháº¥t báº¡i',
+    'Luu danh sach nguoi ky that bai',
   );
 
   return {

@@ -604,6 +604,8 @@ namespace ERP.Services.Attendance
                                             shift_id = dto.ShiftId,
                                             assignment_date = dateOnly,
                                             is_published = true,
+                                            status = "published",
+                                            published_at = DateTime.UtcNow,
                                             CreatedAt = DateTime.UtcNow,
                                             UpdatedAt = DateTime.UtcNow,
                                             note = "Tự động gán từ Ca mở (Auto-Publish)"

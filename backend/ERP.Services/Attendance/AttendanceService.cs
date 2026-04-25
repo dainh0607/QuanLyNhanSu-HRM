@@ -38,7 +38,9 @@ namespace ERP.Services.Attendance
 
             // Find shift assignment for today (T760)
             var today = DateTime.UtcNow.Date;
-            var assignment = await _unitOfWork.Repository<ShiftAssignments>()
+            var repo = _unitOfWork.Repository<ShiftAssignments>();
+            if (repo == null) throw new Exception("Không tìm thấy repository cho phân ca.");
+            var assignment = await repo
                 .AsQueryable()
                 .Include(a => a.Shift)
                 .FirstOrDefaultAsync(a => a.employee_id == user.employee_id && a.assignment_date == today);
@@ -137,7 +139,9 @@ namespace ERP.Services.Attendance
 
             // Find shift assignment for today (T760)
             var today = DateTime.UtcNow.Date;
-            var assignment = await _unitOfWork.Repository<ShiftAssignments>()
+            var repo = _unitOfWork.Repository<ShiftAssignments>();
+            if (repo == null) throw new Exception("Không tìm thấy repository cho phân ca.");
+            var assignment = await repo
                 .AsQueryable()
                 .Include(a => a.Shift)
                 .FirstOrDefaultAsync(a => a.employee_id == user.employee_id && a.assignment_date == today);

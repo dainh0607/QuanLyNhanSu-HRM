@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { payrollService } from "../../../services/payrollService";
-import type { PayrollType } from "../../../services/payrollService";
+import type { PayrollType, CreatePayrollRequest } from "../../../services/payrollService";
 import { useToast } from "../../../hooks/useToast";
 
 interface PayrollCreateModalProps {
@@ -101,11 +101,20 @@ const PayrollCreateModal: React.FC<PayrollCreateModalProps> = ({ isOpen, onClose
 
     try {
       setIsLoading(true);
-      const payload = {
-        ...formData,
-        startDate: formData.startDate || null,
-        endDate: formData.endDate || null
+      
+      // Đảm bảo các giá trị số là kiểu number và ngày tháng là null nếu trống
+      const payload: CreatePayrollRequest = {
+        name: formData.name,
+        code: formData.code,
+        month: Number(formData.month),
+        year: Number(formData.year),
+        payrollTypeId: Number(formData.payrollTypeId),
+        timeType: formData.timeType,
+        startDate: formData.timeType === 'RANGE' ? (formData.startDate || null) : null,
+        endDate: formData.timeType === 'RANGE' ? (formData.endDate || null) : null,
+        isHidden: Boolean(formData.isHidden)
       };
+
       const result = await payrollService.createPayroll(payload);
       if (result.success) {
         showToast("Tạo bảng lương thành công", "success");

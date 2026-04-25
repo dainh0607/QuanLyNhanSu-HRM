@@ -27,7 +27,6 @@ import { SignatureManagementPage } from "./features/signature-management/Signatu
 import { SettingsProvider } from "./config/SettingsContext";
 import { PayrollListPage } from "./features/payroll/PayrollListPage";
 import PayrollDetailPage from "./features/payroll/PayrollDetailPage";
-import PayrollSettingsPage from "./features/payroll/PayrollSettingsPage";
 import PayrollTypeListPage from "./features/payroll/PayrollTypeListPage";
 import PayrollTypeCreatePage from "./features/payroll/PayrollTypeCreatePage";
 import EnterpriseSettingsModal from "./features/enterprise-settings/EnterpriseSettingsModal";
@@ -658,6 +657,18 @@ function RoutedApp() {
   const [user, setUser] = useState<User | null>(null);
   const [isInitializing, setIsInitializing] = useState<boolean>(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [settingsModule, setSettingsModule] = useState("personal");
+
+  useEffect(() => {
+    const handleOpenSettings = (e: any) => {
+      const module = e.detail?.module || "personal";
+      setSettingsModule(module);
+      setIsSettingsOpen(true);
+    };
+
+    window.addEventListener("open-enterprise-settings", handleOpenSettings);
+    return () => window.removeEventListener("open-enterprise-settings", handleOpenSettings);
+  }, []);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -986,35 +997,14 @@ function RoutedApp() {
               )
             }
           />
-          <Route
-            path="/payroll/settings"
-            element={
-              isAuthenticated ? (
-                <PermissionRoute user={user} resource="payroll" action="read">
-                  <div className="min-h-screen bg-[#f8fafc] flex flex-col">
-                    <Header 
-                      user={user} 
-                      onLogout={handleLogout} 
-                      onOpenSettings={() => setIsSettingsOpen(true)}
-                    />
-                    <PayrollSettingsPage />
-                  </div>
-                </PermissionRoute>
-              ) : (
-                <Navigate
-                  to="/login"
-                  replace
-                  state={{ from: loginRedirectPath }}
-                />
-              )
-            }
-          />
+
           <Route path="*" element={<Navigate to={defaultRoute} replace />} />
         </Routes>
 
         <EnterpriseSettingsModal
           isOpen={isSettingsOpen}
           onClose={() => setIsSettingsOpen(false)}
+          initialModule={settingsModule}
         />
       </div>
     </SettingsProvider>

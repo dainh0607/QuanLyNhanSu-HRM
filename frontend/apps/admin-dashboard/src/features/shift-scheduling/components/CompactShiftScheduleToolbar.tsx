@@ -22,7 +22,6 @@ interface CompactShiftScheduleToolbarProps {
   onImport: () => void;
   onOpenHistory: () => void;
   onOpenMealBoard: () => void;
-  onOpenSettings: () => void;
 }
 
 export const CompactShiftScheduleToolbar = ({
@@ -44,7 +43,6 @@ export const CompactShiftScheduleToolbar = ({
   onImport,
   onOpenHistory,
   onOpenMealBoard,
-  onOpenSettings,
 }: CompactShiftScheduleToolbarProps) => (
   <section className="space-y-3">
     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -75,7 +73,17 @@ export const CompactShiftScheduleToolbar = ({
         <IconActionButton icon="refresh" label="Làm mới bảng" onClick={onRefresh} isLoading={isRefreshing} />
         <IconActionButton icon="warning" label="Lịch sử vào/ra" onClick={onOpenHistory} />
         <IconActionButton icon="restaurant" label="Bảng xuất ăn" onClick={onOpenMealBoard} />
-        <IconActionButton icon="settings" label="Cài đặt chấm công" onClick={onOpenSettings} />
+        <IconActionButton
+          icon="settings"
+          label="Cài đặt hệ thống"
+          onClick={() => {
+            window.dispatchEvent(
+              new CustomEvent("open-enterprise-settings", {
+                detail: { module: "timesheet-settings" },
+              }),
+            );
+          }}
+        />
       </div>
     </div>
 
