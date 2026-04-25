@@ -7,7 +7,6 @@ import ShiftCheckboxField from "./components/ShiftCheckboxField";
 import ShiftFieldLabel from "./components/ShiftFieldLabel";
 import ShiftFieldTooltip from "./components/ShiftFieldTooltip";
 import ShiftNumericInputField from "./components/ShiftNumericInputField";
-import ShiftSectionCard from "./components/ShiftSectionCard";
 import ShiftSegmentedControl from "./components/ShiftSegmentedControl";
 import ShiftSelectField from "./components/ShiftSelectField";
 import ShiftTextInputField from "./components/ShiftTextInputField";

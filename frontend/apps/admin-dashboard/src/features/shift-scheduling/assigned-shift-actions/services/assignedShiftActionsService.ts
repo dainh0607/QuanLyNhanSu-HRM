@@ -5,7 +5,6 @@ import { shiftTemplateExtendedConfigApi } from "../../shift-template/services/sh
 import { formatTime, getHoursBetween, parseIsoDate } from "../../utils/week";
 import {
   getLeaveTimeRange,
-  isLeaveRequestAutoApproved,
 } from "../leave-request/utils";
 import type {
   AssignedShiftActionContext,

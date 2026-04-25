@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../../hooks/useToast";
 
 const PayrollSettingsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { showToast, ToastComponent } = useToast();
+  const { ToastComponent } = useToast();
   const [activeTab, setActiveTab] = useState("rewards");
 
   return (

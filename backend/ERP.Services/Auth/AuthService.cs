@@ -634,6 +634,48 @@ namespace ERP.Services.Auth
             }
         }
 
+        public async Task<AuthResponseDto> AdminResetPasswordAsync(int targetEmployeeId, AdminResetPasswordDto dto, int requesterId)
+        {
+            try
+            {
+                var localUser = await _context.Users
+                    .IgnoreQueryFilters()
+                    .Include(u => u.Employee)
+                    .FirstOrDefaultAsync(u => u.employee_id == targetEmployeeId && u.is_active);
+
+                if (localUser == null)
+                {
+                    return new AuthResponseDto { Success = false, Message = "Nhân viên chưa có tài khoản người dùng hoặc tài khoản đã bị khóa." };
+                }
+
+                if (string.IsNullOrEmpty(localUser.firebase_uid))
+                {
+                    return new AuthResponseDto { Success = false, Message = "Tài khoản không được liên kết với Firebase." };
+                }
+
+                // 1. Cập nhật mật khẩu trên Firebase
+                await _firebaseService.UpdateUserPasswordAsync(localUser.firebase_uid, dto.NewPassword);
+
+                // 2. Thu hồi tất cả các phiên đăng nhập hiện tại để buộc người dùng đăng nhập lại
+                await RevokeAllActiveSessionsAsync(localUser.Id, DateTime.UtcNow, $"Mật khẩu đã được đặt lại bởi admin (ID: {requesterId}).");
+
+                return new AuthResponseDto
+                {
+                    Success = true,
+                    Message = "Đặt lại mật khẩu thành công."
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in AdminResetPasswordAsync for targetEmployeeId {TargetEmployeeId}, requested by {RequesterId}", targetEmployeeId, requesterId);
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Lỗi xảy ra trong quá trình đặt lại mật khẩu."
+                };
+            }
+        }
+
         public async Task<AuthResponseDto> PreRegisterStaffAsync(PreRegisterStaffDto dto)
         {
             try

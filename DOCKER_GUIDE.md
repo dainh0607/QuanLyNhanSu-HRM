@@ -13,6 +13,14 @@ Tài liệu này hướng dẫn cách vận hành hệ thống sau khi đã đư
 | `VPS_SSH_USERNAME` | Tên user để login vào VPS | `root` hoặc `ubuntu` |
 | `VPS_SSH_KEY` | Nội dung SSH Private Key (File .pem hoặc .key) | `-----BEGIN RSA PRIVATE KEY-----...` |
 | `SSH_PORT` | Port SSH | `22` |
+| `VITE_API_URL` | URL API của Backend | `http://123.45.67.89:5122/api` |
+| `VITE_FIREBASE_API_KEY` | Firebase API Key | `AIzaSy...` |
+| `VITE_FIREBASE_AUTH_DOMAIN` | Firebase Auth Domain | `hrm-project...` |
+| `VITE_FIREBASE_PROJECT_ID` | Firebase Project ID | `hrm-project...` |
+| `VITE_FIREBASE_STORAGE_BUCKET`| Firebase Storage Bucket| `hrm-project...` |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID`| Firebase Messaging ID| `9807134...` |
+| `VITE_FIREBASE_APP_ID` | Firebase App ID | `1:9807134...` |
+| `VITE_FIREBASE_MEASUREMENT_ID`| Firebase Measurement ID| `G-NFRD...` |
 
 ## 2. Chuẩn bị trên VPS
 
@@ -30,8 +38,18 @@ Trước khi deploy lần đầu, hãy đăng nhập vào VPS và thực hiện 
    cd ~/nexahrm
    ```
 
-3. **Copy file `docker-compose.yml` lên VPS**:
-   Sử dụng SCP hoặc tạo file mới tại `~/nexahrm/docker-compose.yml` với nội dung tương tự file trong Repo.
+3. **Copy file `docker-compose.yml` & `.env` lên VPS**:
+   Sử dụng SCP hoặc tạo file mới tại `~/nexahrm/docker-compose.yml` và `~/nexahrm/.env`.
+   
+   Bạn có thể tạo file `.env` nhanh bằng lệnh:
+   ```bash
+   cp .env.example .env
+   # Sau đó dùng nano hoặc vi để chỉnh sửa các giá trị thực tế
+   nano .env
+   ```
+   **Lưu ý quan trọng**: 
+   - `VITE_API_URL` phải trỏ đến IP công khai của VPS (ví dụ: `http://123.45.67.89:5122/api`).
+   - `DB_PASSWORD` và `JWT_SECRET` nên được thay đổi sang giá trị bảo mật hơn.
 
 4. **Đăng nhập vào GitHub Container Registry**:
    Bạn cần tạo một **Personal Access Token (PAT)** trên GitHub với quyền `read:packages` để VPS có thể tải ảnh về.

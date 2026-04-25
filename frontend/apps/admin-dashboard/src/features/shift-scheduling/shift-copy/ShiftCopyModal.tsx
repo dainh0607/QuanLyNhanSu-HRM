@@ -127,7 +127,6 @@ export const ShiftCopyModal = ({
         weekOptions={controller.weekOptions}
         selectedWeekStartDates={controller.destinationWeekStartDates}
         onClose={controller.closeMultiWeekPicker}
-        onToggleWeek={controller.toggleDestinationWeek}
         onSelectWeeks={controller.selectWeeks}
         onSelectAll={controller.selectAllDestinationWeeks}
         onClear={controller.clearDestinationWeeks}
