@@ -19,7 +19,7 @@ services:
       dockerfile: Dockerfile
     container_name: nexahrm-backend
     environment:
-      - ASPNETCORE_ENVIRONMENT=docker run cloudflare/cloudflared:latest tunnel --no-autoupdate run --token eyJhIjoiYjgyZThjMTA5YThmYTNmYmFlZGQxNTZlMjhhMzZjZmUiLCJ0IjoiNGIxNzNlMjMtY2Y3Yi00NTBjLWIxNGItZTQ4NTFiOTI3Y2U5IiwicyI6Ik4yWXlOemd6WWpBdE9EUmtNeTAwWldRM0xXRTVORGt0WWpZeVlXRXlOemhpTVRobCJ9
+      - ASPNETCORE_ENVIRONMENT=Production
       - ConnectionStrings__DefaultConnection=Server=db;Database=NexaHRM;User Id=sa;Password=${DB_PASSWORD:-StrongPassword123!};TrustServerCertificate=True;
       - JwtSettings__Secret=${JWT_SECRET:-NexaHRM_Super_Secret_Key_2026_Change_Me}
     depends_on:
@@ -45,6 +45,16 @@ services:
     container_name: nexahrm-frontend
     ports:
       - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - hrm-network
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: nexahrm-tunnel
+    restart: always
+    command: tunnel --no-autoupdate run --token eyJhIjoiYjgyZThjMTA5YThmYTNmYmFlZGQxNTZlMjhhMzZjZmUiLCJ0IjoiNGIxNzNlMjMtY2Y3Yi00NTBjLWIxNGItZTQ4NTFiOTI3Y2U5IiwicyI6Ik4yWXlOemd6WWpBdE9EUmtNeTAwWldRM0xXRTVORGt0WWpZeVlXRXlOemhpTVRobCJ9
     depends_on:
       - backend
     networks:

@@ -47,6 +47,7 @@ export const DEFAULT_SHIFT_TEMPLATE_FORM_VALUES: ShiftTemplateFormValues = {
   startMinute2: "",
   endHour2: "",
   endMinute2: "",
+  isPublished: true,
 };
 
 export const WEEKDAYS = [
@@ -222,6 +223,7 @@ export const createShiftTemplateFormValues = (
     startMinute2: start2.minute,
     endHour2: end2.hour,
     endMinute2: end2.minute,
+    isPublished: initialData?.isPublished ?? true,
   };
 };
 
@@ -284,5 +286,6 @@ export const buildShiftTemplateSubmitPayload = (
     endTime2: formValues.isSplitShift ? combineTime(formValues.endHour2, formValues.endMinute2) : null,
     note: null,
     assignDate: assignmentContext?.assignmentDate,
+    isPublished: formValues.isPublished,
   };
 };

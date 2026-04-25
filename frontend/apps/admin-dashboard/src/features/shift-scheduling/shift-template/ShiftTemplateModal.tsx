@@ -1072,6 +1072,16 @@ export const ShiftTemplateModal = ({
                       openUpwards
                     />
                   </div>
+
+                  <div className="mt-5 rounded-2xl bg-blue-50/50 p-4 ring-1 ring-blue-100">
+                    <ShiftCheckboxField
+                      label="Công bố ngay"
+                      description="Sau khi tạo, hệ thống sẽ tự động gán và công bố ca làm này cho các nhân viên thuộc đối tượng áp dụng."
+                      checked={formValues.isPublished}
+                      onChange={(checked) => updateForm("isPublished", checked)}
+                      tooltip="Nếu tắt, ca làm sẽ được tạo ở trạng thái nháp (Draft) và cần người quản lý duyệt trước khi hiển thị cho nhân viên."
+                    />
+                  </div>
                 </section>
               </div>
             )}

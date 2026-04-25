@@ -49,6 +49,7 @@ export interface ShiftTemplateAdvancedSettings {
   startMinute2: string;
   endHour2: string;
   endMinute2: string;
+  isPublished: boolean;
 }
 
 export interface ShiftTemplateFormValues extends ShiftTemplateAdvancedSettings {
