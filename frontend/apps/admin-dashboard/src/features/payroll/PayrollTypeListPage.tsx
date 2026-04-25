@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { payrollService } from "../../services/payrollService";
-import type { PayrollType } from "../../services/payrollService";
+import { payrollService, type PayrollType } from "../../services/payrollService";
 import { useToast } from "../../hooks/useToast";
+import PayrollTypeEditModal from "./components/PayrollTypeEditModal";
 
 const PayrollTypeListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -14,6 +14,8 @@ const PayrollTypeListPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [editingItem, setEditingItem] = useState<PayrollType | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -143,7 +145,13 @@ const PayrollTypeListPage: React.FC = () => {
                           </button>
                           {/* Dropdown Menu */}
                           <div className="invisible group-hover/menu:visible opacity-0 group-hover/menu:opacity-100 absolute right-0 top-full mt-1 w-32 bg-white rounded-xl shadow-xl border border-gray-100 z-50 transition-all transform scale-95 group-hover/menu:scale-100 origin-top-right py-1">
-                            <button className="w-full px-4 py-2 text-left text-[13px] font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2">
+                            <button 
+                              onClick={() => {
+                                setEditingItem(item);
+                                setIsEditModalOpen(true);
+                              }}
+                              className="w-full px-4 py-2 text-left text-[13px] font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                            >
                               <span className="material-symbols-outlined text-[18px]">edit</span>
                               Sửa
                             </button>
@@ -236,6 +244,17 @@ const PayrollTypeListPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Edit Modal */}
+      <PayrollTypeEditModal 
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingItem(null);
+        }}
+        onSuccess={loadData}
+        payrollType={editingItem}
+      />
 
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
