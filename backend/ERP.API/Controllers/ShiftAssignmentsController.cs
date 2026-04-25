@@ -34,8 +34,16 @@ namespace ERP.API.Controllers
         {
             try
             {
-                var result = await _assignmentService.GetWeeklyScheduleAsync(
-                    weekStartDate, 
+                if (!DateTime.TryParse(weekStartDate, out var start))
+                {
+                    return BadRequest(new { Message = "Ngày bắt đầu tuần không hợp lệ (định dạng YYYY-MM-DD)." });
+                }
+
+                var end = start.AddDays(6);
+
+                var result = await _assignmentService.GetScheduleRangeAsync(
+                    start, 
+                    end,
                     branchId, 
                     departmentId, 
                     searchTerm, 
@@ -272,7 +280,8 @@ namespace ERP.API.Controllers
         {
             try
             {
-                var result = await _assignmentService.ApproveAssignmentsAsync(dto.WeekStartDate, dto.AssignmentIds);
+                // Approve step is no longer used, we just publish
+                var result = await _assignmentService.PublishAssignmentsAsync(dto.WeekStartDate, dto.AssignmentIds);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -287,7 +296,8 @@ namespace ERP.API.Controllers
         {
             try
             {
-                var result = await _assignmentService.PublishAndApproveAssignmentsAsync(dto.WeekStartDate, dto.AssignmentIds);
+                // Approve step is no longer used, we just publish
+                var result = await _assignmentService.PublishAssignmentsAsync(dto.WeekStartDate, dto.AssignmentIds);
                 return Ok(result);
             }
             catch (Exception ex)

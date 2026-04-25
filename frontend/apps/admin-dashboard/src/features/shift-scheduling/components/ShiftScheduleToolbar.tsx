@@ -23,7 +23,7 @@ interface ShiftScheduleToolbarProps {
   onImport: () => void;
   onOpenHistory: () => void;
   onOpenMealBoard: () => void;
-  onOpenSettings: () => void;
+  onOpenMealBoard: () => void;
 }
 
 export const ShiftScheduleToolbar = ({
@@ -45,7 +45,7 @@ export const ShiftScheduleToolbar = ({
   onRefresh,
   onOpenHistory,
   onOpenMealBoard,
-  onOpenSettings,
+  onOpenMealBoard,
   onAddOpenShift,
   onAddTemplate,
 }: ShiftScheduleToolbarProps) => (

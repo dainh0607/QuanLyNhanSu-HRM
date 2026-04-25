@@ -56,7 +56,7 @@ namespace ERP.API.DataTest
                         {
                             // Wrap with IDENTITY_INSERT. This must be in the same batch/connection for some SQL providers.
                             // We use a single string to execute as one batch.
-                            await context.Database.ExecuteSqlRawAsync($"SET IDENTITY_INSERT {tableName} ON; {command}; SET IDENTITY_INSERT {tableName} OFF;");
+                            await context.Database.ExecuteSqlRawAsync("SET IDENTITY_INSERT [" + tableName + "] ON; " + command + "; SET IDENTITY_INSERT [" + tableName + "] OFF;");
                         }
                         catch (Exception)
                         {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { payrollService } from "../../../services/payrollService";
-import type { PayrollType } from "../../../services/payrollService";
+import type { PayrollType, CreatePayrollRequest } from "../../../services/payrollService";
 import { useToast } from "../../../hooks/useToast";
 
 interface PayrollCreateModalProps {

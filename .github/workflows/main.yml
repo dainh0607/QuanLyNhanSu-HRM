@@ -10,6 +10,7 @@ env:
   REGISTRY: ghcr.io
   BACKEND_IMAGE: ${{ github.repository }}/nexahrm-backend
   FRONTEND_IMAGE: ${{ github.repository }}/nexahrm-frontend
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   validate-backend:
@@ -34,7 +35,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Install dependencies
         run: |
           cd frontend/apps/admin-dashboard

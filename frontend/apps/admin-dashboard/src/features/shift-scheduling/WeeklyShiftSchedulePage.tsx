@@ -352,9 +352,6 @@ export const WeeklyShiftSchedulePage = () => {
                   "info",
                 )
               }
-              onOpenSettings={() => setIsSettingsOpen(true)}
-              onOpenConfig={() => setIsConfigModalOpen(true)}
-              onOpenTasks={() => setIsTaskModalOpen(true)}
               isAdvancedFilterOpen={isAdvancedFilterOpen}
               activeAdvancedFilterCount={activeAdvancedFilterCount}
               onToggleAdvancedFilter={() =>
