@@ -219,15 +219,11 @@ namespace ERP.Services.Payroll
                 .AsQueryable()
                 .Where(e => e.tenant_id == period.tenant_id && e.is_active);
 
-            // 2. Parse filters (Handle JSON strings)
-            var deptIds = System.Text.Json.JsonSerializer.Deserialize<List<int>>(period.applicable_departments ?? "[]") ?? new List<int>();
-            var jobIds = System.Text.Json.JsonSerializer.Deserialize<List<int>>(period.applicable_job_titles ?? "[]") ?? new List<int>();
-            var branchIds = payrollType != null 
-                ? (System.Text.Json.JsonSerializer.Deserialize<List<int>>(payrollType.applicable_branches ?? "[]") ?? new List<int>())
-                : new List<int>();
-            var specificEmpIds = payrollType != null 
-                ? (System.Text.Json.JsonSerializer.Deserialize<List<int>>(payrollType.applicable_employees ?? "[]") ?? new List<int>())
-                : new List<int>();
+            // 2. Parse filters (Safe Deserialization)
+            var deptIds = SafeDeserializeIds(period.applicable_departments);
+            var jobIds = SafeDeserializeIds(period.applicable_job_titles);
+            var branchIds = payrollType != null ? SafeDeserializeIds(payrollType.applicable_branches) : new List<int>();
+            var specificEmpIds = payrollType != null ? SafeDeserializeIds(payrollType.applicable_employees) : new List<int>();
 
             // 3. Apply Filtering Logic
             List<ERP.Entities.Models.Employees> eligibleEmployees;
@@ -301,57 +297,6 @@ namespace ERP.Services.Payroll
                     ViewerPermissions = t.viewer_permissions
                 })
                 .ToListAsync();
-
-            // Seed if empty for testing
-            if (!items.Any() && skip == 0)
-            {
-                var seedTypes = new List<PayrollTypes>
-                {
-                    new PayrollTypes { 
-                        name = "Lương định kỳ tháng", 
-                        code = "LUONG_DINH_KY", 
-                        payment_type = "MONTHLY", 
-                        description = "Bảng lương chính thức hàng tháng", 
-                        is_active = true, 
-                        tenant_id = _currentUserContext.TenantId ?? 1, 
-                        applicable_branches = "[]",
-                        applicable_departments = "[\"Nhân sự\", \"Kỹ thuật\"]", 
-                        applicable_job_titles = "[\"Trưởng phòng\", \"Nhân viên\"]",
-                        applicable_employees = "[]",
-                        viewer_permissions = "[]"
-                    },
-                    new PayrollTypes { 
-                        name = "Lương tăng ca / bổ sung", 
-                        code = "LUONG_BO_SUNG", 
-                        payment_type = "MONTHLY", 
-                        description = "Bảng lương phụ cho các khoản phát sinh", 
-                        is_active = true, 
-                        tenant_id = _currentUserContext.TenantId ?? 1, 
-                        applicable_branches = "[]",
-                        applicable_departments = "[\"Sản xuất\"]", 
-                        applicable_job_titles = "[\"Công nhân\"]",
-                        applicable_employees = "[]",
-                        viewer_permissions = "[]"
-                    }
-                };
-                foreach (var st in seedTypes)
-                    await _unitOfWork.Repository<PayrollTypes>().AddAsync(st);
-                
-                await _unitOfWork.SaveChangesAsync();
-                
-                var seedDtos = seedTypes.Select(t => new PayrollTypeDto 
-                { 
-                    Id = t.Id, 
-                    Name = t.name, 
-                    Code = t.code, 
-                    Description = t.description,
-                    PaymentType = t.payment_type,
-                    ApplicableDepartments = t.applicable_departments,
-                    ApplicableJobTitles = t.applicable_job_titles
-                }).ToList();
-
-                return new PaginatedListDto<PayrollTypeDto>(seedDtos, seedDtos.Count, 1, 10);
-            }
 
             return new PaginatedListDto<PayrollTypeDto>(items, total, (skip / take) + 1, take);
         }
@@ -437,6 +382,20 @@ namespace ERP.Services.Payroll
             _unitOfWork.Repository<PayrollPeriods>().Remove(period);
             await _unitOfWork.SaveChangesAsync();
             return true;
+        }
+        private List<int> SafeDeserializeIds(string json)
+        {
+            if (string.IsNullOrEmpty(json) || json == "[]") return new List<int>();
+            try
+            {
+                return System.Text.Json.JsonSerializer.Deserialize<List<int>>(json) ?? new List<int>();
+            }
+            catch
+            {
+                // If it's old format like ["Name1", "Name2"], it will fail to int. 
+                // Return empty so the system doesn't crash.
+                return new List<int>();
+            }
         }
     }
 }
