@@ -267,9 +267,7 @@ namespace ERP.Services.Auth
 
         public async Task<AuthResponseDto> LoginAsync(LoginDto dto, AuthSessionContextDto sessionContext)
         {
-            try
-            {
-                var normalizedEmail = dto.Email?.Trim();
+            var normalizedEmail = dto.Email?.Trim();
                 var firebaseResult = await _firebaseService.SignInWithPasswordAsync(normalizedEmail ?? string.Empty, dto.Password);
                 if (!firebaseResult.Success)
                 {
@@ -337,12 +335,6 @@ namespace ERP.Services.Auth
                     userInfo.Email, userInfo.TenantId, userInfo.ScopeLevel);
 
                 return await CreateSessionResponseAsync(localUser.Id, userInfo, sessionContext, "Dang nhap thanh cong");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error in LoginAsync");
-                return new AuthResponseDto { Success = false, Message = "Loi xay ra trong qua trinh dang nhap" };
-            }
         }
 
         public async Task<AuthResponseDto> RefreshSessionAsync(string refreshToken, AuthSessionContextDto sessionContext)
@@ -1159,7 +1151,8 @@ namespace ERP.Services.Auth
                 // Define the mapping from any existing name to correct English name
                 var roleMappings = new Dictionary<int, string>
                 {
-                    { AuthSecurityConstants.RoleAdminId, AuthSecurityConstants.RoleAdmin },              // 1 → "Admin"
+                    { AuthSecurityConstants.RoleSuperAdminId, AuthSecurityConstants.RoleSuperAdmin },    // 1 → "SuperAdmin"
+                    { AuthSecurityConstants.RoleAdminId, AuthSecurityConstants.RoleAdmin },              // 8 → "Admin"
                     { AuthSecurityConstants.RoleDirectorId, AuthSecurityConstants.RoleDirector },      // 2 → "Manager"
                     { AuthSecurityConstants.RoleRegionManagerId, AuthSecurityConstants.RoleRegionManager },  // 3 → "Regional Manager"
                     { AuthSecurityConstants.RoleBranchManagerId, AuthSecurityConstants.RoleBranchManager },  // 4 → "Branch Manager"

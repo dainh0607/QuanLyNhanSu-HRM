@@ -172,7 +172,6 @@ namespace ERP.Tests.Services.Attendance
             var empIdAdmin = 100;
             var userIdAdmin = 1000;
             
-            // Add user first
             _context.Users.Add(new Users 
             { 
                 Id = userIdAdmin, 
@@ -181,6 +180,7 @@ namespace ERP.Tests.Services.Attendance
                 firebase_uid = "ADMIN_FIREBASE",
                 username = "admin_test"
             });
+            _context.Roles.Add(new Roles { Id = adminRoleId, name = AuthSecurityConstants.RoleAdmin, is_active = true });
             _context.UserRoles.Add(new UserRoles { user_id = userIdAdmin, role_id = adminRoleId, is_active = true });
             await _context.SaveChangesAsync();
 

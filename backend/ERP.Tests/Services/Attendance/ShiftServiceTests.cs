@@ -10,6 +10,7 @@ using ERP.DTOs.Attendance;
 using ERP.DTOs.Auth;
 using MockQueryable.Moq;
 using MockQueryable;
+using Microsoft.EntityFrameworkCore;
 using ERP.Services.Authorization;
 using ERP.Entities.Interfaces;
 using ERP.Entities.Models;
@@ -101,9 +102,14 @@ namespace ERP.Tests.Services.Attendance
                 BranchIds = new List<int> { 5 },
                 DepartmentIds = new List<int> { 10 },
                 PositionIds = new List<int> { 1 },
-                Quantity = 3
+                Quantity = 3,
+                IsAutoPublish = false
             };
             _mockUow.Setup(u => u.SaveChangesAsync()).ReturnsAsync(1);
+
+            // Setup Shift repo AsQueryable for existence check
+            var shifts = new List<Shifts> { new Shifts { Id = 1, shift_name = "Morning" } };
+            _mockShiftRepo.Setup(r => r.AsQueryable()).Returns(shifts.BuildMock());
 
             // Act
             var result = await _service.CreateOpenShiftsAsync(dto);

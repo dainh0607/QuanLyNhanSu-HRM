@@ -54,11 +54,11 @@ namespace ERP.Tests.Integration
         {
             // Seed Tenant A Data
             _context.Roles.Add(new Roles { Id = 1, name = "RoleA", tenant_id = TenantA });
-            _context.Employees.Add(new Employees { Id = 1, full_name = "EmpA", tenant_id = TenantA, branch_id = 1 });
+            _context.Employees.Add(new Employees { Id = 1, full_name = "EmpA", tenant_id = TenantA, branch_id = 1, employee_code = "EMP-A" });
 
             // Seed Tenant B Data
             _context.Roles.Add(new Roles { Id = 2, name = "RoleB", tenant_id = TenantB });
-            _context.Employees.Add(new Employees { Id = 2, full_name = "EmpB", tenant_id = TenantB, branch_id = 2 });
+            _context.Employees.Add(new Employees { Id = 2, full_name = "EmpB", tenant_id = TenantB, branch_id = 2, employee_code = "EMP-B" });
 
             await _context.SaveChangesAsync();
         }

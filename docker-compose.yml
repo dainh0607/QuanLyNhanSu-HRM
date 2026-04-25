@@ -19,7 +19,7 @@ services:
       dockerfile: Dockerfile
     container_name: nexahrm-backend
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_ENVIRONMENT=docker run cloudflare/cloudflared:latest tunnel --no-autoupdate run --token eyJhIjoiYjgyZThjMTA5YThmYTNmYmFlZGQxNTZlMjhhMzZjZmUiLCJ0IjoiNGIxNzNlMjMtY2Y3Yi00NTBjLWIxNGItZTQ4NTFiOTI3Y2U5IiwicyI6Ik4yWXlOemd6WWpBdE9EUmtNeTAwWldRM0xXRTVORGt0WWpZeVlXRXlOemhpTVRobCJ9
       - ConnectionStrings__DefaultConnection=Server=db;Database=NexaHRM;User Id=sa;Password=${DB_PASSWORD:-StrongPassword123!};TrustServerCertificate=True;
       - JwtSettings__Secret=${JWT_SECRET:-NexaHRM_Super_Secret_Key_2026_Change_Me}
     depends_on:

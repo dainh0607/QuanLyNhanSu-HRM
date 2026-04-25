@@ -43,6 +43,7 @@ interface CompactShiftScheduleToolbarWithAdvancedSidebarProps {
   onApproveAll: () => void;
   onPublishAndApproveAll: () => void;
   onDeleteUnconfirmed: () => void;
+  onOpenConfig: () => void;
 }
 
 export const CompactShiftScheduleToolbarWithAdvancedSidebar = ({
@@ -75,6 +76,7 @@ export const CompactShiftScheduleToolbarWithAdvancedSidebar = ({
   onApproveAll,
   onPublishAndApproveAll,
   onDeleteUnconfirmed,
+  onOpenConfig,
 }: CompactShiftScheduleToolbarWithAdvancedSidebarProps) => {
   const user = authService.getCurrentUser();
   const canRead = hasPermission(user, "shifts", "read");
@@ -459,13 +461,7 @@ export const CompactShiftScheduleToolbarWithAdvancedSidebar = ({
           <IconActionButton
             icon="settings"
             label="Cài đặt hệ thống"
-            onClick={() => {
-              window.dispatchEvent(
-                new CustomEvent("open-enterprise-settings", {
-                  detail: { module: "timesheet-settings" },
-                }),
-              );
-            }}
+            onClick={onOpenConfig}
           />
         </div>
       </div>

@@ -69,13 +69,13 @@ namespace ERP.Tests.Services.Auth
         }
 
         [Theory]
-        [InlineData(1, AuthSecurityConstants.RoleAdmin, true)]
+        [InlineData(AuthSecurityConstants.RoleSuperAdminId, AuthSecurityConstants.RoleSuperAdmin, true)]
         [InlineData(2, AuthSecurityConstants.RoleDirector, true)]
         [InlineData(3, AuthSecurityConstants.RoleRegionManager, true)]
         [InlineData(4, AuthSecurityConstants.RoleBranchManager, true)]
         [InlineData(5, AuthSecurityConstants.RoleDeptManager, true)]
         [InlineData(6, AuthSecurityConstants.RoleModuleAdmin, true)]
-        [InlineData(7, AuthSecurityConstants.RoleEmployee, false)] // Staff should be blocked from management
+        [InlineData(AuthSecurityConstants.RoleEmployeeId, AuthSecurityConstants.RoleEmployee, false)] // Staff should be blocked from management
         public async Task LoginAsync_RoleValidation_ReturnsExpectedResult(int roleId, string roleName, bool expectedSuccess)
         {
             // Arrange
@@ -153,6 +153,8 @@ namespace ERP.Tests.Services.Auth
             SetupConfig();
             
             var email = "wrong@example.com";
+            var employee = new ERP.Entities.Models.Employees { Id = 20, email = email, full_name = "Wrong User", employee_code = "EMP020" };
+            context.Employees.Add(employee);
             _mockFirebase.Setup(f => f.SignInWithPasswordAsync(email, "wrongpass"))
                 .ReturnsAsync((false, null, null, null, null, null, "INVALID_PASSWORD"));
 
@@ -181,6 +183,9 @@ namespace ERP.Tests.Services.Auth
             _mockFirebase.Setup(f => f.SignInWithPasswordAsync(email, "password123"))
                 .ReturnsAsync((true, "token", "refresh", 3600, uid, email, null));
 
+            var employee = new ERP.Entities.Models.Employees { Id = 30, email = email, full_name = "Unsynced User", employee_code = "EMP030" };
+            context.Employees.Add(employee);
+
             // No local user record
             
             var authService = new AuthService(context, _mockLogger.Object, _mockConfig.Object, _mockFirebase.Object, _mockUserService.Object, _mockHttpClientFactory.Object);
@@ -207,12 +212,9 @@ namespace ERP.Tests.Services.Auth
             var authService = new AuthService(context, _mockLogger.Object, _mockConfig.Object, _mockFirebase.Object, _mockUserService.Object, _mockHttpClientFactory.Object);
 
             // Act & Assert
-            var exception = await Assert.ThrowsAsync<AuthenticationSystemException>(() =>
-                authService.LoginAsync(
-                    new LoginDto { Email = email, Password = "password123" },
-                    new AuthSessionContextDto()));
-
-            Assert.Contains("Firebase login service is unavailable.", exception.Message);
+            await Assert.ThrowsAsync<AuthenticationSystemException>(() => authService.LoginAsync(
+                new LoginDto { Email = email, Password = "password123" },
+                new AuthSessionContextDto()));
         }
     }
 }

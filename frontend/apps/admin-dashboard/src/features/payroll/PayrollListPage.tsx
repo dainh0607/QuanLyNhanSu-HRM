@@ -12,7 +12,6 @@ type PayrollView = 'payroll-list' | 'payroll-types' | 'salary-config';
 const PAYROLL_TABS: { id: PayrollView; label: string; icon: string; desc: string }[] = [
   { id: 'payroll-list', label: 'Bảng lương', icon: 'receipt_long', desc: 'Quản lý bảng lương theo kỳ' },
   { id: 'payroll-types', label: 'Loại bảng lương', icon: 'category', desc: 'Thiết lập mẫu bảng lương' },
-  { id: 'salary-config', label: 'Cấu hình tiền lương', icon: 'payments', desc: 'Bậc lương · Phụ cấp · Tạm ứng · Thu nhập' },
 ];
 
 export const PayrollListPage: React.FC = () => {
@@ -180,11 +179,7 @@ export const PayrollListPage: React.FC = () => {
         </>
       )}
 
-      {activeView === 'salary-config' && (
-        <div className="flex-1 min-h-0 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col p-6">
-          <SalaryGradeManagement />
-        </div>
-      )}
+
 
       {/* Delete Confirmation Modal */}
       {deleteId && (
