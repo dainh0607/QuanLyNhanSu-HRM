@@ -5,7 +5,6 @@ import { payrollService } from '../../services/payrollService';
 import type { PayrollGroup } from '../../services/payrollService';
 import { PayrollTable } from './components/PayrollTable';
 import PayrollCreateModal from './components/PayrollCreateModal';
-import SalaryGradeManagement from '../enterprise-settings/payroll-settings/components/SalaryGradeManagement';
 
 type PayrollView = 'payroll-list' | 'payroll-types' | 'salary-config';
 
