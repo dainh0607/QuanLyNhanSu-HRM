@@ -8,8 +8,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  BACKEND_IMAGE: ${{ github.repository }}/nexahrm-backend
-  FRONTEND_IMAGE: ${{ github.repository }}/nexahrm-frontend
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
@@ -54,6 +52,11 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
+      - name: Set lower case repository name
+        run: |
+          echo "BACKEND_IMAGE=${GITHUB_REPOSITORY,,}/nexahrm-backend" >> ${GITHUB_ENV}
+          echo "FRONTEND_IMAGE=${GITHUB_REPOSITORY,,}/nexahrm-frontend" >> ${GITHUB_ENV}
+
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
