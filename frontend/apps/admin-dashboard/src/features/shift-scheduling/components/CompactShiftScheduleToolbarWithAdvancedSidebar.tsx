@@ -89,11 +89,9 @@ export const CompactShiftScheduleToolbarWithAdvancedSidebar = ({
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);
-  const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
   const importDropdownRef = useRef<HTMLDivElement>(null);
   const exportDropdownRef = useRef<HTMLDivElement>(null);
   const viewDropdownRef = useRef<HTMLDivElement>(null);
-  const settingsDropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -116,21 +114,15 @@ export const CompactShiftScheduleToolbarWithAdvancedSidebar = ({
       ) {
         setIsViewDropdownOpen(false);
       }
-      if (
-        settingsDropdownRef.current &&
-        !settingsDropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsSettingsMenuOpen(false);
-      }
     };
 
-    if (isImportOpen || isExportOpen || isViewDropdownOpen || isSettingsMenuOpen) {
+    if (isImportOpen || isExportOpen || isViewDropdownOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isImportOpen, isExportOpen, isSettingsMenuOpen, isViewDropdownOpen]);
+  }, [isImportOpen, isExportOpen, isViewDropdownOpen]);
 
   return (
     <section className="space-y-3">
@@ -470,43 +462,17 @@ export const CompactShiftScheduleToolbarWithAdvancedSidebar = ({
           />
           <IconActionButton icon="warning" label="Lịch sử vào/ra" onClick={onOpenHistory} />
           <IconActionButton icon="restaurant" label="Bảng xuất ăn" onClick={onOpenMealBoard} />
-          <div ref={settingsDropdownRef} className="relative inline-block text-left">
-            <IconActionButton
-              icon="settings"
-              label="Cài đặt chấm công"
-              onClick={() => setIsSettingsMenuOpen(!isSettingsMenuOpen)}
-            />
-            <div className={`absolute right-0 top-full z-50 animate-[fadeSlideDown_0.2s_ease-out] pt-1.5 ${isSettingsMenuOpen ? 'block' : 'hidden'}`}>
-              <div className="w-56 overflow-hidden rounded-xl border border-gray-200 bg-white py-2 shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
-                 <div className="mb-1 border-b border-gray-100 px-4 py-[7px]">
-                   <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                     Cài đặt
-                   </span>
-                 </div>
-                 <button
-                    type="button"
-                    onClick={() => { setIsSettingsMenuOpen(false); onOpenSettings(); }}
-                    className="flex min-h-[28px] w-full items-center gap-3 px-4 py-1.5 text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                 >
-                    Cài đặt hiển thị
-                 </button>
-                 <button
-                    type="button"
-                    onClick={() => { setIsSettingsMenuOpen(false); onOpenConfig(); }}
-                    className="flex min-h-[28px] w-full items-center gap-3 px-4 py-1.5 text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                 >
-                    Cấu hình luồng nghiệp vụ
-                 </button>
-                 <button
-                    type="button"
-                    onClick={() => { setIsSettingsMenuOpen(false); onOpenTasks(); }}
-                    className="flex min-h-[28px] w-full items-center gap-3 px-4 py-1.5 text-xs text-gray-700 transition-colors hover:bg-[#192841]/5 hover:text-[#192841]"
-                 >
-                    Quản lý công việc
-                 </button>
-              </div>
-            </div>
-          </div>
+          <IconActionButton
+            icon="settings"
+            label="Cài đặt hệ thống"
+            onClick={() => {
+              window.dispatchEvent(
+                new CustomEvent("open-enterprise-settings", {
+                  detail: { module: "timesheet-settings" },
+                }),
+              );
+            }}
+          />
         </div>
       </div>
     </section>

@@ -658,6 +658,18 @@ function RoutedApp() {
   const [user, setUser] = useState<User | null>(null);
   const [isInitializing, setIsInitializing] = useState<boolean>(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [settingsModule, setSettingsModule] = useState("personal");
+
+  useEffect(() => {
+    const handleOpenSettings = (e: any) => {
+      const module = e.detail?.module || "personal";
+      setSettingsModule(module);
+      setIsSettingsOpen(true);
+    };
+
+    window.addEventListener("open-enterprise-settings", handleOpenSettings);
+    return () => window.removeEventListener("open-enterprise-settings", handleOpenSettings);
+  }, []);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -1015,6 +1027,7 @@ function RoutedApp() {
         <EnterpriseSettingsModal
           isOpen={isSettingsOpen}
           onClose={() => setIsSettingsOpen(false)}
+          initialModule={settingsModule}
         />
       </div>
     </SettingsProvider>

@@ -16,12 +16,20 @@ import TimesheetSettings from "./timesheet-settings/components/TimesheetSettings
 interface EnterpriseSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialModule?: string;
 }
 
-const EnterpriseSettingsModal: React.FC<EnterpriseSettingsModalProps> = ({ isOpen, onClose }) => {
-  const [activeModule, setActiveModule] = useState("personal");
+const EnterpriseSettingsModal: React.FC<EnterpriseSettingsModalProps> = ({ isOpen, onClose, initialModule = "personal" }) => {
+  const [activeModule, setActiveModule] = useState(initialModule);
   const [isDirty, setIsDirty] = useState(false);
   const [saveTriggered, setSaveTriggered] = useState(0);
+
+  // Sync activeModule with initialModule when modal opens
+  React.useEffect(() => {
+    if (isOpen && initialModule) {
+      setActiveModule(initialModule);
+    }
+  }, [isOpen, initialModule]);
 
   if (!isOpen) return null;
 
@@ -72,7 +80,7 @@ const EnterpriseSettingsModal: React.FC<EnterpriseSettingsModalProps> = ({ isOpe
       case 'payroll-settings': return 'Quản lý thang bảng lương, phụ cấp và các loại thu nhập chuẩn';
       case 'contract-settings': return 'Thiết lập loại hợp đồng, biểu mẫu mẫu và thông báo';
       case 'request-templates': return 'Quản lý mẫu đơn và thiết kế yêu cầu';
-      default: return 'Quản lý cấu hình hệ thống';
+      default: return '';
     }
   };
 

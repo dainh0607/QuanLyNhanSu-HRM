@@ -75,7 +75,17 @@ export const CompactShiftScheduleToolbar = ({
         <IconActionButton icon="refresh" label="Làm mới bảng" onClick={onRefresh} isLoading={isRefreshing} />
         <IconActionButton icon="warning" label="Lịch sử vào/ra" onClick={onOpenHistory} />
         <IconActionButton icon="restaurant" label="Bảng xuất ăn" onClick={onOpenMealBoard} />
-        <IconActionButton icon="settings" label="Cài đặt chấm công" onClick={onOpenSettings} />
+        <IconActionButton
+          icon="settings"
+          label="Cài đặt hệ thống"
+          onClick={() => {
+            window.dispatchEvent(
+              new CustomEvent("open-enterprise-settings", {
+                detail: { module: "timesheet-settings" },
+              }),
+            );
+          }}
+        />
       </div>
     </div>
 
