@@ -71,55 +71,62 @@ namespace ERP.Services.Settings
 
         public async Task<ShiftBusinessRulesDto> GetShiftBusinessRulesAsync()
         {
+            var tenantId = _userContext.TenantId;
+            if (!tenantId.HasValue) return new ShiftBusinessRulesDto { RegistrationLockDay = "Friday", AdvanceScheduleWeeks = 1 };
+
             var settings = await _context.TenantSettings
-                .FirstOrDefaultAsync(x => x.tenant_id == _userContext.TenantId);
+                .FirstOrDefaultAsync(x => x.tenant_id == tenantId.Value);
 
             if (settings == null)
             {
                 // Return default values if not found
                 return new ShiftBusinessRulesDto
                 {
-                    auto_schedule_next_week = true,
-                    allow_shift_registration = true,
-                    enable_registration_lock = false,
-                    registration_lock_day = "Friday",
-                    advance_schedule_weeks = 1,
-                    require_shift_publish = false
+                    AutoScheduleNextWeek = true,
+                    AllowShiftRegistration = true,
+                    EnableRegistrationLock = false,
+                    RegistrationLockDay = "Friday",
+                    AdvanceScheduleWeeks = 1,
+                    RequireShiftPublish = false
                 };
             }
 
             return new ShiftBusinessRulesDto
             {
-                auto_schedule_next_week = settings.auto_schedule_next_week,
-                allow_shift_registration = settings.allow_shift_registration,
-                enable_registration_lock = settings.enable_registration_lock,
-                registration_lock_day = settings.registration_lock_day,
-                advance_schedule_weeks = settings.advance_schedule_weeks,
-                require_shift_publish = settings.require_shift_publish
+                AutoScheduleNextWeek = settings.auto_schedule_next_week,
+                AllowShiftRegistration = settings.allow_shift_registration,
+                EnableRegistrationLock = settings.enable_registration_lock,
+                RegistrationLockDay = settings.registration_lock_day,
+                AdvanceScheduleWeeks = settings.advance_schedule_weeks,
+                RequireShiftPublish = settings.require_shift_publish
             };
         }
 
         public async Task<bool> UpdateShiftBusinessRulesAsync(UpdateShiftBusinessRulesDto dto)
         {
+            var tenantId = _userContext.TenantId;
+            if (!tenantId.HasValue) return false;
+
             var settings = await _context.TenantSettings
-                .FirstOrDefaultAsync(x => x.tenant_id == _userContext.TenantId);
+                .FirstOrDefaultAsync(x => x.tenant_id == tenantId.Value);
 
             if (settings == null)
             {
                 settings = new TenantSettings
                 {
-                    tenant_id = _userContext.TenantId ?? 0,
+                    id = tenantId.Value,
+                    tenant_id = tenantId.Value,
                     CreatedAt = System.DateTime.UtcNow
                 };
                 _context.TenantSettings.Add(settings);
             }
 
-            if (dto.auto_schedule_next_week.HasValue) settings.auto_schedule_next_week = dto.auto_schedule_next_week.Value;
-            if (dto.allow_shift_registration.HasValue) settings.allow_shift_registration = dto.allow_shift_registration.Value;
-            if (dto.enable_registration_lock.HasValue) settings.enable_registration_lock = dto.enable_registration_lock.Value;
-            if (!string.IsNullOrEmpty(dto.registration_lock_day)) settings.registration_lock_day = dto.registration_lock_day;
-            if (dto.advance_schedule_weeks.HasValue) settings.advance_schedule_weeks = dto.advance_schedule_weeks.Value;
-            if (dto.require_shift_publish.HasValue) settings.require_shift_publish = dto.require_shift_publish.Value;
+            if (dto.AutoScheduleNextWeek.HasValue) settings.auto_schedule_next_week = dto.AutoScheduleNextWeek.Value;
+            if (dto.AllowShiftRegistration.HasValue) settings.allow_shift_registration = dto.AllowShiftRegistration.Value;
+            if (dto.EnableRegistrationLock.HasValue) settings.enable_registration_lock = dto.EnableRegistrationLock.Value;
+            if (!string.IsNullOrEmpty(dto.RegistrationLockDay)) settings.registration_lock_day = dto.RegistrationLockDay;
+            if (dto.AdvanceScheduleWeeks.HasValue) settings.advance_schedule_weeks = dto.AdvanceScheduleWeeks.Value;
+            if (dto.RequireShiftPublish.HasValue) settings.require_shift_publish = dto.RequireShiftPublish.Value;
 
             settings.UpdatedAt = System.DateTime.UtcNow;
 

@@ -60,7 +60,7 @@ const ShiftSchedulingConfigView: React.FC = () => {
   };
 
   return (
-    <div className="p-8 max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="p-8 pb-20 max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="mb-8">
         <h2 className="text-2xl font-black text-slate-900 tracking-tight">Cấu hình luồng nghiệp vụ</h2>
         <p className="text-slate-500 mt-1 font-medium">Quản lý các quy tắc và cài đặt vận hành xếp ca cho hệ thống.</p>
@@ -197,10 +197,6 @@ const ConfigItem: React.FC<ConfigItemProps> = ({ title, description, enabled, on
         <h3 className="text-base font-black text-slate-800">{title}</h3>
         <p className="text-[13px] font-bold text-slate-400 mt-1 leading-relaxed">{description}</p>
       </div>
-    </div>
-    <ToggleSwitch enabled={enabled} onChange={onToggle} isSaving={isSaving} />
-  </div>
-);    <p className="text-[13px] font-bold text-slate-400 mt-1 leading-relaxed">{description}</p>
     </div>
     <ToggleSwitch enabled={enabled} onChange={onToggle} isSaving={isSaving} />
   </div>

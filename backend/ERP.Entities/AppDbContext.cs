@@ -155,6 +155,9 @@ namespace ERP.Entities
         public DbSet<EmploymentTypes> EmploymentTypes { get; set; }
         public DbSet<Majors> Majors { get; set; }
         public DbSet<TenantSettings> TenantSettings { get; set; }
+        public DbSet<ShiftJobs> ShiftJobs { get; set; }
+        public DbSet<ShiftJobDepartments> ShiftJobDepartments { get; set; }
+        public DbSet<ShiftJobEmployees> ShiftJobEmployees { get; set; }
 
         // NEW: RBAC Authorization Tables (FIX)
         public DbSet<RoleScopes> RoleScopes { get; set; }

@@ -63,6 +63,7 @@ const createDefaultFilters = (): ShiftScheduleFilters => {
 
 const emptyLookups: ShiftScheduleLookups = {
   branches: [{ value: "", label: "Tất cả chi nhánh" }],
+  departments: [{ value: "", label: "Tất cả phòng ban" }],
   projects: [{ value: "", label: "Tất cả dự án" }],
   jobTitles: [{ value: "", label: "Tất cả công việc" }],
   workingHours: [{ value: "", label: "Tất cả giờ công việc" }],

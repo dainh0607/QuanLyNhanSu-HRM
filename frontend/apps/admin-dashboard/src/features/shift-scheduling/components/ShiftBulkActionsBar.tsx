@@ -53,17 +53,17 @@ const ShiftBulkActionsBar = ({
   };
 
   return (
-    <div ref={dropdownRef} className="relative inline-flex items-center">
+    <div ref={dropdownRef} className="relative inline-flex items-stretch shadow-md rounded-lg overflow-hidden transition-all duration-200 hover:shadow-lg">
       {/* Nút chính "Chấp thuận (N)" */}
       <button
         type="button"
         disabled={isProcessing || publishedCount === 0}
         onClick={() => handleAction(onApproveAll)}
-        className={`flex items-center rounded-l-lg border-r border-white/20 px-4 py-2 text-sm font-bold text-white transition-all duration-200 ${
+        className={`flex items-center border-r border-white/20 px-4 py-2 text-sm font-bold text-white transition-all duration-200 ${
           isProcessing
             ? "cursor-wait bg-emerald-400"
             : publishedCount > 0
-              ? "bg-emerald-600 hover:bg-emerald-700 active:scale-[0.97]"
+              ? "bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98]"
               : "cursor-not-allowed bg-emerald-400/60"
         }`}
       >
@@ -83,11 +83,11 @@ const ShiftBulkActionsBar = ({
         type="button"
         disabled={isProcessing}
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`flex h-full items-center justify-center rounded-r-lg px-2.5 py-2 text-white transition-all duration-200 ${
+        className={`flex items-center justify-center px-2.5 py-2 text-white transition-all duration-200 ${
           isProcessing
             ? "cursor-wait bg-emerald-400"
-            : "bg-emerald-600 hover:bg-emerald-700"
-        }`}
+            : "bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800"
+        } ${isOpen ? "bg-emerald-700" : ""}`}
       >
         <span
           className={`material-symbols-outlined text-[18px] transition-transform duration-200 ${

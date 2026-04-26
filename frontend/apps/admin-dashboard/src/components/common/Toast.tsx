@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 
-export type ToastType = 'success' | 'error' | 'info';
+export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
 interface ToastAction {
   label: string;
@@ -24,13 +24,15 @@ const Toast: React.FC<ToastProps> = ({ message, type, onClose, duration = 3000, 
   const bgColors = {
     success: 'bg-[#192841]',
     error: 'bg-red-500',
-    info: 'bg-blue-500'
+    info: 'bg-blue-500',
+    warning: 'bg-amber-500'
   };
 
   const icons = {
     success: 'check_circle',
     error: 'error',
-    info: 'info'
+    info: 'info',
+    warning: 'warning'
   };
 
   return (

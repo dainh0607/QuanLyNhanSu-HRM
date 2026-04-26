@@ -220,6 +220,7 @@ builder.Services.AddScoped<IShiftService, ShiftService>();
 builder.Services.AddScoped<IShiftTemplateService, ShiftTemplateService>();
 builder.Services.AddScoped<IShiftAssignmentService, ShiftAssignmentService>();
 builder.Services.AddScoped<IShiftNotificationService, ShiftNotificationService>();
+builder.Services.AddScoped<IShiftJobService, ShiftJobService>();
 builder.Services.AddScoped<IDocxService, DocxService>();
 builder.Services.AddScoped<IRlsSessionContextService, RlsSessionContextService>();
 builder.Services.AddScoped<IEmploymentHistoryService, EmploymentHistoryService>();

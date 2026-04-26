@@ -186,6 +186,7 @@ export const WeeklyShiftSchedulePage = () => {
       ...current,
       viewMode: nextViewMode,
       branchId: nextViewMode === "branch" ? current.branchId : "",
+      departmentId: nextViewMode === "department" ? current.departmentId : "",
       projectId: nextViewMode === "project" ? current.projectId : "",
       jobTitleId: nextViewMode === "jobTitle" ? current.jobTitleId : "",
       workingHoursBucket:

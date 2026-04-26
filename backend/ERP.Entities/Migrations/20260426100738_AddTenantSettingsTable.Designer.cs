@@ -4,6 +4,7 @@ using ERP.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ERP.Entities.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260426100738_AddTenantSettingsTable")]
+    partial class AddTenantSettingsTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -9056,109 +9059,6 @@ namespace ERP.Entities.Migrations
                     b.ToTable("ShiftCycleTemplates");
                 });
 
-            modelBuilder.Entity("ERP.Entities.Models.ShiftJobDepartments", b =>
-                {
-                    b.Property<int>("shift_job_id")
-                        .HasColumnType("int")
-                        .HasColumnName("shift_job_id");
-
-                    b.Property<int>("department_id")
-                        .HasColumnType("int")
-                        .HasColumnName("department_id");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
-                    b.HasKey("shift_job_id", "department_id");
-
-                    b.HasIndex("department_id");
-
-                    b.ToTable("ShiftJobDepartments", (string)null);
-                });
-
-            modelBuilder.Entity("ERP.Entities.Models.ShiftJobEmployees", b =>
-                {
-                    b.Property<int>("shift_job_id")
-                        .HasColumnType("int")
-                        .HasColumnName("shift_job_id");
-
-                    b.Property<int>("employee_id")
-                        .HasColumnType("int")
-                        .HasColumnName("employee_id");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
-                    b.HasKey("shift_job_id", "employee_id");
-
-                    b.HasIndex("employee_id");
-
-                    b.ToTable("ShiftJobEmployees", (string)null);
-                });
-
-            modelBuilder.Entity("ERP.Entities.Models.ShiftJobs", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("updated_at");
-
-                    b.Property<int>("branch_id")
-                        .HasColumnType("int")
-                        .HasColumnName("branch_id");
-
-                    b.Property<string>("code")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("code");
-
-                    b.Property<string>("color_code")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasColumnName("color_code");
-
-                    b.Property<string>("description")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("description");
-
-                    b.Property<bool>("is_active")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_active");
-
-                    b.Property<string>("name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("name");
-
-                    b.Property<int?>("tenant_id")
-                        .HasColumnType("int")
-                        .HasColumnName("tenant_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("branch_id");
-
-                    b.HasIndex("tenant_id", "code")
-                        .IsUnique()
-                        .HasFilter("[tenant_id] IS NOT NULL");
-
-                    b.ToTable("ShiftJobs", (string)null);
-                });
-
             modelBuilder.Entity("ERP.Entities.Models.ShiftTemplates", b =>
                 {
                     b.Property<int>("Id")
@@ -12424,55 +12324,6 @@ namespace ERP.Entities.Migrations
                     b.Navigation("Template");
                 });
 
-            modelBuilder.Entity("ERP.Entities.Models.ShiftJobDepartments", b =>
-                {
-                    b.HasOne("ERP.Entities.Models.Departments", "Department")
-                        .WithMany()
-                        .HasForeignKey("department_id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("ERP.Entities.Models.ShiftJobs", "ShiftJob")
-                        .WithMany("ShiftJobDepartments")
-                        .HasForeignKey("shift_job_id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Department");
-
-                    b.Navigation("ShiftJob");
-                });
-
-            modelBuilder.Entity("ERP.Entities.Models.ShiftJobEmployees", b =>
-                {
-                    b.HasOne("ERP.Entities.Models.Employees", "Employee")
-                        .WithMany()
-                        .HasForeignKey("employee_id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("ERP.Entities.Models.ShiftJobs", "ShiftJob")
-                        .WithMany("ShiftJobEmployees")
-                        .HasForeignKey("shift_job_id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Employee");
-
-                    b.Navigation("ShiftJob");
-                });
-
-            modelBuilder.Entity("ERP.Entities.Models.ShiftJobs", b =>
-                {
-                    b.HasOne("ERP.Entities.Models.Branches", "Branch")
-                        .WithMany()
-                        .HasForeignKey("branch_id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Branch");
-                });
-
             modelBuilder.Entity("ERP.Entities.Models.Shifts", b =>
                 {
                     b.HasOne("ERP.Entities.Models.MealTypes", "MealType")
@@ -12734,13 +12585,6 @@ namespace ERP.Entities.Migrations
                     b.Navigation("OtherIncomes");
 
                     b.Navigation("VariableSalaries");
-                });
-
-            modelBuilder.Entity("ERP.Entities.Models.ShiftJobs", b =>
-                {
-                    b.Navigation("ShiftJobDepartments");
-
-                    b.Navigation("ShiftJobEmployees");
                 });
 
             modelBuilder.Entity("ERP.Entities.Models.TimeMachines", b =>

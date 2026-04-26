@@ -191,21 +191,76 @@ const applyClientFilters = (
 ): WeeklyScheduleGridData => {
   let { rows, openShiftCells } = data;
 
+  // 1. Search filter
   const searchTerm = filters.searchTerm.trim().toLowerCase();
   if (searchTerm) {
-    rows = rows.filter((row) => `${row.employee.fullName} ${row.employee.employeeCode ?? ""}`.toLowerCase().includes(searchTerm));
+    rows = rows.filter((row) => 
+      `${row.employee.fullName} ${row.employee.employeeCode ?? ""}`.toLowerCase().includes(searchTerm)
+    );
   }
 
-  if (filters.employeeStatus === "active") rows = rows.filter((row) => row.employee.isActive);
+  // 2. Employee Status filter
+  if (filters.employeeStatus === "active") {
+    rows = rows.filter((row) => row.employee.isActive);
+  }
+
+  // 3. Organizational filters (with safe number conversion)
   if (filters.branchId) {
     const branchId = Number(filters.branchId);
-    rows = rows.filter((row) => row.employee.branchId === branchId);
-    openShiftCells = Object.fromEntries(Object.entries(openShiftCells).map(([date, cell]) => [date, { ...cell, shifts: cell.shifts.filter(s => s.branchId === branchId) }]));
+    rows = rows.filter((row) => Number(row.employee.branchId) === branchId);
+    openShiftCells = Object.fromEntries(
+      Object.entries(openShiftCells).map(([date, cell]) => [
+        date, 
+        { ...cell, shifts: cell.shifts.filter(s => Number(s.branchId) === branchId) }
+      ])
+    );
   }
-  if (filters.departmentId) rows = rows.filter((row) => row.employee.departmentId === Number(filters.departmentId));
-  if (filters.jobTitleId) rows = rows.filter((row) => row.employee.jobTitleId === Number(filters.jobTitleId));
 
-  return { ...data, rows, employees: rows.map(r => r.employee), openShiftCells, totalEmployees: rows.length, totalOpenShifts: Object.values(openShiftCells).reduce((t, c) => t + c.shifts.length, 0) };
+  if (filters.departmentId) {
+    const deptId = Number(filters.departmentId);
+    rows = rows.filter((row) => Number(row.employee.departmentId) === deptId);
+  }
+
+  if (filters.jobTitleId) {
+    const jobTitleId = Number(filters.jobTitleId);
+    rows = rows.filter((row) => Number(row.employee.jobTitleId) === jobTitleId);
+  }
+
+  if (filters.projectId) {
+    const projId = filters.projectId;
+    rows = rows.filter((row) => {
+      // Check if any shift in any cell of this row matches the project
+      return Object.values(row.cells).some(cell => 
+        cell.shifts.some(s => s.projectId === projId)
+      );
+    });
+  }
+
+  // 4. Attendance Status filter (Client-side fallback)
+  if (filters.attendanceStatus && filters.attendanceStatus !== "all") {
+    const status = filters.attendanceStatus;
+    rows = rows.map(row => {
+      const filteredCells = Object.fromEntries(
+        Object.entries(row.cells).map(([date, cell]) => [
+          date,
+          { ...cell, shifts: cell.shifts.filter(s => s.attendanceStatus === status) }
+        ])
+      );
+      return { ...row, cells: filteredCells };
+    });
+    
+    // Also filter out rows that have NO shifts at all after status filtering if necessary, 
+    // but usually we keep the employees in the list for scheduling.
+  }
+
+  return { 
+    ...data, 
+    rows, 
+    employees: rows.map(r => r.employee), 
+    openShiftCells, 
+    totalEmployees: rows.length, 
+    totalOpenShifts: Object.values(openShiftCells).reduce((t, c) => t + c.shifts.length, 0) 
+  };
 };
 
 const transformApiResponse = (
@@ -291,8 +346,9 @@ const getWeeklySchedule = async (filters: ShiftScheduleFilters): Promise<WeeklyS
 };
 
 const getLookups = async (): Promise<ShiftScheduleLookups & { employees: SelectOption[] }> => {
-  const [branches, jobTitles, employees] = await Promise.all([
+  const [branches, departments, jobTitles, employees] = await Promise.all([
     lookupsService.getBranches(),
+    lookupsService.getDepartments(),
     lookupsService.getMajors(), // Assuming Majors or similar for job titles in this context, or add getJobTitles
     employeeListService.getEmployees(1, 1000).then(res => res.items),
   ]);
@@ -303,6 +359,13 @@ const getLookups = async (): Promise<ShiftScheduleLookups & { employees: SelectO
       ...branches.map(b => ({
         value: String(getVal<number>(b, "id", "Id") ?? ""),
         label: getVal<string>(b, "name", "Name") || ""
+      }))
+    ],
+    departments: [
+      { value: "", label: "Tất cả phòng ban" },
+      ...departments.map(d => ({
+        value: String(getVal<number>(d, "id", "Id") ?? ""),
+        label: getVal<string>(d, "name", "Name") || ""
       }))
     ],
     jobTitles: [

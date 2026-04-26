@@ -391,7 +391,10 @@ export const CompactShiftScheduleToolbarWithAdvancedSidebar = ({
         <FilterSelect
           label="Lọc xếp ca theo"
           value={filters.viewMode}
-          options={SCHEDULE_VIEW_OPTIONS}
+          options={[
+            ...SCHEDULE_VIEW_OPTIONS,
+            { value: "department", label: "Phòng ban" },
+          ]}
           onChange={onViewModeChange}
         />
 
@@ -429,6 +432,15 @@ export const CompactShiftScheduleToolbarWithAdvancedSidebar = ({
               }
             />
           </>
+        ) : null}
+
+        {filters.viewMode === "department" ? (
+          <FilterSelect
+            label="Phòng ban"
+            value={filters.departmentId}
+            options={lookups.departments}
+            onChange={(value) => onFilterChange("departmentId", value)}
+          />
         ) : null}
 
         {filters.viewMode === "project" ? (

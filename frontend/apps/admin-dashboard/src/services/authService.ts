@@ -181,10 +181,27 @@ export const hasPermission = (
   action: string,
 ): boolean => {
   if (user?.isSystemAdmin) return true;
-  if (!user?.permissions) return false;
 
   const res = resource.toLowerCase();
   const act = action.toLowerCase();
+
+  // [FALLBACK] Core administrative roles should have full access to business-critical resources
+  // to prevent UI lockouts while backend RBAC is still being finalized or synchronized.
+  if (hasAdministrativeAccess(user)) {
+    const adminManagedResources = [
+      "shifts",
+      "attendance",
+      "employee",
+      "contracts",
+      "payroll",
+      "system",
+      "rbac",
+    ];
+    if (adminManagedResources.includes(res)) return true;
+  }
+
+  if (!user?.permissions) return false;
+
   const permissionString = `${res}:${act}`;
 
   if (user.permissions.includes(permissionString)) return true;

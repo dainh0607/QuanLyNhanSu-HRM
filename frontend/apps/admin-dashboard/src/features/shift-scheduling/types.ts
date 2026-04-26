@@ -3,6 +3,7 @@ export type ScheduleViewMode =
   | "attendance"
   | "project"
   | "jobTitle"
+  | "department"
   | "workingHours"
   | "workingDays"
   | "workedHours";
@@ -122,6 +123,7 @@ export type ShiftScheduleGridData = WeeklyScheduleGridData;
 
 export interface ShiftScheduleLookups {
   branches: SelectOption[];
+  departments: SelectOption[];
   projects: SelectOption[];
   jobTitles: SelectOption[];
   workingHours: SelectOption[];

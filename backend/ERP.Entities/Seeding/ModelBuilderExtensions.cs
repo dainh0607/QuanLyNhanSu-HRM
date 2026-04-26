@@ -314,7 +314,39 @@ namespace ERP.Entities.Seeding
                 new ActionPermissions { Id = 61, role_id = 1, action = "read", resource = "user", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
                 new ActionPermissions { Id = 62, role_id = 1, action = "update", resource = "user", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
                 new ActionPermissions { Id = 63, role_id = 1, action = "read", resource = "contracts", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
-                new ActionPermissions { Id = 64, role_id = 1, action = "update", resource = "contracts", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate }
+                new ActionPermissions { Id = 64, role_id = 1, action = "update", resource = "contracts", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+
+                // Role 2 (Executive) - Add missing attendance actions
+                new ActionPermissions { Id = 65, role_id = 2, action = "create", resource = "attendance", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 66, role_id = 2, action = "update", resource = "attendance", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 67, role_id = 2, action = "delete", resource = "attendance", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+
+                // Role 3 (Regional Manager) - Add missing attendance actions
+                new ActionPermissions { Id = 68, role_id = 3, action = "create", resource = "attendance", allowed_scope = "SAME_REGION", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 69, role_id = 3, action = "delete", resource = "attendance", allowed_scope = "SAME_REGION", is_active = true, created_at = seedDate },
+
+                // Role 4 (Branch Manager) - Add missing attendance actions
+                new ActionPermissions { Id = 70, role_id = 4, action = "create", resource = "attendance", allowed_scope = "SAME_BRANCH", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 71, role_id = 4, action = "delete", resource = "attendance", allowed_scope = "SAME_BRANCH", is_active = true, created_at = seedDate },
+
+                // Role 5 (Department Head) - Add missing attendance actions
+                new ActionPermissions { Id = 72, role_id = 5, action = "create", resource = "attendance", allowed_scope = "SAME_DEPARTMENT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 73, role_id = 5, action = "delete", resource = "attendance", allowed_scope = "SAME_DEPARTMENT", is_active = true, created_at = seedDate },
+
+                // Role 8 (Workspace Admin) - Seed basic administrative permissions
+                new ActionPermissions { Id = 74, role_id = 8, action = "read", resource = "employee", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 75, role_id = 8, action = "create", resource = "employee", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 76, role_id = 8, action = "update", resource = "employee", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 77, role_id = 8, action = "delete", resource = "employee", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 78, role_id = 8, action = "read", resource = "attendance", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 79, role_id = 8, action = "create", resource = "attendance", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 80, role_id = 8, action = "update", resource = "attendance", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 81, role_id = 8, action = "delete", resource = "attendance", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 82, role_id = 8, action = "approve", resource = "attendance", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 83, role_id = 8, action = "read", resource = "payroll", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 84, role_id = 8, action = "manage", resource = "payroll", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 85, role_id = 8, action = "read", resource = "system", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate },
+                new ActionPermissions { Id = 86, role_id = 8, action = "update", resource = "system", allowed_scope = "SAME_TENANT", is_active = true, created_at = seedDate }
             );
 
             // 22. Request Type Approvers (Approval chains for each request type)
