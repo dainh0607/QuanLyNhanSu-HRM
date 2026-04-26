@@ -857,5 +857,105 @@ namespace ERP.Services.Attendance
             workbook.SaveAs(stream);
             return stream.ToArray();
         }
+        public async Task<bool> RegisterShiftAsync(ShiftAssignmentCreateDto dto)
+        {
+            var tenantId = _userContext.TenantId ?? 0;
+            
+            // 1. Get business rules
+            var settings = await _unitOfWork.Repository<TenantSettings>()
+                .AsQueryable()
+                .FirstOrDefaultAsync(s => s.tenant_id == tenantId);
+
+            // Default rules if not set
+            bool allowRegistration = settings?.allow_shift_registration ?? true;
+            bool enableLock = settings?.enable_registration_lock ?? false;
+            string lockDayStr = settings?.registration_lock_day ?? "Friday";
+            int advanceWeeks = settings?.advance_schedule_weeks ?? 1;
+
+            // 2. Basic validation: Is registration allowed?
+            if (!allowRegistration)
+            {
+                throw new Exception("Hệ thống hiện không cho phép nhân viên tự đăng ký ca.");
+            }
+
+            // 3. Validation: Advance schedule weeks
+            var today = DateTime.Today;
+            var maxAllowedDate = today.AddDays(7 * advanceWeeks);
+            // Adjust to the end of that week if needed, but simple "X weeks from today" is usually enough
+            // Or "X weeks including current week".
+            // Let's assume it means "can register for shifts up to X weeks in advance".
+            if (dto.assignment_date.Date > maxAllowedDate)
+            {
+                throw new Exception($"Bạn chỉ có thể đăng ký ca trước tối đa {advanceWeeks} tuần.");
+            }
+
+            // 4. Validation: Registration lock
+            if (enableLock)
+            {
+                // Identify the week of the assignment
+                // We assume weeks start on Monday
+                var startOfAssignmentWeek = GetStartOfWeek(dto.assignment_date);
+                var startOfCurrentWeek = GetStartOfWeek(today);
+
+                // If registering for a future week
+                if (startOfAssignmentWeek > startOfCurrentWeek)
+                {
+                    // Check if we are past the lock day of THIS week (to register for NEXT week)
+                    // Wait, if it's 2 weeks away, does the lock apply? 
+                    // Usually lock applies to the *immediate* next week.
+                    
+                    if (Enum.TryParse<DayOfWeek>(lockDayStr, true, out var lockDay))
+                    {
+                        var deadlineDate = startOfCurrentWeek.AddDays((int)lockDay - (int)DayOfWeek.Monday);
+                        // If lockDay is Sunday, and today is Monday, we are fine.
+                        // If lockDay is Friday, and today is Saturday, we are locked out of NEXT week.
+                        
+                        if (today > deadlineDate && startOfAssignmentWeek == startOfCurrentWeek.AddDays(7))
+                        {
+                            throw new Exception($"Đã quá hạn đăng ký ca cho tuần tiếp theo (Hạn cuối là {lockDayStr}).");
+                        }
+                    }
+                }
+            }
+
+            // 5. Check for existing assignment
+            var existing = await _unitOfWork.Repository<ShiftAssignments>()
+                .AsQueryable()
+                .FirstOrDefaultAsync(a => a.employee_id == dto.employee_id && a.assignment_date.Date == dto.assignment_date.Date && a.shift_id == dto.shift_id);
+
+            if (existing != null)
+            {
+                throw new Exception("Bạn đã đăng ký ca này rồi.");
+            }
+
+            // 6. Create assignment (as draft or published based on settings?)
+            // Usually employee registration starts as "pending" or "published" but requires approval?
+            // AC says: "Bật/Tắt chế độ công bố (Publishing mode)".
+            // If require_shift_publish is true, maybe mark as is_published = false.
+            
+            bool requirePublish = settings?.require_shift_publish ?? false;
+
+            var assignment = new ShiftAssignments
+            {
+                tenant_id = tenantId,
+                employee_id = dto.employee_id,
+                shift_id = dto.shift_id,
+                assignment_date = dto.assignment_date.Date,
+                is_published = !requirePublish, // If publishing is required, start as unpublished
+                status = requirePublish ? "pending" : "published",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                note = dto.note ?? "Nhân viên tự đăng ký"
+            };
+
+            await _unitOfWork.Repository<ShiftAssignments>().AddAsync(assignment);
+            return await _unitOfWork.SaveChangesAsync() > 0;
+        }
+
+        private DateTime GetStartOfWeek(DateTime dt)
+        {
+            int diff = (7 + (dt.DayOfWeek - DayOfWeek.Monday)) % 7;
+            return dt.AddDays(-1 * diff).Date;
+        }
     }
 }

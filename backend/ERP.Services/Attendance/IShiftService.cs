@@ -23,5 +23,6 @@ namespace ERP.Services.Attendance
         Task<bool> UpdateShiftAsync(int id, ShiftUpdateDto dto);
         Task<bool> DeleteOrDeactivateShiftAsync(int id);
         Task<byte[]> ExportShiftListAsync(string? search, TimeSpan? startTime, TimeSpan? endTime, bool? isActive);
+        Task<bool> RegisterShiftAsync(ShiftAssignmentCreateDto dto);
     }
 }

@@ -265,5 +265,22 @@ namespace ERP.API.Controllers
                 return BadRequest(new { Message = ex.Message });
             }
         }
+
+        [HttpPost("register")]
+        public async Task<IActionResult> RegisterShift([FromBody] ShiftAssignmentCreateDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                var success = await _shiftService.RegisterShiftAsync(dto);
+                if (!success) return BadRequest(new { Message = "Đăng ký ca thất bại." });
+                return Ok(new { Message = "Đăng ký ca thành công." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
     }
 }

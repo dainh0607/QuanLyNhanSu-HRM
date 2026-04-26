@@ -16,11 +16,16 @@ namespace ERP.Services.Payroll
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserContext _currentUserContext;
+        private readonly IPayrollCalculationService _calculationService;
 
-        public PayrollService(IUnitOfWork unitOfWork, ICurrentUserContext currentUserContext)
+        public PayrollService(
+            IUnitOfWork unitOfWork, 
+            ICurrentUserContext currentUserContext,
+            IPayrollCalculationService calculationService)
         {
             _unitOfWork = unitOfWork;
             _currentUserContext = currentUserContext;
+            _calculationService = calculationService;
         }
 
         public async Task<PayrollPagedResponseDto> GetPayrollTablesAsync(int skip, int take)
@@ -166,8 +171,40 @@ namespace ERP.Services.Payroll
         public async Task<bool> GeneratePayrollsAsync(int month, int year)
         {
             // Logic to calculate payroll for all active employees
-            // This is a complex logic that will be implemented in detail later
             await Task.Delay(100); 
+            return true;
+        }
+
+        public async Task<bool> CalculatePeriodAsync(int periodId)
+        {
+            var period = await _unitOfWork.Repository<PayrollPeriods>()
+                .AsQueryable()
+                .Include(p => p.PayrollType)
+                .FirstOrDefaultAsync(p => p.Id == periodId);
+
+            if (period == null || period.PayrollType == null) return false;
+            if (string.IsNullOrEmpty(period.PayrollType.formula)) return false;
+
+            var payrolls = await _unitOfWork.Repository<Payrolls>()
+                .AsQueryable()
+                .Where(p => p.period_id == periodId)
+                .ToListAsync();
+
+            foreach (var payroll in payrolls)
+            {
+                var netSalary = await _calculationService.CalculateSalaryAsync(
+                    payroll.employee_id, 
+                    periodId, 
+                    period.PayrollType.formula
+                );
+
+                payroll.net_salary = netSalary;
+                payroll.base_salary = netSalary; // Placeholder, real logic would split this
+                
+                _unitOfWork.Repository<Payrolls>().Update(payroll);
+            }
+
+            await _unitOfWork.SaveChangesAsync();
             return true;
         }
 

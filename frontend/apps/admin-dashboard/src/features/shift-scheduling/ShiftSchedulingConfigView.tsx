@@ -3,21 +3,23 @@ import type { ShiftBusinessRules } from "./services/shiftBusinessRulesService";
 import { shiftBusinessRulesService } from "./services/shiftBusinessRulesService";
 import { useToast } from "../../hooks/useToast";
 
-const DAYS_OF_WEEK = ["Thứ hai", "Thứ ba", "Thứ tư", "Thứ năm", "Thứ sáu", "Thứ bảy", "Chủ nhật"];
+const DAYS_OF_WEEK = [
+  { label: "Thứ hai", value: "Monday" },
+  { label: "Thứ ba", value: "Tuesday" },
+  { label: "Thứ tư", value: "Wednesday" },
+  { label: "Thứ năm", value: "Thursday" },
+  { label: "Thứ sáu", value: "Friday" },
+  { label: "Thứ bảy", value: "Saturday" },
+  { label: "Chủ nhật", value: "Sunday" },
+];
 
-interface ShiftSchedulingConfigViewProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-const ShiftSchedulingConfigView: React.FC<ShiftSchedulingConfigViewProps> = ({ isOpen, onClose }) => {
+const ShiftSchedulingConfigView: React.FC = () => {
   const { showToast, ToastComponent } = useToast();
   const [rules, setRules] = useState<ShiftBusinessRules | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingField, setSavingField] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isOpen) return;
     const fetchRules = async () => {
       setLoading(true);
       try {
@@ -30,7 +32,7 @@ const ShiftSchedulingConfigView: React.FC<ShiftSchedulingConfigViewProps> = ({ i
       }
     };
     fetchRules();
-  }, [isOpen]);
+  }, []);
 
   const handleUpdate = async <K extends keyof ShiftBusinessRules>(
     field: K, 
@@ -57,119 +59,118 @@ const ShiftSchedulingConfigView: React.FC<ShiftSchedulingConfigViewProps> = ({ i
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-[260] flex items-center justify-center bg-slate-950/40 px-4 py-8 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-3xl max-h-full flex flex-col rounded-[28px] border border-slate-200 bg-white shadow-[0_28px_80px_rgba(15,23,42,0.28)] animate-in zoom-in-95 duration-200">
-        <div className="flex items-start justify-between border-b border-slate-100 px-6 py-5 shrink-0 bg-white rounded-t-[28px]">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#134BBA]">
-              Cài đặt chấm công
-            </p>
-            <h2 className="mt-2 text-xl font-semibold text-slate-900">
-              Cấu hình luồng nghiệp vụ
-            </h2>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 text-slate-500 transition hover:bg-slate-50"
-          >
-            <span className="material-symbols-outlined text-[20px]">close</span>
-          </button>
+    <div className="p-8 max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="mb-8">
+        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Cấu hình luồng nghiệp vụ</h2>
+        <p className="text-slate-500 mt-1 font-medium">Quản lý các quy tắc và cài đặt vận hành xếp ca cho hệ thống.</p>
+      </div>
+
+      {loading || !rules ? (
+        <div className="flex flex-col items-center justify-center h-64 bg-white rounded-[32px] border border-slate-100 shadow-sm">
+          <div className="w-10 h-10 border-4 border-[#134BBA] border-t-transparent rounded-full animate-spin"></div>
+          <p className="mt-4 text-slate-400 font-bold text-sm">Đang tải cấu hình...</p>
         </div>
+      ) : (
+        <div className="grid gap-6">
+          {/* AC 2.1 - Auto Copy */}
+          <ConfigItem
+            title="Tự động xếp ca từ tuần cũ sang tuần mới"
+            description="Hệ thống sẽ tự động sao chép toàn bộ lịch làm việc của tuần hiện tại sang tuần tiếp theo vào lúc 00:00 ngày Thứ hai hàng tuần."
+            enabled={rules.autoCopyShifts}
+            onToggle={(val: boolean) => handleUpdate("autoCopyShifts", val)}
+            isSaving={savingField === "autoCopyShifts"}
+            icon="content_copy"
+          />
 
-        <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50 custom-scrollbar rounded-b-[28px]">
-          {loading || !rules ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="w-8 h-8 border-2 border-[#134BBA] border-t-transparent rounded-full animate-spin"></div>
-            </div>
-          ) : (
-            <div className="max-w-2xl mx-auto w-full grid gap-4 pb-4">
-              {/* AC 2.1 - Auto Copy */}
-              <ConfigItem
-                title="Tự động xếp ca từ tuần cũ sang tuần mới"
-                description="Hệ thống sẽ tự động sao chép toàn bộ lịch làm việc của tuần hiện tại sang tuần tiếp theo vào lúc 00:00 ngày Thứ hai hàng tuần."
-                enabled={rules.autoCopyShifts}
-                onToggle={(val: boolean) => handleUpdate("autoCopyShifts", val)}
-                isSaving={savingField === "autoCopyShifts"}
+          {/* AC 2.2 - Employee Register */}
+          <div className="bg-white border border-slate-100 rounded-[32px] overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
+            <div className="p-8 flex items-center justify-between">
+              <div className="flex items-center gap-6">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+                  <span className="material-symbols-outlined text-[28px]">app_registration</span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-base font-black text-slate-800">Nhân viên đăng ký ca làm</h3>
+                  <p className="text-[13px] font-bold text-slate-400 mt-1 leading-relaxed">
+                    Cho phép nhân viên đăng ký ca trống qua ứng dụng di động.
+                  </p>
+                </div>
+              </div>
+              <ToggleSwitch
+                enabled={rules.allowEmployeeRegister}
+                onChange={(val: boolean) => handleUpdate("allowEmployeeRegister", val)}
+                isSaving={savingField === "allowEmployeeRegister"}
               />
+            </div>
 
-              {/* AC 2.2 - Employee Register */}
-              <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm">
-                <div className="p-6 flex items-center justify-between">
-                  <div className="flex-1 pr-8">
-                    <h3 className="text-sm font-semibold text-slate-800">Nhân viên đăng ký ca làm</h3>
-                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                      Cho phép nhân viên đăng ký ca trống qua ứng dụng di động.
-                    </p>
+            <div className={`bg-slate-50/50 border-t border-slate-100 transition-all duration-500 ease-in-out overflow-hidden ${rules.allowEmployeeRegister ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"}`}>
+              <div className="p-8 pt-6 grid md:grid-cols-2 gap-10">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[18px] text-slate-400">lock_clock</span>
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Khóa đăng ký tuần tới</h4>
+                    </div>
+                    <ToggleSwitch
+                      enabled={rules.registrationLockEnabled}
+                      onChange={(val: boolean) => handleUpdate("registrationLockEnabled", val)}
+                      size="sm"
+                    />
                   </div>
-                  <ToggleSwitch
-                    enabled={rules.allowEmployeeRegister}
-                    onChange={(val: boolean) => handleUpdate("allowEmployeeRegister", val)}
-                    isSaving={savingField === "allowEmployeeRegister"}
-                  />
+                  <div className={`transition-all duration-300 ${rules.registrationLockEnabled ? "opacity-100" : "opacity-40 pointer-events-none"}`}>
+                    <p className="text-[11px] font-black text-slate-400 mb-2 ml-1">Hạn chót đăng ký (23:59)</p>
+                    <div className="relative">
+                      <select
+                        value={rules.lockRegistrationDay || "Friday"}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleUpdate("lockRegistrationDay", e.target.value)}
+                        className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 text-sm font-bold text-slate-700 outline-none focus:ring-4 focus:ring-[#134BBA]/10 focus:border-[#134BBA] transition-all appearance-none"
+                      >
+                        {DAYS_OF_WEEK.map(day => <option key={day.value} value={day.value}>{day.label}</option>)}
+                      </select>
+                      <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">expand_more</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className={`bg-slate-50/50 border-t border-slate-100 transition-all duration-300 overflow-hidden ${rules.allowEmployeeRegister ? "max-h-[500px] opacity-100 p-6" : "max-h-0 opacity-0 p-0"}`}>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-xs font-semibold text-slate-700">Khóa đăng ký ca cho tuần tới</h4>
-                        <ToggleSwitch
-                          enabled={rules.registrationLockEnabled}
-                          onChange={(val: boolean) => handleUpdate("registrationLockEnabled", val)}
-                          size="sm"
-                        />
-                      </div>
-                      <div className={`transition-all duration-300 ${rules.registrationLockEnabled ? "opacity-100" : "opacity-40 pointer-events-none"}`}>
-                        <p className="text-[11px] font-medium text-slate-500 mb-1.5">Hạn chót đăng ký (23:59)</p>
-                        <select
-                          value={rules.lockRegistrationDay || ""}
-                          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleUpdate("lockRegistrationDay", e.target.value)}
-                          className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-[#134BBA]/20 focus:border-[#134BBA] transition-all"
-                        >
-                          {DAYS_OF_WEEK.map(day => <option key={day} value={day}>{day}</option>)}
-                        </select>
-                      </div>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[18px] text-slate-400">calendar_month</span>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Lập lịch xếp ca trước</h4>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-black text-slate-400 mb-2 ml-1">Số tuần tối đa được phép</p>
+                    <div className="flex items-center gap-4 bg-white border border-slate-200 rounded-2xl p-2 px-4 shadow-sm w-fit">
+                      <input
+                        type="number"
+                        min={1}
+                        max={12}
+                        value={rules.scheduleAheadWeeks}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleUpdate("scheduleAheadWeeks", parseInt(e.target.value))}
+                        className="w-12 bg-transparent text-lg font-black text-[#134BBA] outline-none text-center"
+                      />
+                      <div className="w-px h-6 bg-slate-100"></div>
+                      <span className="text-sm font-bold text-slate-500 pr-2">Tuần</span>
                     </div>
-
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <h4 className="text-xs font-semibold text-slate-700">Lập lịch xếp ca trước</h4>
-                      </div>
-                      <div>
-                        <p className="text-[11px] font-medium text-slate-500 mb-1.5">Số tuần tối đa</p>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            min={1}
-                            max={12}
-                            value={rules.scheduleAheadWeeks}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleUpdate("scheduleAheadWeeks", parseInt(e.target.value))}
-                            className="w-20 bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-[#134BBA]/20 focus:border-[#134BBA] transition-all text-center"
-                          />
-                          <span className="text-sm text-slate-600">Tuần</span>
-                        </div>
-                      </div>
-                    </div>
+                    <p className="text-[10px] text-slate-400 mt-2 italic font-medium">* Nhân viên chỉ có thể thấy và đăng ký trong phạm vi này.</p>
                   </div>
                 </div>
               </div>
-
-              {/* AC 2.5 - Publish Shifts */}
-              <ConfigItem
-                title="Công bố ca làm (Publishing Mode)"
-                description="Ca xếp sẽ ở trạng thái Nháp. Nhân viên chỉ thấy ca khi Quản lý nhấn Công bố."
-                enabled={rules.publishRequired}
-                onToggle={(val: boolean) => handleUpdate("publishRequired", val)}
-                isSaving={savingField === "publishRequired"}
-              />
             </div>
-          )}
+          </div>
+
+          {/* AC 2.5 - Publish Shifts */}
+          <ConfigItem
+            title="Công bố ca làm (Publishing Mode)"
+            description="Ca xếp sẽ ở trạng thái Nháp. Nhân viên chỉ thấy ca khi Quản lý nhấn Công bố."
+            enabled={rules.publishRequired}
+            onToggle={(val: boolean) => handleUpdate("publishRequired", val)}
+            isSaving={savingField === "publishRequired"}
+            icon="publish"
+            color="bg-amber-50 text-amber-600"
+          />
         </div>
-      </div>
+      )}
       {ToastComponent}
     </div>
   );
@@ -182,13 +183,24 @@ interface ConfigItemProps {
   enabled: boolean;
   onToggle: (val: boolean) => void;
   isSaving: boolean;
+  icon: string;
+  color?: string;
 }
 
-const ConfigItem: React.FC<ConfigItemProps> = ({ title, description, enabled, onToggle, isSaving }) => (
+const ConfigItem: React.FC<ConfigItemProps> = ({ title, description, enabled, onToggle, isSaving, icon, color = "bg-blue-50 text-blue-600" }) => (
   <div className="bg-white border border-slate-100 rounded-[32px] p-8 flex items-center justify-between transition-all shadow-sm hover:shadow-md">
-    <div className="flex-1 pr-12">
-      <h3 className="text-base font-black text-slate-800">{title}</h3>
-      <p className="text-[13px] font-bold text-slate-400 mt-1 leading-relaxed">{description}</p>
+    <div className="flex items-center gap-6">
+      <div className={`w-12 h-12 rounded-2xl ${color} flex items-center justify-center shrink-0`}>
+        <span className="material-symbols-outlined text-[28px]">{icon}</span>
+      </div>
+      <div className="flex-1">
+        <h3 className="text-base font-black text-slate-800">{title}</h3>
+        <p className="text-[13px] font-bold text-slate-400 mt-1 leading-relaxed">{description}</p>
+      </div>
+    </div>
+    <ToggleSwitch enabled={enabled} onChange={onToggle} isSaving={isSaving} />
+  </div>
+);    <p className="text-[13px] font-bold text-slate-400 mt-1 leading-relaxed">{description}</p>
     </div>
     <ToggleSwitch enabled={enabled} onChange={onToggle} isSaving={isSaving} />
   </div>

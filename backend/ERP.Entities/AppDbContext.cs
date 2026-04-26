@@ -154,6 +154,7 @@ namespace ERP.Entities
         public DbSet<FeaturePermissions> FeaturePermissions { get; set; }
         public DbSet<EmploymentTypes> EmploymentTypes { get; set; }
         public DbSet<Majors> Majors { get; set; }
+        public DbSet<TenantSettings> TenantSettings { get; set; }
 
         // NEW: RBAC Authorization Tables (FIX)
         public DbSet<RoleScopes> RoleScopes { get; set; }
@@ -295,6 +296,15 @@ namespace ERP.Entities
                 entity.HasOne(d => d.Tenant)
                     .WithOne()
                     .HasForeignKey<TenantProfiles>(d => d.tenant_id)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<TenantSettings>(entity =>
+            {
+                entity.HasKey(e => e.tenant_id);
+                entity.HasOne(d => d.Tenant)
+                    .WithOne()
+                    .HasForeignKey<TenantSettings>(d => d.tenant_id)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 

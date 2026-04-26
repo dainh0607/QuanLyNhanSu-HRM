@@ -40,5 +40,20 @@ namespace ERP.API.Controllers
             if (!result) return NotFound(new { message = "Không tìm thấy thông tin công ty" });
             return Ok(new { message = "Đã khôi phục cài đặt sắp xếp về mặc định" });
         }
+
+        [HttpGet("shift-business-rules")]
+        public async Task<IActionResult> GetShiftBusinessRules()
+        {
+            var result = await _tenantSettingService.GetShiftBusinessRulesAsync();
+            return Ok(result);
+        }
+
+        [HttpPut("shift-business-rules")]
+        public async Task<IActionResult> UpdateShiftBusinessRules([FromBody] UpdateShiftBusinessRulesDto dto)
+        {
+            var result = await _tenantSettingService.UpdateShiftBusinessRulesAsync(dto);
+            if (!result) return BadRequest(new { message = "Không thể cập nhật cấu hình xếp ca" });
+            return Ok(new { message = "Cập nhật cấu hình xếp ca thành công" });
+        }
     }
 }

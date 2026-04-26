@@ -8,5 +8,7 @@ namespace ERP.Services.Settings
         Task<TenantSortConfigDto> GetEmployeeSortConfigAsync();
         Task<bool> UpdateEmployeeSortConfigAsync(TenantSortConfigDto dto);
         Task<bool> ResetEmployeeSortConfigAsync();
+        Task<ShiftBusinessRulesDto> GetShiftBusinessRulesAsync();
+        Task<bool> UpdateShiftBusinessRulesAsync(UpdateShiftBusinessRulesDto dto);
     }
 }

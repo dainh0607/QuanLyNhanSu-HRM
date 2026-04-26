@@ -24,8 +24,15 @@ namespace ERP.Entities.Models
         [StringLength(100)]
         public string component_name { get; set; }
 
+        [Column("component_code")]
+        [StringLength(50)]
+        public string component_code { get; set; }
+
         [Column("amount")]
         public decimal amount { get; set; }
+
+        [Column("display_order")]
+        public int display_order { get; set; } = 0;
 
         [Column("note")]
         public string note { get; set; }

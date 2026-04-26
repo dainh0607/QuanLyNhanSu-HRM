@@ -968,9 +968,18 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("updated_at");
 
+                    b.Property<int>("display_order")
+                        .HasColumnType("int")
+                        .HasColumnName("display_order");
+
                     b.Property<bool>("is_active")
                         .HasColumnType("bit")
                         .HasColumnName("is_active");
+
+                    b.Property<string>("keyword")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("keyword");
 
                     b.Property<string>("name")
                         .IsRequired()
@@ -992,6 +1001,7 @@ namespace ERP.Entities.Migrations
                             Id = 1,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            display_order = 0,
                             is_active = true,
                             name = "Phụ cấp ăn trưa"
                         },
@@ -1000,6 +1010,7 @@ namespace ERP.Entities.Migrations
                             Id = 2,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            display_order = 0,
                             is_active = true,
                             name = "Phụ cấp xăng xe"
                         },
@@ -1008,6 +1019,7 @@ namespace ERP.Entities.Migrations
                             Id = 3,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            display_order = 0,
                             is_active = true,
                             name = "Phụ cấp điện thoại"
                         });
@@ -4149,8 +4161,8 @@ namespace ERP.Entities.Migrations
                         .HasColumnName("gender_code");
 
                     b.Property<string>("home_phone")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
                         .HasColumnName("home_phone");
 
                     b.Property<DateTime?>("identity_issue_date")
@@ -4701,9 +4713,18 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("updated_at");
 
+                    b.Property<int>("display_order")
+                        .HasColumnType("int")
+                        .HasColumnName("display_order");
+
                     b.Property<bool>("is_active")
                         .HasColumnType("bit")
                         .HasColumnName("is_active");
+
+                    b.Property<string>("keyword")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("keyword");
 
                     b.Property<string>("name")
                         .IsRequired()
@@ -4725,6 +4746,7 @@ namespace ERP.Entities.Migrations
                             Id = 1,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            display_order = 0,
                             is_active = true,
                             name = "Thưởng KPI"
                         },
@@ -4733,6 +4755,7 @@ namespace ERP.Entities.Migrations
                             Id = 2,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            display_order = 0,
                             is_active = true,
                             name = "Thưởng lễ tết"
                         },
@@ -4741,6 +4764,7 @@ namespace ERP.Entities.Migrations
                             Id = 3,
                             CreatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedAt = new DateTime(2026, 3, 27, 0, 0, 0, 0, DateTimeKind.Utc),
+                            display_order = 0,
                             is_active = true,
                             name = "Thu nhập khác"
                         });
@@ -5940,6 +5964,51 @@ namespace ERP.Entities.Migrations
                     b.ToTable("OvertimeTypes", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.PayrollAdvanceType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("display_order")
+                        .HasColumnType("int")
+                        .HasColumnName("display_order");
+
+                    b.Property<bool>("is_active")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("keyword")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("keyword");
+
+                    b.Property<string>("name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("name");
+
+                    b.Property<int?>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PayrollAdvanceTypes");
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.PayrollDeductions", b =>
                 {
                     b.Property<int>("Id")
@@ -5992,6 +6061,12 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("amount");
 
+                    b.Property<string>("component_code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("component_code");
+
                     b.Property<string>("component_name")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -6003,6 +6078,10 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("component_type");
+
+                    b.Property<int>("display_order")
+                        .HasColumnType("int")
+                        .HasColumnName("display_order");
 
                     b.Property<string>("note")
                         .IsRequired()
@@ -6150,6 +6229,11 @@ namespace ERP.Entities.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)")
                         .HasColumnName("description");
+
+                    b.Property<string>("formula")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("formula");
 
                     b.Property<bool>("is_active")
                         .HasColumnType("bit")
@@ -8691,6 +8775,12 @@ namespace ERP.Entities.Migrations
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("name");
 
+                    b.Property<string>("payment_type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("payment_type");
+
                     b.Property<int?>("tenant_id")
                         .HasColumnType("int")
                         .HasColumnName("tenant_id");
@@ -9957,6 +10047,55 @@ namespace ERP.Entities.Migrations
                     b.ToTable("TenantProfiles");
                 });
 
+            modelBuilder.Entity("ERP.Entities.Models.TenantSettings", b =>
+                {
+                    b.Property<int>("tenant_id")
+                        .HasColumnType("int")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("Id")
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("advance_schedule_weeks")
+                        .HasColumnType("int")
+                        .HasColumnName("advance_schedule_weeks");
+
+                    b.Property<bool>("allow_shift_registration")
+                        .HasColumnType("bit")
+                        .HasColumnName("allow_shift_registration");
+
+                    b.Property<bool>("auto_schedule_next_week")
+                        .HasColumnType("bit")
+                        .HasColumnName("auto_schedule_next_week");
+
+                    b.Property<bool>("enable_registration_lock")
+                        .HasColumnType("bit")
+                        .HasColumnName("enable_registration_lock");
+
+                    b.Property<string>("registration_lock_day")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("registration_lock_day");
+
+                    b.Property<bool>("require_shift_publish")
+                        .HasColumnType("bit")
+                        .HasColumnName("require_shift_publish");
+
+                    b.HasKey("tenant_id");
+
+                    b.ToTable("TenantSettings");
+                });
+
             modelBuilder.Entity("ERP.Entities.Models.Tenants", b =>
                 {
                     b.Property<int>("Id")
@@ -10368,7 +10507,8 @@ namespace ERP.Entities.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("int")
+                        .HasColumnName("id");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
@@ -12204,6 +12344,17 @@ namespace ERP.Entities.Migrations
                     b.HasOne("ERP.Entities.Models.Tenants", "Tenant")
                         .WithOne()
                         .HasForeignKey("ERP.Entities.Models.TenantProfiles", "tenant_id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("ERP.Entities.Models.TenantSettings", b =>
+                {
+                    b.HasOne("ERP.Entities.Models.Tenants", "Tenant")
+                        .WithOne()
+                        .HasForeignKey("ERP.Entities.Models.TenantSettings", "tenant_id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 

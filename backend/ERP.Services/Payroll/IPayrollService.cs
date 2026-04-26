@@ -18,5 +18,6 @@ namespace ERP.Services.Payroll
         Task<bool> DeletePayrollTypeAsync(int id);
         Task<bool> ApprovePayrollAsync(int payrollId, int approvedBy);
         Task<bool> DeletePayrollTableAsync(int periodId);
+        Task<bool> CalculatePeriodAsync(int periodId);
     }
 }

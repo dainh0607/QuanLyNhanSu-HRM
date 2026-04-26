@@ -144,5 +144,13 @@ namespace ERP.API.Controllers
                 return BadRequest(new { Message = ex.Message });
             }
         }
+
+        [HttpPost("period/{periodId}/calculate")]
+        [HasPermission("payroll", "create")]
+        public async Task<IActionResult> CalculatePeriod(int periodId)
+        {
+            var result = await _payrollService.CalculatePeriodAsync(periodId);
+            return Ok(new { Success = result });
+        }
     }
 }

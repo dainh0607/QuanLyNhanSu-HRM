@@ -44,5 +44,8 @@ namespace ERP.Entities.Models
 
         [Column("is_active")]
         public bool is_active { get; set; } = true;
+
+        [Column("formula")]
+        public string formula { get; set; }
     }
 }
